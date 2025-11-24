@@ -1,95 +1,110 @@
-import { CaretDownIcon, PlayIcon } from "@radix-ui/react-icons"
-import { Button, DropdownMenu, IconButton, Theme } from "@radix-ui/themes"
-import { ConvexProvider, ConvexReactClient } from "convex/react"
+import { CaretDownIcon, PlayIcon } from "@radix-ui/react-icons";
+import {
+  Button,
+  DropdownMenu,
+  IconButton,
+  Theme,
+  Flex,
+  Box,
+  Text
+} from "@radix-ui/themes";
+import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { ReactFlowMap } from "./ReactFlowMap.tsx"
 
-const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string)
+const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
 export const App = () => {
-  const tools: any[] = []
-  const tabMapInfo: any[] = []
+  const tools = [
+    { id: 1, label: "Tool 1" },
+    { id: 2, label: "Tool 2" },
+  ];
+  const tabMapInfo = [
+    { name: "Map A" },
+    { name: "Map B" },
+  ];
 
   return (
     <ConvexProvider client={convex}>
-
       <Theme
-        appearance={'dark'}
+        appearance="dark"
         accentColor="iris"
         panelBackground="solid"
         scaling="100%"
         radius="full"
       >
         <ReactFlowMap mapId={'1'}/>
-        <div className="dark:bg-zinc-800 bg-zinc-50 dark:border-neutral-700 fixed top-0 left-0 w-screen h-[40px] z-50">
-          <div
-            className="fixed box-border top-0 w-[192px] h-[40px] py-1 flex items-center justify-center text-white z-50 gap-2">
-            <div style={{ fontFamily: 'Comfortaa' }} className="text-xl ">
-              {'mapboard'}
-            </div>
-          </div>
-          <div className="fixed left-1/2 -translate-x-1/2 h-[40px] flex flex-row items-center gap-1 align-center">
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger>
-                <IconButton variant="soft" color="gray" radius="full">
-                  <CaretDownIcon/>
-                </IconButton>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Content onCloseAutoFocus={e => e.preventDefault()}>
-                <DropdownMenu.Label>{'My Maps'}</DropdownMenu.Label>
-                {tabMapInfo?.map((_, index) => (
-                  <DropdownMenu.Item
-                    key={index}
-                    onClick={() => {
-                    }}
-                  >
-                    {tabMapInfo[index].name}
-                  </DropdownMenu.Item>
-                ))}
-                <DropdownMenu.Separator/>
-                <DropdownMenu.Label>{'Shared Maps'}</DropdownMenu.Label>
 
-              </DropdownMenu.Content>
-            </DropdownMenu.Root>
-            <Button
-              variant="solid"
-              radius="full"
-              onClick={() => {
-              }}
-            >
-              {'My Map'}
-            </Button>
-          </div>
-          <div className="fixed flex right-1 gap-6 h-[40px]">
-            <div className="flex items-center gap-1">
+        {/* App Bar */}
+        <Box
+          position="fixed"
+
+          width="100%"
+          height="40px"
+          px="3"
+          // bg="panelBackground"
+          // zIndex={50}
+        >
+          <Flex direction="row" align="center" justify="between" height="100%">
+            {/* Left */}
+            <Flex align="center" gap="2" width={'192px'}>
+              <Text size="2" weight="bold" color="gray">
+                mapboard
+              </Text>
+            </Flex>
+
+            {/* Center */}
+            <Flex align="center" gap="2">
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger>
-                  <IconButton variant="solid" color="gray">
-                    <PlayIcon/>
+                  <IconButton variant="soft" color="gray" radius="full">
+                    <CaretDownIcon />
                   </IconButton>
                 </DropdownMenu.Trigger>
-                <DropdownMenu.Content onCloseAutoFocus={e => e.preventDefault()}>
-                  {tools.map(el => (
-                    <DropdownMenu.Item
-                      key={el.id}
-                      onClick={() => {
-                      }}
-                    >
-                      {el.label}
-                    </DropdownMenu.Item>
+                <DropdownMenu.Content onCloseAutoFocus={(e) => e.preventDefault()}>
+                  <DropdownMenu.Label>My Maps</DropdownMenu.Label>
+                  {tabMapInfo.map((tab, i) => (
+                    <DropdownMenu.Item key={i}>{tab.name}</DropdownMenu.Item>
+                  ))}
+                  <DropdownMenu.Separator />
+                  <DropdownMenu.Label>Shared Maps</DropdownMenu.Label>
+                </DropdownMenu.Content>
+              </DropdownMenu.Root>
+
+              <Button variant="solid" radius="full">My Map</Button>
+            </Flex>
+
+            {/* Right */}
+            <Flex align="center" gap="2">
+              <DropdownMenu.Root>
+                <DropdownMenu.Trigger>
+                  <IconButton variant="solid" color="gray" radius="full">
+                    <PlayIcon />
+                  </IconButton>
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Content onCloseAutoFocus={(e) => e.preventDefault()}>
+                  {tools.map((tool) => (
+                    <DropdownMenu.Item key={tool.id}>{tool.label}</DropdownMenu.Item>
                   ))}
                 </DropdownMenu.Content>
               </DropdownMenu.Root>
-              <IconButton variant="solid" color="gray">
-                <PlayIcon
-                  onClick={() => {
-                    console.log('play...')
-                  }}
-                />
+
+              <IconButton
+                variant="solid"
+                color="gray"
+                radius="full"
+                onClick={() => console.log("play...")}
+              >
+                <PlayIcon />
               </IconButton>
-            </div>
-          </div>
-        </div>
+            </Flex>
+          </Flex>
+        </Box>
+
+        {/* Push content down */}
+        <Box pt="40px">
+          <div>Your map or ReactFlowMap here</div>
+        </Box>
       </Theme>
     </ConvexProvider>
-  )
-}
+  );
+};
