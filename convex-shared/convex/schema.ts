@@ -27,9 +27,9 @@ export default defineSchema({
   nodes: defineTable({
     mapId: v.id("maps"),
     toolId: v.id("tools"),
-    iid: v.int64(),
-    offsetX: v.int64(),
-    offsetY: v.int64(),
+    iid: v.number(),
+    offsetX: v.number(),
+    offsetY: v.number(),
     isProcessing: v.boolean(),
     inputValue: v.optional(v.any()),
     outputValue: v.optional(v.any()),
@@ -48,8 +48,8 @@ export default defineSchema({
     .index("by_toNodeId", ["toNodeId"]),
 
   tools: defineTable({
-    width: v.int64(),
-    height: v.int64(),
+    width: v.number(),
+    height: v.number(),
     color: Color,
     label: v.string(),
     inputSchema: v.optional(v.any()),
