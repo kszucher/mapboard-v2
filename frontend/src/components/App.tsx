@@ -32,7 +32,6 @@ export const App = () => {
         scaling="100%"
         radius="full"
       >
-        <ReactFlowMap mapId={'1'}/>
 
         {/* App Bar */}
         <Box
@@ -102,8 +101,9 @@ export const App = () => {
 
         {/* Push content down */}
         <Box pt="40px">
-          <div>Your map or ReactFlowMap here</div>
         </Box>
+        <ReactFlowMap mapId={'1'}/>
+
       </Theme>
     </ConvexProvider>
   );
