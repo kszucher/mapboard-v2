@@ -1,101 +1,156 @@
 import {
   type Connection,
   Controls,
-  type NodeTypes,
+  type Edge,
+  type Node,
   Position,
   ReactFlow,
   ReactFlowProvider,
+  useEdgesState,
+  useNodesState,
   useReactFlow,
-} from "@xyflow/react"
-import "@xyflow/react/dist/style.css"
-import { useMutation, useQuery } from "convex/react"
-import { type MouseEvent, useEffect } from "react"
-import { api } from "../../../convex-shared/convex/_generated/api"
-import { CustomNode } from "./ReactFlowMapNode.tsx"
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+import { useMutation, useQuery } from "convex/react";
+import { useCallback, useEffect, useRef } from "react";
+import { api } from "../../../convex-shared/convex/_generated/api";
+import type { Id } from "../../../convex-shared/convex/_generated/dataModel";
+import { CustomNode } from "./ReactFlowMapNode";
 
-const nodeTypes: NodeTypes = { custom: CustomNode }
+type NodeData = { node: { _id: string; offsetX: number; offsetY: number } };
+type FlowNode = Node<NodeData>;
+type FlowEdge = Edge;
 
-export const ReactFlowMap = ({ mapId }: { mapId: string }) => {
-  return (
-    <div style={{ width: "100vw", height: "100vh" }}>
-      <ReactFlowProvider>
-        <FlowContent mapId={mapId}/>
-      </ReactFlowProvider>
-    </div>
-  )
-}
+const nodeTypes = { custom: CustomNode };
 
-import type { Id } from "../../../convex-shared/convex/_generated/dataModel" // Import the Id type
+export const ReactFlowMap = ({ mapId }: { mapId: string }) => (
+  <div style={{ width: "100vw", height: "100vh" }}>
+    <ReactFlowProvider>
+      <FlowContent mapId={mapId as Id<"maps">} />
+    </ReactFlowProvider>
+  </div>
+);
 
-const FlowContent = ({ mapId }: { mapId: string }) => {
-  mapId = 'j979dj57ksrmzqvd4n83m7d3697w0fxk';
+const FlowContent = ({ mapId }: { mapId: Id<"maps"> }) => {
+  const activeMapId: Id<"maps"> = "j979dj57ksrmzqvd4n83m7d3697w0fxk";
 
-  const nodesData = useQuery(api.nodes.getNodesOfMap, { mapId: mapId as Id<"maps"> });
-  const edgesData = useQuery(api.edges.getEdgesOfMap, { mapId: mapId as Id<"maps"> });
-
+  // Convex data
+  const nodesData = useQuery(api.nodes.getNodesOfMap, { mapId: activeMapId });
+  const edgesData = useQuery(api.edges.getEdgesOfMap, { mapId: activeMapId });
   const updateNode = useMutation(api.nodes.updateNode);
   const createEdge = useMutation(api.edges.createEdge);
   const deleteEdge = useMutation(api.edges.deleteEdge);
 
+  // React Flow state
   const { fitView } = useReactFlow();
+  const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>([]);
 
-  // Define nodes and edges even if data is not loaded yet
-  const nodes = nodesData?.map((n) => ({
-    id: n._id,
-    type: "custom",
-    position: { x: n.offsetX, y: n.offsetY },
-    data: { node: n },
-    sourcePosition: Position.Right,
-    targetPosition: Position.Left,
-  })) ?? [];
+  // Prevent updates during drag
+  const isDraggingRef = useRef(false);
+  const hasInitializedRef = useRef(false);
 
-  const edges = edgesData?.map((e) => ({
-    id: e._id,
-    source: e.fromNodeId,
-    target: e.toNodeId,
-    animated: false,
-  })) ?? [];
-
-  // Hook is always called
+  // Sync nodes from Convex
   useEffect(() => {
-    if (nodes.length > 0) {
-      fitView({ padding: 0.1, maxZoom: 1, duration: 0 });
-    }
-  }, [nodes, fitView]);
+    if (!nodesData || isDraggingRef.current) return;
 
-  // Early return if data hasn't loaded
+    const mappedNodes: FlowNode[] = nodesData.map((n) => ({
+      id: n._id,
+      type: "custom",
+      position: { x: n.offsetX, y: n.offsetY },
+      data: { node: n },
+      sourcePosition: Position.Right,
+      targetPosition: Position.Left,
+    }));
+
+    setNodes(mappedNodes);
+
+    // Fit view on initial load
+    if (!hasInitializedRef.current && mappedNodes.length > 0) {
+      hasInitializedRef.current = true;
+      requestAnimationFrame(() => {
+        fitView({ padding: 0.1, maxZoom: 1, duration: 0 });
+      });
+    }
+  }, [nodesData, setNodes, fitView]);
+
+  // Sync edges from Convex
+  useEffect(() => {
+    if (!edgesData || isDraggingRef.current) return;
+
+    const mappedEdges: FlowEdge[] = edgesData.map((e) => ({
+      id: e._id,
+      source: e.fromNodeId,
+      target: e.toNodeId,
+      animated: false,
+    }));
+
+    setEdges(mappedEdges);
+  }, [edgesData, setEdges]);
+
+  const handleConnect = useCallback(
+    (params: Connection) => {
+      if (!params.source || !params.target) return;
+
+      createEdge({
+        mapId: activeMapId,
+        fromNodeId: params.source as Id<"nodes">,
+        toNodeId: params.target as Id<"nodes">,
+      });
+    },
+    [createEdge, activeMapId]
+  );
+
+  const handleEdgesDelete = useCallback(
+    (edgesToDelete: FlowEdge[]) => {
+      edgesToDelete.forEach((edge) => {
+        deleteEdge({ edgeId: edge.id as Id<"edges"> });
+      });
+    },
+    [deleteEdge]
+  );
+
+  const handleNodeDragStart = useCallback(() => {
+    isDraggingRef.current = true;
+  }, []);
+
+  const handleNodeDragStop = useCallback(
+    (_event: React.MouseEvent, node: FlowNode) => {
+      isDraggingRef.current = false;
+
+      updateNode({
+        nodeId: node.id as Id<"nodes">,
+        patch: {
+          offsetX: Math.round(node.position.x),
+          offsetY: Math.round(node.position.y),
+        },
+      });
+    },
+    [updateNode]
+  );
+
+  const handleDoubleClick = useCallback(
+    (event: React.MouseEvent) => {
+      event.preventDefault();
+      fitView({ padding: 0.1, maxZoom: 1, duration: 300 });
+    },
+    [fitView]
+  );
+
   if (!nodesData || !edgesData) return null;
 
   return (
-    <ReactFlow
+    <ReactFlow<FlowNode, FlowEdge>
+      nodeTypes={nodeTypes}
       nodes={nodes}
       edges={edges}
-      nodeTypes={nodeTypes}
-      onConnect={(params: Connection) => {
-        if (params.source && params.target) {
-          createEdge({
-            mapId: mapId as Id<"maps">,
-            fromNodeId: params.source as Id<"nodes">,
-            toNodeId: params.target as Id<"nodes">
-          });
-        }
-      }}
-      onEdgesDelete={(edgesToDelete) => {
-        edgesToDelete.forEach((e) => deleteEdge({ edgeId: e.id as Id<"edges"> }));
-      }}
-      onNodeDragStop={(_, node) => {
-        updateNode({
-          nodeId: node.id as Id<"nodes">,
-          patch: {
-            offsetX: Math.round(node.position.x),
-            offsetY: Math.round(node.position.y),
-          },
-        });
-      }}
-      onDoubleClick={(event: MouseEvent) => {
-        event.preventDefault();
-        fitView({ padding: 0.1, maxZoom: 1, duration: 300 });
-      }}
+      onNodesChange={onNodesChange}
+      onEdgesChange={onEdgesChange}
+      onConnect={handleConnect}
+      onEdgesDelete={handleEdgesDelete}
+      onNodeDragStart={handleNodeDragStart}
+      onNodeDragStop={handleNodeDragStop}
+      onDoubleClick={handleDoubleClick}
       colorMode="dark"
       zoomOnScroll={false}
       zoomOnDoubleClick={false}

@@ -23,8 +23,8 @@ export const CustomNode = ({ data }: NodeProps<AppFlowNode>) => {
           <Badge color="gray" size="2">
             {'N' + data.node.iid}
           </Badge>
-          <Badge color={data.tool.color} size="2">
-            {data.tool.label}
+          <Badge  size="2">
+            {'data.tool.label'}
           </Badge>
         </Flex>
       </Box>
