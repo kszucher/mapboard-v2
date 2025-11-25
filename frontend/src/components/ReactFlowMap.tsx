@@ -9,30 +9,28 @@ import {
   useEdgesState,
   useNodesState,
   useReactFlow,
-} from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
-import { useMutation, useQuery } from "convex/react";
-import { useCallback, useEffect, useRef } from "react";
-import { api } from "../../../convex-shared/convex/_generated/api";
-import type { Id } from "../../../convex-shared/convex/_generated/dataModel";
-import { CustomNode } from "./ReactFlowMapNode";
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
+import { useMutation, useQuery } from 'convex/react';
+import { useCallback, useEffect, useRef } from 'react';
+import { api } from '../../../convex-shared/convex/_generated/api';
+import type { Id } from '../../../convex-shared/convex/_generated/dataModel';
+import { CustomNode } from './ReactFlowMapNode';
 
 type NodeData = { node: { _id: string; offsetX: number; offsetY: number } };
 type FlowNode = Node<NodeData>;
 type FlowEdge = Edge;
 
-const nodeTypes = { custom: CustomNode };
-
 export const ReactFlowMap = ({ mapId }: { mapId: string }) => (
-  <div style={{ width: "100vw", height: "100vh" }}>
+  <div style={{ width: '100vw', height: '100vh' }}>
     <ReactFlowProvider>
-      <FlowContent mapId={mapId as Id<"maps">} />
+      <FlowContent mapId={mapId as Id<'maps'>} />
     </ReactFlowProvider>
   </div>
 );
 
-const FlowContent = ({ mapId }: { mapId: Id<"maps"> }) => {
-  const activeMapId: Id<"maps"> = "j979dj57ksrmzqvd4n83m7d3697w0fxk";
+export const FlowContent = ({ mapId }: { mapId: Id<'maps'> }) => {
+  const activeMapId: Id<'maps'> = 'j979dj57ksrmzqvd4n83m7d3697w0fxk';
 
   // Convex data
   const nodesData = useQuery(api.nodes.getNodesOfMap, { mapId: activeMapId });
@@ -52,11 +50,13 @@ const FlowContent = ({ mapId }: { mapId: Id<"maps"> }) => {
 
   // Sync nodes from Convex
   useEffect(() => {
+    console.log('happenings');
+
     if (!nodesData || isDraggingRef.current) return;
 
-    const mappedNodes: FlowNode[] = nodesData.map((n) => ({
+    const mappedNodes: FlowNode[] = nodesData.map(n => ({
       id: n._id,
-      type: "custom",
+      type: 'custom',
       position: { x: n.offsetX, y: n.offsetY },
       data: { node: n },
       sourcePosition: Position.Right,
@@ -78,7 +78,7 @@ const FlowContent = ({ mapId }: { mapId: Id<"maps"> }) => {
   useEffect(() => {
     if (!edgesData || isDraggingRef.current) return;
 
-    const mappedEdges: FlowEdge[] = edgesData.map((e) => ({
+    const mappedEdges: FlowEdge[] = edgesData.map(e => ({
       id: e._id,
       source: e.fromNodeId,
       target: e.toNodeId,
@@ -94,8 +94,8 @@ const FlowContent = ({ mapId }: { mapId: Id<"maps"> }) => {
 
       createEdge({
         mapId: activeMapId,
-        fromNodeId: params.source as Id<"nodes">,
-        toNodeId: params.target as Id<"nodes">,
+        fromNodeId: params.source as Id<'nodes'>,
+        toNodeId: params.target as Id<'nodes'>,
       });
     },
     [createEdge, activeMapId]
@@ -103,8 +103,8 @@ const FlowContent = ({ mapId }: { mapId: Id<"maps"> }) => {
 
   const handleEdgesDelete = useCallback(
     (edgesToDelete: FlowEdge[]) => {
-      edgesToDelete.forEach((edge) => {
-        deleteEdge({ edgeId: edge.id as Id<"edges"> });
+      edgesToDelete.forEach(edge => {
+        deleteEdge({ edgeId: edge.id as Id<'edges'> });
       });
     },
     [deleteEdge]
@@ -119,7 +119,7 @@ const FlowContent = ({ mapId }: { mapId: Id<"maps"> }) => {
       isDraggingRef.current = false;
 
       updateNode({
-        nodeId: node.id as Id<"nodes">,
+        nodeId: node.id as Id<'nodes'>,
         patch: {
           offsetX: Math.round(node.position.x),
           offsetY: Math.round(node.position.y),
@@ -141,7 +141,7 @@ const FlowContent = ({ mapId }: { mapId: Id<"maps"> }) => {
 
   return (
     <ReactFlow<FlowNode, FlowEdge>
-      nodeTypes={nodeTypes}
+      nodeTypes={{ custom: CustomNode }}
       nodes={nodes}
       edges={edges}
       onNodesChange={onNodesChange}

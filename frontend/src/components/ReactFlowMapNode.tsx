@@ -1,10 +1,10 @@
-import { DotsHorizontalIcon } from "@radix-ui/react-icons"
-import { Badge, Box, DropdownMenu, Flex, IconButton } from '@radix-ui/themes'
-import { Handle, type NodeProps, Position } from '@xyflow/react'
-import type { AppFlowNode } from './types.ts'
+import { DotsHorizontalIcon } from '@radix-ui/react-icons';
+import { Badge, Box, DropdownMenu, Flex, IconButton } from '@radix-ui/themes';
+import { Handle, type NodeProps, Position } from '@xyflow/react';
+import type { AppFlowNode } from './types.ts';
 
 export const CustomNode = ({ data }: NodeProps<AppFlowNode>) => {
-  if (!data) return null
+  if (!data) return null;
   return (
     <div
       style={{
@@ -23,9 +23,7 @@ export const CustomNode = ({ data }: NodeProps<AppFlowNode>) => {
           <Badge color="gray" size="2">
             {'N' + data.node.iid}
           </Badge>
-          <Badge  size="2">
-            {'data.tool.label'}
-          </Badge>
+          <Badge size="2">{'data.tool.label'}</Badge>
         </Flex>
       </Box>
 
@@ -34,7 +32,7 @@ export const CustomNode = ({ data }: NodeProps<AppFlowNode>) => {
         <DropdownMenu.Root>
           <DropdownMenu.Trigger>
             <IconButton variant="soft" size="1" color="gray" style={{ pointerEvents: 'auto', background: 'none' }}>
-              <DotsHorizontalIcon/>
+              <DotsHorizontalIcon />
             </IconButton>
           </DropdownMenu.Trigger>
           <DropdownMenu.Content onCloseAutoFocus={e => e.preventDefault()}>
@@ -44,12 +42,7 @@ export const CustomNode = ({ data }: NodeProps<AppFlowNode>) => {
                 <DropdownMenu.Item key={1}></DropdownMenu.Item>
               </DropdownMenu.SubContent>
             </DropdownMenu.Sub>
-            <DropdownMenu.Item
-              onClick={() => {
-              }}
-            >
-              {'Delete'}
-            </DropdownMenu.Item>
+            <DropdownMenu.Item onClick={() => {}}>{'Delete'}</DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Root>
       </Box>
@@ -58,8 +51,8 @@ export const CustomNode = ({ data }: NodeProps<AppFlowNode>) => {
       <div style={{ marginTop: 40 }}>{'Instructions'}</div>
 
       {/* Handles */}
-      <Handle type="target" position={Position.Left}/>
-      <Handle type="source" position={Position.Right}/>
+      <Handle type="target" position={Position.Left} />
+      <Handle type="source" position={Position.Right} />
     </div>
-  )
-}
+  );
+};
