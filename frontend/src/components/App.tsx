@@ -9,7 +9,7 @@ import {
   Text
 } from "@radix-ui/themes";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
-import { ReactFlowMap } from "./ReactFlowMap.tsx"
+import { ReactFlowMap } from "./ReactFlowMap.tsx";
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
@@ -18,6 +18,7 @@ export const App = () => {
     { id: 1, label: "Tool 1" },
     { id: 2, label: "Tool 2" },
   ];
+
   const tabMapInfo = [
     { name: "Map A" },
     { name: "Map B" },
@@ -33,19 +34,23 @@ export const App = () => {
         radius="full"
       >
 
-        {/* App Bar */}
+        {/* App Bar (Floating Overlay) */}
         <Box
           position="fixed"
 
           width="100%"
           height="40px"
           px="3"
-          // bg="panelBackground"
-          // zIndex={50}
+          style={{
+            zIndex: 9999,
+            backgroundColor: "rgba(32, 32, 36, 0.9)", // translucent
+            backdropFilter: "blur(6px)",
+            borderBottom: "1px solid var(--gray-4)"
+          }}
         >
           <Flex direction="row" align="center" justify="between" height="100%">
             {/* Left */}
-            <Flex align="center" gap="2" width={'192px'}>
+            <Flex align="center" gap="2" width={"192px"}>
               <Text size="2" weight="bold" color="gray">
                 mapboard
               </Text>
@@ -98,12 +103,7 @@ export const App = () => {
             </Flex>
           </Flex>
         </Box>
-
-        {/* Push content down */}
-        <Box pt="40px">
-        </Box>
-        <ReactFlowMap mapId={'1'}/>
-
+        <ReactFlowMap mapId="1" />
       </Theme>
     </ConvexProvider>
   );
