@@ -1,6 +1,7 @@
 import { type Connection, Controls, ReactFlow, useEdgesState, useNodesState, useReactFlow } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useMutation, useQuery } from 'convex/react';
+import * as React from 'react';
 import { useEffect } from 'react';
 import { api } from '../../../convex-shared/convex/_generated/api';
 import type { Id } from '../../../convex-shared/convex/_generated/dataModel';
@@ -36,7 +37,7 @@ export const Flow = () => {
 
   useEffect(() => {
     if (nodes.length > 0) {
-      fitView({ padding: 0.1, maxZoom: 1, duration: 0 });
+      void fitView({ padding: 0.1, maxZoom: 1, duration: 0 });
     }
   }, [nodes.length, fitView]);
 
@@ -57,7 +58,7 @@ export const Flow = () => {
   const handleConnect = (params: Connection) => {
     if (!params.source || !params.target) return;
 
-    createEdge({
+    void createEdge({
       mapId: activeMapId,
       fromNodeId: params.source as Id<'nodes'>,
       toNodeId: params.target as Id<'nodes'>,
@@ -66,12 +67,12 @@ export const Flow = () => {
 
   const handleEdgesDelete = (edgesToDelete: AppFlowEdge[]) => {
     edgesToDelete.forEach(edge => {
-      deleteEdge({ edgeId: edge.id as Id<'edges'> });
+      void deleteEdge({ edgeId: edge.id as Id<'edges'> });
     });
   };
 
   const handleNodeDragStop = (_event: React.MouseEvent, node: AppFlowNode) => {
-    updateNode({
+    void updateNode({
       nodeId: node.id as Id<'nodes'>,
       patch: {
         offsetX: Math.round(node.position.x),
@@ -82,7 +83,7 @@ export const Flow = () => {
 
   const handleDoubleClick = (event: React.MouseEvent) => {
     event.preventDefault();
-    fitView({ padding: 0.1, maxZoom: 1, duration: 300 });
+    void fitView({ padding: 0.1, maxZoom: 1, duration: 300 });
   };
 
   if (!nodesData || !edgesData) return null;
