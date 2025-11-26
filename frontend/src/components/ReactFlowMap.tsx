@@ -13,7 +13,7 @@ import { useEffect } from 'react';
 import { api } from '../../../convex-shared/convex/_generated/api';
 import type { Id } from '../../../convex-shared/convex/_generated/dataModel';
 import { CustomNode } from './ReactFlowMapNode';
-import type { AppFlowEdge, AppFlowNode } from "./types.ts"
+import type { AppFlowEdge, AppFlowNode } from './types.ts';
 
 export const ReactFlowMap = ({ mapId }: { mapId: string }) => (
   <div style={{ width: '100vw', height: '100vh' }}>
@@ -26,7 +26,6 @@ export const ReactFlowMap = ({ mapId }: { mapId: string }) => (
 export const FlowContent = ({ mapId }: { mapId: Id<'maps'> }) => {
   const activeMapId: Id<'maps'> = 'j973x4f88r6wxbrgs41r6g2d057w4s9h';
 
-  // Convex data
   const nodesData = useQuery(api.nodes.getNodesOfMap, { mapId: activeMapId });
   const edgesData = useQuery(api.edges.getEdgesOfMap, { mapId: activeMapId });
 
@@ -34,12 +33,10 @@ export const FlowContent = ({ mapId }: { mapId: Id<'maps'> }) => {
   const createEdge = useMutation(api.edges.createEdge);
   const deleteEdge = useMutation(api.edges.deleteEdge);
 
-  // React Flow state
   const { fitView } = useReactFlow();
   const [nodes, setNodes, onNodesChange] = useNodesState<AppFlowNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<AppFlowEdge>([]);
 
-  // Sync nodes from Convex
   useEffect(() => {
     if (!nodesData) return;
 
@@ -53,16 +50,12 @@ export const FlowContent = ({ mapId }: { mapId: Id<'maps'> }) => {
     setNodes(mappedNodes);
   }, [nodesData, setNodes]);
 
-  // Fit view on initial load
   useEffect(() => {
     if (nodes.length > 0) {
-      requestAnimationFrame(() => {
-        fitView({ padding: 0.1, maxZoom: 1, duration: 0 });
-      });
+      fitView({ padding: 0.1, maxZoom: 1, duration: 0 });
     }
   }, [nodes.length, fitView]);
 
-  // Sync edges from Convex
   useEffect(() => {
     if (!edgesData) return;
 
@@ -80,7 +73,6 @@ export const FlowContent = ({ mapId }: { mapId: Id<'maps'> }) => {
   const handleConnect = (params: Connection) => {
     if (!params.source || !params.target) return;
 
-    // Persist to Convex (edges will appear when Convex data updates)
     createEdge({
       mapId: activeMapId,
       fromNodeId: params.source as Id<'nodes'>,
@@ -129,6 +121,5 @@ export const FlowContent = ({ mapId }: { mapId: Id<'maps'> }) => {
     >
       <Controls />
     </ReactFlow>
-
   );
 };
