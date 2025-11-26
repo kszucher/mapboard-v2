@@ -4,10 +4,10 @@ import { useMutation, useQuery } from 'convex/react';
 import { useEffect } from 'react';
 import { api } from '../../../convex-shared/convex/_generated/api';
 import type { Id } from '../../../convex-shared/convex/_generated/dataModel';
-import { CustomNode } from './ReactFlowMapNode';
+import { CustomNode } from './FlowNode.tsx';
 import type { AppFlowEdge, AppFlowNode } from './types.ts';
 
-export const FlowContent = () => {
+export const Flow = () => {
   const activeMapId: Id<'maps'> = 'j973x4f88r6wxbrgs41r6g2d057w4s9h';
 
   const nodesData = useQuery(api.nodes.getNodesOfMap, { mapId: activeMapId });
