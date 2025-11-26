@@ -1,12 +1,4 @@
-import {
-  type Connection,
-  Controls,
-  ReactFlow,
-  ReactFlowProvider,
-  useEdgesState,
-  useNodesState,
-  useReactFlow,
-} from '@xyflow/react';
+import { type Connection, Controls, ReactFlow, useEdgesState, useNodesState, useReactFlow } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useMutation, useQuery } from 'convex/react';
 import { useEffect } from 'react';
@@ -15,15 +7,7 @@ import type { Id } from '../../../convex-shared/convex/_generated/dataModel';
 import { CustomNode } from './ReactFlowMapNode';
 import type { AppFlowEdge, AppFlowNode } from './types.ts';
 
-export const ReactFlowMap = ({ mapId }: { mapId: string }) => (
-  <div style={{ width: '100vw', height: '100vh' }}>
-    <ReactFlowProvider>
-      <FlowContent mapId={mapId as Id<'maps'>} />
-    </ReactFlowProvider>
-  </div>
-);
-
-export const FlowContent = ({ mapId }: { mapId: Id<'maps'> }) => {
+export const FlowContent = () => {
   const activeMapId: Id<'maps'> = 'j973x4f88r6wxbrgs41r6g2d057w4s9h';
 
   const nodesData = useQuery(api.nodes.getNodesOfMap, { mapId: activeMapId });

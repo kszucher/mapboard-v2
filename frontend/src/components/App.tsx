@@ -1,7 +1,8 @@
 import { CaretDownIcon, PlayIcon } from '@radix-ui/react-icons';
 import { Box, Button, DropdownMenu, Flex, IconButton, Text, Theme } from '@radix-ui/themes';
+import { ReactFlowProvider } from '@xyflow/react';
 import { ConvexProvider, ConvexReactClient } from 'convex/react';
-import { ReactFlowMap } from './ReactFlowMap.tsx';
+import { FlowContent } from './ReactFlowMap.tsx';
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
@@ -81,7 +82,11 @@ export const App = () => {
             </Flex>
           </Flex>
         </Box>
-        <ReactFlowMap mapId="1" />
+        <div style={{ width: '100vw', height: '100vh' }}>
+          <ReactFlowProvider>
+            <FlowContent />
+          </ReactFlowProvider>
+        </div>
       </Theme>
     </ConvexProvider>
   );
