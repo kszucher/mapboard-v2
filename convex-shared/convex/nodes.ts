@@ -1,5 +1,6 @@
 import { v } from "convex/values"
 import { query, mutation } from "./_generated/server"
+import { nodeFields } from './schema';
 
 export const getNodesOfMap = query({
   args: { mapId: v.id("maps") },
@@ -12,16 +13,7 @@ export const getNodesOfMap = query({
 });
 
 export const createNode = mutation({
-  args: {
-    mapId: v.id("maps"),
-    toolId: v.id("tools"),
-    iid: v.number(),
-    offsetX: v.number(),
-    offsetY: v.number(),
-    isProcessing: v.boolean(),
-    inputValue: v.optional(v.any()),
-    outputValue: v.optional(v.any()),
-  },
+  args: nodeFields,
   handler: async (ctx, args) => {
     return await ctx.db.insert("nodes", args);
   },

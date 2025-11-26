@@ -14,38 +14,29 @@ export const createMap = mutation(async ({ db }) => {
     userId,
   });
 
-  // 3. Create tools
-  const toolAId = await db.insert("tools", {
-    width: 100,
-    height: 100,
-    color: "blue",
-    label: "Tool A",
-  });
-
-  const toolBId = await db.insert("tools", {
-    width: 100,
-    height: 100,
-    color: "red",
-    label: "Tool B",
-  });
-
   // 4. Create nodes
-  const nodeAId = await db.insert("nodes", {
+  const nodeAId = await db.insert('nodes', {
     mapId,
-    toolId: toolAId,
     iid: 1,
     offsetX: 100,
     offsetY: 100,
     isProcessing: false,
+    width: 100,
+    height: 200,
+    color: 'gray',
+    label: 'a',
   });
 
-  const nodeBId = await db.insert("nodes", {
+  const nodeBId = await db.insert('nodes', {
     mapId,
-    toolId: toolBId,
     iid: 2,
     offsetX: 300,
     offsetY: 100,
     isProcessing: false,
+    width: 100,
+    height: 200,
+    color: 'gray',
+    label: 'b',
   });
 
   // 5. Create edge

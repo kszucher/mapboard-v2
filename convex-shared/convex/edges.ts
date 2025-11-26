@@ -1,5 +1,6 @@
 import { v } from "convex/values"
 import { mutation, query } from "./_generated/server"
+import { edgeFields } from './schema';
 
 export const getEdgesOfMap = query({
   args: { mapId: v.id("maps") },
@@ -12,12 +13,7 @@ export const getEdgesOfMap = query({
 })
 
 export const createEdge = mutation({
-  args: {
-    mapId: v.id("maps"),
-    fromNodeId: v.id("nodes"),
-    toNodeId: v.id("nodes"),
-    schema: v.optional(v.any()),
-  },
+  args: edgeFields,
   handler: async (ctx, args) => {
     return await ctx.db.insert("edges", args)
   },

@@ -1,8 +1,6 @@
 import {
   type Connection,
   Controls,
-  type Edge,
-  type Node,
   ReactFlow,
   ReactFlowProvider,
   useEdgesState,
@@ -15,10 +13,7 @@ import { useEffect } from 'react';
 import { api } from '../../../convex-shared/convex/_generated/api';
 import type { Id } from '../../../convex-shared/convex/_generated/dataModel';
 import { CustomNode } from './ReactFlowMapNode';
-
-type NodeData = { node: { _id: string; offsetX: number; offsetY: number } };
-type FlowNode = Node<NodeData>;
-type FlowEdge = Edge;
+import type { AppFlowEdge, AppFlowNode } from "./types.ts"
 
 export const ReactFlowMap = ({ mapId }: { mapId: string }) => (
   <div style={{ width: '100vw', height: '100vh' }}>
@@ -29,25 +24,26 @@ export const ReactFlowMap = ({ mapId }: { mapId: string }) => (
 );
 
 export const FlowContent = ({ mapId }: { mapId: Id<'maps'> }) => {
-  const activeMapId: Id<'maps'> = 'j979dj57ksrmzqvd4n83m7d3697w0fxk';
+  const activeMapId: Id<'maps'> = 'j973x4f88r6wxbrgs41r6g2d057w4s9h';
 
   // Convex data
   const nodesData = useQuery(api.nodes.getNodesOfMap, { mapId: activeMapId });
   const edgesData = useQuery(api.edges.getEdgesOfMap, { mapId: activeMapId });
+
   const updateNode = useMutation(api.nodes.updateNode);
   const createEdge = useMutation(api.edges.createEdge);
   const deleteEdge = useMutation(api.edges.deleteEdge);
 
   // React Flow state
   const { fitView } = useReactFlow();
-  const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<AppFlowNode>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<AppFlowEdge>([]);
 
   // Sync nodes from Convex
   useEffect(() => {
     if (!nodesData) return;
 
-    const mappedNodes: FlowNode[] = nodesData.map(n => ({
+    const mappedNodes: AppFlowNode[] = nodesData.map(n => ({
       id: n._id,
       type: 'custom',
       position: { x: n.offsetX, y: n.offsetY },
@@ -70,7 +66,7 @@ export const FlowContent = ({ mapId }: { mapId: Id<'maps'> }) => {
   useEffect(() => {
     if (!edgesData) return;
 
-    const mappedEdges: FlowEdge[] = edgesData.map(e => ({
+    const mappedEdges: AppFlowEdge[] = edgesData.map(e => ({
       id: e._id,
       source: e.fromNodeId,
       target: e.toNodeId,
@@ -92,13 +88,13 @@ export const FlowContent = ({ mapId }: { mapId: Id<'maps'> }) => {
     });
   };
 
-  const handleEdgesDelete = (edgesToDelete: FlowEdge[]) => {
+  const handleEdgesDelete = (edgesToDelete: AppFlowEdge[]) => {
     edgesToDelete.forEach(edge => {
       deleteEdge({ edgeId: edge.id as Id<'edges'> });
     });
   };
 
-  const handleNodeDragStop = (_event: React.MouseEvent, node: FlowNode) => {
+  const handleNodeDragStop = (_event: React.MouseEvent, node: AppFlowNode) => {
     updateNode({
       nodeId: node.id as Id<'nodes'>,
       patch: {
@@ -116,7 +112,7 @@ export const FlowContent = ({ mapId }: { mapId: Id<'maps'> }) => {
   if (!nodesData || !edgesData) return null;
 
   return (
-    <ReactFlow<FlowNode, FlowEdge>
+    <ReactFlow<AppFlowNode, AppFlowEdge>
       nodeTypes={{ custom: CustomNode }}
       nodes={nodes}
       edges={edges}
@@ -130,7 +126,6 @@ export const FlowContent = ({ mapId }: { mapId: Id<'maps'> }) => {
       zoomOnScroll={false}
       zoomOnDoubleClick={false}
       panOnScroll
-      deleteKeyCode={46} // 46 = Delete key
     >
       <Controls />
     </ReactFlow>
