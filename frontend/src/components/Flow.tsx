@@ -3,8 +3,8 @@ import '@xyflow/react/dist/style.css';
 import { useMutation, useQuery } from 'convex/react';
 import * as React from 'react';
 import { useEffect } from 'react';
-import { api } from '../../../convex-shared/convex/_generated/api';
-import type { Id } from '../../../convex-shared/convex/_generated/dataModel';
+import { api } from '../../../convex/convex/_generated/api';
+import type { Id } from '../../../convex/convex/_generated/dataModel';
 import { CustomNode } from './FlowNode.tsx';
 import type { AppFlowEdge, AppFlowNode } from './types.ts';
 

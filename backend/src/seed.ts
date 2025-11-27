@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
 
 import { ConvexHttpClient } from 'convex/browser';
-import { api } from '../../convex-shared/convex/_generated/api.js';
+import { api } from '../../convex/convex/_generated/api.js';
 
 // Debug: check that the URL is loaded
 if (!process.env.CONVEX_URL) {
