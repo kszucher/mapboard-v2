@@ -1,16 +1,13 @@
-import { CaretDownIcon, PlayIcon } from '@radix-ui/react-icons';
+import { CaretDownIcon, MixIcon, PlayIcon } from '@radix-ui/react-icons';
 import { Box, Button, DropdownMenu, Flex, IconButton, Text, Theme } from '@radix-ui/themes';
 import { ReactFlowProvider } from '@xyflow/react';
 import { ConvexProvider, ConvexReactClient } from 'convex/react';
+import { NODE_TYPES } from '../../../convex/convex/schema.ts';
 import { Flow } from './Flow.tsx';
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
 export const App = () => {
-  const tools = [
-    { id: 1, label: 'Tool 1' },
-    { id: 2, label: 'Tool 2' },
-  ];
 
   const tabMapInfo = [{ name: 'Map A' }, { name: 'Map B' }];
 
@@ -66,18 +63,18 @@ export const App = () => {
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger>
                   <IconButton variant="solid" color="gray" radius="full">
-                    <PlayIcon />
+                    <MixIcon width="20" height="20" />
                   </IconButton>
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Content onCloseAutoFocus={e => e.preventDefault()}>
-                  {tools.map(tool => (
-                    <DropdownMenu.Item key={tool.id}>{tool.label}</DropdownMenu.Item>
-                  ))}
+                  {NODE_TYPES.map(((nodeType, id) => (
+                    <DropdownMenu.Item key={id}>{nodeType}</DropdownMenu.Item>
+                  )))}
                 </DropdownMenu.Content>
               </DropdownMenu.Root>
 
               <IconButton variant="solid" color="gray" radius="full" onClick={() => console.log('play...')}>
-                <PlayIcon />
+                <PlayIcon width="20" height="20" />
               </IconButton>
             </Flex>
           </Flex>

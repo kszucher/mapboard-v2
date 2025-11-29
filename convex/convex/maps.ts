@@ -1,5 +1,4 @@
 import { query, mutation } from "./_generated/server"
-import { v } from "convex/values";
 
 export const createMap = mutation(async ({ db }) => {
   // 1. Create a user
@@ -25,7 +24,8 @@ export const createMap = mutation(async ({ db }) => {
     height: 200,
     color: 'gray',
     label: 'a',
-    numHandles: 2
+    numHandles: 2,
+    nodeType: "AGENT"
   });
 
   const nodeBId = await db.insert('nodes', {
@@ -38,7 +38,8 @@ export const createMap = mutation(async ({ db }) => {
     height: 200,
     color: 'gray',
     label: 'b',
-    numHandles: 1
+    numHandles: 1,
+    nodeType: "AGENT"
   });
 
   const nodeCId = await db.insert('nodes', {
@@ -51,7 +52,9 @@ export const createMap = mutation(async ({ db }) => {
     height: 200,
     color: 'gray',
     label: 'b',
-    numHandles: 1
+    numHandles: 1,
+    nodeType: "AGENT"
+
   });
 
   // 5. Create edges

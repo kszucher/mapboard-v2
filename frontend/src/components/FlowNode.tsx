@@ -17,8 +17,6 @@ export const CustomNode = ({ data }: NodeProps<AppFlowNode>) => {
         padding: 12,
         minWidth: 200,
         minHeight: 80,
-        transition: 'left 0.3s, top 0.3s',
-        transitionTimingFunction: 'cubic-bezier(0.0,0.0,0.58,1.0)',
       }}
     >
       {/* Top-left badges */}

@@ -1,5 +1,5 @@
 import { defineSchema, defineTable } from 'convex/server';
-import { v } from 'convex/values';
+import { v, Infer } from "convex/values";
 
 export const ColorMode = v.union(v.literal('DARK'), v.literal('LIGHT'));
 
@@ -32,6 +32,24 @@ export const Color = v.union(
   v.literal('sky')
 );
 
+export const NodeType = v.union(
+  v.literal('START'),
+  v.literal('LOGIC'),
+  v.literal('AGENT'),
+  v.literal('LOGICAL_SWITCH'),
+  v.literal('AGENTIC_SWITCH')
+);
+
+export type NodeTypeValue = Infer<typeof NodeType>;
+
+export const NODE_TYPES: NodeTypeValue[] = [
+  "START",
+  "LOGIC",
+  "AGENT",
+  "LOGICAL_SWITCH",
+  "AGENTIC_SWITCH",
+];
+
 export const userFields = {
   colorMode: ColorMode,
   name: v.string(),
@@ -57,6 +75,7 @@ export const nodeFields = {
   inputSchema: v.optional(v.any()),
   outputSchema: v.optional(v.any()),
   numHandles: v.number(),
+  nodeType: NodeType,
 };
 
 export const edgeFields = {

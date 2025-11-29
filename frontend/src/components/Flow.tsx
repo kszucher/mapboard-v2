@@ -9,7 +9,7 @@ import { CustomNode } from './FlowNode.tsx';
 import type { AppFlowEdge, AppFlowNode } from './types.ts';
 
 export const Flow = () => {
-  const activeMapId: Id<'maps'> = 'j971j0xamy196rq9r5f9djr3657waxbv';
+  const activeMapId: Id<'maps'> = 'j972jys6e4qata01jzwmsp2a457wamnd';
 
   const nodesData = useQuery(api.nodes.getNodesOfMap, { mapId: activeMapId });
   const edgesData = useQuery(api.edges.getEdgesOfMap, { mapId: activeMapId });
