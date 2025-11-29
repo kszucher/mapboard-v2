@@ -9,7 +9,7 @@ import { CustomNode } from './FlowNode.tsx';
 import type { AppFlowEdge, AppFlowNode } from './types.ts';
 
 export const Flow = () => {
-  const activeMapId: Id<'maps'> = 'j973x4f88r6wxbrgs41r6g2d057w4s9h';
+  const activeMapId: Id<'maps'> = 'j971j0xamy196rq9r5f9djr3657waxbv';
 
   const nodesData = useQuery(api.nodes.getNodesOfMap, { mapId: activeMapId });
   const edgesData = useQuery(api.edges.getEdgesOfMap, { mapId: activeMapId });
@@ -48,6 +48,7 @@ export const Flow = () => {
       id: e._id,
       source: e.fromNodeId,
       target: e.toNodeId,
+      sourceHandle: String(e.handleIndex),
       animated: true,
       style: { stroke: '#fff', strokeWidth: 2 },
     }));
@@ -57,11 +58,11 @@ export const Flow = () => {
 
   const handleConnect = (params: Connection) => {
     if (!params.source || !params.target) return;
-
     void createEdge({
       mapId: activeMapId,
       fromNodeId: params.source as Id<'nodes'>,
       toNodeId: params.target as Id<'nodes'>,
+      handleIndex: Number(params.sourceHandle),
     });
   };
 

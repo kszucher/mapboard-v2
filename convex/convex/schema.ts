@@ -56,12 +56,14 @@ export const nodeFields = {
   label: v.string(),
   inputSchema: v.optional(v.any()),
   outputSchema: v.optional(v.any()),
+  numHandles: v.number(),
 };
 
 export const edgeFields = {
   mapId: v.id('maps'),
   fromNodeId: v.id('nodes'),
   toNodeId: v.id('nodes'),
+  handleIndex: v.number(),
 };
 
 export const tabFields = {

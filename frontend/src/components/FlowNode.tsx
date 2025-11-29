@@ -5,6 +5,10 @@ import type { AppFlowNode } from './types.ts';
 
 export const CustomNode = ({ data }: NodeProps<AppFlowNode>) => {
   if (!data) return null;
+
+  const SPACING = 24;
+  const BASE_OFFSET = 50;
+
   return (
     <div
       style={{
@@ -50,9 +54,21 @@ export const CustomNode = ({ data }: NodeProps<AppFlowNode>) => {
       {/* Node body */}
       <div style={{ marginTop: 40 }}>{'Instructions'}</div>
 
-      {/* Handles */}
+      {/* Left handle */}
       <Handle type="target" position={Position.Left} />
-      <Handle type="source" position={Position.Right} />
+
+      {/* Right handles */}
+      {Array.from({ length: data.node.numHandles }).map((_, i) => (
+        <Handle
+          key={i}
+          id={String(i)}
+          type="source"
+          position={Position.Right}
+          style={{
+            top: BASE_OFFSET + i * SPACING,
+          }}
+        />
+      ))}
     </div>
   );
 };

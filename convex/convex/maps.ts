@@ -25,6 +25,7 @@ export const createMap = mutation(async ({ db }) => {
     height: 200,
     color: 'gray',
     label: 'a',
+    numHandles: 2
   });
 
   const nodeBId = await db.insert('nodes', {
@@ -37,13 +38,35 @@ export const createMap = mutation(async ({ db }) => {
     height: 200,
     color: 'gray',
     label: 'b',
+    numHandles: 1
   });
 
-  // 5. Create edge
+  const nodeCId = await db.insert('nodes', {
+    mapId,
+    iid: 2,
+    offsetX: 300,
+    offsetY: 300,
+    isProcessing: false,
+    width: 100,
+    height: 200,
+    color: 'gray',
+    label: 'b',
+    numHandles: 1
+  });
+
+  // 5. Create edges
   await db.insert("edges", {
     mapId,
     fromNodeId: nodeAId,
     toNodeId: nodeBId,
+    handleIndex: 0
+  });
+
+  await db.insert("edges", {
+    mapId,
+    fromNodeId: nodeAId,
+    toNodeId: nodeCId,
+    handleIndex: 1
   });
 
   return { userId, mapId, nodes: [nodeAId, nodeBId] };
