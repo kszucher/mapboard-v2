@@ -1,10 +1,17 @@
 import { DotsHorizontalIcon } from '@radix-ui/react-icons';
 import { Badge, Box, DropdownMenu, Flex, IconButton } from '@radix-ui/themes';
 import { Handle, type NodeProps, Position } from '@xyflow/react';
+import { memo, useRef } from 'react';
 import type { AppFlowNode } from './types.ts';
 
-export const CustomNode = ({ data }: NodeProps<AppFlowNode>) => {
+const CustomNodeComponent = ({ data }: NodeProps<AppFlowNode>) => {
   if (!data) return null;
+
+  const renderCount = useRef(0);
+  renderCount.current++;
+
+  console.log('ACTUAL RENDER:', renderCount.current, data.node._id);
+
 
   const SPACING = 24;
   const BASE_OFFSET = 50;
@@ -19,7 +26,6 @@ export const CustomNode = ({ data }: NodeProps<AppFlowNode>) => {
         minHeight: 80,
       }}
     >
-      {/* Top-left badges */}
       <Box position="absolute" top="8px" left="8px">
         <Flex direction="row" gap="4px" align="center">
           <Badge color="gray" size="2">
@@ -29,7 +35,6 @@ export const CustomNode = ({ data }: NodeProps<AppFlowNode>) => {
         </Flex>
       </Box>
 
-      {/* Top-right dots button */}
       <Box position="absolute" top="8px" right="8px">
         <DropdownMenu.Root>
           <DropdownMenu.Trigger>
@@ -39,7 +44,7 @@ export const CustomNode = ({ data }: NodeProps<AppFlowNode>) => {
           </DropdownMenu.Trigger>
           <DropdownMenu.Content onCloseAutoFocus={e => e.preventDefault()}>
             <DropdownMenu.Sub>
-              <DropdownMenu.SubTrigger className="DropdownMenuSubTrigger">{'Connect To...'}</DropdownMenu.SubTrigger>
+              <DropdownMenu.SubTrigger>{'Connect To...'}</DropdownMenu.SubTrigger>
               <DropdownMenu.SubContent>
                 <DropdownMenu.Item key={1}></DropdownMenu.Item>
               </DropdownMenu.SubContent>
@@ -49,13 +54,10 @@ export const CustomNode = ({ data }: NodeProps<AppFlowNode>) => {
         </DropdownMenu.Root>
       </Box>
 
-      {/* Node body */}
       <div style={{ marginTop: 40 }}>{'Instructions'}</div>
 
-      {/* Left handle */}
       <Handle type="target" position={Position.Left} />
 
-      {/* Right handles */}
       {Array.from({ length: data.node.numHandles }).map((_, i) => (
         <Handle
           key={i}
@@ -70,3 +72,7 @@ export const CustomNode = ({ data }: NodeProps<AppFlowNode>) => {
     </div>
   );
 };
+
+export const CustomNode = memo(CustomNodeComponent, (prev, next) => {
+  return prev.data === next.data;
+});

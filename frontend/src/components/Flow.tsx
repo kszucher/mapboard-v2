@@ -1,8 +1,7 @@
 import { type Connection, Controls, ReactFlow, useEdgesState, useNodesState, useReactFlow } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useMutation, useQuery } from 'convex/react';
-import * as React from 'react';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { api } from '../../../convex/convex/_generated/api';
 import type { Id } from '../../../convex/convex/_generated/dataModel';
 import { CustomNode } from './FlowNode.tsx';
@@ -22,16 +21,16 @@ export const Flow = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState<AppFlowNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<AppFlowEdge>([]);
 
+  const nodeTypes = useMemo(() => ({ custom: CustomNode }), []);
+
   useEffect(() => {
     if (!nodesData) return;
-
     const mappedNodes: AppFlowNode[] = nodesData.map(n => ({
       id: n._id,
       type: 'custom',
       position: { x: n.offsetX, y: n.offsetY },
       data: { node: n },
     }));
-
     setNodes(mappedNodes);
   }, [nodesData, setNodes]);
 
@@ -43,7 +42,6 @@ export const Flow = () => {
 
   useEffect(() => {
     if (!edgesData) return;
-
     const mappedEdges: AppFlowEdge[] = edgesData.map(e => ({
       id: e._id,
       source: e.fromNodeId,
@@ -52,7 +50,6 @@ export const Flow = () => {
       animated: true,
       style: { stroke: '#fff', strokeWidth: 2 },
     }));
-
     setEdges(mappedEdges);
   }, [edgesData, setEdges]);
 
@@ -91,13 +88,13 @@ export const Flow = () => {
 
   return (
     <ReactFlow<AppFlowNode, AppFlowEdge>
-      nodeTypes={{ custom: CustomNode }}
+      nodeTypes={nodeTypes}
       nodes={nodes}
       edges={edges}
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
       onConnect={handleConnect}
-      onEdgesDelete={handleEdgesDelete} // already here
+      onEdgesDelete={handleEdgesDelete}
       onNodeDragStop={handleNodeDragStop}
       onDoubleClick={handleDoubleClick}
       colorMode="dark"
