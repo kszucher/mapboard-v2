@@ -1,10 +1,43 @@
 import { CaretDownIcon, MixIcon, PlayIcon } from '@radix-ui/react-icons';
 import { Box, Button, DropdownMenu, Flex, IconButton, Text } from '@radix-ui/themes';
 import { ReactFlowProvider } from '@xyflow/react';
-import { NODE_TYPES } from '../../../convex/convex/schema.ts';
+import { useMutation } from 'convex/react';
+import { api } from '../../../convex/convex/_generated/api';
+import type { Id } from '../../../convex/convex/_generated/dataModel';
+import { NODE_TYPES, type NodeTypeValue } from '../../../convex/convex/schema.ts';
 import { Flow } from './Flow.tsx';
 
 export const Frame = () => {
+  const activeMapId: Id<'maps'> = 'j972jys6e4qata01jzwmsp2a457wamnd';
+
+  const createNode = useMutation(api.nodes.createNode);
+
+  const handleCreateNode = (mapId: Id<'maps'>, nodeTypeValue: NodeTypeValue) => {
+    switch (nodeTypeValue) {
+      case 'START':
+        void createNode({
+          mapId,
+          iid: 1,
+          width: 200,
+          height: 120,
+          offsetX: 0,
+          offsetY: 50,
+          color: 'yellow',
+          label: 'Start',
+          numHandles: 2,
+          nodeType: nodeTypeValue,
+          isProcessing: false,
+
+          // Optional fields:
+          inputValue: null,
+          outputValue: null,
+          inputSchema: null,
+          outputSchema: null,
+        });
+        break;
+    }
+  };
+
   const tabMapInfo = [{ name: 'Map A' }, { name: 'Map B' }];
 
   return (
@@ -62,8 +95,10 @@ export const Frame = () => {
                 </IconButton>
               </DropdownMenu.Trigger>
               <DropdownMenu.Content onCloseAutoFocus={e => e.preventDefault()}>
-                {NODE_TYPES.map((nodeType, id) => (
-                  <DropdownMenu.Item key={id}>{nodeType}</DropdownMenu.Item>
+                {NODE_TYPES.map((nodeTypeValue, id) => (
+                  <DropdownMenu.Item onClick={() => handleCreateNode(activeMapId, nodeTypeValue)} key={id}>
+                    {nodeTypeValue}
+                  </DropdownMenu.Item>
                 ))}
               </DropdownMenu.Content>
             </DropdownMenu.Root>

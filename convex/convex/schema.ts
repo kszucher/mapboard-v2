@@ -3,6 +3,10 @@ import { v, Infer } from "convex/values";
 
 export const ColorMode = v.union(v.literal('DARK'), v.literal('LIGHT'));
 
+export type ColorModeValue = Infer<typeof ColorMode>;
+
+export const COLOR_MODES: ColorModeValue[] = ColorMode.members.map(m => m.value);
+
 export const Color = v.union(
   v.literal('gray'),
   v.literal('gold'),
@@ -32,6 +36,10 @@ export const Color = v.union(
   v.literal('sky')
 );
 
+export type ColorValue = Infer<typeof Color>;
+
+export const COLORS: ColorValue[] = Color.members.map(m => m.value);
+
 export const NodeType = v.union(
   v.literal('START'),
   v.literal('LOGIC'),
@@ -42,13 +50,7 @@ export const NodeType = v.union(
 
 export type NodeTypeValue = Infer<typeof NodeType>;
 
-export const NODE_TYPES: NodeTypeValue[] = [
-  "START",
-  "LOGIC",
-  "AGENT",
-  "LOGICAL_SWITCH",
-  "AGENTIC_SWITCH",
-];
+export const NODE_TYPES: NodeTypeValue[] = NodeType.members.map(m => m.value);
 
 export const userFields = {
   colorMode: ColorMode,
@@ -63,19 +65,19 @@ export const mapFields = {
 export const nodeFields = {
   mapId: v.id('maps'),
   iid: v.number(),
+  width: v.number(),
+  height: v.number(),
   offsetX: v.number(),
   offsetY: v.number(),
+  color: Color,
+  label: v.string(),
+  numHandles: v.number(),
+  nodeType: NodeType,
   isProcessing: v.boolean(),
   inputValue: v.optional(v.any()),
   outputValue: v.optional(v.any()),
-  width: v.number(),
-  height: v.number(),
-  color: Color,
-  label: v.string(),
   inputSchema: v.optional(v.any()),
   outputSchema: v.optional(v.any()),
-  numHandles: v.number(),
-  nodeType: NodeType,
 };
 
 export const edgeFields = {
