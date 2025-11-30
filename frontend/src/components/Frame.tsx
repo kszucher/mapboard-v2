@@ -8,7 +8,7 @@ import { NODE_TYPES, type NodeTypeValue } from '../../../convex/convex/schema.ts
 import { Flow } from './Flow.tsx';
 
 export const Frame = () => {
-  const userId = 'js75hpa1y537vztp9zgnmxmb2d7wc4hh' as Id<"users">;
+  const userId = 'js75hpa1y537vztp9zgnmxmb2d7wc4hh' as Id<'users'>;
 
   const selectedMapId = useQuery(api.users.getActiveMapId, { userId });
 
@@ -95,12 +95,7 @@ export const Frame = () => {
             </Button>
 
             {/* New Map Button */}
-            <IconButton
-              variant="soft"
-              color="gray"
-              radius="full"
-              onClick={handleCreateMap}
-            >
+            <IconButton variant="soft" color="gray" radius="full" onClick={handleCreateMap}>
               +{/* or any icon you like */}
             </IconButton>
           </Flex>
@@ -116,10 +111,7 @@ export const Frame = () => {
               {isMapSelected && (
                 <DropdownMenu.Content onCloseAutoFocus={e => e.preventDefault()}>
                   {NODE_TYPES.map((nodeTypeValue, id) => (
-                    <DropdownMenu.Item
-                      onClick={() => handleCreateNode(selectedMapId, nodeTypeValue)}
-                      key={id}
-                    >
+                    <DropdownMenu.Item onClick={() => handleCreateNode(selectedMapId, nodeTypeValue)} key={id}>
                       {nodeTypeValue}
                     </DropdownMenu.Item>
                   ))}
@@ -127,12 +119,7 @@ export const Frame = () => {
               )}
             </DropdownMenu.Root>
 
-            <IconButton
-              variant="solid"
-              color="gray"
-              radius="full"
-              onClick={() => console.log('play...')}
-            >
+            <IconButton variant="solid" color="gray" radius="full" onClick={() => console.log('play...')}>
               <PlayIcon width="20" height="20" />
             </IconButton>
           </Flex>
@@ -143,7 +130,7 @@ export const Frame = () => {
       {isMapSelected && (
         <div style={{ width: '100vw', height: '100vh' }}>
           <ReactFlowProvider>
-            <Flow selectedMapId={selectedMapId }/>
+            <Flow selectedMapId={selectedMapId} />
           </ReactFlowProvider>
         </div>
       )}

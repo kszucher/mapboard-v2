@@ -7,8 +7,7 @@ import type { Id } from '../../../convex/convex/_generated/dataModel';
 import { CustomNode } from './FlowNode.tsx';
 import type { AppFlowEdge, AppFlowNode } from './types.ts';
 
-export const Flow = ({selectedMapId}: {selectedMapId: Id<'maps'>}) => {
-
+export const Flow = ({ selectedMapId }: { selectedMapId: Id<'maps'> }) => {
   const nodesData = useQuery(api.nodes.getNodesOfMap, { mapId: selectedMapId });
   const edgesData = useQuery(api.edges.getEdgesOfMap, { mapId: selectedMapId });
 

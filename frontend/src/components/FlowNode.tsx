@@ -12,7 +12,6 @@ const CustomNodeComponent = ({ data }: NodeProps<AppFlowNode>) => {
 
   console.log('ACTUAL RENDER:', renderCount.current, data.node._id);
 
-
   const SPACING = 24;
   const BASE_OFFSET = 50;
 
@@ -28,10 +27,12 @@ const CustomNodeComponent = ({ data }: NodeProps<AppFlowNode>) => {
     >
       <Box position="absolute" top="8px" left="8px">
         <Flex direction="row" gap="4px" align="center">
-          <Badge color={data.node.color} size="2">
+          <Badge color={'gray'} size="2">
             {'N' + data.node.iid}
           </Badge>
-          <Badge size="2">{'data.tool.label'}</Badge>
+          <Badge color={data.node.color} size="2">
+            {data.node.label}
+          </Badge>
         </Flex>
       </Box>
 
