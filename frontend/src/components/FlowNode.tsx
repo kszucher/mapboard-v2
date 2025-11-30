@@ -1,10 +1,14 @@
 import { DotsHorizontalIcon } from '@radix-ui/react-icons';
 import { Badge, Box, DropdownMenu, Flex, IconButton } from '@radix-ui/themes';
 import { Handle, type NodeProps, Position } from '@xyflow/react';
+import { useMutation } from 'convex/react';
 import { memo, useRef } from 'react';
+import { api } from '../../../convex/convex/_generated/api';
 import type { AppFlowNode } from './types.ts';
 
 const CustomNodeComponent = ({ data }: NodeProps<AppFlowNode>) => {
+  const deleteNode = useMutation(api.nodes.deleteNode);
+
   if (!data) return null;
 
   const renderCount = useRef(0);
@@ -50,7 +54,9 @@ const CustomNodeComponent = ({ data }: NodeProps<AppFlowNode>) => {
                 <DropdownMenu.Item key={1}></DropdownMenu.Item>
               </DropdownMenu.SubContent>
             </DropdownMenu.Sub>
-            <DropdownMenu.Item onClick={() => {}}>{'Delete'}</DropdownMenu.Item>
+            <DropdownMenu.Item onClick={() => deleteNode({ nodeId: data.node._id })}>
+              {'Delete'}
+            </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Root>
       </Box>

@@ -13,7 +13,7 @@ export const Frame = () => {
   const selectedMapId = useQuery(api.users.getActiveMapId, { userId });
 
   const createNode = useMutation(api.nodes.createNode);
-  const createMap = useMutation(api.maps.createMap); // <-- new mutation
+  const createMap = useMutation(api.maps.createMap);
 
   const handleCreateNode = (mapId: Id<'maps'>, nodeTypeValue: NodeTypeValue) => {
     if (!mapId) return;
