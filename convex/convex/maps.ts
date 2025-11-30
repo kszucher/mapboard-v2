@@ -13,64 +13,6 @@ export const createMap = mutation(async ({ db }) => {
     userId,
   });
 
-  // 4. Create nodes
-  const nodeAId = await db.insert('nodes', {
-    mapId,
-    iid: 1,
-    offsetX: 100,
-    offsetY: 100,
-    isProcessing: false,
-    width: 100,
-    height: 200,
-    color: 'gray',
-    label: 'a',
-    numHandles: 2,
-    nodeType: "AGENT"
-  });
 
-  const nodeBId = await db.insert('nodes', {
-    mapId,
-    iid: 2,
-    offsetX: 300,
-    offsetY: 100,
-    isProcessing: false,
-    width: 100,
-    height: 200,
-    color: 'gray',
-    label: 'b',
-    numHandles: 1,
-    nodeType: "AGENT"
-  });
-
-  const nodeCId = await db.insert('nodes', {
-    mapId,
-    iid: 2,
-    offsetX: 300,
-    offsetY: 300,
-    isProcessing: false,
-    width: 100,
-    height: 200,
-    color: 'gray',
-    label: 'b',
-    numHandles: 1,
-    nodeType: "AGENT"
-
-  });
-
-  // 5. Create edges
-  await db.insert("edges", {
-    mapId,
-    fromNodeId: nodeAId,
-    toNodeId: nodeBId,
-    handleIndex: 0
-  });
-
-  await db.insert("edges", {
-    mapId,
-    fromNodeId: nodeAId,
-    toNodeId: nodeCId,
-    handleIndex: 1
-  });
-
-  return { userId, mapId, nodes: [nodeAId, nodeBId] };
+  return { userId, mapId };
 });
