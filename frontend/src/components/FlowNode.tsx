@@ -28,7 +28,7 @@ const CustomNodeComponent = ({ data }: NodeProps<AppFlowNode>) => {
     >
       <Box position="absolute" top="8px" left="8px">
         <Flex direction="row" gap="4px" align="center">
-          <Badge color="gray" size="2">
+          <Badge color={data.node.color} size="2">
             {'N' + data.node.iid}
           </Badge>
           <Badge size="2">{'data.tool.label'}</Badge>

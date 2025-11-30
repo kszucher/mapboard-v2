@@ -1,18 +1,21 @@
-import { query, mutation } from "./_generated/server"
+import { mutation } from "./_generated/server";
+import { v } from "convex/values";
 
-export const createMap = mutation(async ({ db }) => {
-  // 1. Create a user
-  const userId = await db.insert("users", {
-    name: "Alice",
-    colorMode: "DARK",
-  });
+export const createMap = mutation({
+  args: {
+    userId: v.id("users"),
+    mapName: v.string(),
+  },
+  handler: async (ctx, { userId, mapName }) => {
+    const mapId = await ctx.db.insert("maps", {
+      name: mapName,
+      userId,
+    });
 
-  // 2. Create a map
-  const mapId = await db.insert("maps", {
-    name: "My First Map",
-    userId,
-  });
+    await ctx.db.patch(userId, {
+      selectedMapId: mapId,
+    });
 
-
-  return { userId, mapId };
+    return mapId;
+  },
 });

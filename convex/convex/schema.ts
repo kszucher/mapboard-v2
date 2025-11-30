@@ -55,6 +55,7 @@ export const NODE_TYPES: NodeTypeValue[] = NodeType.members.map(m => m.value);
 export const userFields = {
   colorMode: ColorMode,
   name: v.string(),
+  selectedMapId: v.optional(v.id('maps')),
 };
 
 export const mapFields = {
@@ -87,15 +88,10 @@ export const edgeFields = {
   handleIndex: v.number(),
 };
 
-export const tabFields = {
-  userId: v.id('users'),
-  mapIds: v.array(v.id('maps')),
-};
-
 export default defineSchema({
   users: defineTable(userFields),
 
-  maps: defineTable(mapFields).index('by_userId', ['userId']),
+  maps: defineTable(mapFields).index('by_userId', ['userId']), // 1:N index
 
   nodes: defineTable(nodeFields).index('by_mapId', ['mapId']),
 
@@ -103,6 +99,4 @@ export default defineSchema({
     .index('by_mapId', ['mapId'])
     .index('by_fromNodeId', ['fromNodeId'])
     .index('by_toNodeId', ['toNodeId']),
-
-  tabs: defineTable(tabFields).index('by_userId', ['userId']),
 });

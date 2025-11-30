@@ -22,8 +22,8 @@ const client = new ConvexHttpClient(process.env.CONVEX_URL);
 
 async function main() {
   try {
-    const { mapId } = await client.mutation(api.maps.createMap, {});
-    console.log('Created map with id:', mapId);
+    const { userId } = await client.mutation(api.users.createUser, {userName: 'Kryss'});
+    console.log('Created user with id:', userId);
   } catch (err) {
     console.error('Error creating map:', err);
   }

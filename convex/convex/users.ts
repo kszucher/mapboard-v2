@@ -1,0 +1,27 @@
+import { query, mutation } from "./_generated/server";
+import { v } from "convex/values";
+
+export const getActiveMapId = query({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, { userId }) => {
+    const user = await ctx.db.get(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    return user.selectedMapId;
+  },
+});
+
+export const createUser = mutation({
+  args: { userName: v.string() },
+  handler: async (ctx, { userName }) => {
+    const userId = await ctx.db.insert("users", {
+      name: userName,
+      colorMode: "DARK",
+      selectedMapId: undefined,
+    });
+    return { userId };
+  },
+});
