@@ -2,12 +2,12 @@ import { v } from "convex/values"
 import { mutation, query } from "./_generated/server"
 import { edgeFields } from './schema';
 
-export const getEdgesOfMap = query({
-  args: { mapId: v.id("maps") },
+export const getEdgesOfGraph = query({
+  args: { graphId: v.id("graphs") },
   handler: async (ctx, args) => {
     return await ctx.db
       .query("edges")
-      .withIndex("by_mapId", (q) => q.eq("mapId", args.mapId))
+      .withIndex("by_graphId", (q) => q.eq("graphId", args.graphId))
       .collect()
   },
 })

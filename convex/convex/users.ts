@@ -1,7 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
-export const getActiveMapId = query({
+export const getActiveGraphId = query({
   args: {
     userId: v.id("users"),
   },
@@ -10,7 +10,7 @@ export const getActiveMapId = query({
     if (!user) {
       throw new Error("User not found");
     }
-    return user.selectedMapId;
+    return user.selectedGraphId;
   },
 });
 
@@ -20,7 +20,7 @@ export const createUser = mutation({
     const userId = await ctx.db.insert("users", {
       name: userName,
       colorMode: "DARK",
-      selectedMapId: undefined,
+      selectedGraphId: undefined,
     });
     return { userId };
   },

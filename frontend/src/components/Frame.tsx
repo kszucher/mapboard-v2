@@ -8,20 +8,20 @@ import { NODE_TYPES, type NodeTypeValue } from '../../../convex/convex/schema.ts
 import { Flow } from './Flow.tsx';
 
 export const Frame = () => {
-  const userId = 'js75hpa1y537vztp9zgnmxmb2d7wc4hh' as Id<'users'>;
+  const userId = 'js71tjgnrp94vywd89pqjafx3h7wc2tb' as Id<'users'>;
 
-  const selectedMapId = useQuery(api.users.getActiveMapId, { userId });
+  const selectedGraphId = useQuery(api.users.getActiveGraphId, { userId });
 
   const createNode = useMutation(api.nodes.createNode);
-  const createMap = useMutation(api.maps.createMap);
+  const createGraph = useMutation(api.graphs.createGraph);
 
-  const handleCreateNode = (mapId: Id<'maps'>, nodeTypeValue: NodeTypeValue) => {
-    if (!mapId) return;
+  const handleCreateNode = (graphId: Id<'graphs'>, nodeTypeValue: NodeTypeValue) => {
+    if (!graphId) return;
 
     switch (nodeTypeValue) {
       case 'START':
         void createNode({
-          mapId,
+          graphId,
           iid: 1,
           width: 200,
           height: 120,
@@ -41,13 +41,13 @@ export const Frame = () => {
     }
   };
 
-  const handleCreateMap = async () => {
-    void createMap({ userId, mapName: 'New Map' });
+  const handleCreateGraph = async () => {
+    void createGraph({ userId, graphName: 'New Graph' });
   };
 
-  const tabMapInfo = [{ name: 'Map A' }, { name: 'Map B' }];
+  const tabGraphInfo = [{ name: 'Graph A' }, { name: 'Graph B' }];
 
-  const isMapSelected = !!selectedMapId;
+  const isGraphSelected = !!selectedGraphId;
 
   return (
     <>
@@ -68,7 +68,7 @@ export const Frame = () => {
           {/* Left */}
           <Flex align="center" gap="2" width={'192px'}>
             <Text size="2" weight="bold" color="gray">
-              mapboard
+              graphboard
             </Text>
           </Flex>
 
@@ -81,21 +81,19 @@ export const Frame = () => {
                 </IconButton>
               </DropdownMenu.Trigger>
               <DropdownMenu.Content onCloseAutoFocus={e => e.preventDefault()}>
-                <DropdownMenu.Label>My Maps</DropdownMenu.Label>
-                {tabMapInfo.map((tab, i) => (
+                <DropdownMenu.Label>My Graphs</DropdownMenu.Label>
+                {tabGraphInfo.map((tab, i) => (
                   <DropdownMenu.Item key={i}>{tab.name}</DropdownMenu.Item>
                 ))}
-                <DropdownMenu.Separator />
-                <DropdownMenu.Label>Shared Maps</DropdownMenu.Label>
               </DropdownMenu.Content>
             </DropdownMenu.Root>
 
             <Button variant="solid" radius="full">
-              My Map
+              My Graph
             </Button>
 
-            {/* New Map Button */}
-            <IconButton variant="soft" color="gray" radius="full" onClick={handleCreateMap}>
+            {/* New Graph Button */}
+            <IconButton variant="soft" color="gray" radius="full" onClick={handleCreateGraph}>
               +{/* or any icon you like */}
             </IconButton>
           </Flex>
@@ -104,14 +102,14 @@ export const Frame = () => {
           <Flex align="center" gap="2">
             <DropdownMenu.Root>
               <DropdownMenu.Trigger>
-                <IconButton variant="solid" color="gray" radius="full" disabled={!isMapSelected}>
+                <IconButton variant="solid" color="gray" radius="full" disabled={!isGraphSelected}>
                   <MixIcon width="20" height="20" />
                 </IconButton>
               </DropdownMenu.Trigger>
-              {isMapSelected && (
+              {isGraphSelected && (
                 <DropdownMenu.Content onCloseAutoFocus={e => e.preventDefault()}>
                   {NODE_TYPES.map((nodeTypeValue, id) => (
-                    <DropdownMenu.Item onClick={() => handleCreateNode(selectedMapId, nodeTypeValue)} key={id}>
+                    <DropdownMenu.Item onClick={() => handleCreateNode(selectedGraphId, nodeTypeValue)} key={id}>
                       {nodeTypeValue}
                     </DropdownMenu.Item>
                   ))}
@@ -127,10 +125,10 @@ export const Frame = () => {
       </Box>
 
       {/* Flow */}
-      {isMapSelected && (
+      {isGraphSelected && (
         <div style={{ width: '100vw', height: '100vh' }}>
           <ReactFlowProvider>
-            <Flow selectedMapId={selectedMapId} />
+            <Flow selectedGraphId={selectedGraphId} />
           </ReactFlowProvider>
         </div>
       )}

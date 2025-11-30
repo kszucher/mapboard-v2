@@ -55,16 +55,16 @@ export const NODE_TYPES: NodeTypeValue[] = NodeType.members.map(m => m.value);
 export const userFields = {
   colorMode: ColorMode,
   name: v.string(),
-  selectedMapId: v.optional(v.id('maps')),
+  selectedGraphId: v.optional(v.id('graphs')),
 };
 
-export const mapFields = {
+export const graphFields = {
   name: v.string(),
   userId: v.id('users'),
 };
 
 export const nodeFields = {
-  mapId: v.id('maps'),
+  graphId: v.id('graphs'),
   iid: v.number(),
   width: v.number(),
   height: v.number(),
@@ -82,7 +82,7 @@ export const nodeFields = {
 };
 
 export const edgeFields = {
-  mapId: v.id('maps'),
+  graphId: v.id('graphs'),
   fromNodeId: v.id('nodes'),
   toNodeId: v.id('nodes'),
   handleIndex: v.number(),
@@ -91,12 +91,12 @@ export const edgeFields = {
 export default defineSchema({
   users: defineTable(userFields),
 
-  maps: defineTable(mapFields).index('by_userId', ['userId']), // 1:N index
+  graphs: defineTable(graphFields).index('by_userId', ['userId']),
 
-  nodes: defineTable(nodeFields).index('by_mapId', ['mapId']),
+  nodes: defineTable(nodeFields).index('by_graphId', ['graphId']),
 
   edges: defineTable(edgeFields)
-    .index('by_mapId', ['mapId'])
+    .index('by_graphId', ['graphId'])
     .index('by_fromNodeId', ['fromNodeId'])
     .index('by_toNodeId', ['toNodeId']),
 });

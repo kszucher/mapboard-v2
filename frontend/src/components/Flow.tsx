@@ -7,9 +7,9 @@ import type { Id } from '../../../convex/convex/_generated/dataModel';
 import { CustomNode } from './FlowNode.tsx';
 import type { AppFlowEdge, AppFlowNode } from './types.ts';
 
-export const Flow = ({ selectedMapId }: { selectedMapId: Id<'maps'> }) => {
-  const nodesData = useQuery(api.nodes.getNodesOfMap, { mapId: selectedMapId });
-  const edgesData = useQuery(api.edges.getEdgesOfMap, { mapId: selectedMapId });
+export const Flow = ({ selectedGraphId }: { selectedGraphId: Id<'graphs'> }) => {
+  const nodesData = useQuery(api.nodes.getNodesOfGraph, { graphId: selectedGraphId });
+  const edgesData = useQuery(api.edges.getEdgesOfGraph, { graphId: selectedGraphId });
 
   const updateNode = useMutation(api.nodes.updateNode);
   const createEdge = useMutation(api.edges.createEdge);
@@ -54,7 +54,7 @@ export const Flow = ({ selectedMapId }: { selectedMapId: Id<'maps'> }) => {
   const handleConnect = (params: Connection) => {
     if (!params.source || !params.target) return;
     void createEdge({
-      mapId: selectedMapId,
+      graphId: selectedGraphId,
       fromNodeId: params.source as Id<'nodes'>,
       toNodeId: params.target as Id<'nodes'>,
       handleIndex: Number(params.sourceHandle),

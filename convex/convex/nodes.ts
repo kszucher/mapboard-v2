@@ -2,12 +2,12 @@ import { v } from "convex/values"
 import { query, mutation } from "./_generated/server"
 import { nodeFields } from './schema';
 
-export const getNodesOfMap = query({
-  args: { mapId: v.id("maps") },
+export const getNodesOfGraph = query({
+  args: { graphId: v.id("graphs") },
   handler: async (ctx, args) => {
     return await ctx.db
       .query("nodes")
-      .withIndex("by_mapId", (q) => q.eq("mapId", args.mapId))
+      .withIndex("by_graphId", (q) => q.eq("graphId", args.graphId))
       .collect();
   },
 });
@@ -23,7 +23,7 @@ export const updateNode = mutation({
   args: {
     nodeId: v.id("nodes"),
     patch: v.object({
-      mapId: v.optional(v.id("maps")),
+      graphId: v.optional(v.id("graphs")),
       toolId: v.optional(v.id("tools")),
       iid: v.optional(v.number()),
       offsetX: v.optional(v.number()),

@@ -25,7 +25,7 @@ async function main() {
     const { userId } = await client.mutation(api.users.createUser, {userName: 'Kryss'});
     console.log('Created user with id:', userId);
   } catch (err) {
-    console.error('Error creating map:', err);
+    console.error('Error creating user:', err);
   }
 }
 
