@@ -4,7 +4,7 @@ import { ReactFlowProvider } from '@xyflow/react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../convex/convex/_generated/api';
 import type { Id } from '../../../convex/convex/_generated/dataModel';
-import { NODE_TYPES, type NodeTypeValue } from '../../../convex/convex/schema.ts';
+import { Color, NodeType } from '../../../convex/convex/schema.ts';
 import { Flow } from './Flow.tsx';
 
 export const Frame = () => {
@@ -15,30 +15,38 @@ export const Frame = () => {
   const createNode = useMutation(api.nodes.createNode);
   const createGraph = useMutation(api.graphs.createGraph);
 
-  const handleCreateNode = (graphId: Id<'graphs'>, nodeTypeValue: NodeTypeValue) => {
+  const handleCreateNode = (graphId: Id<'graphs'>, nodeType: NodeType) => {
     if (!graphId) return;
 
-    switch (nodeTypeValue) {
-      case 'START':
-        void createNode({
-          graphId,
-          iid: 1,
-          width: 200,
-          height: 120,
-          offsetX: 0,
-          offsetY: 50,
-          color: 'yellow',
-          label: 'Start',
-          numHandles: 2,
-          nodeType: nodeTypeValue,
-          isProcessing: false,
-          inputValue: null,
-          outputValue: null,
-          inputSchema: null,
-          outputSchema: null,
-        });
-        break;
-    }
+    void createNode({
+      graphId,
+      iid: 1,
+      width: 200,
+      height: 120,
+      offsetX: 0,
+      offsetY: 50,
+      color: {
+        [NodeType.START]: Color.gray,
+        [NodeType.LOGIC]: Color.purple,
+        [NodeType.AGENT]: Color.blue,
+        [NodeType.LOGICAL_SWITCH]: Color.amber,
+        [NodeType.AGENTIC_SWITCH]: Color.grass,
+      }[nodeType],
+      label: {
+        [NodeType.START]: 'Start',
+        [NodeType.LOGIC]: 'Logic',
+        [NodeType.AGENT]: 'Agent',
+        [NodeType.LOGICAL_SWITCH]: 'Logical Switch',
+        [NodeType.AGENTIC_SWITCH]: 'Agentic Switch',
+      }[nodeType],
+      numHandles: 1,
+      nodeType: nodeType,
+      isProcessing: false,
+      inputValue: null,
+      outputValue: null,
+      inputSchema: null,
+      outputSchema: null,
+    });
   };
 
   const handleCreateGraph = async () => {
@@ -108,9 +116,9 @@ export const Frame = () => {
               </DropdownMenu.Trigger>
               {isGraphSelected && (
                 <DropdownMenu.Content onCloseAutoFocus={e => e.preventDefault()}>
-                  {NODE_TYPES.map((nodeTypeValue, id) => (
-                    <DropdownMenu.Item onClick={() => handleCreateNode(selectedGraphId, nodeTypeValue)} key={id}>
-                      {nodeTypeValue}
+                  {Object.values(NodeType).map((nodeType, id) => (
+                    <DropdownMenu.Item onClick={() => handleCreateNode(selectedGraphId, nodeType)} key={id}>
+                      {nodeType}
                     </DropdownMenu.Item>
                   ))}
                 </DropdownMenu.Content>

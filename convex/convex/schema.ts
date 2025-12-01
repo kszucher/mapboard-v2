@@ -1,59 +1,62 @@
 import { defineSchema, defineTable } from 'convex/server';
-import { v, Infer } from "convex/values";
+import { v } from "convex/values";
 
-export const ColorMode = v.union(v.literal('DARK'), v.literal('LIGHT'));
+export const ColorMode = {
+  DARK: 'DARK',
+  LIGHT: 'LIGHT'
+} as const;
 
-export type ColorModeValue = Infer<typeof ColorMode>;
+export type ColorMode = typeof ColorMode[keyof typeof ColorMode];
 
-export const COLOR_MODES: ColorModeValue[] = ColorMode.members.map(m => m.value);
+export const ColorModes = v.union(...Object.values(ColorMode).map(v.literal));
 
-export const Color = v.union(
-  v.literal('gray'),
-  v.literal('gold'),
-  v.literal('bronze'),
-  v.literal('brown'),
-  v.literal('yellow'),
-  v.literal('amber'),
-  v.literal('orange'),
-  v.literal('tomato'),
-  v.literal('red'),
-  v.literal('ruby'),
-  v.literal('crimson'),
-  v.literal('pink'),
-  v.literal('plum'),
-  v.literal('purple'),
-  v.literal('violet'),
-  v.literal('iris'),
-  v.literal('indigo'),
-  v.literal('blue'),
-  v.literal('cyan'),
-  v.literal('teal'),
-  v.literal('jade'),
-  v.literal('green'),
-  v.literal('grass'),
-  v.literal('lime'),
-  v.literal('mint'),
-  v.literal('sky')
-);
+export const Color = {
+  gray: 'gray',
+  gold: 'gold',
+  bronze: 'bronze',
+  brown: 'brown',
+  yellow: 'yellow',
+  amber: 'amber',
+  orange: 'orange',
+  tomato: 'tomato',
+  red: 'red',
+  ruby: 'ruby',
+  crimson: 'crimson',
+  pink: 'pink',
+  plum: 'plum',
+  purple: 'purple',
+  violet: 'violet',
+  iris: 'iris',
+  indigo: 'indigo',
+  blue: 'blue',
+  cyan: 'cyan',
+  teal: 'teal',
+  jade: 'jade',
+  green: 'green',
+  grass: 'grass',
+  lime: 'lime',
+  mint: 'mint',
+  sky: 'sky',
+} as const;
 
-export type ColorValue = Infer<typeof Color>;
+export type Color = typeof Color[keyof typeof Color];
 
-export const COLORS: ColorValue[] = Color.members.map(m => m.value);
+export const Colors = v.union(...Object.values(Color).map(v.literal));
 
-export const NodeType = v.union(
-  v.literal('START'),
-  v.literal('LOGIC'),
-  v.literal('AGENT'),
-  v.literal('LOGICAL_SWITCH'),
-  v.literal('AGENTIC_SWITCH')
-);
+export const NodeType =  {
+  START: 'START',
+  LOGIC: 'LOGIC',
+  AGENT: 'AGENT',
+  LOGICAL_SWITCH: 'LOGICAL_SWITCH',
+  AGENTIC_SWITCH: 'AGENTIC_SWITCH'
+}
 
-export type NodeTypeValue = Infer<typeof NodeType>;
+export type NodeType = typeof NodeType[keyof typeof NodeType];
 
-export const NODE_TYPES: NodeTypeValue[] = NodeType.members.map(m => m.value);
+export const NodeTypes = v.union(...Object.values(NodeType).map(v.literal));
 
 export const userFields = {
-  colorMode: ColorMode,
+  colorMode: ColorModes,
   name: v.string(),
   selectedGraphId: v.optional(v.id('graphs')),
 };
@@ -70,10 +73,10 @@ export const nodeFields = {
   height: v.number(),
   offsetX: v.number(),
   offsetY: v.number(),
-  color: Color,
+  color: Colors,
   label: v.string(),
   numHandles: v.number(),
-  nodeType: NodeType,
+  nodeType: NodeTypes,
   isProcessing: v.boolean(),
   inputValue: v.optional(v.any()),
   outputValue: v.optional(v.any()),
