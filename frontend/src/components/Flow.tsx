@@ -1,4 +1,4 @@
-import { type Connection, Controls, ReactFlow, useEdgesState, useNodesState, useReactFlow, reconnectEdge, addEdge } from '@xyflow/react';
+import { type Connection, Controls, ReactFlow, useEdgesState, useNodesState, useReactFlow, reconnectEdge, addEdge, useNodesInitialized } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { Id } from '../../../convex/convex/_generated/dataModel';
@@ -14,9 +14,11 @@ export const Flow = ({ selectedGraphId }: { selectedGraphId: Id<'graphs'> }) => 
   const { updateNodePosition, createEdge, deleteEdge } = useGraphMutations();
 
   const { fitView } = useReactFlow();
+  const nodesInitialized = useNodesInitialized();
   const [nodes, setNodes, onNodesChange] = useNodesState<AppFlowNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<AppFlowEdge>([]);
 
+  const prevGraphId = useRef<Id<'graphs'> | null>(null);
   const edgeReconnectSuccessful = useRef(true);
 
   const nodeTypes = useMemo(() => ({ custom: CustomNode }), []);
@@ -34,10 +36,18 @@ export const Flow = ({ selectedGraphId }: { selectedGraphId: Id<'graphs'> }) => 
   }, [nodesData, setNodes]);
 
   useEffect(() => {
-    if (nodes.length > 0) {
-      void fitView({ padding: 0.1, maxZoom: 1, duration: 0 });
+    if (
+      nodesInitialized &&
+      nodes.length > 0 &&
+      nodes[0].data.node.graphId === selectedGraphId &&
+      prevGraphId.current !== selectedGraphId
+    ) {
+      prevGraphId.current = selectedGraphId;
+      window.requestAnimationFrame(() => {
+        void fitView({ padding: 0.1, maxZoom: 1, duration: 0 });
+      });
     }
-  }, [nodes.length, fitView]);
+  }, [nodesInitialized, nodes, fitView, selectedGraphId]);
 
   useEffect(() => {
     if (!edgesData) return;
