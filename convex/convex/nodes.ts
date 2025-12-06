@@ -30,6 +30,8 @@ export const updateNode = mutation({
       offsetY: v.optional(v.number()),
       isProcessing: v.optional(v.boolean()),
       inputValue: v.optional(v.any()),
+      inputTextPrimary: v.optional(v.string()),
+      inputTextsSecondary: v.optional(v.array(v.string())),
       outputValue: v.optional(v.any()),
       numHandles: v.optional(v.number()),
     }),

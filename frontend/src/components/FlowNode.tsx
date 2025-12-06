@@ -18,6 +18,10 @@ interface BranchInputProps {
 const BranchInput = ({ value, onChange, onDelete }: BranchInputProps) => {
   const [localValue, setLocalValue] = useState(value);
 
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
   // Sync prop changes (if external update happens)
   // Optimization: Only sync if not focused? Or rely on simple diff?
   // For now simple: if value prop changes and diff from local, sync, but careful with cursor.
@@ -56,14 +60,16 @@ const BranchInput = ({ value, onChange, onDelete }: BranchInputProps) => {
 interface SwitchNodeContentProps {
   nodeId: Id<'nodes'>;
   inputValue: any;
+  inputTextPrimary?: string;
+  inputTextsSecondary?: string[];
   updateNode: (args: { nodeId: Id<'nodes'>; patch: any }) => void;
 }
 
-const SwitchNodeContent = ({ nodeId, inputValue, updateNode }: SwitchNodeContentProps) => {
+const SwitchNodeContent = ({ nodeId, inputValue, inputTextPrimary, inputTextsSecondary, updateNode }: SwitchNodeContentProps) => {
   /* REMOVED branchInput state */
-  const branches = Array.isArray(inputValue?.branches) ? inputValue.branches : [];
+  const branches = inputTextsSecondary ?? (Array.isArray(inputValue?.branches) ? inputValue.branches : []);
 
-  const instruction = inputValue?.instruction || '';
+  const instruction = inputTextPrimary ?? (inputValue?.instruction || '');
 
   const handleAddBranch = () => {
     // Just add an empty branch
@@ -72,12 +78,10 @@ const SwitchNodeContent = ({ nodeId, inputValue, updateNode }: SwitchNodeContent
     updateNode({
       nodeId,
       patch: {
-        inputValue: {
-          ...inputValue,
-          instruction: localInstruction,
-          branches: newBranches
-        },
-        numHandles: newBranches.length
+        inputTextsSecondary: newBranches,
+        numHandles: newBranches.length,
+        // Keep updating legacy inputValue for now if needed, or stop?
+        // User asked to refactor, implying moving away. I will only update new fields + numHandles.
       }
     });
   };
@@ -88,12 +92,7 @@ const SwitchNodeContent = ({ nodeId, inputValue, updateNode }: SwitchNodeContent
     updateNode({
       nodeId,
       patch: {
-        inputValue: {
-          ...inputValue,
-          instruction: localInstruction,
-          branches: newBranches
-        },
-        // numHandles doesn't change here
+        inputTextsSecondary: newBranches,
       }
     });
   };
@@ -103,11 +102,7 @@ const SwitchNodeContent = ({ nodeId, inputValue, updateNode }: SwitchNodeContent
     updateNode({
       nodeId,
       patch: {
-        inputValue: {
-          ...inputValue,
-          instruction: localInstruction,
-          branches: newBranches
-        },
+        inputTextsSecondary: newBranches,
         numHandles: newBranches.length
       }
     });
@@ -116,6 +111,10 @@ const SwitchNodeContent = ({ nodeId, inputValue, updateNode }: SwitchNodeContent
 
   // We use local state for instruction to avoid stutter, but sync on blur
   const [localInstruction, setLocalInstruction] = useState(instruction);
+
+  useEffect(() => {
+    setLocalInstruction(instruction);
+  }, [instruction]);
 
   return (
     <Flex direction="column" gap="2">
@@ -128,7 +127,7 @@ const SwitchNodeContent = ({ nodeId, inputValue, updateNode }: SwitchNodeContent
             updateNode({
               nodeId,
               patch: {
-                inputValue: { ...inputValue, instruction: localInstruction, branches }
+                inputTextPrimary: localInstruction
               }
             });
           }
@@ -240,6 +239,8 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
           <SwitchNodeContent
             nodeId={data.node._id}
             inputValue={data.node.inputValue}
+            inputTextPrimary={data.node.inputTextPrimary}
+            inputTextsSecondary={data.node.inputTextsSecondary}
             updateNode={updateNode}
           />
         </Flex>

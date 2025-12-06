@@ -43,7 +43,7 @@ export type Color = typeof Color[keyof typeof Color];
 
 export const Colors = v.union(...Object.values(Color).map(v.literal));
 
-export const NodeType =  {
+export const NodeType = {
   START: 'START',
   LOGIC: 'LOGIC',
   AGENT: 'AGENT',
@@ -78,7 +78,9 @@ export const nodeFields = {
   numHandles: v.number(),
   nodeType: NodeTypes,
   isProcessing: v.boolean(),
-  inputValue: v.optional(v.any()),
+  inputValue: v.optional(v.any()), // Deprecated but kept for backward compat reading if needed
+  inputTextPrimary: v.optional(v.string()), // For "Instruction"
+  inputTextsSecondary: v.optional(v.array(v.string())), // For "Branches"
   outputValue: v.optional(v.any()),
   inputSchema: v.optional(v.any()),
   outputSchema: v.optional(v.any()),
