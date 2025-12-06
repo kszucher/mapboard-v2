@@ -6,14 +6,14 @@ import { api } from '../../../convex/convex/_generated/api';
 import type { Id } from '../../../convex/convex/_generated/dataModel';
 import { NodeType } from '../../../convex/convex/schema.ts';
 import { Flow } from './Flow.tsx';
-import { useGraphActions } from './useGraphActions.ts';
+import { useGraphMutations } from './useGraphMutations.ts';
 
 export const Frame = () => {
   const userId = 'js71tjgnrp94vywd89pqjafx3h7wc2tb' as Id<'users'>;
 
   const selectedGraphId = useQuery(api.users.getActiveGraphId, { userId });
 
-  const { createNode } = useGraphActions();
+  const { createNode } = useGraphMutations();
   const createGraph = useMutation(api.graphs.createGraph);
 
   const handleCreateNode = (graphId: Id<'graphs'>, nodeType: NodeType) => {

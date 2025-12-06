@@ -1,19 +1,17 @@
 import { type Connection, Controls, ReactFlow, useEdgesState, useNodesState, useReactFlow, reconnectEdge, addEdge } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useQuery } from 'convex/react';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { api } from '../../../convex/convex/_generated/api';
 import type { Id } from '../../../convex/convex/_generated/dataModel';
 import { CustomNode } from './FlowNode.tsx';
 import FlowEdge from './FlowEdge.tsx';
 import type { AppFlowEdge, AppFlowNode } from './types.ts';
-import { useGraphActions } from './useGraphActions.ts';
+import { useGraphMutations } from './useGraphMutations.ts';
+import { useGraphQueries } from './useGraphQueries.ts';
 
 export const Flow = ({ selectedGraphId }: { selectedGraphId: Id<'graphs'> }) => {
-  const nodesData = useQuery(api.nodes.getNodesOfGraph, { graphId: selectedGraphId });
-  const edgesData = useQuery(api.edges.getEdgesOfGraph, { graphId: selectedGraphId });
+  const { nodes: nodesData, edges: edgesData } = useGraphQueries(selectedGraphId);
 
-  const { updateNodePosition, createEdge, deleteEdge } = useGraphActions();
+  const { updateNodePosition, createEdge, deleteEdge } = useGraphMutations();
 
   const { fitView } = useReactFlow();
   const [nodes, setNodes, onNodesChange] = useNodesState<AppFlowNode>([]);

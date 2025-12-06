@@ -4,7 +4,7 @@ import { api } from '../../../convex/convex/_generated/api';
 import type { Id } from '../../../convex/convex/_generated/dataModel';
 import { Color, NodeType } from '../../../convex/convex/schema.ts';
 
-export const useGraphActions = () => {
+export const useGraphMutations = () => {
   const createNodeMutation = useMutation(api.nodes.createNode);
   const updateNodeMutation = useMutation(api.nodes.updateNode);
   const createEdgeMutation = useMutation(api.edges.createEdge);
