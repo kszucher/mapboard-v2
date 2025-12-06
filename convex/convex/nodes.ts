@@ -31,6 +31,7 @@ export const updateNode = mutation({
       isProcessing: v.optional(v.boolean()),
       inputValue: v.optional(v.any()),
       outputValue: v.optional(v.any()),
+      numHandles: v.optional(v.number()),
     }),
   },
   handler: async (ctx, args) => {
