@@ -65,11 +65,11 @@ interface SwitchNodeContentProps {
   updateNode: (args: { nodeId: Id<'nodes'>; patch: any }) => void;
 }
 
-const SwitchNodeContent = ({ nodeId, inputValue, inputTextPrimary, inputTextsSecondary, updateNode }: SwitchNodeContentProps) => {
+const SwitchNodeContent = ({ nodeId, inputValue, inputTextsSecondary, updateNode }: SwitchNodeContentProps) => {
   /* REMOVED branchInput state */
   const branches = inputTextsSecondary ?? (Array.isArray(inputValue?.branches) ? inputValue.branches : []);
 
-  const instruction = inputTextPrimary ?? (inputValue?.instruction || '');
+
 
   const handleAddBranch = () => {
     // Just add an empty branch
@@ -109,31 +109,11 @@ const SwitchNodeContent = ({ nodeId, inputValue, inputTextPrimary, inputTextsSec
   };
 
 
-  // We use local state for instruction to avoid stutter, but sync on blur
-  const [localInstruction, setLocalInstruction] = useState(instruction);
 
-  useEffect(() => {
-    setLocalInstruction(instruction);
-  }, [instruction]);
 
   return (
     <Flex direction="column" gap="2">
-      <TextField.Root
-        placeholder="Instruction / Condition"
-        value={localInstruction}
-        onChange={(e) => setLocalInstruction(e.target.value)}
-        onBlur={() => {
-          if (localInstruction !== instruction) {
-            updateNode({
-              nodeId,
-              patch: {
-                inputTextPrimary: localInstruction
-              }
-            });
-          }
-        }}
-        style={{ boxShadow: 'none' }}
-      />
+
 
       {branches.length > 0 && (
         <Flex direction="column" gap="2">
@@ -148,7 +128,7 @@ const SwitchNodeContent = ({ nodeId, inputValue, inputTextPrimary, inputTextsSec
         </Flex>
       )}
 
-      <Flex gap="2" align="center" style={{ marginLeft: 16 }}>
+      <Flex gap="2" align="center" style={{ marginLeft: 16, height: 32 }}>
         <IconButton onClick={handleAddBranch} size="1" variant="ghost" color="gray">
           <PlusIcon />
         </IconButton>
@@ -182,14 +162,20 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   let LEFT_HANDLE_OFFSET: number | undefined = undefined;
 
   // Switch Node Overrides
-  // Container Padding (12) + MarginTop (38) + Instruction Height (32) + Gap (8) = 90px (Top of first branch)
-  // Center of first branch = 90 + 16 = 106px
-  // Spacing = Height (32) + Gap (8) = 40px
-  // Center of Instruction = 12 + 38 + 16 = 66px
   if (isSwitch) {
     SPACING = 40;
-    BASE_OFFSET = 106;
-    LEFT_HANDLE_OFFSET = 66;
+    BASE_OFFSET = 66;
+
+    // Dynamic Left Handle Calculation
+    // Try to center between the first and last handle.
+    // Handle 0 is at BASE_OFFSET.
+    // Handle N-1 is at BASE_OFFSET + (N-1)*SPACING.
+    // Center = (Top + Bottom) / 2
+    //        = (BASE_OFFSET + (BASE_OFFSET + (numHandles - 1) * SPACING)) / 2
+    //        = BASE_OFFSET + ((numHandles - 1) * SPACING) / 2
+
+    const num = Math.max(1, data.node.numHandles || 0); // avoid negative or 0 issues
+    LEFT_HANDLE_OFFSET = BASE_OFFSET + ((num - 1) * SPACING) / 2;
   }
 
   return (
@@ -239,7 +225,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
           <SwitchNodeContent
             nodeId={data.node._id}
             inputValue={data.node.inputValue}
-            inputTextPrimary={data.node.inputTextPrimary}
+
             inputTextsSecondary={data.node.inputTextsSecondary}
             updateNode={updateNode}
           />
