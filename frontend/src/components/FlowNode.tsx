@@ -1,4 +1,4 @@
-import { Cross2Icon, DotsHorizontalIcon, PlusIcon } from '@radix-ui/react-icons';
+import { CheckIcon, Cross2Icon, DotsHorizontalIcon, PlusIcon } from '@radix-ui/react-icons';
 import { Badge, Box, DropdownMenu, Flex, IconButton, TextField } from '@radix-ui/themes';
 import { Handle, type NodeProps, Position, useUpdateNodeInternals } from '@xyflow/react';
 import { useMutation } from 'convex/react';
@@ -13,9 +13,10 @@ interface BranchInputProps {
   value: string;
   onChange: (newValue: string) => void;
   onDelete: () => void;
+  enableValidation?: boolean;
 }
 
-const BranchInput = ({ value, onChange, onDelete }: BranchInputProps) => {
+const BranchInput = ({ value, onChange, onDelete, enableValidation }: BranchInputProps) => {
   const [localValue, setLocalValue] = useState(value);
 
   useEffect(() => {
@@ -33,6 +34,15 @@ const BranchInput = ({ value, onChange, onDelete }: BranchInputProps) => {
   // If we type, local updates. Prop doesn't update until blur.
   // So standard 'Draft State' pattern.
 
+
+  const isValid = (text: string) => {
+    if (!text || !text.trim()) return false;
+    return /^\s*state\.[a-zA-Z0-9_$]+\s*=/.test(text);
+  };
+
+  const showValidation = enableValidation && localValue.trim().length > 0;
+  const valid = isValid(localValue);
+
   return (
     <Flex gap="2" align="center" style={{ marginLeft: 16 }}>
       <TextField.Root
@@ -49,7 +59,13 @@ const BranchInput = ({ value, onChange, onDelete }: BranchInputProps) => {
           }
         }}
         style={{ flexGrow: 1, boxShadow: 'none' }}
-      />
+      >
+        <TextField.Slot side="right">
+          {showValidation && (
+            valid ? <CheckIcon color="green" /> : <Cross2Icon color="red" />
+          )}
+        </TextField.Slot>
+      </TextField.Root>
       <IconButton onClick={onDelete} size="1" variant="ghost" color="gray">
         <Cross2Icon />
       </IconButton>
@@ -63,9 +79,10 @@ interface SwitchNodeContentProps {
   inputTextPrimary?: string;
   inputTextsSecondary?: string[];
   updateNode: (args: { nodeId: Id<'nodes'>; patch: any }) => void;
+  isLogicalSwitch?: boolean;
 }
 
-const SwitchNodeContent = ({ nodeId, inputValue, inputTextsSecondary, updateNode }: SwitchNodeContentProps) => {
+const SwitchNodeContent = ({ nodeId, inputValue, inputTextsSecondary, updateNode, isLogicalSwitch }: SwitchNodeContentProps) => {
   /* REMOVED branchInput state */
   const branches = inputTextsSecondary ?? (Array.isArray(inputValue?.branches) ? inputValue.branches : []);
 
@@ -123,6 +140,7 @@ const SwitchNodeContent = ({ nodeId, inputValue, inputTextsSecondary, updateNode
               value={branch}
               onChange={(val) => handleUpdateBranch(i, val)}
               onDelete={() => handleDeleteBranch(i)}
+              enableValidation={isLogicalSwitch}
             />
           ))}
         </Flex>
@@ -228,6 +246,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
 
             inputTextsSecondary={data.node.inputTextsSecondary}
             updateNode={updateNode}
+            isLogicalSwitch={data.node.nodeType === 'LOGICAL_SWITCH'}
           />
         </Flex>
       ) : (
