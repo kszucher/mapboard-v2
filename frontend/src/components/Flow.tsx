@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { api } from '../../../convex/convex/_generated/api';
 import type { Id } from '../../../convex/convex/_generated/dataModel';
 import { CustomNode } from './FlowNode.tsx';
+import FlowEdge from './FlowEdge.tsx';
 import type { AppFlowEdge, AppFlowNode } from './types.ts';
 
 export const Flow = ({ selectedGraphId }: { selectedGraphId: Id<'graphs'> }) => {
@@ -22,6 +23,7 @@ export const Flow = ({ selectedGraphId }: { selectedGraphId: Id<'graphs'> }) => 
   const edgeReconnectSuccessful = useRef(true);
 
   const nodeTypes = useMemo(() => ({ custom: CustomNode }), []);
+  const edgeTypes = useMemo(() => ({ custom: FlowEdge }), []);
 
   useEffect(() => {
     if (!nodesData) return;
@@ -47,6 +49,7 @@ export const Flow = ({ selectedGraphId }: { selectedGraphId: Id<'graphs'> }) => 
       source: edge.fromNodeId,
       target: edge.toNodeId,
       sourceHandle: String(edge.handleIndex),
+      type: 'custom',
       animated: true,
       style: { stroke: '#fff', strokeWidth: 2 },
     }));
@@ -122,6 +125,7 @@ export const Flow = ({ selectedGraphId }: { selectedGraphId: Id<'graphs'> }) => 
   return (
     <ReactFlow<AppFlowNode, AppFlowEdge>
       nodeTypes={nodeTypes}
+      edgeTypes={edgeTypes}
       nodes={nodes}
       edges={edges}
       onNodesChange={onNodesChange}
