@@ -4,49 +4,21 @@ import { ReactFlowProvider } from '@xyflow/react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../convex/convex/_generated/api';
 import type { Id } from '../../../convex/convex/_generated/dataModel';
-import { Color, NodeType } from '../../../convex/convex/schema.ts';
+import { NodeType } from '../../../convex/convex/schema.ts';
 import { Flow } from './Flow.tsx';
+import { useGraphActions } from './useGraphActions.ts';
 
 export const Frame = () => {
   const userId = 'js71tjgnrp94vywd89pqjafx3h7wc2tb' as Id<'users'>;
 
   const selectedGraphId = useQuery(api.users.getActiveGraphId, { userId });
 
-  const createNode = useMutation(api.nodes.createNode);
+  const { createNode } = useGraphActions();
   const createGraph = useMutation(api.graphs.createGraph);
 
   const handleCreateNode = (graphId: Id<'graphs'>, nodeType: NodeType) => {
     if (!graphId) return;
-
-    void createNode({
-      graphId,
-      iid: 1,
-      width: 200,
-      height: 120,
-      offsetX: 0,
-      offsetY: 50,
-      color: {
-        [NodeType.START]: Color.gray,
-        [NodeType.LOGIC]: Color.purple,
-        [NodeType.AGENT]: Color.blue,
-        [NodeType.LOGICAL_SWITCH]: Color.amber,
-        [NodeType.AGENTIC_SWITCH]: Color.grass,
-      }[nodeType],
-      label: {
-        [NodeType.START]: 'Start',
-        [NodeType.LOGIC]: 'Logic',
-        [NodeType.AGENT]: 'Agent',
-        [NodeType.LOGICAL_SWITCH]: 'Logical Switch',
-        [NodeType.AGENTIC_SWITCH]: 'Agentic Switch',
-      }[nodeType],
-      numHandles: 1,
-      nodeType: nodeType,
-      isProcessing: false,
-      inputValue: null,
-      outputValue: null,
-      inputSchema: null,
-      outputSchema: null,
-    });
+    createNode(graphId, nodeType);
   };
 
   const handleCreateGraph = async () => {
