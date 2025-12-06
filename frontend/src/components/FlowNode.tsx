@@ -1,5 +1,5 @@
-import { DotsHorizontalIcon } from '@radix-ui/react-icons';
-import { Badge, Box, Button, DropdownMenu, Flex, IconButton, TextField } from '@radix-ui/themes';
+import { Cross2Icon, DotsHorizontalIcon, PlusIcon } from '@radix-ui/react-icons';
+import { Badge, Box, DropdownMenu, Flex, IconButton, TextField } from '@radix-ui/themes';
 import { Handle, type NodeProps, Position, useUpdateNodeInternals } from '@xyflow/react';
 import { useMutation } from 'convex/react';
 import { memo, useEffect, useRef } from 'react';
@@ -12,9 +12,10 @@ import type { Id } from '../../../convex/convex/_generated/dataModel';
 interface BranchInputProps {
   value: string;
   onChange: (newValue: string) => void;
+  onDelete: () => void;
 }
 
-const BranchInput = ({ value, onChange }: BranchInputProps) => {
+const BranchInput = ({ value, onChange, onDelete }: BranchInputProps) => {
   const [localValue, setLocalValue] = useState(value);
 
   // Sync prop changes (if external update happens)
@@ -29,21 +30,26 @@ const BranchInput = ({ value, onChange }: BranchInputProps) => {
   // So standard 'Draft State' pattern.
 
   return (
-    <TextField.Root
-      value={localValue}
-      onChange={(e) => setLocalValue(e.target.value)}
-      onBlur={() => {
-        if (localValue !== value) {
-          onChange(localValue);
-        }
-      }}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') {
-          e.currentTarget.blur(); // Trigger blur to save
-        }
-      }}
-      style={{ marginLeft: 16 }}
-    />
+    <Flex gap="2" align="center" style={{ marginLeft: 16 }}>
+      <TextField.Root
+        value={localValue}
+        onChange={(e) => setLocalValue(e.target.value)}
+        onBlur={() => {
+          if (localValue !== value) {
+            onChange(localValue);
+          }
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.currentTarget.blur(); // Trigger blur to save
+          }
+        }}
+        style={{ flexGrow: 1, boxShadow: 'none' }}
+      />
+      <IconButton onClick={onDelete} size="1" variant="ghost" color="gray">
+        <Cross2Icon />
+      </IconButton>
+    </Flex>
   );
 };
 
@@ -92,6 +98,21 @@ const SwitchNodeContent = ({ nodeId, inputValue, updateNode }: SwitchNodeContent
     });
   };
 
+  const handleDeleteBranch = (index: number) => {
+    const newBranches = branches.filter((_: string, i: number) => i !== index);
+    updateNode({
+      nodeId,
+      patch: {
+        inputValue: {
+          ...inputValue,
+          instruction: localInstruction,
+          branches: newBranches
+        },
+        numHandles: newBranches.length
+      }
+    });
+  };
+
 
   // We use local state for instruction to avoid stutter, but sync on blur
   const [localInstruction, setLocalInstruction] = useState(instruction);
@@ -112,6 +133,7 @@ const SwitchNodeContent = ({ nodeId, inputValue, updateNode }: SwitchNodeContent
             });
           }
         }}
+        style={{ boxShadow: 'none' }}
       />
 
       {branches.length > 0 && (
@@ -121,14 +143,16 @@ const SwitchNodeContent = ({ nodeId, inputValue, updateNode }: SwitchNodeContent
               key={i}
               value={branch}
               onChange={(val) => handleUpdateBranch(i, val)}
+              onDelete={() => handleDeleteBranch(i)}
             />
           ))}
         </Flex>
       )}
 
       <Flex gap="2" align="center" style={{ marginLeft: 16 }}>
-        {/* Input removed as per request */}
-        <Button onClick={handleAddBranch} size="1">Add</Button>
+        <IconButton onClick={handleAddBranch} size="1" variant="ghost" color="gray">
+          <PlusIcon />
+        </IconButton>
       </Flex>
     </Flex>
   );
@@ -156,14 +180,17 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   // Standard Node Defaults
   let SPACING = 24;
   let BASE_OFFSET = 50;
+  let LEFT_HANDLE_OFFSET: number | undefined = undefined;
 
   // Switch Node Overrides
-  // Container Padding (12) + MarginTop (20) + Instruction Height (32) + Gap (8) = 72px (Top of first branch)
-  // Center of first branch = 72 + 16 = 88px
+  // Container Padding (12) + MarginTop (38) + Instruction Height (32) + Gap (8) = 90px (Top of first branch)
+  // Center of first branch = 90 + 16 = 106px
   // Spacing = Height (32) + Gap (8) = 40px
+  // Center of Instruction = 12 + 38 + 16 = 66px
   if (isSwitch) {
     SPACING = 40;
-    BASE_OFFSET = 92;
+    BASE_OFFSET = 106;
+    LEFT_HANDLE_OFFSET = 66;
   }
 
   return (
@@ -209,7 +236,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
       </Box>
 
       {data.node.nodeType === 'LOGICAL_SWITCH' || data.node.nodeType === 'AGENTIC_SWITCH' ? (
-        <Flex direction="column" gap="3" mt="5">
+        <Flex direction="column" gap="3" style={{ marginTop: 38 }}>
           <SwitchNodeContent
             nodeId={data.node._id}
             inputValue={data.node.inputValue}
@@ -220,7 +247,11 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
         <div style={{ marginTop: 40 }}>{'Instructions'}</div>
       )}
 
-      <Handle type="target" position={Position.Left} />
+      <Handle
+        type="target"
+        position={Position.Left}
+        style={LEFT_HANDLE_OFFSET ? { top: LEFT_HANDLE_OFFSET } : {}}
+      />
 
       {Array.from({ length: data.node.numHandles }).map((_, i) => (
         <Handle
