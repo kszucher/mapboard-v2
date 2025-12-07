@@ -11,3 +11,7 @@ export const useGraphQueries = (graphId: Id<'graphs'>) => {
         edges,
     };
 };
+
+export const useActiveGraphId = (userId: Id<'users'>) => {
+    return useQuery(api.users.getActiveGraphId, { userId });
+};

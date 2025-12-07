@@ -1,19 +1,17 @@
 import { DotsHorizontalIcon } from '@radix-ui/react-icons';
 import { Badge, Box, DropdownMenu, Flex, IconButton } from '@radix-ui/themes';
 import { type NodeProps, useUpdateNodeInternals } from '@xyflow/react';
-import { useMutation } from 'convex/react';
 import { memo, useEffect, useRef } from 'react';
-import { api } from '../../../convex/convex/_generated/api';
 import { FlowNodeAgent } from './FlowNodeAgent.tsx';
 import { FlowNodeAgenticSwitch } from './FlowNodeAgenticSwitch.tsx';
 import { FlowNodeLogic } from './FlowNodeLogic.tsx';
 import { FlowNodeLogicalSwitch } from './FlowNodeLogicalSwitch.tsx';
 import { FlowNodeStart } from './FlowNodeStart.tsx';
+import { useGraphMutations } from './useGraphMutations.ts';
 import type { AppFlowNode } from './types.ts';
 
 const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
-  const deleteNode = useMutation(api.nodes.deleteNode);
-  const updateNode = useMutation(api.nodes.updateNode);
+  const { deleteNode, updateNode } = useGraphMutations();
   const updateNodeInternals = useUpdateNodeInternals();
 
   useEffect(() => {
@@ -80,7 +78,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
                 <DropdownMenu.Item key={1}></DropdownMenu.Item>
               </DropdownMenu.SubContent>
             </DropdownMenu.Sub>
-            <DropdownMenu.Item onClick={() => deleteNode({ nodeId: data.node._id })}>
+            <DropdownMenu.Item onClick={() => deleteNode(data.node._id)}>
               {'Delete'}
             </DropdownMenu.Item>
           </DropdownMenu.Content>

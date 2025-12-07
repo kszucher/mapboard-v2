@@ -1,20 +1,18 @@
 import { CaretDownIcon, MixIcon, PlayIcon } from '@radix-ui/react-icons';
 import { Box, Button, DropdownMenu, Flex, IconButton, Text } from '@radix-ui/themes';
 import { ReactFlowProvider } from '@xyflow/react';
-import { useMutation, useQuery } from 'convex/react';
-import { api } from '../../../convex/convex/_generated/api';
 import type { Id } from '../../../convex/convex/_generated/dataModel';
 import { NodeType } from '../../../convex/convex/schema.ts';
 import { Flow } from './Flow.tsx';
 import { useGraphMutations } from './useGraphMutations.ts';
+import { useActiveGraphId } from './useGraphQueries.ts';
 
 export const Frame = () => {
   const userId = 'js71tjgnrp94vywd89pqjafx3h7wc2tb' as Id<'users'>;
 
-  const selectedGraphId = useQuery(api.users.getActiveGraphId, { userId });
+  const selectedGraphId = useActiveGraphId(userId);
 
-  const { createNode } = useGraphMutations();
-  const createGraph = useMutation(api.graphs.createGraph);
+  const { createNode, createGraph } = useGraphMutations();
 
   const handleCreateNode = (graphId: Id<'graphs'>, nodeType: NodeType) => {
     if (!graphId) return;
@@ -22,7 +20,7 @@ export const Frame = () => {
   };
 
   const handleCreateGraph = async () => {
-    void createGraph({ userId, graphName: 'New Graph' });
+    createGraph(userId, 'New Graph');
   };
 
   const tabGraphInfo = [{ name: 'Graph A' }, { name: 'Graph B' }];

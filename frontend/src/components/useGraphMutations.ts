@@ -8,7 +8,16 @@ export const useGraphMutations = () => {
   const createNodeMutation = useMutation(api.nodes.createNode);
   const updateNodeMutation = useMutation(api.nodes.updateNode);
   const createEdgeMutation = useMutation(api.edges.createEdge);
+  const deleteNodeMutation = useMutation(api.nodes.deleteNode);
   const deleteEdgeMutation = useMutation(api.edges.deleteEdge);
+  const createGraphMutation = useMutation(api.graphs.createGraph);
+
+  const createGraph = useCallback(
+    (userId: Id<'users'>, graphName: string) => {
+      void createGraphMutation({ userId, graphName });
+    },
+    [createGraphMutation]
+  );
 
   const createNode = useCallback(
     (graphId: Id<'graphs'>, nodeType: NodeType) => {
@@ -58,6 +67,20 @@ export const useGraphMutations = () => {
     [updateNodeMutation]
   );
 
+  const updateNode = useCallback(
+    (args: { nodeId: Id<'nodes'>; patch: any }) => {
+      void updateNodeMutation(args);
+    },
+    [updateNodeMutation]
+  );
+
+  const deleteNode = useCallback(
+    (nodeId: Id<'nodes'>) => {
+      void deleteNodeMutation({ nodeId });
+    },
+    [deleteNodeMutation]
+  );
+
   const createEdge = useCallback(
     (graphId: Id<'graphs'>, fromNodeId: Id<'nodes'>, toNodeId: Id<'nodes'>, handleIndex: number) => {
       void createEdgeMutation({
@@ -80,7 +103,10 @@ export const useGraphMutations = () => {
   return {
     createNode,
     updateNodePosition,
+    updateNode,
+    deleteNode,
     createEdge,
     deleteEdge,
+    createGraph,
   };
 };
