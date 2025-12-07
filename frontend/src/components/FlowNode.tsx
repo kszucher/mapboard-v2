@@ -23,18 +23,6 @@ const BranchInput = ({ value, onChange, onDelete, enableValidation }: BranchInpu
     setLocalValue(value);
   }, [value]);
 
-  // Sync prop changes (if external update happens)
-  // Optimization: Only sync if not focused? Or rely on simple diff?
-  // For now simple: if value prop changes and diff from local, sync, but careful with cursor.
-  // Actually, usually value prop changes come from us.
-
-  // If we want fully controlled but performant:
-  // We initialize local state. We push up on blur. 
-  // Should we sync down? If backend changes (another user)? Yes.
-  // If we type, local updates. Prop doesn't update until blur.
-  // So standard 'Draft State' pattern.
-
-
   const isValid = (text: string) => {
     if (!text || !text.trim()) return false;
     return /^\s*state\.[a-zA-Z0-9_$]+\s*=/.test(text);
@@ -83,13 +71,9 @@ interface SwitchNodeContentProps {
 }
 
 const SwitchNodeContent = ({ nodeId, inputValue, inputTextsSecondary, updateNode, isLogicalSwitch }: SwitchNodeContentProps) => {
-  /* REMOVED branchInput state */
   const branches = inputTextsSecondary ?? (Array.isArray(inputValue?.branches) ? inputValue.branches : []);
 
-
-
   const handleAddBranch = () => {
-    // Just add an empty branch
     const newBranches = [...branches, ""];
 
     updateNode({
@@ -97,8 +81,6 @@ const SwitchNodeContent = ({ nodeId, inputValue, inputTextsSecondary, updateNode
       patch: {
         inputTextsSecondary: newBranches,
         numHandles: newBranches.length,
-        // Keep updating legacy inputValue for now if needed, or stop?
-        // User asked to refactor, implying moving away. I will only update new fields + numHandles.
       }
     });
   };
@@ -125,13 +107,8 @@ const SwitchNodeContent = ({ nodeId, inputValue, inputTextsSecondary, updateNode
     });
   };
 
-
-
-
   return (
     <Flex direction="column" gap="2">
-
-
       {branches.length > 0 && (
         <Flex direction="column" gap="2">
           {branches.map((branch: string, i: number) => (
@@ -174,23 +151,13 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
 
   const isSwitch = data.node.nodeType === 'LOGICAL_SWITCH' || data.node.nodeType === 'AGENTIC_SWITCH';
 
-  // Standard Node Defaults
   let SPACING = 24;
   let BASE_OFFSET = 50;
   let LEFT_HANDLE_OFFSET: number | undefined = undefined;
 
-  // Switch Node Overrides
   if (isSwitch) {
     SPACING = 40;
     BASE_OFFSET = 66;
-
-    // Dynamic Left Handle Calculation
-    // Try to center between the first and last handle.
-    // Handle 0 is at BASE_OFFSET.
-    // Handle N-1 is at BASE_OFFSET + (N-1)*SPACING.
-    // Center = (Top + Bottom) / 2
-    //        = (BASE_OFFSET + (BASE_OFFSET + (numHandles - 1) * SPACING)) / 2
-    //        = BASE_OFFSET + ((numHandles - 1) * SPACING) / 2
 
     const num = Math.max(1, data.node.numHandles || 0); // avoid negative or 0 issues
     LEFT_HANDLE_OFFSET = BASE_OFFSET + ((num - 1) * SPACING) / 2;
