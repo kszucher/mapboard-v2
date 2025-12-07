@@ -1,8 +1,8 @@
 import { Flex } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
 import type { Id } from '../../../convex/convex/_generated/dataModel';
-import type { AppFlowNode } from './types.ts';
 import { SwitchBody } from './SwitchBody.tsx';
+import type { AppFlowNode } from './types.ts';
 
 interface FlowNodeAgenticSwitchProps {
   data: AppFlowNode['data'];
@@ -16,16 +16,28 @@ export const FlowNodeAgenticSwitch = ({ data, updateNode }: FlowNodeAgenticSwitc
   const num = Math.max(1, node.numHandles || 0);
   const LEFT_HANDLE_OFFSET = BASE_OFFSET + ((num - 1) * SPACING) / 2;
 
+  /*
+   * AGENTIC_SWITCH stores branches in nodeTypeAgenticSwitchInput.inputTextsSecondary
+   */
+  const branches = node.nodeTypeAgenticSwitchInput?.inputTextsSecondary ?? [];
+
+  const handleBranchesChange = (newBranches: string[]) => {
+    updateNode({
+      nodeId: node._id,
+      patch: {
+        nodeTypeAgenticSwitchInput: {
+          ...node.nodeTypeAgenticSwitchInput,
+          inputTextsSecondary: newBranches,
+        },
+        numHandles: newBranches.length,
+      },
+    });
+  };
+
   return (
     <>
       <Flex direction="column" gap="3" style={{ marginTop: 38 }}>
-        <SwitchBody
-          nodeId={node._id}
-          inputValue={node.inputValue}
-          inputTextsSecondary={node.inputTextsSecondary}
-          updateNode={updateNode}
-          isLogicalSwitch={false}
-        />
+        <SwitchBody branches={branches} onBranchesChange={handleBranchesChange} isLogicalSwitch={false} />
       </Flex>
 
       <Handle type="target" position={Position.Left} style={{ top: LEFT_HANDLE_OFFSET }} />

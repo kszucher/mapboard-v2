@@ -1,19 +1,19 @@
-import { mutation } from "./_generated/server";
-import { v } from "convex/values";
-import { Color, NodeType } from "./schema";
+import { v } from 'convex/values';
+import { mutation } from './_generated/server';
+import { Color, NodeType } from './schema';
 
 export const createGraph = mutation({
   args: {
-    userId: v.id("users"),
+    userId: v.id('users'),
     graphName: v.string(),
   },
   handler: async (ctx, { userId, graphName }) => {
-    const graphId = await ctx.db.insert("graphs", {
+    const graphId = await ctx.db.insert('graphs', {
       name: graphName,
       userId,
     });
 
-    await ctx.db.insert("nodes", {
+    await ctx.db.insert('nodes', {
       graphId,
       nodeType: NodeType.START,
       color: Color.gray,
@@ -22,7 +22,7 @@ export const createGraph = mutation({
       height: 200,
       offsetX: 100,
       offsetY: 100,
-      label: "Start",
+      label: 'Start',
       numHandles: 1,
       isProcessing: false,
     });

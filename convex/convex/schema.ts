@@ -1,12 +1,12 @@
 import { defineSchema, defineTable } from 'convex/server';
-import { v } from "convex/values";
+import { v } from 'convex/values';
 
 export const ColorMode = {
   DARK: 'DARK',
-  LIGHT: 'LIGHT'
+  LIGHT: 'LIGHT',
 } as const;
 
-export type ColorMode = typeof ColorMode[keyof typeof ColorMode];
+export type ColorMode = (typeof ColorMode)[keyof typeof ColorMode];
 
 export const ColorModes = v.union(...Object.values(ColorMode).map(v.literal));
 
@@ -39,7 +39,7 @@ export const Color = {
   sky: 'sky',
 } as const;
 
-export type Color = typeof Color[keyof typeof Color];
+export type Color = (typeof Color)[keyof typeof Color];
 
 export const Colors = v.union(...Object.values(Color).map(v.literal));
 
@@ -48,10 +48,10 @@ export const NodeType = {
   LOGIC: 'LOGIC',
   AGENT: 'AGENT',
   LOGICAL_SWITCH: 'LOGICAL_SWITCH',
-  AGENTIC_SWITCH: 'AGENTIC_SWITCH'
-}
+  AGENTIC_SWITCH: 'AGENTIC_SWITCH',
+};
 
-export type NodeType = typeof NodeType[keyof typeof NodeType];
+export type NodeType = (typeof NodeType)[keyof typeof NodeType];
 
 export const NodeTypes = v.union(...Object.values(NodeType).map(v.literal));
 
@@ -78,9 +78,18 @@ export const nodeFields = {
   numHandles: v.number(),
   nodeType: NodeTypes,
   isProcessing: v.boolean(),
-  inputValue: v.optional(v.any()), // Deprecated but kept for backward compat reading if needed
-  inputTextPrimary: v.optional(v.string()), // For "Instruction"
-  inputTextsSecondary: v.optional(v.array(v.string())), // For "Branches"
+  nodeTypeLogicalSwitchInput: v.optional(
+    v.object({
+      inputTextPrimary: v.optional(v.string()),
+      inputTextsSecondary: v.optional(v.array(v.string())),
+    })
+  ),
+  nodeTypeLogicInput: v.optional(v.any()),
+  nodeTypeAgentInput: v.optional(v.any()), // Refine later
+  nodeTypeAgenticSwitchInput: v.optional(v.any()), // Refine later
+  inputValue: v.optional(v.any()),
+  inputTextPrimary: v.optional(v.string()),
+  inputTextsSecondary: v.optional(v.any()),
   outputValue: v.optional(v.any()),
   inputSchema: v.optional(v.any()),
   outputSchema: v.optional(v.any()),

@@ -45,10 +45,6 @@ export const useGraphMutations = () => {
         numHandles: 1,
         nodeType: nodeType,
         isProcessing: false,
-        inputValue: null,
-        outputValue: null,
-        inputSchema: null,
-        outputSchema: null,
       });
     },
     [createNodeMutation]

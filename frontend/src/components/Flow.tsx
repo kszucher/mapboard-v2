@@ -1,9 +1,19 @@
-import { type Connection, Controls, ReactFlow, useEdgesState, useNodesState, useReactFlow, reconnectEdge, addEdge, useNodesInitialized } from '@xyflow/react';
+import {
+  addEdge,
+  type Connection,
+  Controls,
+  ReactFlow,
+  reconnectEdge,
+  useEdgesState,
+  useNodesInitialized,
+  useNodesState,
+  useReactFlow,
+} from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { Id } from '../../../convex/convex/_generated/dataModel';
-import { CustomNode } from './FlowNode.tsx';
 import FlowEdge from './FlowEdge.tsx';
+import { CustomNode } from './FlowNode.tsx';
 import type { AppFlowEdge, AppFlowNode } from './types.ts';
 import { useGraphMutations } from './useGraphMutations.ts';
 import { useGraphQueries } from './useGraphQueries.ts';
@@ -63,67 +73,81 @@ export const Flow = ({ selectedGraphId }: { selectedGraphId: Id<'graphs'> }) => 
     setEdges(mappedEdges);
   }, [edgesData, setEdges]);
 
-  const handleConnect = useCallback((params: Connection) => {
-    if (!params.source || !params.target) return;
+  const handleConnect = useCallback(
+    (params: Connection) => {
+      if (!params.source || !params.target) return;
 
-    setEdges((edges) => addEdge(params, edges));
+      setEdges(edges => addEdge(params, edges));
 
-    createEdge(
-      selectedGraphId,
-      params.source as Id<'nodes'>,
-      params.target as Id<'nodes'>,
-      Number(params.sourceHandle)
-    );
-  }, [selectedGraphId, createEdge, setEdges]);
+      createEdge(
+        selectedGraphId,
+        params.source as Id<'nodes'>,
+        params.target as Id<'nodes'>,
+        Number(params.sourceHandle)
+      );
+    },
+    [selectedGraphId, createEdge, setEdges]
+  );
 
-  const handleEdgesDelete = useCallback((edgesToDelete: AppFlowEdge[]) => {
-    edgesToDelete.forEach(edge => {
-      deleteEdge(edge.id as Id<'edges'>);
-    });
-  }, [deleteEdge]);
+  const handleEdgesDelete = useCallback(
+    (edgesToDelete: AppFlowEdge[]) => {
+      edgesToDelete.forEach(edge => {
+        deleteEdge(edge.id as Id<'edges'>);
+      });
+    },
+    [deleteEdge]
+  );
 
   const handleReconnectStart = useCallback(() => {
     edgeReconnectSuccessful.current = false;
   }, []);
 
-  const handleReconnect = useCallback((oldEdge: AppFlowEdge, newConnection: Connection) => {
-    edgeReconnectSuccessful.current = true;
+  const handleReconnect = useCallback(
+    (oldEdge: AppFlowEdge, newConnection: Connection) => {
+      edgeReconnectSuccessful.current = true;
 
-    setEdges((edges) => reconnectEdge(oldEdge, newConnection, edges));
+      setEdges(edges => reconnectEdge(oldEdge, newConnection, edges));
 
-    deleteEdge(oldEdge.id as Id<'edges'>);
+      deleteEdge(oldEdge.id as Id<'edges'>);
 
-    if (newConnection.source && newConnection.target) {
-      createEdge(
-        selectedGraphId,
-        newConnection.source as Id<'nodes'>,
-        newConnection.target as Id<'nodes'>,
-        Number(newConnection.sourceHandle)
-      );
-    }
-  }, [selectedGraphId, createEdge, deleteEdge, setEdges]);
+      if (newConnection.source && newConnection.target) {
+        createEdge(
+          selectedGraphId,
+          newConnection.source as Id<'nodes'>,
+          newConnection.target as Id<'nodes'>,
+          Number(newConnection.sourceHandle)
+        );
+      }
+    },
+    [selectedGraphId, createEdge, deleteEdge, setEdges]
+  );
 
-  const handleReconnectEnd = useCallback((_event: MouseEvent | TouchEvent, edge: AppFlowEdge) => {
-    if (!edgeReconnectSuccessful.current) {
-      setEdges((edges) => edges.filter((e) => e.id !== edge.id));
-      deleteEdge(edge.id as Id<'edges'>);
-    }
+  const handleReconnectEnd = useCallback(
+    (_event: MouseEvent | TouchEvent, edge: AppFlowEdge) => {
+      if (!edgeReconnectSuccessful.current) {
+        setEdges(edges => edges.filter(e => e.id !== edge.id));
+        deleteEdge(edge.id as Id<'edges'>);
+      }
 
-    edgeReconnectSuccessful.current = true;
-  }, [deleteEdge, setEdges]);
+      edgeReconnectSuccessful.current = true;
+    },
+    [deleteEdge, setEdges]
+  );
 
-  const handleNodeDragStop = useCallback((_event: React.MouseEvent, node: AppFlowNode) => {
-    updateNodePosition(
-      node.id as Id<'nodes'>,
-      Math.round(node.position.x),
-      Math.round(node.position.y)
-    );
-  }, [updateNodePosition]);
+  const handleNodeDragStop = useCallback(
+    (_event: React.MouseEvent, node: AppFlowNode) => {
+      updateNodePosition(node.id as Id<'nodes'>, Math.round(node.position.x), Math.round(node.position.y));
+    },
+    [updateNodePosition]
+  );
 
-  const handleDoubleClick = useCallback((event: React.MouseEvent) => {
-    event.preventDefault();
-    void fitView({ padding: 0.1, maxZoom: 1, duration: 300 });
-  }, [fitView]);
+  const handleDoubleClick = useCallback(
+    (event: React.MouseEvent) => {
+      event.preventDefault();
+      void fitView({ padding: 0.1, maxZoom: 1, duration: 300 });
+    },
+    [fitView]
+  );
 
   if (!nodesData || !edgesData) return null;
 

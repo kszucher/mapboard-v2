@@ -1,13 +1,13 @@
-import { v } from "convex/values"
-import { query, mutation } from "./_generated/server"
+import { v } from 'convex/values';
+import { mutation, query } from './_generated/server';
 import { nodeFields } from './schema';
 
 export const getNodesOfGraph = query({
-  args: { graphId: v.id("graphs") },
+  args: { graphId: v.id('graphs') },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("nodes")
-      .withIndex("by_graphId", (q) => q.eq("graphId", args.graphId))
+      .query('nodes')
+      .withIndex('by_graphId', q => q.eq('graphId', args.graphId))
       .collect();
   },
 });
@@ -15,24 +15,30 @@ export const getNodesOfGraph = query({
 export const createNode = mutation({
   args: nodeFields,
   handler: async (ctx, args) => {
-    return await ctx.db.insert("nodes", args);
+    return await ctx.db.insert('nodes', args);
   },
 });
 
 export const updateNode = mutation({
   args: {
-    nodeId: v.id("nodes"),
+    nodeId: v.id('nodes'),
     patch: v.object({
-      graphId: v.optional(v.id("graphs")),
-      toolId: v.optional(v.id("tools")),
+      graphId: v.optional(v.id('graphs')),
+      toolId: v.optional(v.id('tools')),
       iid: v.optional(v.number()),
       offsetX: v.optional(v.number()),
       offsetY: v.optional(v.number()),
       isProcessing: v.optional(v.boolean()),
-      inputValue: v.optional(v.any()),
-      inputTextPrimary: v.optional(v.string()),
-      inputTextsSecondary: v.optional(v.array(v.string())),
-      outputValue: v.optional(v.any()),
+      nodeTypeLogicalSwitchInput: v.optional(
+        v.object({
+          inputTextPrimary: v.optional(v.string()),
+          inputTextsSecondary: v.optional(v.array(v.string())),
+        })
+      ),
+      nodeTypeLogicInput: v.optional(v.any()),
+      nodeTypeAgentInput: v.optional(v.any()),
+      nodeTypeAgenticSwitchInput: v.optional(v.any()),
+
       numHandles: v.optional(v.number()),
     }),
   },
@@ -40,20 +46,21 @@ export const updateNode = mutation({
     await ctx.db.patch(args.nodeId, args.patch);
   },
 });
+// Version bump
 
 export const deleteNode = mutation({
-  args: { nodeId: v.id("nodes") },
+  args: { nodeId: v.id('nodes') },
   handler: async (ctx, args) => {
     const fromEdges = await ctx.db
-      .query("edges")
-      .withIndex("by_fromNodeId", (q) => q.eq("fromNodeId", args.nodeId))
+      .query('edges')
+      .withIndex('by_fromNodeId', q => q.eq('fromNodeId', args.nodeId))
       .collect();
     for (const edge of fromEdges) {
       await ctx.db.delete(edge._id);
     }
     const toEdges = await ctx.db
-      .query("edges")
-      .withIndex("by_toNodeId", (q) => q.eq("toNodeId", args.nodeId))
+      .query('edges')
+      .withIndex('by_toNodeId', q => q.eq('toNodeId', args.nodeId))
       .collect();
     for (const edge of toEdges) {
       await ctx.db.delete(edge._id);

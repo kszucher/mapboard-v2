@@ -7,8 +7,8 @@ import { FlowNodeAgenticSwitch } from './FlowNodeAgenticSwitch.tsx';
 import { FlowNodeLogic } from './FlowNodeLogic.tsx';
 import { FlowNodeLogicalSwitch } from './FlowNodeLogicalSwitch.tsx';
 import { FlowNodeStart } from './FlowNodeStart.tsx';
-import { useGraphMutations } from './useGraphMutations.ts';
 import type { AppFlowNode } from './types.ts';
+import { useGraphMutations } from './useGraphMutations.ts';
 
 const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   const { deleteNode, updateNode } = useGraphMutations();
@@ -17,7 +17,6 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   useEffect(() => {
     updateNodeInternals(id);
   }, [data.node.numHandles, data.node.nodeType, id, updateNodeInternals]);
-
 
   if (!data) return null;
 
@@ -78,9 +77,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
                 <DropdownMenu.Item key={1}></DropdownMenu.Item>
               </DropdownMenu.SubContent>
             </DropdownMenu.Sub>
-            <DropdownMenu.Item onClick={() => deleteNode(data.node._id)}>
-              {'Delete'}
-            </DropdownMenu.Item>
+            <DropdownMenu.Item onClick={() => deleteNode(data.node._id)}>{'Delete'}</DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Root>
       </Box>
