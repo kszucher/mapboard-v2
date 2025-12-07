@@ -7,8 +7,21 @@ import { Flow } from './Flow.tsx';
 import { useGraphMutations } from './useGraphMutations.ts';
 import { useActiveGraphId } from './useGraphQueries.ts';
 
+import { useMutation } from 'convex/react';
+import { api } from '../../../convex/convex/_generated/api';
+import { useEffect, useState } from 'react';
+
 export const Frame = () => {
-  const userId = 'js71tjgnrp94vywd89pqjafx3h7wc2tb' as Id<'users'>;
+  const [userId, setUserId] = useState<Id<'users'> | null>(null);
+  const getOrCreateUser = useMutation(api.users.getOrCreateUser);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const id = await getOrCreateUser();
+      setUserId(id);
+    };
+    fetchUser();
+  }, [getOrCreateUser]);
 
   const selectedGraphId = useActiveGraphId(userId);
 
@@ -20,6 +33,7 @@ export const Frame = () => {
   };
 
   const handleCreateGraph = async () => {
+    if (!userId) return;
     createGraph(userId, 'New Graph');
   };
 

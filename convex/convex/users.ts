@@ -1,6 +1,22 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
 
+export const getOrCreateUser = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const user = await ctx.db.query('users').first();
+    if (user) {
+      return user._id;
+    }
+    const userId = await ctx.db.insert('users', {
+      name: 'User',
+      colorMode: 'DARK',
+      selectedGraphId: undefined,
+    });
+    return userId;
+  },
+});
+
 export const getActiveGraphId = query({
   args: {
     userId: v.id('users'),
