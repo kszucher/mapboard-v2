@@ -85,14 +85,8 @@ export const nodeFields = {
     })
   ),
   nodeTypeLogicInput: v.optional(v.any()),
-  nodeTypeAgentInput: v.optional(v.any()), // Refine later
-  nodeTypeAgenticSwitchInput: v.optional(v.any()), // Refine later
-  inputValue: v.optional(v.any()),
-  inputTextPrimary: v.optional(v.string()),
-  inputTextsSecondary: v.optional(v.any()),
-  outputValue: v.optional(v.any()),
-  inputSchema: v.optional(v.any()),
-  outputSchema: v.optional(v.any()),
+  nodeTypeAgentInput: v.optional(v.any()),
+  nodeTypeAgenticSwitchInput: v.optional(v.any()),
 };
 
 export const edgeFields = {

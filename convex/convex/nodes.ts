@@ -23,23 +23,12 @@ export const updateNode = mutation({
   args: {
     nodeId: v.id('nodes'),
     patch: v.object({
-      graphId: v.optional(v.id('graphs')),
-      toolId: v.optional(v.id('tools')),
-      iid: v.optional(v.number()),
-      offsetX: v.optional(v.number()),
-      offsetY: v.optional(v.number()),
-      isProcessing: v.optional(v.boolean()),
-      nodeTypeLogicalSwitchInput: v.optional(
-        v.object({
-          inputTextPrimary: v.optional(v.string()),
-          inputTextsSecondary: v.optional(v.array(v.string())),
-        })
+      ...Object.fromEntries(
+        Object.entries(nodeFields).map(([key, validator]) => [
+          key,
+          v.optional(validator),
+        ])
       ),
-      nodeTypeLogicInput: v.optional(v.any()),
-      nodeTypeAgentInput: v.optional(v.any()),
-      nodeTypeAgenticSwitchInput: v.optional(v.any()),
-
-      numHandles: v.optional(v.number()),
     }),
   },
   handler: async (ctx, args) => {
