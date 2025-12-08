@@ -53,9 +53,7 @@ export const Flow = ({ selectedGraphId }: { selectedGraphId: Id<'graphs'> }) => 
       prevGraphId.current !== selectedGraphId
     ) {
       prevGraphId.current = selectedGraphId;
-      window.requestAnimationFrame(() => {
-        void fitView({ padding: 0.1, maxZoom: 1, duration: 0 });
-      });
+      void fitView({ padding: 0.1, maxZoom: 1, duration: 0 });
     }
   }, [nodesInitialized, nodes, fitView, selectedGraphId]);
 
