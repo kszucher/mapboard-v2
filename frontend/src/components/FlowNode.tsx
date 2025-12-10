@@ -32,7 +32,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
       case 'LOGIC':
         return <FlowNodeLogic data={data} updateNode={updateNode} />;
       case 'AGENT':
-        return <FlowNodeAgent data={data} />;
+        return <FlowNodeAgent data={data} updateNode={updateNode} />;
       case 'LOGICAL_SWITCH':
         return <FlowNodeLogicalSwitch data={data} updateNode={updateNode}
           deleteEdgesByNodeAndHandles={deleteEdgesByNodeAndHandles} />;

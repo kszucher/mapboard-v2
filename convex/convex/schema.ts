@@ -83,7 +83,10 @@ export const nodeFields = {
     schemaTypes: v.optional(v.array(v.string())),
   })),
   nodeTypeLogicInput: v.optional(v.object({ logicalAssignments: v.optional(v.array(v.string())) })),
-  nodeTypeAgentInput: v.optional(v.object({ agenticAssignments: v.optional(v.array(v.string())) })),
+  nodeTypeAgentInput: v.optional(v.object({
+    agenticAssignments: v.optional(v.array(v.string())),
+    textareaHeight: v.optional(v.number()),
+  })),
   nodeTypeLogicalSwitchInput: v.optional(v.object({ logicalExpressions: v.optional(v.array(v.string())) })),
   nodeTypeAgenticSwitchInput: v.optional(v.object({ agenticExpressions: v.optional(v.array(v.string())) })),
 };
