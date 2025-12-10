@@ -1,16 +1,15 @@
 import { Flex } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
-import type { Id } from '../../../convex/convex/_generated/dataModel';
+import { useGraphMutationsContext } from './contexts/GraphMutationsContext.tsx';
 import { SwitchBody } from './SwitchBody.tsx';
 import type { AppFlowNode } from './types.ts';
 
 interface FlowNodeLogicalSwitchProps {
   data: AppFlowNode['data'];
-  updateNode: (args: { nodeId: Id<'nodes'>; patch: any }) => void;
-  deleteEdgesByNodeAndHandles: (fromNodeId: Id<'nodes'>, deletedHandleIndex: number) => void;
 }
 
-export const FlowNodeLogicalSwitch = ({ data, updateNode, deleteEdgesByNodeAndHandles }: FlowNodeLogicalSwitchProps) => {
+export const FlowNodeLogicalSwitch = ({ data }: FlowNodeLogicalSwitchProps) => {
+  const { updateNode, deleteEdgesByNodeAndHandles } = useGraphMutationsContext();
   const { node } = data;
   const SPACING = 40;
   const BASE_OFFSET = 66;

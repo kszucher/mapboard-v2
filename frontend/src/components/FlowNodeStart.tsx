@@ -1,16 +1,16 @@
 import { Flex } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
-import type { Id } from '../../../convex/convex/_generated/dataModel';
+import { useGraphMutationsContext } from './contexts/GraphMutationsContext.tsx';
 import type { SchemaField } from './SchemaFieldRow.tsx';
 import { SchemaFieldsBody } from './SchemaFieldsBody.tsx';
 import type { AppFlowNode } from './types.ts';
 
 interface FlowNodeStartProps {
   data: AppFlowNode['data'];
-  updateNode: (args: { nodeId: Id<'nodes'>; patch: any }) => void;
 }
 
-export const FlowNodeStart = ({ data, updateNode }: FlowNodeStartProps) => {
+export const FlowNodeStart = ({ data }: FlowNodeStartProps) => {
+  const { updateNode } = useGraphMutationsContext();
   const { node } = data;
 
   // Reconstruct fields from the two separate arrays

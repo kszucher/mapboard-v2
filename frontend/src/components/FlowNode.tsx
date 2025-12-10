@@ -2,16 +2,16 @@ import { DotsHorizontalIcon } from '@radix-ui/react-icons';
 import { Badge, Box, DropdownMenu, Flex, IconButton } from '@radix-ui/themes';
 import { type NodeProps, useUpdateNodeInternals } from '@xyflow/react';
 import { memo, useEffect, useRef } from 'react';
+import { useGraphMutationsContext } from './contexts/GraphMutationsContext.tsx';
 import { FlowNodeAgent } from './FlowNodeAgent.tsx';
 import { FlowNodeAgenticSwitch } from './FlowNodeAgenticSwitch.tsx';
 import { FlowNodeLogic } from './FlowNodeLogic.tsx';
 import { FlowNodeLogicalSwitch } from './FlowNodeLogicalSwitch.tsx';
 import { FlowNodeStart } from './FlowNodeStart.tsx';
 import type { AppFlowNode } from './types.ts';
-import { useGraphMutations } from './useGraphMutations.ts';
 
 const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
-  const { deleteNode, updateNode, deleteEdgesByNodeAndHandles } = useGraphMutations();
+  const { deleteNode } = useGraphMutationsContext();
   const updateNodeInternals = useUpdateNodeInternals();
 
   useEffect(() => {
@@ -28,17 +28,15 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   const renderBody = () => {
     switch (data.node.nodeType) {
       case 'START':
-        return <FlowNodeStart data={data} updateNode={updateNode} />;
+        return <FlowNodeStart data={data} />;
       case 'LOGIC':
-        return <FlowNodeLogic data={data} updateNode={updateNode} />;
+        return <FlowNodeLogic data={data} />;
       case 'AGENT':
-        return <FlowNodeAgent data={data} updateNode={updateNode} />;
+        return <FlowNodeAgent data={data} />;
       case 'LOGICAL_SWITCH':
-        return <FlowNodeLogicalSwitch data={data} updateNode={updateNode}
-          deleteEdgesByNodeAndHandles={deleteEdgesByNodeAndHandles} />;
+        return <FlowNodeLogicalSwitch data={data} />;
       case 'AGENTIC_SWITCH':
-        return <FlowNodeAgenticSwitch data={data} updateNode={updateNode}
-          deleteEdgesByNodeAndHandles={deleteEdgesByNodeAndHandles} />;
+        return <FlowNodeAgenticSwitch data={data} />;
       default:
         return <div>Unknown Node Type</div>;
     }

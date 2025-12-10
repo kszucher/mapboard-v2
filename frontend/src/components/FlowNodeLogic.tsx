@@ -1,15 +1,15 @@
 import { Flex } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
-import type { Id } from '../../../convex/convex/_generated/dataModel';
+import { useGraphMutationsContext } from './contexts/GraphMutationsContext.tsx';
 import { LogicAssignmentsBody } from './LogicAssignmentsBody.tsx';
 import type { AppFlowNode } from './types.ts';
 
 interface FlowNodeLogicProps {
   data: AppFlowNode['data'];
-  updateNode: (args: { nodeId: Id<'nodes'>; patch: any }) => void;
 }
 
-export const FlowNodeLogic = ({ data, updateNode }: FlowNodeLogicProps) => {
+export const FlowNodeLogic = ({ data }: FlowNodeLogicProps) => {
+  const { updateNode } = useGraphMutationsContext();
   const { node } = data;
 
   const assignments = node.nodeTypeLogicInput?.logicalAssignments ?? [];

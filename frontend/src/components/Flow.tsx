@@ -12,16 +12,16 @@ import {
 import '@xyflow/react/dist/style.css';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { Id } from '../../../convex/convex/_generated/dataModel';
+import { GraphMutationsProvider, useGraphMutationsContext } from './contexts/GraphMutationsContext.tsx';
 import FlowEdge from './FlowEdge.tsx';
 import { CustomNode } from './FlowNode.tsx';
 import type { AppFlowEdge, AppFlowNode } from './types.ts';
-import { useGraphMutations } from './useGraphMutations.ts';
 import { useGraphQueries } from './useGraphQueries.ts';
 
-export const Flow = ({ selectedGraphId }: { selectedGraphId: Id<'graphs'> }) => {
+const FlowContent = ({ selectedGraphId }: { selectedGraphId: Id<'graphs'> }) => {
   const { nodes: nodesData, edges: edgesData } = useGraphQueries(selectedGraphId);
 
-  const { updateNodePosition, createEdge, deleteEdge } = useGraphMutations();
+  const { updateNodePosition, createEdge, deleteEdge } = useGraphMutationsContext();
 
   const { fitView } = useReactFlow();
   const nodesInitialized = useNodesInitialized();
@@ -171,5 +171,13 @@ export const Flow = ({ selectedGraphId }: { selectedGraphId: Id<'graphs'> }) => 
     >
       <Controls />
     </ReactFlow>
+  );
+};
+
+export const Flow = ({ selectedGraphId }: { selectedGraphId: Id<'graphs'> }) => {
+  return (
+    <GraphMutationsProvider>
+      <FlowContent selectedGraphId={selectedGraphId} />
+    </GraphMutationsProvider>
   );
 };

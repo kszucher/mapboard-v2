@@ -1,15 +1,15 @@
 import { Flex, TextArea } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
 import React, { useEffect, useRef, useState } from 'react';
-import type { Id } from '../../../convex/convex/_generated/dataModel';
+import { useGraphMutationsContext } from './contexts/GraphMutationsContext.tsx';
 import type { AppFlowNode } from './types.ts';
 
 interface FlowNodeAgentProps {
   data: AppFlowNode['data'];
-  updateNode: (args: { nodeId: Id<'nodes'>; patch: any }) => void;
 }
 
-export const FlowNodeAgent = ({ data, updateNode }: FlowNodeAgentProps) => {
+export const FlowNodeAgent = ({ data }: FlowNodeAgentProps) => {
+  const { updateNode } = useGraphMutationsContext();
   const { node } = data;
   const agentInput = node.nodeTypeAgentInput?.agenticAssignments?.[0] ?? '';
   const savedHeight = node.nodeTypeAgentInput?.textareaHeight ?? 60;
