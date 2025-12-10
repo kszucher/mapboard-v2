@@ -8,9 +8,10 @@ interface LogicAssignmentsBodyProps {
 
 export const LogicAssignmentsBody = ({ assignments, onAssignmentsChange }: LogicAssignmentsBodyProps) => {
   return (
-    <EditableList
+    <EditableList<string>
       items={assignments}
       onItemsChange={onAssignmentsChange}
+      createNewItem={() => ''}
       renderItem={(assignment, index, { onUpdate, onDelete }) => (
         <LogicAssignmentRow
           key={index}

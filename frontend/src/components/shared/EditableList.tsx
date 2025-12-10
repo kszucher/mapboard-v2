@@ -2,28 +2,30 @@ import { PlusIcon } from '@radix-ui/react-icons';
 import { Flex, IconButton } from '@radix-ui/themes';
 import type { ReactNode } from 'react';
 
-export interface ItemHandlers {
-  onUpdate: (newValue: string) => void;
+export interface ItemHandlers<T = string> {
+  onUpdate: (newValue: T) => void;
   onDelete: () => void;
 }
 
-interface EditableListProps {
-  items: string[];
-  onItemsChange: (items: string[], deletedIndex?: number) => void;
-  renderItem: (item: string, index: number, handlers: ItemHandlers) => ReactNode;
+interface EditableListProps<T> {
+  items: T[];
+  onItemsChange: (items: T[], deletedIndex?: number) => void;
+  renderItem: (item: T, index: number, handlers: ItemHandlers<T>) => ReactNode;
+  createNewItem: () => T;
 }
 
-export const EditableList = ({
-                               items,
-                               onItemsChange,
-                               renderItem,
-                             }: EditableListProps) => {
+export const EditableList = <T,>({
+  items,
+  onItemsChange,
+  renderItem,
+  createNewItem,
+}: EditableListProps<T>) => {
   const handleAddItem = () => {
-    const newItems = [...items, ''];
+    const newItems = [...items, createNewItem()];
     onItemsChange(newItems);
   };
 
-  const handleUpdateItem = (index: number, newValue: string) => {
+  const handleUpdateItem = (index: number, newValue: T) => {
     const newItems = [...items];
     newItems[index] = newValue;
     onItemsChange(newItems);

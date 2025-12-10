@@ -8,9 +8,10 @@ interface SwitchBodyProps {
 
 export const SwitchBody = ({ branches, onBranchesChange }: SwitchBodyProps) => {
   return (
-    <EditableList
+    <EditableList<string>
       items={branches}
       onItemsChange={onBranchesChange}
+      createNewItem={() => ''}
       renderItem={(branch, index, { onUpdate, onDelete }) => (
         <BranchInput
           key={index}
