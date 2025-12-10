@@ -8,7 +8,7 @@ interface LogicAssignmentRowProps {
   onDelete: () => void;
 }
 
-export const LogicAssignmentRow = ({ value, onChange, onDelete }: LogicAssignmentRowProps) => {
+export const FlowNodeLogicRow = ({ value, onChange, onDelete }: LogicAssignmentRowProps) => {
   const [localValue, setLocalValue] = useState(value);
 
   useEffect(() => {

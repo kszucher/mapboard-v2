@@ -1,8 +1,8 @@
 import { Flex } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
 import { useGraphMutationsContext } from './contexts/GraphMutationsContext.tsx';
-import type { SchemaField } from './SchemaFieldRow.tsx';
-import { SchemaFieldsBody } from './SchemaFieldsBody.tsx';
+import type { SchemaField } from './FlowNodeStartSchemaRow.tsx';
+import { FlowNodeStartSchemaBody } from './FlowNodeStartSchemaBody.tsx';
 import type { AppFlowNode } from './types.ts';
 
 interface FlowNodeStartProps {
@@ -45,7 +45,7 @@ export const FlowNodeStart = ({ data }: FlowNodeStartProps) => {
   return (
     <>
       <Flex direction="column" gap="3" style={{ marginTop: 38 }}>
-        <SchemaFieldsBody fields={fields} onFieldsChange={handleFieldsChange} />
+        <FlowNodeStartSchemaBody fields={fields} onFieldsChange={handleFieldsChange} />
       </Flex>
 
       <Handle type="target" position={Position.Left} />

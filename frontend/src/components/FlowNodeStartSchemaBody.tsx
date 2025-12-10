@@ -1,14 +1,14 @@
 import { PlusIcon } from '@radix-ui/react-icons';
 import { Flex, IconButton } from '@radix-ui/themes';
 
-import { type SchemaField, SchemaFieldRow } from './SchemaFieldRow.tsx';
+import { type SchemaField, FlowNodeStartSchemaRow } from './FlowNodeStartSchemaRow.tsx';
 
 interface SchemaFieldsBodyProps {
   fields: SchemaField[];
   onFieldsChange: (newFields: SchemaField[]) => void;
 }
 
-export const SchemaFieldsBody = ({ fields, onFieldsChange }: SchemaFieldsBodyProps) => {
+export const FlowNodeStartSchemaBody = ({ fields, onFieldsChange }: SchemaFieldsBodyProps) => {
   const handleAddField = () => {
     const newFields = [...fields, { name: '', type: 'string' }];
     onFieldsChange(newFields);
@@ -30,7 +30,7 @@ export const SchemaFieldsBody = ({ fields, onFieldsChange }: SchemaFieldsBodyPro
       {fields.length > 0 && (
         <Flex direction="column" gap="2">
           {fields.map((field, i) => (
-            <SchemaFieldRow
+            <FlowNodeStartSchemaRow
               key={i}
               field={field}
               onChange={newField => handleUpdateField(i, newField)}

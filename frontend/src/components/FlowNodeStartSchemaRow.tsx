@@ -13,7 +13,7 @@ interface SchemaFieldRowProps {
   onDelete: () => void;
 }
 
-export const SchemaFieldRow = ({ field, onChange, onDelete }: SchemaFieldRowProps) => {
+export const FlowNodeStartSchemaRow = ({ field, onChange, onDelete }: SchemaFieldRowProps) => {
   const [localName, setLocalName] = useState(field.name);
   const [localType, setLocalType] = useState(field.type);
 

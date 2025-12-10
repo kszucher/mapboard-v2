@@ -1,4 +1,4 @@
-import { LogicAssignmentRow } from './LogicAssignmentRow.tsx';
+import { FlowNodeLogicRow } from './FlowNodeLogicRow.tsx';
 import { EditableList } from './shared/EditableList.tsx';
 
 interface LogicAssignmentsBodyProps {
@@ -6,14 +6,14 @@ interface LogicAssignmentsBodyProps {
   onAssignmentsChange: (newAssignments: string[]) => void;
 }
 
-export const LogicAssignmentsBody = ({ assignments, onAssignmentsChange }: LogicAssignmentsBodyProps) => {
+export const FlowNodeLogicBody = ({ assignments, onAssignmentsChange }: LogicAssignmentsBodyProps) => {
   return (
     <EditableList<string>
       items={assignments}
       onItemsChange={onAssignmentsChange}
       createNewItem={() => ''}
       renderItem={(assignment, index, { onUpdate, onDelete }) => (
-        <LogicAssignmentRow
+        <FlowNodeLogicRow
           key={index}
           value={assignment}
           onChange={onUpdate}
