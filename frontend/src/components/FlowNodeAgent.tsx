@@ -15,10 +15,16 @@ export const FlowNodeAgent = ({ data, updateNode }: FlowNodeAgentProps) => {
   const savedHeight = node.nodeTypeAgentInput?.textareaHeight ?? 60;
   const [localValue, setLocalValue] = useState(agentInput);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const initialHeightRef = useRef(savedHeight);
 
   useEffect(() => {
     setLocalValue(agentInput);
   }, [agentInput]);
+
+  const handleMouseDown = () => {
+    // Track initial height when mouse down
+    initialHeightRef.current = textareaRef.current?.offsetHeight ?? savedHeight;
+  };
 
   const handleBlur = () => {
     if (localValue !== agentInput) {
@@ -36,9 +42,9 @@ export const FlowNodeAgent = ({ data, updateNode }: FlowNodeAgentProps) => {
   };
 
   const handleMouseUp = () => {
-    // Save height after resize
+    // Only save if height actually changed (user was resizing)
     const currentHeight = textareaRef.current?.offsetHeight;
-    if (currentHeight && currentHeight !== savedHeight && currentHeight >= 60) {
+    if (currentHeight && currentHeight !== initialHeightRef.current && currentHeight >= 60) {
       updateNode({
         nodeId: node._id,
         patch: {
@@ -63,7 +69,7 @@ export const FlowNodeAgent = ({ data, updateNode }: FlowNodeAgentProps) => {
   return (
     <>
       <Flex direction="column" gap="3" style={{ marginTop: 38 }}>
-        <div className="nodrag" onMouseUp={handleMouseUp}>
+        <div className="nodrag" onMouseDown={handleMouseDown} onMouseUp={handleMouseUp}>
           <TextArea
             ref={textareaRef}
             value={localValue}

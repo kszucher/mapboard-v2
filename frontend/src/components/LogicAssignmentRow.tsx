@@ -31,22 +31,24 @@ export const LogicAssignmentRow = ({ value, onChange, onDelete }: LogicAssignmen
 
   return (
     <Flex gap="2" align="center" style={{ marginLeft: 16 }}>
-      <TextField.Root
-        value={localValue}
-        onChange={e => setLocalValue(e.target.value)}
-        onBlur={handleBlur}
-        onKeyDown={e => {
-          if (e.key === 'Enter') {
-            e.currentTarget.blur();
-          }
-        }}
-        placeholder="Assignment"
-        style={{ width: 240, boxShadow: 'none' }}
-      >
-        <TextField.Slot side="right">
-          {showValidation && (valid ? <CheckIcon color="green" /> : <Cross2Icon color="red" />)}
-        </TextField.Slot>
-      </TextField.Root>
+      <div className="nodrag" style={{ width: 240 }}>
+        <TextField.Root
+          value={localValue}
+          onChange={e => setLocalValue(e.target.value)}
+          onBlur={handleBlur}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.currentTarget.blur();
+            }
+          }}
+          placeholder="Assignment"
+          style={{ width: '100%', boxShadow: 'none' }}
+        >
+          <TextField.Slot side="right">
+            {showValidation && (valid ? <CheckIcon color="green" /> : <Cross2Icon color="red" />)}
+          </TextField.Slot>
+        </TextField.Root>
+      </div>
 
       <IconButton onClick={onDelete} size="1" variant="ghost" color="gray">
         <Cross2Icon />

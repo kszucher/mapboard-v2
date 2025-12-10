@@ -26,25 +26,27 @@ export const BranchInput = ({ value, onChange, onDelete, enableValidation }: Bra
 
   return (
     <Flex gap="2" align="center" style={{ marginLeft: 16 }}>
-      <TextField.Root
-        value={localValue}
-        onChange={e => setLocalValue(e.target.value)}
-        onBlur={() => {
-          if (localValue !== value) {
-            onChange(localValue);
-          }
-        }}
-        onKeyDown={e => {
-          if (e.key === 'Enter') {
-            e.currentTarget.blur(); // Trigger blur to save
-          }
-        }}
-        style={{ flexGrow: 1, boxShadow: 'none' }}
-      >
-        <TextField.Slot side="right">
-          {showValidation && (valid ? <CheckIcon color="green" /> : <Cross2Icon color="red" />)}
-        </TextField.Slot>
-      </TextField.Root>
+      <div className="nodrag" style={{ flexGrow: 1 }}>
+        <TextField.Root
+          value={localValue}
+          onChange={e => setLocalValue(e.target.value)}
+          onBlur={() => {
+            if (localValue !== value) {
+              onChange(localValue);
+            }
+          }}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.currentTarget.blur(); // Trigger blur to save
+            }
+          }}
+          style={{ flexGrow: 1, boxShadow: 'none' }}
+        >
+          <TextField.Slot side="right">
+            {showValidation && (valid ? <CheckIcon color="green" /> : <Cross2Icon color="red" />)}
+          </TextField.Slot>
+        </TextField.Root>
+      </div>
       <IconButton onClick={onDelete} size="1" variant="ghost" color="gray">
         <Cross2Icon />
       </IconButton>

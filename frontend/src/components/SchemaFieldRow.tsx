@@ -38,22 +38,24 @@ export const SchemaFieldRow = ({ field, onChange, onDelete }: SchemaFieldRowProp
 
   return (
     <Flex gap="2" align="center" style={{ marginLeft: 16 }}>
-      <TextField.Root
-        value={localName}
-        onChange={e => setLocalName(e.target.value)}
-        onBlur={handleBlur}
-        onKeyDown={e => {
-          if (e.key === 'Enter') {
-            e.currentTarget.blur();
-          }
-        }}
-        placeholder="Name"
-        style={{ width: 140, boxShadow: 'none' }}
-      >
-        <TextField.Slot side="right">
-          {showValidation && (validName ? <CheckIcon color="green" /> : <Cross2Icon color="red" />)}
-        </TextField.Slot>
-      </TextField.Root>
+      <div className="nodrag" style={{ width: 140 }}>
+        <TextField.Root
+          value={localName}
+          onChange={e => setLocalName(e.target.value)}
+          onBlur={handleBlur}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.currentTarget.blur();
+            }
+          }}
+          placeholder="Name"
+          style={{ width: '100%', boxShadow: 'none' }}
+        >
+          <TextField.Slot side="right">
+            {showValidation && (validName ? <CheckIcon color="green" /> : <Cross2Icon color="red" />)}
+          </TextField.Slot>
+        </TextField.Root>
+      </div>
 
       <Select.Root value={localType} onValueChange={value => {
         setLocalType(value);
