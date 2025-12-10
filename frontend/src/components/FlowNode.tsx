@@ -28,7 +28,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   const renderBody = () => {
     switch (data.node.nodeType) {
       case 'START':
-        return <FlowNodeStart data={data} />;
+        return <FlowNodeStart data={data} updateNode={updateNode} />;
       case 'LOGIC':
         return <FlowNodeLogic data={data} />;
       case 'AGENT':
