@@ -1,4 +1,4 @@
-import { Cross2Icon } from '@radix-ui/react-icons';
+import { CheckIcon, Cross2Icon } from '@radix-ui/react-icons';
 import { Flex, IconButton, Select, TextField } from '@radix-ui/themes';
 import { useEffect, useState } from 'react';
 
@@ -28,6 +28,14 @@ export const SchemaFieldRow = ({ field, onChange, onDelete }: SchemaFieldRowProp
     }
   };
 
+  const isValidName = (text: string) => {
+    if (!text || !text.trim()) return false;
+    return /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(text.trim());
+  };
+
+  const showValidation = localName.trim().length > 0;
+  const validName = isValidName(localName);
+
   return (
     <Flex gap="2" align="center" style={{ marginLeft: 16 }}>
       <TextField.Root
@@ -41,7 +49,11 @@ export const SchemaFieldRow = ({ field, onChange, onDelete }: SchemaFieldRowProp
         }}
         placeholder="Name"
         style={{ width: 140, boxShadow: 'none' }}
-      />
+      >
+        <TextField.Slot side="right">
+          {showValidation && (validName ? <CheckIcon color="green" /> : <Cross2Icon color="red" />)}
+        </TextField.Slot>
+      </TextField.Root>
 
       <Select.Root value={localType} onValueChange={value => {
         setLocalType(value);

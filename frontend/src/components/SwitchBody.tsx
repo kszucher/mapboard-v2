@@ -6,10 +6,9 @@ import { BranchInput } from './BranchInput.tsx';
 interface SwitchBodyProps {
   branches: string[];
   onBranchesChange: (newBranches: string[], deletedIndex?: number) => void;
-  isLogicalSwitch?: boolean;
 }
 
-export const SwitchBody = ({ branches, onBranchesChange, isLogicalSwitch }: SwitchBodyProps) => {
+export const SwitchBody = ({ branches, onBranchesChange }: SwitchBodyProps) => {
   const handleAddBranch = () => {
     const newBranches = [...branches, ''];
     onBranchesChange(newBranches);
@@ -36,7 +35,7 @@ export const SwitchBody = ({ branches, onBranchesChange, isLogicalSwitch }: Swit
               value={branch}
               onChange={val => handleUpdateBranch(i, val)}
               onDelete={() => handleDeleteBranch(i)}
-              enableValidation={isLogicalSwitch}
+              enableValidation={true}
             />
           ))}
         </Flex>

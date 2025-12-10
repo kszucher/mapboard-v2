@@ -39,7 +39,7 @@ export const FlowNodeLogicalSwitch = ({ data, updateNode, deleteEdgesByNodeAndHa
   return (
     <>
       <Flex direction="column" gap="3" style={{ marginTop: 38 }}>
-        <SwitchBody branches={branches} onBranchesChange={handleBranchesChange} isLogicalSwitch={true} />
+        <SwitchBody branches={branches} onBranchesChange={handleBranchesChange} />
       </Flex>
 
       <Handle type="target" position={Position.Left} style={{ top: LEFT_HANDLE_OFFSET }} />
