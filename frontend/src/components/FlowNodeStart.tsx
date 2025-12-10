@@ -1,8 +1,8 @@
 import { Flex } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
 import type { Id } from '../../../convex/convex/_generated/dataModel';
-import { SchemaFieldsBody } from './SchemaFieldsBody.tsx';
 import type { SchemaField } from './SchemaFieldRow.tsx';
+import { SchemaFieldsBody } from './SchemaFieldsBody.tsx';
 import type { AppFlowNode } from './types.ts';
 
 interface FlowNodeStartProps {
