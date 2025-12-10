@@ -5,7 +5,7 @@ import { BranchInput } from './BranchInput.tsx';
 
 interface SwitchBodyProps {
   branches: string[];
-  onBranchesChange: (newBranches: string[]) => void;
+  onBranchesChange: (newBranches: string[], deletedIndex?: number) => void;
   isLogicalSwitch?: boolean;
 }
 
@@ -23,7 +23,7 @@ export const SwitchBody = ({ branches, onBranchesChange, isLogicalSwitch }: Swit
 
   const handleDeleteBranch = (index: number) => {
     const newBranches = branches.filter((_: string, i: number) => i !== index);
-    onBranchesChange(newBranches);
+    onBranchesChange(newBranches, index);
   };
 
   return (

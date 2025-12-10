@@ -76,17 +76,13 @@ export const nodeFields = {
   color: Colors,
   label: v.string(),
   numHandles: v.number(),
-  nodeType: NodeTypes,
   isProcessing: v.boolean(),
-  nodeTypeLogicalSwitchInput: v.optional(
-    v.object({
-      inputTextPrimary: v.optional(v.string()),
-      inputTextsSecondary: v.optional(v.array(v.string())),
-    })
-  ),
-  nodeTypeLogicInput: v.optional(v.any()),
-  nodeTypeAgentInput: v.optional(v.any()),
-  nodeTypeAgenticSwitchInput: v.optional(v.any()),
+  nodeType: NodeTypes,
+  nodeTypeStart: v.optional(v.object({ schemaFields: v.optional(v.array(v.string())) })),
+  nodeTypeLogicInput: v.optional(v.object({ logicalAssignments: v.optional(v.array(v.string())) })),
+  nodeTypeAgentInput: v.optional(v.object({ agenticAssignments: v.optional(v.array(v.string())) })),
+  nodeTypeLogicalSwitchInput: v.optional(v.object({ logicalExpressions: v.optional(v.array(v.string())) })),
+  nodeTypeAgenticSwitchInput: v.optional(v.object({ agenticExpressions: v.optional(v.array(v.string())) })),
 };
 
 export const edgeFields = {

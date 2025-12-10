@@ -11,7 +11,7 @@ import type { AppFlowNode } from './types.ts';
 import { useGraphMutations } from './useGraphMutations.ts';
 
 const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
-  const { deleteNode, updateNode } = useGraphMutations();
+  const { deleteNode, updateNode, deleteEdgesByNodeAndHandles } = useGraphMutations();
   const updateNodeInternals = useUpdateNodeInternals();
 
   useEffect(() => {
@@ -34,9 +34,11 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
       case 'AGENT':
         return <FlowNodeAgent data={data} />;
       case 'LOGICAL_SWITCH':
-        return <FlowNodeLogicalSwitch data={data} updateNode={updateNode} />;
+        return <FlowNodeLogicalSwitch data={data} updateNode={updateNode}
+                                      deleteEdgesByNodeAndHandles={deleteEdgesByNodeAndHandles} />;
       case 'AGENTIC_SWITCH':
-        return <FlowNodeAgenticSwitch data={data} updateNode={updateNode} />;
+        return <FlowNodeAgenticSwitch data={data} updateNode={updateNode}
+                                      deleteEdgesByNodeAndHandles={deleteEdgesByNodeAndHandles} />;
       default:
         return <div>Unknown Node Type</div>;
     }

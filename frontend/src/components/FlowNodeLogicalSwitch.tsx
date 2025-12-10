@@ -7,27 +7,29 @@ import type { AppFlowNode } from './types.ts';
 interface FlowNodeLogicalSwitchProps {
   data: AppFlowNode['data'];
   updateNode: (args: { nodeId: Id<'nodes'>; patch: any }) => void;
+  deleteEdgesByNodeAndHandles: (fromNodeId: Id<'nodes'>, deletedHandleIndex: number) => void;
 }
 
-export const FlowNodeLogicalSwitch = ({ data, updateNode }: FlowNodeLogicalSwitchProps) => {
+export const FlowNodeLogicalSwitch = ({ data, updateNode, deleteEdgesByNodeAndHandles }: FlowNodeLogicalSwitchProps) => {
   const { node } = data;
   const SPACING = 40;
   const BASE_OFFSET = 66;
   const num = Math.max(1, node.numHandles || 0);
   const LEFT_HANDLE_OFFSET = BASE_OFFSET + ((num - 1) * SPACING) / 2;
 
-  /*
-   * LOGICAL_SWITCH stores branches in nodeTypeLogicalSwitchInput.inputTextsSecondary
-   */
-  const branches = node.nodeTypeLogicalSwitchInput?.inputTextsSecondary ?? [];
+  const branches = node.nodeTypeLogicalSwitchInput?.logicalExpressions ?? [];
 
-  const handleBranchesChange = (newBranches: string[]) => {
+  const handleBranchesChange = (newBranches: string[], deletedIndex?: number) => {
+    if (deletedIndex !== undefined) {
+      deleteEdgesByNodeAndHandles(node._id, deletedIndex);
+    }
+
     updateNode({
       nodeId: node._id,
       patch: {
         nodeTypeLogicalSwitchInput: {
           ...node.nodeTypeLogicalSwitchInput,
-          inputTextsSecondary: newBranches,
+          logicalExpressions: newBranches,
         },
         numHandles: newBranches.length,
       },

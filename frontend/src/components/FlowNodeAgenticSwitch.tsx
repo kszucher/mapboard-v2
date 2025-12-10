@@ -7,27 +7,29 @@ import type { AppFlowNode } from './types.ts';
 interface FlowNodeAgenticSwitchProps {
   data: AppFlowNode['data'];
   updateNode: (args: { nodeId: Id<'nodes'>; patch: any }) => void;
+  deleteEdgesByNodeAndHandles: (fromNodeId: Id<'nodes'>, deletedHandleIndex: number) => void;
 }
 
-export const FlowNodeAgenticSwitch = ({ data, updateNode }: FlowNodeAgenticSwitchProps) => {
+export const FlowNodeAgenticSwitch = ({ data, updateNode, deleteEdgesByNodeAndHandles }: FlowNodeAgenticSwitchProps) => {
   const { node } = data;
   const SPACING = 40;
   const BASE_OFFSET = 66;
   const num = Math.max(1, node.numHandles || 0);
   const LEFT_HANDLE_OFFSET = BASE_OFFSET + ((num - 1) * SPACING) / 2;
 
-  /*
-   * AGENTIC_SWITCH stores branches in nodeTypeAgenticSwitchInput.inputTextsSecondary
-   */
-  const branches = node.nodeTypeAgenticSwitchInput?.inputTextsSecondary ?? [];
+  const branches = node.nodeTypeAgenticSwitchInput?.agenticExpressions ?? [];
 
-  const handleBranchesChange = (newBranches: string[]) => {
+  const handleBranchesChange = (newBranches: string[], deletedIndex?: number) => {
+    if (deletedIndex !== undefined) {
+      deleteEdgesByNodeAndHandles(node._id, deletedIndex);
+    }
+
     updateNode({
       nodeId: node._id,
       patch: {
         nodeTypeAgenticSwitchInput: {
           ...node.nodeTypeAgenticSwitchInput,
-          inputTextsSecondary: newBranches,
+          agenticExpressions: newBranches,
         },
         numHandles: newBranches.length,
       },

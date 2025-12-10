@@ -35,7 +35,6 @@ export const updateNode = mutation({
     await ctx.db.patch(args.nodeId, args.patch);
   },
 });
-// Version bump
 
 export const deleteNode = mutation({
   args: { nodeId: v.id('nodes') },
