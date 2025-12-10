@@ -1,7 +1,7 @@
 import { Flex, TextArea } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
-import React, { useEffect, useRef, useState } from 'react';
 import { useGraphMutationsContext } from './contexts/GraphMutationsContext.tsx';
+import { useResizableTextarea } from './hooks/useResizableTextarea.ts';
 import type { AppFlowNode } from './types.ts';
 
 interface FlowNodeAgentProps {
@@ -13,58 +13,31 @@ export const FlowNodeAgent = ({ data }: FlowNodeAgentProps) => {
   const { node } = data;
   const agentInput = node.nodeTypeAgentInput?.agenticAssignments?.[0] ?? '';
   const savedHeight = node.nodeTypeAgentInput?.textareaHeight ?? 60;
-  const [localValue, setLocalValue] = useState(agentInput);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const initialHeightRef = useRef(savedHeight);
 
-  useEffect(() => {
-    setLocalValue(agentInput);
-  }, [agentInput]);
-
-  const handleMouseDown = () => {
-    // Track initial height when mouse down
-    initialHeightRef.current = textareaRef.current?.offsetHeight ?? savedHeight;
-  };
-
-  const handleBlur = () => {
-    if (localValue !== agentInput) {
+  const {
+    textareaRef,
+    localValue,
+    setLocalValue,
+    handleMouseDown,
+    handleMouseUp,
+    handleBlur,
+    handleKeyDown,
+  } = useResizableTextarea({
+    initialValue: agentInput,
+    savedHeight,
+    onSave: (value, height) => {
       updateNode({
         nodeId: node._id,
         patch: {
           nodeTypeAgentInput: {
             ...node.nodeTypeAgentInput,
-            agenticAssignments: [localValue],
-            textareaHeight: textareaRef.current?.offsetHeight ?? savedHeight,
+            agenticAssignments: [value],
+            textareaHeight: height,
           },
         },
       });
-    }
-  };
-
-  const handleMouseUp = () => {
-    // Only save if height actually changed (user was resizing)
-    const currentHeight = textareaRef.current?.offsetHeight;
-    if (currentHeight && currentHeight !== initialHeightRef.current && currentHeight >= 60) {
-      updateNode({
-        nodeId: node._id,
-        patch: {
-          nodeTypeAgentInput: {
-            ...node.nodeTypeAgentInput,
-            agenticAssignments: node.nodeTypeAgentInput?.agenticAssignments ?? [localValue],
-            textareaHeight: currentHeight,
-          },
-        },
-      });
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      e.currentTarget.blur();
-    }
-    // Shift+Enter allows new line (default behavior)
-  };
+    },
+  });
 
   return (
     <>
@@ -97,3 +70,4 @@ export const FlowNodeAgent = ({ data }: FlowNodeAgentProps) => {
     </>
   );
 };
+
