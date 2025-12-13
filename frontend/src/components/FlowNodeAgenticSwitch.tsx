@@ -1,8 +1,8 @@
 import { Flex } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
+import { BranchInput } from './BranchInput.tsx';
 import { useGraphMutationsContext } from './contexts/GraphMutationsContext.tsx';
 import { EditableList } from './shared/EditableList.tsx';
-import { BranchInput } from './BranchInput.tsx';
 import type { AppFlowNode } from './types.ts';
 
 interface FlowNodeAgenticSwitchProps {

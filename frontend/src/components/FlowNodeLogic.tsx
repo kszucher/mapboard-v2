@@ -1,10 +1,10 @@
+import { CheckIcon, Cross2Icon } from '@radix-ui/react-icons';
 import { Flex, IconButton, TextField } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
-import { useGraphMutationsContext } from './contexts/GraphMutationsContext.tsx';
-import type { AppFlowNode } from './types.ts';
-import { EditableList } from './shared/EditableList.tsx';
-import { CheckIcon, Cross2Icon } from '@radix-ui/react-icons';
 import { useEffect, useState } from 'react';
+import { useGraphMutationsContext } from './contexts/GraphMutationsContext.tsx';
+import { EditableList } from './shared/EditableList.tsx';
+import type { AppFlowNode } from './types.ts';
 
 interface FlowNodeLogicProps {
   data: AppFlowNode['data'];

@@ -1,11 +1,11 @@
+import { CheckIcon, Cross2Icon } from '@radix-ui/react-icons';
 import { Flex, IconButton, TextArea, TextField } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
+import { useEffect, useState } from 'react';
 import { useGraphMutationsContext } from './contexts/GraphMutationsContext.tsx';
 import { useResizableTextarea } from './hooks/useResizableTextarea.ts';
-import type { AppFlowNode } from './types.ts';
-import { CheckIcon, Cross2Icon } from '@radix-ui/react-icons';
-import { useEffect, useState } from 'react';
 import { EditableList } from './shared/EditableList.tsx';
+import type { AppFlowNode } from './types.ts';
 
 interface FlowNodeAgentProps {
   data: AppFlowNode['data'];
