@@ -1,7 +1,8 @@
 import { Flex } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
 import { useGraphMutationsContext } from './contexts/GraphMutationsContext.tsx';
-import { SwitchBody } from './SwitchBody.tsx';
+import { EditableList } from './shared/EditableList.tsx';
+import { BranchInput } from './BranchInput.tsx';
 import type { AppFlowNode } from './types.ts';
 
 interface FlowNodeAgenticSwitchProps {
@@ -38,7 +39,20 @@ export const FlowNodeAgenticSwitch = ({ data }: FlowNodeAgenticSwitchProps) => {
   return (
     <>
       <Flex direction="column" gap="3" style={{ marginTop: 38 }}>
-        <SwitchBody branches={branches} onBranchesChange={handleBranchesChange} />
+        <EditableList<string>
+          items={branches}
+          onItemsChange={handleBranchesChange}
+          createNewItem={() => ''}
+          renderItem={(branch, index, { onUpdate, onDelete }) => (
+            <BranchInput
+              key={index}
+              value={branch}
+              onChange={onUpdate}
+              onDelete={onDelete}
+              enableValidation={true}
+            />
+          )}
+        />
       </Flex>
 
       <Handle type="target" position={Position.Left} style={{ top: LEFT_HANDLE_OFFSET }} />

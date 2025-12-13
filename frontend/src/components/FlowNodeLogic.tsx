@@ -1,12 +1,69 @@
-import { Flex } from '@radix-ui/themes';
+import { Flex, IconButton, TextField } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
 import { useGraphMutationsContext } from './contexts/GraphMutationsContext.tsx';
-import { FlowNodeLogicBody } from './FlowNodeLogicBody.tsx';
 import type { AppFlowNode } from './types.ts';
+import { EditableList } from './shared/EditableList.tsx';
+import { CheckIcon, Cross2Icon } from '@radix-ui/react-icons';
+import { useEffect, useState } from 'react';
 
 interface FlowNodeLogicProps {
   data: AppFlowNode['data'];
 }
+
+interface LogicAssignmentRowProps {
+  value: string;
+  onChange: (newValue: string) => void;
+  onDelete: () => void;
+}
+
+const LogicAssignmentRow = ({ value, onChange, onDelete }: LogicAssignmentRowProps) => {
+  const [localValue, setLocalValue] = useState(value);
+
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  const handleBlur = () => {
+    if (localValue !== value) {
+      onChange(localValue);
+    }
+  };
+
+  const isValid = (text: string) => {
+    if (!text || !text.trim()) return false;
+    return /^\s*state\.[a-zA-Z0-9_$]+\s*=/.test(text);
+  };
+
+  const showValidation = localValue.trim().length > 0;
+  const valid = isValid(localValue);
+
+  return (
+    <Flex gap="2" align="center" style={{ marginLeft: 16 }}>
+      <div className="nodrag" style={{ width: 240 }}>
+        <TextField.Root
+          value={localValue}
+          onChange={e => setLocalValue(e.target.value)}
+          onBlur={handleBlur}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.currentTarget.blur();
+            }
+          }}
+          placeholder="Assignment"
+          style={{ width: '100%', boxShadow: 'none' }}
+        >
+          <TextField.Slot side="right">
+            {showValidation && (valid ? <CheckIcon color="green" /> : <Cross2Icon color="red" />)}
+          </TextField.Slot>
+        </TextField.Root>
+      </div>
+
+      <IconButton onClick={onDelete} size="1" variant="ghost" color="gray">
+        <Cross2Icon />
+      </IconButton>
+    </Flex>
+  );
+};
 
 export const FlowNodeLogic = ({ data }: FlowNodeLogicProps) => {
   const { updateNode } = useGraphMutationsContext();
@@ -29,7 +86,19 @@ export const FlowNodeLogic = ({ data }: FlowNodeLogicProps) => {
   return (
     <>
       <Flex direction="column" gap="3" style={{ marginTop: 38 }}>
-        <FlowNodeLogicBody assignments={assignments} onAssignmentsChange={handleAssignmentsChange} />
+        <EditableList<string>
+          items={assignments}
+          onItemsChange={handleAssignmentsChange}
+          createNewItem={() => ''}
+          renderItem={(assignment, index, { onUpdate, onDelete }) => (
+            <LogicAssignmentRow
+              key={index}
+              value={assignment}
+              onChange={onUpdate}
+              onDelete={onDelete}
+            />
+          )}
+        />
       </Flex>
 
       <Handle type="target" position={Position.Left} />

@@ -86,6 +86,7 @@ export const nodeFields = {
   nodeTypeAgentInput: v.optional(v.object({
     agenticAssignments: v.optional(v.array(v.string())),
     textareaHeight: v.optional(v.number()),
+    assignments: v.optional(v.array(v.string())),
   })),
   nodeTypeLogicalSwitchInput: v.optional(v.object({ logicalExpressions: v.optional(v.array(v.string())) })),
   nodeTypeAgenticSwitchInput: v.optional(v.object({ agenticExpressions: v.optional(v.array(v.string())) })),
