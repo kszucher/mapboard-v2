@@ -36,13 +36,22 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: Id<'graphs'> }) => 
 
   useEffect(() => {
     if (!nodesData) return;
-    const mappedNodes: AppFlowNode[] = nodesData.map(n => ({
-      id: n._id,
-      type: 'custom',
-      position: { x: n.offsetX, y: n.offsetY },
-      data: { node: n },
-    }));
-    setNodes(mappedNodes);
+    setNodes(prevNodes => {
+      const nodeMap = new Map(prevNodes.map(n => [n.id, n]));
+      return nodesData.map(n => {
+        const prevNode = nodeMap.get(n._id);
+        return {
+          id: n._id,
+          type: 'custom',
+          position: { x: n.offsetX, y: n.offsetY },
+          data: { node: n },
+          // Preserve measured dimensions and other localized state
+          measured: prevNode?.measured,
+          width: prevNode?.width,
+          height: prevNode?.height,
+        };
+      });
+    });
   }, [nodesData, setNodes]);
 
   useEffect(() => {
