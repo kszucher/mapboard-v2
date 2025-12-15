@@ -1,5 +1,5 @@
 import { v } from 'convex/values';
-import { mutation } from './_generated/server';
+import { mutation, query } from './_generated/server';
 import { Color, NodeType } from './schema';
 
 export const createGraph = mutation({
@@ -32,5 +32,20 @@ export const createGraph = mutation({
     });
 
     return graphId;
+  },
+});
+
+export const listGraphsByUser = query({
+  args: {
+    userId: v.id('users'),
+  },
+  handler: async (ctx, { userId }) => {
+    const graphs = await ctx.db
+      .query('graphs')
+      .withIndex('by_userId', q => q.eq('userId', userId))
+      .collect();
+
+    // Sort newest first so the recently created graph shows up at the top.
+    return graphs.sort((a, b) => b._creationTime - a._creationTime);
   },
 });

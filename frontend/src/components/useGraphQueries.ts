@@ -15,3 +15,7 @@ export const useGraphQueries = (graphId: Id<'graphs'>) => {
 export const useActiveGraphId = (userId: Id<'users'> | null) => {
   return useQuery(api.users.getActiveGraphId, userId ? { userId } : 'skip');
 };
+
+export const useUserGraphs = (userId: Id<'users'> | null) => {
+  return useQuery(api.graphs.listGraphsByUser, userId ? { userId } : 'skip');
+};

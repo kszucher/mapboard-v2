@@ -1,4 +1,4 @@
-import { CaretDownIcon, MixIcon, PlayIcon } from '@radix-ui/react-icons';
+import { CaretDownIcon, CheckIcon, MixIcon, PlayIcon } from '@radix-ui/react-icons';
 import { Box, Button, DropdownMenu, Flex, IconButton, Text } from '@radix-ui/themes';
 import { ReactFlowProvider } from '@xyflow/react';
 import { useMutation } from 'convex/react';
@@ -8,7 +8,7 @@ import type { Id } from '../../../convex/convex/_generated/dataModel';
 import { NodeType } from '../../../convex/convex/schema.ts';
 import { Flow } from './Flow.tsx';
 import { useGraphMutations } from './useGraphMutations.ts';
-import { useActiveGraphId } from './useGraphQueries.ts';
+import { useActiveGraphId, useUserGraphs } from './useGraphQueries.ts';
 
 export const Frame = () => {
   const [userId, setUserId] = useState<Id<'users'> | null>(null);
@@ -23,8 +23,9 @@ export const Frame = () => {
   }, [getOrCreateUser]);
 
   const selectedGraphId = useActiveGraphId(userId);
+  const graphs = useUserGraphs(userId);
 
-  const { createNode, createGraph } = useGraphMutations();
+  const { createNode, createGraph, setActiveGraph } = useGraphMutations();
 
   const handleCreateNode = (graphId: Id<'graphs'>, nodeType: NodeType) => {
     if (!graphId) return;
@@ -36,7 +37,12 @@ export const Frame = () => {
     createGraph(userId, 'New Graph');
   };
 
-  const tabGraphInfo = [{ name: 'Graph A' }, { name: 'Graph B' }];
+  const handleSelectGraph = (graphId: Id<'graphs'>) => {
+    if (!userId) return;
+    setActiveGraph(userId, graphId);
+  };
+
+  const activeGraphName = graphs?.find(graph => graph._id === selectedGraphId)?.name ?? 'Select graph';
 
   const isGraphSelected = !!selectedGraphId;
 
@@ -73,14 +79,21 @@ export const Frame = () => {
               </DropdownMenu.Trigger>
               <DropdownMenu.Content onCloseAutoFocus={e => e.preventDefault()}>
                 <DropdownMenu.Label>My Graphs</DropdownMenu.Label>
-                {tabGraphInfo.map((tab, i) => (
-                  <DropdownMenu.Item key={i}>{tab.name}</DropdownMenu.Item>
+                {!graphs && <DropdownMenu.Item disabled>Loading…</DropdownMenu.Item>}
+                {graphs && graphs.length === 0 && <DropdownMenu.Item disabled>No graphs yet</DropdownMenu.Item>}
+                {graphs?.map(graph => (
+                  <DropdownMenu.Item key={graph._id} onClick={() => handleSelectGraph(graph._id)}>
+                    <Flex align="center" gap="2">
+                      {graph._id === selectedGraphId && <CheckIcon />}
+                      <Text>{graph.name}</Text>
+                    </Flex>
+                  </DropdownMenu.Item>
                 ))}
               </DropdownMenu.Content>
             </DropdownMenu.Root>
 
-            <Button variant="solid" radius="full">
-              My Graph
+            <Button variant="solid" radius="full" disabled={!isGraphSelected}>
+              {activeGraphName}
             </Button>
 
             {/* New Graph Button */}

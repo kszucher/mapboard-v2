@@ -41,3 +41,21 @@ export const createUser = mutation({
     return { userId };
   },
 });
+
+export const setActiveGraph = mutation({
+  args: {
+    userId: v.id('users'),
+    graphId: v.id('graphs'),
+  },
+  handler: async (ctx, { userId, graphId }) => {
+    const graph = await ctx.db.get(graphId);
+    if (!graph) {
+      throw new Error('Graph not found');
+    }
+    if (graph.userId !== userId) {
+      throw new Error('Graph does not belong to user');
+    }
+
+    await ctx.db.patch(userId, { selectedGraphId: graphId });
+  },
+});

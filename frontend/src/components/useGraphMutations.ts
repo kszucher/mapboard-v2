@@ -12,6 +12,7 @@ export const useGraphMutations = () => {
   const deleteEdgeMutation = useMutation(api.edges.deleteEdge);
   const deleteEdgesByNodeAndHandlesMutation = useMutation(api.edges.deleteEdgesByNodeAndHandles);
   const createGraphMutation = useMutation(api.graphs.createGraph);
+  const setActiveGraphMutation = useMutation(api.users.setActiveGraph);
 
   const createGraph = useCallback(
     (userId: Id<'users'>, graphName: string) => {
@@ -104,6 +105,13 @@ export const useGraphMutations = () => {
     [deleteEdgesByNodeAndHandlesMutation]
   );
 
+  const setActiveGraph = useCallback(
+    (userId: Id<'users'>, graphId: Id<'graphs'>) => {
+      void setActiveGraphMutation({ userId, graphId });
+    },
+    [setActiveGraphMutation]
+  );
+
   return {
     createNode,
     updateNodePosition,
@@ -113,5 +121,6 @@ export const useGraphMutations = () => {
     deleteEdge,
     deleteEdgesByNodeAndHandles,
     createGraph,
+    setActiveGraph,
   };
 };
