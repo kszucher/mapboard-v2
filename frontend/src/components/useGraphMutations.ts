@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
 import type { components } from '../api/generated/schema';
-import { postCrossTabMessage } from '../utils/crossTab';
 
 type NodeType = components['schemas']['NodeRead']['node_type'];
 
@@ -35,14 +34,6 @@ export const useGraphMutations = () => {
     onSuccess: (data, variables) => {
       void queryClient.invalidateQueries({ queryKey: ['graphs', variables.userId] });
       void queryClient.invalidateQueries({ queryKey: ['users', variables.userId, 'active-graph'] });
-
-      if (data) {
-        postCrossTabMessage({
-          type: 'graphCreated',
-          userId: variables.userId,
-          graphId: data,
-        });
-      }
     },
   });
 
@@ -57,12 +48,6 @@ export const useGraphMutations = () => {
       void queryClient.invalidateQueries({ queryKey: ['users', variables.userId, 'active-graph'] });
       void queryClient.invalidateQueries({ queryKey: ['nodes', variables.graphId] });
       void queryClient.invalidateQueries({ queryKey: ['edges', variables.graphId] });
-
-      postCrossTabMessage({
-        type: 'activeGraphChanged',
-        userId: variables.userId,
-        graphId: variables.graphId,
-      });
     },
   });
 
