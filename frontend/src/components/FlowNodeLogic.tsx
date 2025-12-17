@@ -69,13 +69,14 @@ export const FlowNodeLogic = ({ data }: FlowNodeLogicProps) => {
   const { updateNode } = useGraphMutationsContext();
   const { node } = data;
 
-  const assignments = node.nodeTypeLogicInput?.logicalAssignments ?? [];
+  const assignments = (node.node_type_logic_input as { logicalAssignments?: string[] } | undefined)?.logicalAssignments ?? [];
 
   const handleAssignmentsChange = (newAssignments: string[]) => {
     updateNode({
-      nodeId: node._id,
+      nodeId: node.id,
       patch: {
-        nodeTypeLogicInput: {
+        graph_id: node.graph_id,
+        node_type_logic_input: {
           logicalAssignments: newAssignments,
         },
         // Don't update numHandles - it's independent for Logic nodes

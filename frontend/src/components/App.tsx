@@ -1,15 +1,15 @@
 import { Theme } from '@radix-ui/themes';
-import { ConvexProvider, ConvexReactClient } from 'convex/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Frame } from './Frame.tsx';
 
-const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
+const queryClient = new QueryClient();
 
 export const App = () => {
   return (
-    <ConvexProvider client={convex}>
+    <QueryClientProvider client={queryClient}>
       <Theme appearance="dark" accentColor="iris" panelBackground="solid" scaling="100%" radius="full">
         <Frame />
       </Theme>
-    </ConvexProvider>
+    </QueryClientProvider>
   );
 };

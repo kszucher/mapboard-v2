@@ -11,14 +11,16 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import type { Id } from '../../../convex/convex/_generated/dataModel';
+import { useQueryClient } from '@tanstack/react-query';
+import { connectGraphSocket } from '../api/ws';
 import { GraphMutationsProvider, useGraphMutationsContext } from './contexts/GraphMutationsContext.tsx';
 import FlowEdge from './FlowEdge.tsx';
 import { CustomNode } from './FlowNode.tsx';
 import type { AppFlowEdge, AppFlowNode } from './types.ts';
 import { useGraphQueries } from './useGraphQueries.ts';
 
-const FlowContent = ({ selectedGraphId }: { selectedGraphId: Id<'graphs'> }) => {
+const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
+  const queryClient = useQueryClient();
   const { nodes: nodesData, edges: edgesData } = useGraphQueries(selectedGraphId);
 
   const { updateNodePosition, createEdge, deleteEdge } = useGraphMutationsContext();
@@ -28,22 +30,31 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: Id<'graphs'> }) => 
   const [nodes, setNodes, onNodesChange] = useNodesState<AppFlowNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<AppFlowEdge>([]);
 
-  const prevGraphId = useRef<Id<'graphs'> | null>(null);
+  const prevGraphId = useRef<string | null>(null);
   const edgeReconnectSuccessful = useRef(true);
 
   const nodeTypes = useMemo(() => ({ custom: CustomNode }), []);
   const edgeTypes = useMemo(() => ({ custom: FlowEdge }), []);
 
   useEffect(() => {
+    if (!selectedGraphId) return;
+    const disconnect = connectGraphSocket(selectedGraphId, () => {
+      void queryClient.invalidateQueries({ queryKey: ['nodes', selectedGraphId] });
+      void queryClient.invalidateQueries({ queryKey: ['edges', selectedGraphId] });
+    });
+    return disconnect;
+  }, [queryClient, selectedGraphId]);
+
+  useEffect(() => {
     if (!nodesData) return;
     setNodes(prevNodes => {
       const nodeMap = new Map(prevNodes.map(n => [n.id, n]));
       return nodesData.map(n => {
-        const prevNode = nodeMap.get(n._id);
+        const prevNode = nodeMap.get(n.id);
         return {
-          id: n._id,
+          id: n.id,
           type: 'custom',
-          position: { x: n.offsetX, y: n.offsetY },
+          position: { x: n.offset_x, y: n.offset_y },
           data: { node: n },
           // Preserve measured dimensions and other localized state
           measured: prevNode?.measured,
@@ -58,7 +69,7 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: Id<'graphs'> }) => 
     if (
       nodesInitialized &&
       nodes.length > 0 &&
-      nodes[0].data.node.graphId === selectedGraphId &&
+      nodes[0].data.node.graph_id === selectedGraphId &&
       prevGraphId.current !== selectedGraphId
     ) {
       prevGraphId.current = selectedGraphId;
@@ -69,10 +80,10 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: Id<'graphs'> }) => 
   useEffect(() => {
     if (!edgesData) return;
     const mappedEdges: AppFlowEdge[] = edgesData.map(edge => ({
-      id: edge._id,
-      source: edge.fromNodeId,
-      target: edge.toNodeId,
-      sourceHandle: String(edge.handleIndex),
+      id: edge.id,
+      source: edge.from_node_id,
+      target: edge.to_node_id,
+      sourceHandle: String(edge.handle_index),
       type: 'custom',
       animated: true,
       style: { stroke: '#fff', strokeWidth: 2 },
@@ -88,8 +99,8 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: Id<'graphs'> }) => 
 
       createEdge(
         selectedGraphId,
-        params.source as Id<'nodes'>,
-        params.target as Id<'nodes'>,
+        params.source as string,
+        params.target as string,
         Number(params.sourceHandle)
       );
     },
@@ -99,7 +110,7 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: Id<'graphs'> }) => 
   const handleEdgesDelete = useCallback(
     (edgesToDelete: AppFlowEdge[]) => {
       edgesToDelete.forEach(edge => {
-        deleteEdge(edge.id as Id<'edges'>);
+        deleteEdge(edge.id as string);
       });
     },
     [deleteEdge]
@@ -115,13 +126,13 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: Id<'graphs'> }) => 
 
       setEdges(edges => reconnectEdge(oldEdge, newConnection, edges));
 
-      deleteEdge(oldEdge.id as Id<'edges'>);
+      deleteEdge(oldEdge.id as string);
 
       if (newConnection.source && newConnection.target) {
         createEdge(
           selectedGraphId,
-          newConnection.source as Id<'nodes'>,
-          newConnection.target as Id<'nodes'>,
+          newConnection.source as string,
+          newConnection.target as string,
           Number(newConnection.sourceHandle)
         );
       }
@@ -133,7 +144,7 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: Id<'graphs'> }) => 
     (_event: MouseEvent | TouchEvent, edge: AppFlowEdge) => {
       if (!edgeReconnectSuccessful.current) {
         setEdges(edges => edges.filter(e => e.id !== edge.id));
-        deleteEdge(edge.id as Id<'edges'>);
+        deleteEdge(edge.id as string);
       }
 
       edgeReconnectSuccessful.current = true;
@@ -143,9 +154,9 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: Id<'graphs'> }) => 
 
   const handleNodeDragStop = useCallback(
     (_event: React.MouseEvent, node: AppFlowNode) => {
-      updateNodePosition(node.id as Id<'nodes'>, Math.round(node.position.x), Math.round(node.position.y));
+      updateNodePosition(node.id as string, Math.round(node.position.x), Math.round(node.position.y), selectedGraphId);
     },
-    [updateNodePosition]
+    [selectedGraphId, updateNodePosition]
   );
 
   const handleDoubleClick = useCallback(
@@ -183,7 +194,7 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: Id<'graphs'> }) => 
   );
 };
 
-export const Flow = ({ selectedGraphId }: { selectedGraphId: Id<'graphs'> }) => {
+export const Flow = ({ selectedGraphId }: { selectedGraphId: string }) => {
   return (
     <GraphMutationsProvider>
       <FlowContent selectedGraphId={selectedGraphId} />

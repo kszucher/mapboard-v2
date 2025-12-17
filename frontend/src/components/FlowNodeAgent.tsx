@@ -69,9 +69,9 @@ const AgentAssignmentRow = ({ value, onChange, onDelete }: AgentAssignmentRowPro
 export const FlowNodeAgent = ({ data }: FlowNodeAgentProps) => {
   const { updateNode } = useGraphMutationsContext();
   const { node } = data;
-  const agentInput = node.nodeTypeAgentInput?.agenticAssignments?.[0] ?? '';
-  const savedHeight = node.nodeTypeAgentInput?.textareaHeight ?? 60;
-  const assignments = node.nodeTypeAgentInput?.assignments ?? [];
+  const agentInput = (node.node_type_agent_input as { agenticAssignments?: string[] } | undefined)?.agenticAssignments?.[0] ?? '';
+  const savedHeight = (node.node_type_agent_input as { textareaHeight?: number } | undefined)?.textareaHeight ?? 60;
+  const assignments = (node.node_type_agent_input as { assignments?: string[] } | undefined)?.assignments ?? [];
 
   const {
     textareaRef,
@@ -86,10 +86,11 @@ export const FlowNodeAgent = ({ data }: FlowNodeAgentProps) => {
     savedHeight,
     onSave: (value, height) => {
       updateNode({
-        nodeId: node._id,
+        nodeId: node.id,
         patch: {
-          nodeTypeAgentInput: {
-            ...node.nodeTypeAgentInput,
+          graph_id: node.graph_id,
+          node_type_agent_input: {
+            ...(node.node_type_agent_input || {}),
             agenticAssignments: [value],
             textareaHeight: height,
           },
@@ -100,10 +101,11 @@ export const FlowNodeAgent = ({ data }: FlowNodeAgentProps) => {
 
   const handleAssignmentsChange = (newAssignments: string[]) => {
     updateNode({
-      nodeId: node._id,
+      nodeId: node.id,
       patch: {
-        nodeTypeAgentInput: {
-          ...node.nodeTypeAgentInput,
+        graph_id: node.graph_id,
+        node_type_agent_input: {
+          ...(node.node_type_agent_input || {}),
           assignments: newAssignments,
         },
       },

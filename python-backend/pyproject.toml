@@ -1,0 +1,29 @@
+[project]
+name = "graphboard-backend"
+version = "0.1.0"
+description = "Graphboard FastAPI backend replacing Convex"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115.0",
+  "uvicorn[standard]>=0.30.0",
+  "sqlalchemy[asyncio]>=2.0.30",
+  "asyncpg>=0.29.0",
+  "pydantic>=2.8.0",
+  "pydantic-settings>=2.4.0",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.uv]
+managed = true
+
+[dependency-groups]
+dev = [
+  "ruff>=0.6.0",
+  "mypy>=1.10.0",
+  "types-setuptools",
+]
+

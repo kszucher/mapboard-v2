@@ -14,24 +14,25 @@ export const FlowNodeAgenticSwitch = ({ data }: FlowNodeAgenticSwitchProps) => {
   const { node } = data;
   const SPACING = 40;
   const BASE_OFFSET = 66;
-  const num = Math.max(1, node.numHandles || 0);
+  const num = Math.max(1, node.num_handles || 0);
   const LEFT_HANDLE_OFFSET = BASE_OFFSET + ((num - 1) * SPACING) / 2;
 
-  const branches = node.nodeTypeAgenticSwitchInput?.agenticExpressions ?? [];
+  const branches = (node.node_type_agentic_switch_input as { agenticExpressions?: string[] } | undefined)?.agenticExpressions ?? [];
 
   const handleBranchesChange = (newBranches: string[], deletedIndex?: number) => {
     if (deletedIndex !== undefined) {
-      deleteEdgesByNodeAndHandles(node._id, deletedIndex);
+      deleteEdgesByNodeAndHandles(node.id, deletedIndex);
     }
 
     updateNode({
-      nodeId: node._id,
+      nodeId: node.id,
       patch: {
-        nodeTypeAgenticSwitchInput: {
-          ...node.nodeTypeAgenticSwitchInput,
+        graph_id: node.graph_id,
+        node_type_agentic_switch_input: {
+          ...(node.node_type_agentic_switch_input || {}),
           agenticExpressions: newBranches,
         },
-        numHandles: newBranches.length,
+        num_handles: newBranches.length,
       },
     });
   };
@@ -57,7 +58,7 @@ export const FlowNodeAgenticSwitch = ({ data }: FlowNodeAgenticSwitchProps) => {
 
       <Handle type="target" position={Position.Left} style={{ top: LEFT_HANDLE_OFFSET }} />
 
-      {Array.from({ length: node.numHandles }).map((_, i) => (
+      {Array.from({ length: node.num_handles }).map((_, i) => (
         <Handle
           key={i}
           id={String(i)}

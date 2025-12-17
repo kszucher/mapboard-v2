@@ -1,33 +1,35 @@
 import { CaretDownIcon, CheckIcon, MixIcon, PlayIcon } from '@radix-ui/react-icons';
 import { Box, Button, DropdownMenu, Flex, IconButton, Text } from '@radix-ui/themes';
 import { ReactFlowProvider } from '@xyflow/react';
-import { useMutation } from 'convex/react';
 import { useEffect, useState } from 'react';
-import { api } from '../../../convex/convex/_generated/api';
-import type { Id } from '../../../convex/convex/_generated/dataModel';
-import { NodeType } from '../../../convex/convex/schema.ts';
+import type { components } from '../api/generated/schema';
+import { apiClient } from '../api/client';
 import { Flow } from './Flow.tsx';
 import { useGraphMutations } from './useGraphMutations.ts';
 import { useActiveGraphId, useUserGraphs } from './useGraphQueries.ts';
 
+type NodeType = components['schemas']['NodeRead']['node_type'];
+const NODE_TYPES: NodeType[] = ['START', 'LOGIC', 'AGENT', 'LOGICAL_SWITCH', 'AGENTIC_SWITCH'];
+
 export const Frame = () => {
-  const [userId, setUserId] = useState<Id<'users'> | null>(null);
-  const getOrCreateUser = useMutation(api.users.getOrCreateUser);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
-      const id = await getOrCreateUser();
-      setUserId(id);
+      const res = await apiClient.POST('/users/get-or-create', {});
+      if (!res.error && res.data) {
+        setUserId(res.data);
+      }
     };
     fetchUser();
-  }, [getOrCreateUser]);
+  }, []);
 
-  const selectedGraphId = useActiveGraphId(userId);
-  const graphs = useUserGraphs(userId);
+  const { data: selectedGraphId } = useActiveGraphId(userId);
+  const { data: graphs } = useUserGraphs(userId);
 
   const { createNode, createGraph, setActiveGraph } = useGraphMutations();
 
-  const handleCreateNode = (graphId: Id<'graphs'>, nodeType: NodeType) => {
+  const handleCreateNode = (graphId: string, nodeType: NodeType) => {
     if (!graphId) return;
     createNode(graphId, nodeType);
   };
@@ -37,12 +39,12 @@ export const Frame = () => {
     createGraph(userId, 'New Graph');
   };
 
-  const handleSelectGraph = (graphId: Id<'graphs'>) => {
+  const handleSelectGraph = (graphId: string) => {
     if (!userId) return;
     setActiveGraph(userId, graphId);
   };
 
-  const activeGraphName = graphs?.find(graph => graph._id === selectedGraphId)?.name ?? 'Select graph';
+  const activeGraphName = graphs?.find(graph => graph.id === selectedGraphId)?.name ?? 'Select graph';
 
   const isGraphSelected = !!selectedGraphId;
 
@@ -82,9 +84,9 @@ export const Frame = () => {
                 {!graphs && <DropdownMenu.Item disabled>Loading…</DropdownMenu.Item>}
                 {graphs && graphs.length === 0 && <DropdownMenu.Item disabled>No graphs yet</DropdownMenu.Item>}
                 {graphs?.map(graph => (
-                  <DropdownMenu.Item key={graph._id} onClick={() => handleSelectGraph(graph._id)}>
+                  <DropdownMenu.Item key={graph.id} onClick={() => handleSelectGraph(graph.id)}>
                     <Flex align="center" gap="2">
-                      {graph._id === selectedGraphId && <CheckIcon />}
+                      {graph.id === selectedGraphId && <CheckIcon />}
                       <Text>{graph.name}</Text>
                     </Flex>
                   </DropdownMenu.Item>
@@ -112,7 +114,7 @@ export const Frame = () => {
               </DropdownMenu.Trigger>
               {isGraphSelected && (
                 <DropdownMenu.Content onCloseAutoFocus={e => e.preventDefault()}>
-                  {Object.values(NodeType).map((nodeType, id) => (
+                  {NODE_TYPES.map((nodeType, id) => (
                     <DropdownMenu.Item onClick={() => handleCreateNode(selectedGraphId, nodeType)} key={id}>
                       {nodeType}
                     </DropdownMenu.Item>

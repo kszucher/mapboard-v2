@@ -18,8 +18,8 @@ export const FlowNodeStart = ({ data }: FlowNodeStartProps) => {
   const { updateNode } = useGraphMutationsContext();
   const { node } = data;
 
-  const schemaFields = node.nodeTypeStart?.schemaFields ?? [];
-  const schemaTypes = node.nodeTypeStart?.schemaTypes ?? [];
+  const schemaFields = (node.node_type_start as { schemaFields?: string[] } | undefined)?.schemaFields ?? [];
+  const schemaTypes = (node.node_type_start as { schemaTypes?: string[] } | undefined)?.schemaTypes ?? [];
 
   const fields: SchemaField[] = schemaFields.map((name, i) => ({
     name,
@@ -28,9 +28,10 @@ export const FlowNodeStart = ({ data }: FlowNodeStartProps) => {
 
   const handleFieldsChange = (newFields: SchemaField[]) => {
     updateNode({
-      nodeId: node._id,
+      nodeId: node.id,
       patch: {
-        nodeTypeStart: {
+        graph_id: node.graph_id,
+        node_type_start: {
           schemaFields: newFields.map(f => f.name),
           schemaTypes: newFields.map(f => f.type),
         },
