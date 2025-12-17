@@ -11,41 +11,36 @@ interface UseDebouncedInputOptions {
  * Prevents syncing when the prop update came from our own onChange callback.
  */
 export const useDebouncedInput = ({ value, onChange, debounceMs = 300 }: UseDebouncedInputOptions) => {
-  const [localValue, setLocalValue] = useState(value);
-  const lastSavedValueRef = useRef(value);
+  const [draftValue, setDraftValue] = useState<string | null>(null);
   const onChangeRef = useRef(onChange);
+  const localValue = draftValue ?? value;
 
   // Keep onChange ref up to date without causing re-renders
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
 
-  // Sync local value when prop changes externally (not from our own save)
-  useEffect(() => {
-    if (value !== lastSavedValueRef.current) {
-      setLocalValue(value);
-      lastSavedValueRef.current = value;
-    }
-  }, [value]);
-
   // Debounced auto-save while typing
   useEffect(() => {
-    if (localValue === value) return;
+    if (draftValue === null) return;
+    if (draftValue === value) return;
 
     const timeout = setTimeout(() => {
-      lastSavedValueRef.current = localValue;
-      onChangeRef.current(localValue);
+      onChangeRef.current(draftValue);
     }, debounceMs);
 
     return () => clearTimeout(timeout);
-  }, [localValue, value, debounceMs]);
+  }, [draftValue, value, debounceMs]);
 
   const handleBlur = useCallback(() => {
-    if (localValue !== value) {
-      lastSavedValueRef.current = localValue;
-      onChangeRef.current(localValue);
+    if (draftValue !== null && draftValue !== value) {
+      onChangeRef.current(draftValue);
     }
-  }, [localValue, value]);
+  }, [draftValue, value]);
+
+  const setLocalValue = useCallback((newValue: string) => {
+    setDraftValue(newValue);
+  }, []);
 
   return {
     localValue,
