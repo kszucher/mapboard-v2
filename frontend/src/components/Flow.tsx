@@ -17,26 +17,56 @@ import FlowEdge from './FlowEdge.tsx';
 import { CustomNode } from './FlowNode.tsx';
 import { useGraphWebSocket } from './hooks/useGraphWebSocket.ts';
 import type { AppFlowEdge, AppFlowNode } from './types.ts';
-
 const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
+  // data fetching
   const { data: nodesData } = useNodes(selectedGraphId);
   const { data: edgesData } = useEdges(selectedGraphId);
+
+  // subscriptions / side effects
   useGraphWebSocket(selectedGraphId);
 
+  // mutations
   const updateNodePositionMutation = useUpdateNodePosition();
   const createEdgeMutation = useCreateEdge();
   const deleteEdgeMutation = useDeleteEdge();
 
+  // react-flow / external hooks
   const { fitView } = useReactFlow();
   const nodesInitialized = useNodesInitialized();
-  const [nodes, setNodes, onNodesChange] = useNodesState<AppFlowNode>([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState<AppFlowEdge>([]);
 
+  // local state
+  const [nodes, setNodes, onNodesChange] =
+    useNodesState<AppFlowNode>([]);
+  const [edges, setEdges, onEdgesChange] =
+    useEdgesState<AppFlowEdge>([]);
+
+  // refs
   const prevGraphId = useRef<string | null>(null);
   const edgeReconnectSuccessful = useRef(true);
 
-  const nodeTypes = useMemo(() => ({ custom: CustomNode }), []);
-  const edgeTypes = useMemo(() => ({ custom: FlowEdge }), []);
+  // memoized values
+  const nodeTypes = useMemo(
+    () => ({ custom: CustomNode }),
+    []
+  );
+  const edgeTypes = useMemo(
+    () => ({ custom: FlowEdge }),
+    []
+  );
+
+  // Map edges from query data to ReactFlow format
+  const mappedEdges = useMemo<AppFlowEdge[]>(() => {
+    if (!edgesData) return [];
+    return edgesData.map(edge => ({
+      id: edge.id,
+      source: edge.from_node_id,
+      target: edge.to_node_id,
+      sourceHandle: String(edge.handle_index),
+      type: 'custom' as const,
+      animated: true,
+      style: { stroke: '#fff', strokeWidth: 2 },
+    }));
+  }, [edgesData]);
 
   // Sync nodes from query data to state, preserving local state (measured dimensions, etc.)
   useEffect(() => {
@@ -59,20 +89,6 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
       });
     });
   }, [nodesData, setNodes]);
-
-  // Map edges from query data to ReactFlow format
-  const mappedEdges = useMemo<AppFlowEdge[]>(() => {
-    if (!edgesData) return [];
-    return edgesData.map(edge => ({
-      id: edge.id,
-      source: edge.from_node_id,
-      target: edge.to_node_id,
-      sourceHandle: String(edge.handle_index),
-      type: 'custom' as const,
-      animated: true,
-      style: { stroke: '#fff', strokeWidth: 2 },
-    }));
-  }, [edgesData]);
 
   // Sync edges from query data to state
   useEffect(() => {
