@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useDebouncedCallback } from 'use-debounce';
 
 interface UseDebouncedInputOptions {
   value: string;
@@ -20,27 +21,23 @@ export const useDebouncedInput = ({ value, onChange, debounceMs = 300 }: UseDebo
     onChangeRef.current = onChange;
   }, [onChange]);
 
-  // Debounced auto-save while typing
-  useEffect(() => {
-    if (draftValue === null) return;
-    if (draftValue === value) return;
-
-    const timeout = setTimeout(() => {
-      onChangeRef.current(draftValue);
-    }, debounceMs);
-
-    return () => clearTimeout(timeout);
-  }, [draftValue, value, debounceMs]);
+  const debouncedOnChange = useDebouncedCallback((newValue: string) => {
+    onChangeRef.current(newValue);
+  }, debounceMs);
 
   const handleBlur = useCallback(() => {
     if (draftValue !== null && draftValue !== value) {
+      debouncedOnChange.cancel();
       onChangeRef.current(draftValue);
     }
-  }, [draftValue, value]);
+  }, [debouncedOnChange, draftValue, value]);
 
   const setLocalValue = useCallback((newValue: string) => {
     setDraftValue(newValue);
-  }, []);
+    if (newValue !== value) {
+      debouncedOnChange(newValue);
+    }
+  }, [debouncedOnChange, value]);
 
   return {
     localValue,
@@ -48,4 +45,3 @@ export const useDebouncedInput = ({ value, onChange, debounceMs = 300 }: UseDebo
     handleBlur,
   };
 };
-
