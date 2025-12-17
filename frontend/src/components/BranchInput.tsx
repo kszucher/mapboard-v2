@@ -1,6 +1,7 @@
 import { CheckIcon, Cross2Icon } from '@radix-ui/react-icons';
 import { Flex, IconButton, TextField } from '@radix-ui/themes';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useDebouncedInput } from './hooks/useDebouncedInput.ts';
 
 interface BranchInputProps {
   value: string;
@@ -10,26 +11,15 @@ interface BranchInputProps {
 }
 
 export const BranchInput = ({ value, onChange, onDelete, enableValidation }: BranchInputProps) => {
-  const [localValue, setLocalValue] = useState(value);
-  const lastSavedValueRef = useRef(value);
+  const { localValue, setLocalValue, handleBlur } = useDebouncedInput({ value, onChange });
 
-  // Sync local value when prop changes externally (not from our own save)
-  useEffect(() => {
-    // Only sync if the prop changed and it's different from what we last saved
-    // This prevents syncing when the prop update came from our own onChange callback
-    if (value !== lastSavedValueRef.current) {
-      setLocalValue(value);
-      lastSavedValueRef.current = value;
-    }
-  }, [value]);
-
-  const isValid = (text: string) => {
+  const isValid = useCallback((text: string) => {
     if (!text || !text.trim()) return false;
     return /^\s*state\.[a-zA-Z0-9_$]+\s*=/.test(text);
-  };
+  }, []);
 
-  const showValidation = enableValidation && localValue.trim().length > 0;
-  const valid = isValid(localValue);
+  const showValidation = useMemo(() => enableValidation && localValue.trim().length > 0, [enableValidation, localValue]);
+  const valid = useMemo(() => isValid(localValue), [localValue, isValid]);
 
   return (
     <Flex gap="2" align="center" style={{ marginLeft: 16 }}>
@@ -37,17 +27,12 @@ export const BranchInput = ({ value, onChange, onDelete, enableValidation }: Bra
         <TextField.Root
           value={localValue}
           onChange={e => setLocalValue(e.target.value)}
-          onBlur={() => {
-            if (localValue !== value) {
-              lastSavedValueRef.current = localValue;
-              onChange(localValue);
-            }
-          }}
-          onKeyDown={e => {
+          onBlur={handleBlur}
+          onKeyDown={useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
             if (e.key === 'Enter') {
               e.currentTarget.blur(); // Trigger blur to save
             }
-          }}
+          }, [])}
           style={{ flexGrow: 1, boxShadow: 'none' }}
         >
           <TextField.Slot side="right">

@@ -1,6 +1,7 @@
 import { PlusIcon } from '@radix-ui/react-icons';
 import { Flex, IconButton } from '@radix-ui/themes';
 import type { ReactNode } from 'react';
+import { useCallback } from 'react';
 
 export interface ItemHandlers<T = string> {
   onUpdate: (newValue: T) => void;
@@ -20,21 +21,27 @@ export const EditableList = <T,>({
   renderItem,
   createNewItem,
 }: EditableListProps<T>) => {
-  const handleAddItem = () => {
+  const handleAddItem = useCallback(() => {
     const newItems = [...items, createNewItem()];
     onItemsChange(newItems);
-  };
+  }, [items, createNewItem, onItemsChange]);
 
-  const handleUpdateItem = (index: number, newValue: T) => {
-    const newItems = [...items];
-    newItems[index] = newValue;
-    onItemsChange(newItems);
-  };
+  const handleUpdateItem = useCallback(
+    (index: number, newValue: T) => {
+      const newItems = [...items];
+      newItems[index] = newValue;
+      onItemsChange(newItems);
+    },
+    [items, onItemsChange]
+  );
 
-  const handleDeleteItem = (index: number) => {
-    const newItems = items.filter((_, i) => i !== index);
-    onItemsChange(newItems, index);
-  };
+  const handleDeleteItem = useCallback(
+    (index: number) => {
+      const newItems = items.filter((_, i) => i !== index);
+      onItemsChange(newItems, index);
+    },
+    [items, onItemsChange]
+  );
 
   return (
     <Flex direction="column" gap="2">
@@ -42,9 +49,9 @@ export const EditableList = <T,>({
         <Flex direction="column" gap="2">
           {items.map((item, i) =>
             renderItem(item, i, {
-              onUpdate: (newValue) => handleUpdateItem(i, newValue),
+              onUpdate: (newValue: T) => handleUpdateItem(i, newValue),
               onDelete: () => handleDeleteItem(i),
-            }),
+            })
           )}
         </Flex>
       )}

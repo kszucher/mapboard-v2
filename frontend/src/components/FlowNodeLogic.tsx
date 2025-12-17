@@ -1,8 +1,9 @@
 import { CheckIcon, Cross2Icon } from '@radix-ui/react-icons';
 import { Flex, IconButton, TextField } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useUpdateNode } from '../api/mutations';
+import { useDebouncedInput } from './hooks/useDebouncedInput.ts';
 import { EditableList } from './shared/EditableList.tsx';
 import type { AppFlowNode } from './types.ts';
 
@@ -17,38 +18,15 @@ interface LogicAssignmentRowProps {
 }
 
 const LogicAssignmentRow = ({ value, onChange, onDelete }: LogicAssignmentRowProps) => {
-  const [localValue, setLocalValue] = useState(value);
-  const lastSavedValueRef = useRef(value);
+  const { localValue, setLocalValue, handleBlur } = useDebouncedInput({ value, onChange });
 
-  // Sync local value when prop changes externally (not from our own save)
-  useEffect(() => {
-    // Only sync if the prop changed and it's different from what we last saved
-    // This prevents syncing when the prop update came from our own onChange callback
-    if (value !== lastSavedValueRef.current) {
-      setLocalValue(value);
-      lastSavedValueRef.current = value;
-    }
-  }, [value]);
-
-  // Debounced auto-save while typing
-  useEffect(() => {
-    if (localValue === value) return;
-
-    const timeout = setTimeout(() => {
-      lastSavedValueRef.current = localValue;
-      onChange(localValue);
-    }, 300);
-
-    return () => clearTimeout(timeout);
-  }, [localValue, value, onChange]);
-
-  const isValid = (text: string) => {
+  const isValid = useCallback((text: string) => {
     if (!text || !text.trim()) return false;
     return /^\s*state\.[a-zA-Z0-9_$]+\s*=/.test(text);
-  };
+  }, []);
 
-  const showValidation = localValue.trim().length > 0;
-  const valid = isValid(localValue);
+  const showValidation = useMemo(() => localValue.trim().length > 0, [localValue]);
+  const valid = useMemo(() => isValid(localValue), [localValue, isValid]);
 
   return (
     <Flex gap="2" align="center" style={{ marginLeft: 16 }}>
@@ -56,11 +34,12 @@ const LogicAssignmentRow = ({ value, onChange, onDelete }: LogicAssignmentRowPro
         <TextField.Root
           value={localValue}
           onChange={e => setLocalValue(e.target.value)}
-          onKeyDown={e => {
+          onKeyDown={useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
             if (e.key === 'Enter') {
               e.preventDefault();
             }
-          }}
+          }, [])}
+          onBlur={handleBlur}
           placeholder="Assignment"
           style={{ width: '100%', boxShadow: 'none' }}
         >
@@ -83,18 +62,21 @@ export const FlowNodeLogic = ({ data }: FlowNodeLogicProps) => {
 
   const assignments = (node.node_type_logic_input as { logicalAssignments?: string[] } | undefined)?.logicalAssignments ?? [];
 
-  const handleAssignmentsChange = (newAssignments: string[]) => {
-    updateNodeMutation.mutate({
-      nodeId: node.id,
-      patch: {
-        graph_id: node.graph_id,
-        node_type_logic_input: {
-          logicalAssignments: newAssignments,
+  const handleAssignmentsChange = useCallback(
+    (newAssignments: string[]) => {
+      updateNodeMutation.mutate({
+        nodeId: node.id,
+        patch: {
+          graph_id: node.graph_id,
+          node_type_logic_input: {
+            logicalAssignments: newAssignments,
+          },
+          // Don't update numHandles - it's independent for Logic nodes
         },
-        // Don't update numHandles - it's independent for Logic nodes
-      },
-    });
-  };
+      });
+    },
+    [node.id, node.graph_id, updateNodeMutation]
+  );
 
   return (
     <>

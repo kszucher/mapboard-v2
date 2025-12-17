@@ -34,9 +34,7 @@ export const useGraphWebSocket = (graphId: string | null) => {
       }
     };
 
-    const disconnect = connectGraphSocket(graphId, handleEvent);
-
-    return disconnect;
+    return connectGraphSocket(graphId, handleEvent);
   }, [graphId, queryClient]);
 };
 
