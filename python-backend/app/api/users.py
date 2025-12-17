@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import uuid
 
+from fastapi import APIRouter, Depends, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.db import get_session
 from app.schemas import ActiveGraphResponse, SetActiveGraph, UserCreate
 from app.services import users as user_service
-from fastapi import APIRouter, Depends, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -32,5 +33,3 @@ async def get_active_graph_id(user_id: uuid.UUID, session: AsyncSession = Depend
 @router.post("/set-active-graph", status_code=status.HTTP_204_NO_CONTENT)
 async def set_active_graph(payload: SetActiveGraph, session: AsyncSession = Depends(get_session)) -> None:
     await user_service.set_active_graph(session, payload.user_id, payload.graph_id)
-
-

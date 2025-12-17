@@ -94,5 +94,3 @@ class Edge(Base):
     to_node: Mapped[Node] = relationship(
         "Node", foreign_keys=[to_node_id], back_populates="incoming_edges", lazy="joined"
     )
-
-

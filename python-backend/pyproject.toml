@@ -26,5 +26,3 @@ dev = [
   "mypy>=1.10.0",
   "types-setuptools",
 ]
-
-

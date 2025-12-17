@@ -3,11 +3,12 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.repositories.edges import EdgeRepository
 from app.repositories.nodes import NodeRepository
 from app.schemas import GraphEvent
 from app.services.events import GraphEventBroker
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def list_nodes(session: AsyncSession, graph_id: uuid.UUID):
@@ -60,4 +61,3 @@ async def delete_node(session: AsyncSession, node_id: uuid.UUID, broker: GraphEv
     await broker.broadcast(
         GraphEvent(event="node_deleted", graph_id=node.graph_id, payload={"nodeId": str(node_id)})
     )
-

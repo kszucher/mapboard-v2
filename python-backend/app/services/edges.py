@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import uuid
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app import models
 from app.repositories.edges import EdgeRepository
 from app.repositories.nodes import NodeRepository
 from app.schemas import GraphEvent
 from app.services.events import GraphEventBroker
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def list_edges(session: AsyncSession, graph_id: uuid.UUID):
@@ -54,4 +55,3 @@ async def delete_edges_by_handle(
                 payload={"fromNodeId": str(from_node_id), "deletedHandleIndex": deleted_handle_index},
             )
         )
-

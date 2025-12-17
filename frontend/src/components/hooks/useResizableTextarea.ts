@@ -17,10 +17,10 @@ interface UseResizableTextareaReturn {
 }
 
 export const useResizableTextarea = ({
-                                       initialValue,
-                                       savedHeight,
-                                       onSave,
-                                     }: UseResizableTextareaProps): UseResizableTextareaReturn => {
+  initialValue,
+  savedHeight,
+  onSave,
+}: UseResizableTextareaProps): UseResizableTextareaReturn => {
   const [localValue, setLocalValue] = useState(initialValue);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const initialHeightRef = useRef(savedHeight);
@@ -29,6 +29,18 @@ export const useResizableTextarea = ({
   useEffect(() => {
     setLocalValue(initialValue);
   }, [initialValue]);
+
+  // Debounced auto-save while typing
+  useEffect(() => {
+    if (localValue === initialValue) return;
+
+    const timeout = setTimeout(() => {
+      const currentHeight = textareaRef.current?.offsetHeight ?? savedHeight;
+      onSave(localValue, currentHeight);
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [localValue, initialValue, onSave, savedHeight]);
 
   const handleMouseDown = () => {
     // Track initial height when mouse down

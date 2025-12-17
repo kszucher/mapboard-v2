@@ -97,7 +97,7 @@ export const useGraphMutations = () => {
       });
       if (res.error) throw res.error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: ['nodes'] });
       void queryClient.invalidateQueries({ queryKey: ['edges'] });
     },

@@ -38,10 +38,12 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
 
   useEffect(() => {
     if (!selectedGraphId) return;
-    const disconnect = connectGraphSocket(selectedGraphId, () => {
+
+    const disconnect = connectGraphSocket(selectedGraphId, event => {
       void queryClient.invalidateQueries({ queryKey: ['nodes', selectedGraphId] });
       void queryClient.invalidateQueries({ queryKey: ['edges', selectedGraphId] });
     });
+
     return disconnect;
   }, [queryClient, selectedGraphId]);
 

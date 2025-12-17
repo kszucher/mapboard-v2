@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import uuid
 
-from app.repositories.users import UserRepository
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.repositories.users import UserRepository
 
 
 async def get_or_create_user(session: AsyncSession) -> uuid.UUID:
@@ -32,5 +33,3 @@ async def set_active_graph(session: AsyncSession, user_id: uuid.UUID, graph_id: 
     repo = UserRepository(session)
     await repo.set_active_graph(user_id, graph_id)
     await session.commit()
-
-

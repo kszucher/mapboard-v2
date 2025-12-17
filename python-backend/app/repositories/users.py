@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import uuid
 
-from app import models
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app import models
 
 
 class UserRepository:
@@ -34,5 +35,3 @@ class UserRepository:
     async def get_active_graph_id(self, user_id: uuid.UUID) -> uuid.UUID | None:
         user = await self.get(user_id)
         return user.selected_graph_id if user else None
-
-

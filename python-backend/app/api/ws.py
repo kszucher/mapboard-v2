@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import uuid
 
-from app.services.events import broker
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+
+from app.services.events import broker
 
 router = APIRouter(prefix="/ws", tags=["websocket"])
 
@@ -12,13 +13,18 @@ router = APIRouter(prefix="/ws", tags=["websocket"])
 async def graph_ws(graph_id: uuid.UUID, websocket: WebSocket) -> None:
     await websocket.accept()
     await broker.subscribe(graph_id, websocket)
+
+    # Debug message to prove this handler talks to the browser websocket
+    try:
+        await websocket.send_json({"event": "ws_hello", "graph_id": str(graph_id)})
+    except Exception as e:
+        print(f"[graph_ws] failed to send hello message: {e}")
     try:
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
         await broker.unsubscribe(graph_id, websocket)
-    except Exception:
+    except Exception as e:
+        print(f"[graph_ws] unexpected error: {e}")
         await broker.unsubscribe(graph_id, websocket)
         await websocket.close()
-
-

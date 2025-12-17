@@ -3,13 +3,14 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
+from fastapi import APIRouter, Depends, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.db import get_session
 from app.repositories.nodes import NodeRepository
 from app.schemas import NodeCreate, NodeRead
 from app.services import nodes as node_service
 from app.services.events import broker
-from fastapi import APIRouter, Depends, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/nodes", tags=["nodes"])
 
@@ -34,5 +35,3 @@ async def update_node(node_id: uuid.UUID, patch: dict[str, Any], session: AsyncS
 @router.delete("/{node_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_node(node_id: uuid.UUID, session: AsyncSession = Depends(get_session)) -> None:
     await node_service.delete_node(session, node_id, broker)
-
-

@@ -21,5 +21,3 @@ uv run fastapi dev app/main.py  # or: uv run uvicorn app.main:app --reload
 - WebSocket channel: `/ws/graphs/{graph_id}` broadcasts change events for that graph.
 - OpenAPI types: from repo root run  
   `cd frontend && npm run generate:api` (see `frontend/package.json` script) once the backend is running.
-
-

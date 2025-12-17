@@ -24,11 +24,15 @@ const AgentAssignmentRow = ({ value, onChange, onDelete }: AgentAssignmentRowPro
     setLocalValue(value);
   }, [value]);
 
-  const handleBlur = () => {
-    if (localValue !== value) {
+  useEffect(() => {
+    if (localValue === value) return;
+
+    const timeout = setTimeout(() => {
       onChange(localValue);
-    }
-  };
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [localValue, value, onChange]);
 
   const isValid = (text: string) => {
     if (!text || !text.trim()) return false;
@@ -44,10 +48,9 @@ const AgentAssignmentRow = ({ value, onChange, onDelete }: AgentAssignmentRowPro
         <TextField.Root
           value={localValue}
           onChange={e => setLocalValue(e.target.value)}
-          onBlur={handleBlur}
           onKeyDown={e => {
             if (e.key === 'Enter') {
-              e.currentTarget.blur();
+              e.preventDefault();
             }
           }}
           placeholder="Assignment"
