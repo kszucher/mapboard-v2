@@ -60,11 +60,10 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
     });
   }, [nodesData, setNodes]);
 
-  // Sync edges from query data to state
-  useEffect(() => {
-    if (!edgesData) return;
-    
-    const mappedEdges: AppFlowEdge[] = edgesData.map(edge => ({
+  // Map edges from query data to ReactFlow format
+  const mappedEdges = useMemo<AppFlowEdge[]>(() => {
+    if (!edgesData) return [];
+    return edgesData.map(edge => ({
       id: edge.id,
       source: edge.from_node_id,
       target: edge.to_node_id,
@@ -73,9 +72,12 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
       animated: true,
       style: { stroke: '#fff', strokeWidth: 2 },
     }));
-    
+  }, [edgesData]);
+
+  // Sync edges from query data to state
+  useEffect(() => {
     setEdges(mappedEdges);
-  }, [edgesData, setEdges]);
+  }, [mappedEdges, setEdges]);
 
   // Fit view when graph changes (minimized useEffect)
   useEffect(() => {

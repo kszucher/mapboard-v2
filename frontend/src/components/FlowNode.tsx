@@ -1,8 +1,8 @@
 import { DotsHorizontalIcon } from '@radix-ui/react-icons';
-import { Badge, Box, DropdownMenu, Flex, IconButton } from '@radix-ui/themes';
 import type { BadgeProps } from '@radix-ui/themes';
+import { Badge, Box, DropdownMenu, Flex, IconButton } from '@radix-ui/themes';
 import { type NodeProps, useUpdateNodeInternals } from '@xyflow/react';
-import { memo, useEffect } from 'react';
+import { memo, useCallback, useEffect, useMemo } from 'react';
 import { useDeleteNode } from '../api/mutations';
 import { FlowNodeAgent } from './FlowNodeAgent.tsx';
 import { FlowNodeAgenticSwitch } from './FlowNodeAgenticSwitch.tsx';
@@ -19,9 +19,11 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
     updateNodeInternals(id);
   }, [data.node.num_handles, data.node.node_type, id, updateNodeInternals]);
 
-  if (!data) return null;
+  const handleDelete = useCallback(() => {
+    deleteNodeMutation.mutate({ nodeId: data.node.id });
+  }, [data.node.id, deleteNodeMutation]);
 
-  const renderBody = () => {
+  const renderBody = useMemo(() => {
     switch (data.node.node_type) {
       case 'START':
         return <FlowNodeStart data={data} />;
@@ -36,7 +38,9 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
       default:
         return <div>Unknown Node Type</div>;
     }
-  };
+  }, [data]);
+
+  if (!data) return null;
 
   return (
     <div
@@ -73,14 +77,14 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
                 <DropdownMenu.Item key={1}></DropdownMenu.Item>
               </DropdownMenu.SubContent>
             </DropdownMenu.Sub>
-            <DropdownMenu.Item onClick={() => deleteNodeMutation.mutate({ nodeId: data.node.id })}>
+            <DropdownMenu.Item onClick={handleDelete}>
               {'Delete'}
             </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Root>
       </Box>
 
-      {renderBody()}
+      {renderBody}
     </div>
   );
 };

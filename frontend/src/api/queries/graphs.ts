@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../client';
-import { queryKeys } from '../queryKeys';
 import type { components } from '../generated/schema';
+import { queryKeys } from '../queryKeys';
 
 type GraphRead = components['schemas']['GraphRead'];
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface UseResizableTextareaProps {
   initialValue: string;
@@ -25,6 +25,12 @@ export const useResizableTextarea = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const initialHeightRef = useRef(savedHeight);
   const lastSavedValueRef = useRef(initialValue);
+  const onSaveRef = useRef(onSave);
+
+  // Keep onSave ref up to date without causing re-renders
+  useEffect(() => {
+    onSaveRef.current = onSave;
+  }, [onSave]);
 
   // Sync local value when prop changes externally (not from our own save)
   useEffect(() => {
@@ -43,39 +49,39 @@ export const useResizableTextarea = ({
     const timeout = setTimeout(() => {
       const currentHeight = textareaRef.current?.offsetHeight ?? savedHeight;
       lastSavedValueRef.current = localValue;
-      onSave(localValue, currentHeight);
+      onSaveRef.current(localValue, currentHeight);
     }, 300);
 
     return () => clearTimeout(timeout);
-  }, [localValue, initialValue, onSave, savedHeight]);
+  }, [localValue, initialValue, savedHeight]);
 
-  const handleMouseDown = () => {
+  const handleMouseDown = useCallback(() => {
     // Track initial height when mouse down
     initialHeightRef.current = textareaRef.current?.offsetHeight ?? savedHeight;
-  };
+  }, [savedHeight]);
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     // Only save if height actually changed (user was resizing)
     const currentHeight = textareaRef.current?.offsetHeight;
     if (currentHeight && currentHeight !== initialHeightRef.current && currentHeight >= 60) {
-      onSave(localValue, currentHeight);
+      onSaveRef.current(localValue, currentHeight);
     }
-  };
+  }, [localValue]);
 
-  const handleBlur = () => {
+  const handleBlur = useCallback(() => {
     if (localValue !== initialValue) {
       const currentHeight = textareaRef.current?.offsetHeight ?? savedHeight;
-      onSave(localValue, currentHeight);
+      onSaveRef.current(localValue, currentHeight);
     }
-  };
+  }, [localValue, initialValue, savedHeight]);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       e.currentTarget.blur();
     }
     // Shift+Enter allows new line (default behavior)
-  };
+  }, []);
 
   return {
     textareaRef,

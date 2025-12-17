@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { queryKeys } from '../../api/queryKeys';
 import { connectGraphSocket, type GraphEvent } from '../../api/ws';
 
@@ -9,7 +9,6 @@ import { connectGraphSocket, type GraphEvent } from '../../api/ws';
  */
 export const useGraphWebSocket = (graphId: string | null) => {
   const queryClient = useQueryClient();
-  const disconnectRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (!graphId) return;
@@ -36,12 +35,8 @@ export const useGraphWebSocket = (graphId: string | null) => {
     };
 
     const disconnect = connectGraphSocket(graphId, handleEvent);
-    disconnectRef.current = disconnect;
 
-    return () => {
-      disconnect();
-      disconnectRef.current = null;
-    };
+    return disconnect;
   }, [graphId, queryClient]);
 };
 

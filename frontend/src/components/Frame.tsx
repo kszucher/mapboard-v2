@@ -1,9 +1,10 @@
 import { CaretDownIcon, CheckIcon, MixIcon, PlayIcon } from '@radix-ui/react-icons';
 import { Box, Button, DropdownMenu, Flex, IconButton, Text } from '@radix-ui/themes';
 import { ReactFlowProvider } from '@xyflow/react';
+import { useCallback, useMemo } from 'react';
+import type { components } from '../api/generated/schema';
 import { useCreateGraph, useCreateNode, useSetActiveGraph } from '../api/mutations';
 import { useActiveGraphId, useUserGraphs, useUserId } from '../api/queries';
-import type { components } from '../api/generated/schema';
 import { Flow } from './Flow.tsx';
 
 type NodeType = components['schemas']['NodeRead']['node_type'];
@@ -18,22 +19,31 @@ export const Frame = () => {
   const createGraphMutation = useCreateGraph();
   const setActiveGraphMutation = useSetActiveGraph();
 
-  const handleCreateNode = (graphId: string, nodeType: NodeType) => {
-    if (!graphId) return;
-    createNodeMutation.mutate({ graphId, nodeType });
-  };
+  const handleCreateNode = useCallback(
+    (graphId: string, nodeType: NodeType) => {
+      if (!graphId) return;
+      createNodeMutation.mutate({ graphId, nodeType });
+    },
+    [createNodeMutation]
+  );
 
-  const handleCreateGraph = () => {
+  const handleCreateGraph = useCallback(() => {
     if (!userId) return;
     createGraphMutation.mutate({ userId, graphName: 'New Graph' });
-  };
+  }, [userId, createGraphMutation]);
 
-  const handleSelectGraph = (graphId: string) => {
-    if (!userId) return;
-    setActiveGraphMutation.mutate({ userId, graphId });
-  };
+  const handleSelectGraph = useCallback(
+    (graphId: string) => {
+      if (!userId) return;
+      setActiveGraphMutation.mutate({ userId, graphId });
+    },
+    [userId, setActiveGraphMutation]
+  );
 
-  const activeGraphName = graphs?.find(graph => graph.id === selectedGraphId)?.name ?? 'Select graph';
+  const activeGraphName = useMemo(
+    () => graphs?.find(graph => graph.id === selectedGraphId)?.name ?? 'Select graph',
+    [graphs, selectedGraphId]
+  );
 
   const isGraphSelected = !!selectedGraphId;
 
