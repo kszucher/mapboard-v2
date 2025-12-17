@@ -17,7 +17,7 @@ export const useCreateEdge = () => {
       toNodeId: string;
       handleIndex: number;
     }) => {
-      const res = await apiClient.POST('/edges', {
+      const res = await apiClient.POST('/edges/', {
         body: {
           graph_id: graphId,
           from_node_id: fromNodeId,

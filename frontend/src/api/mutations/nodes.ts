@@ -4,8 +4,9 @@ import type { components } from '../generated/schema';
 import { queryKeys } from '../queryKeys';
 
 type NodeType = components['schemas']['NodeRead']['node_type'];
+type NodeColor = components['schemas']['NodeCreate']['color'];
 
-const NODE_COLORS: Record<NodeType, string> = {
+const NODE_COLORS: Record<NodeType, NodeColor> = {
   START: 'gray',
   LOGIC: 'purple',
   AGENT: 'blue',
@@ -26,7 +27,7 @@ export const useCreateNode = () => {
 
   return useMutation({
     mutationFn: async ({ graphId, nodeType }: { graphId: string; nodeType: NodeType }) => {
-      const res = await apiClient.POST('/nodes', {
+      const res = await apiClient.POST('/nodes/', {
         body: {
           graph_id: graphId,
           iid: 1,

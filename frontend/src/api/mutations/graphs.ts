@@ -7,7 +7,7 @@ export const useCreateGraph = () => {
 
   return useMutation({
     mutationFn: async ({ userId, graphName }: { userId: string; graphName: string }) => {
-      const res = await apiClient.POST('/graphs', {
+      const res = await apiClient.POST('/graphs/', {
         body: { user_id: userId, graph_name: graphName },
       });
       if ('error' in res) throw res.error;
