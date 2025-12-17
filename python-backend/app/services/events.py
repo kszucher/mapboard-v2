@@ -5,9 +5,8 @@ import uuid
 from collections import defaultdict
 from typing import DefaultDict
 
-from fastapi import WebSocket
-
 from app.schemas import GraphEvent
+from fastapi import WebSocket
 
 
 class GraphEventBroker:
@@ -42,4 +41,5 @@ class GraphEventBroker:
 
 
 broker = GraphEventBroker()
+
 

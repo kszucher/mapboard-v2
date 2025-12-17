@@ -22,3 +22,4 @@ uv run fastapi dev app/main.py  # or: uv run uvicorn app.main:app --reload
 - OpenAPI types: from repo root run  
   `cd frontend && npm run generate:api` (see `frontend/package.json` script) once the backend is running.
 
+

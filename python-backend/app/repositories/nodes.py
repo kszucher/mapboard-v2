@@ -3,10 +3,9 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
+from app import models
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from app import models
 
 
 class NodeRepository:
@@ -31,4 +30,5 @@ class NodeRepository:
 
     async def get(self, node_id: uuid.UUID) -> models.Node | None:
         return await self.session.get(models.Node, node_id)
+
 

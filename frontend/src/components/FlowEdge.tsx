@@ -1,9 +1,4 @@
-import {
-  BaseEdge,
-  type EdgeProps,
-  getSmoothStepPath,
-  useReactFlow,
-} from '@xyflow/react';
+import { BaseEdge, type EdgeProps, getSmoothStepPath, useReactFlow } from '@xyflow/react';
 
 /**
  * Custom FlowEdge

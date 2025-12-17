@@ -6,3 +6,4 @@ ignore = ["E501"]
 [lint.isort]
 profile = "black"
 
+

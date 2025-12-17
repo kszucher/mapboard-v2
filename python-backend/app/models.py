@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.types import JSON
@@ -94,4 +94,5 @@ class Edge(Base):
     to_node: Mapped[Node] = relationship(
         "Node", foreign_keys=[to_node_id], back_populates="incoming_edges", lazy="joined"
     )
+
 

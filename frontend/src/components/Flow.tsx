@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import {
   addEdge,
   type Connection,
@@ -11,7 +12,6 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { connectGraphSocket } from '../api/ws';
 import { GraphMutationsProvider, useGraphMutationsContext } from './contexts/GraphMutationsContext.tsx';
 import FlowEdge from './FlowEdge.tsx';

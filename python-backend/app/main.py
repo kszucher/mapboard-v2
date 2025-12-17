@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-import asyncio
-
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-
 from app import models
 from app.api import edges, graphs, nodes, users, ws
 from app.config import settings
 from app.db import engine
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 
 async def init_models() -> None:
@@ -45,4 +42,5 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
+
 

@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import uuid
 
+from app import models
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from app import models
 
 
 class EdgeRepository:
@@ -36,4 +35,5 @@ class EdgeRepository:
                     .where(models.Edge.id == edge.id)
                     .values(handle_index=edge.handle_index - 1)
                 )
+
 

@@ -21,3 +21,4 @@ async def get_session() -> AsyncIterator[AsyncSession]:
     async with SessionLocal() as session:
         yield session
 
+

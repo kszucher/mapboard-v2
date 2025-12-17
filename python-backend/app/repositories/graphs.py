@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import uuid
 
+from app import models
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from app import models
 
 
 class GraphRepository:
@@ -26,4 +25,5 @@ class GraphRepository:
 
     async def get(self, graph_id: uuid.UUID) -> models.Graph | None:
         return await self.session.get(models.Graph, graph_id)
+
 

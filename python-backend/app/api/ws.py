@@ -2,9 +2,8 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-
 from app.services.events import broker
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 router = APIRouter(prefix="/ws", tags=["websocket"])
 
@@ -21,4 +20,5 @@ async def graph_ws(graph_id: uuid.UUID, websocket: WebSocket) -> None:
     except Exception:
         await broker.unsubscribe(graph_id, websocket)
         await websocket.close()
+
 

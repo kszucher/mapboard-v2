@@ -2,8 +2,8 @@ import { CaretDownIcon, CheckIcon, MixIcon, PlayIcon } from '@radix-ui/react-ico
 import { Box, Button, DropdownMenu, Flex, IconButton, Text } from '@radix-ui/themes';
 import { ReactFlowProvider } from '@xyflow/react';
 import { useEffect, useState } from 'react';
-import type { components } from '../api/generated/schema';
 import { apiClient } from '../api/client';
+import type { components } from '../api/generated/schema';
 import { Flow } from './Flow.tsx';
 import { useGraphMutations } from './useGraphMutations.ts';
 import { useActiveGraphId, useUserGraphs } from './useGraphQueries.ts';

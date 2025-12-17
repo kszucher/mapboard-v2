@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import uuid
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.repositories.graphs import GraphRepository
 from app.repositories.nodes import NodeRepository
 from app.repositories.users import UserRepository
 from app.schemas import Color, GraphEvent, NodeType
 from app.services.events import GraphEventBroker
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def create_graph(

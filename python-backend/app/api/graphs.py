@@ -2,14 +2,13 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.db import get_session
 from app.repositories.graphs import GraphRepository
 from app.schemas import GraphCreate, GraphRead
 from app.services import graphs as graph_service
 from app.services.events import broker
+from fastapi import APIRouter, Depends, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/graphs", tags=["graphs"])
 
@@ -24,4 +23,5 @@ async def list_graphs(user_id: uuid.UUID, session: AsyncSession = Depends(get_se
     repo = GraphRepository(session)
     graphs = await repo.list_by_user(user_id)
     return [GraphRead.model_validate(g) for g in graphs]
+
 
