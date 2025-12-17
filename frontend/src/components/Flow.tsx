@@ -17,6 +17,7 @@ import FlowEdge from './FlowEdge.tsx';
 import { CustomNode } from './FlowNode.tsx';
 import { useGraphWebSocket } from './hooks/useGraphWebSocket.ts';
 import type { AppFlowEdge, AppFlowNode } from './types.ts';
+
 const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
   // data fetching
   const { data: nodesData } = useNodes(selectedGraphId);
@@ -47,11 +48,11 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
   // memoized values
   const nodeTypes = useMemo(
     () => ({ custom: CustomNode }),
-    []
+    [],
   );
   const edgeTypes = useMemo(
     () => ({ custom: FlowEdge }),
-    []
+    [],
   );
 
   // Map edges from query data to ReactFlow format
@@ -71,7 +72,7 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
   // Sync nodes from query data to state, preserving local state (measured dimensions, etc.)
   useEffect(() => {
     if (!nodesData) return;
-    
+
     setNodes(prevNodes => {
       const nodeMap = new Map(prevNodes.map(n => [n.id, n]));
       return nodesData.map(n => {
@@ -121,7 +122,7 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
         handleIndex: Number(params.sourceHandle),
       });
     },
-    [selectedGraphId, createEdgeMutation, setEdges]
+    [selectedGraphId, createEdgeMutation, setEdges],
   );
 
   const handleEdgesDelete = useCallback(
@@ -130,7 +131,7 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
         deleteEdgeMutation.mutate({ edgeId: edge.id as string });
       });
     },
-    [deleteEdgeMutation]
+    [deleteEdgeMutation],
   );
 
   const handleReconnectStart = useCallback(() => {
@@ -154,7 +155,7 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
         });
       }
     },
-    [selectedGraphId, createEdgeMutation, deleteEdgeMutation, setEdges]
+    [selectedGraphId, createEdgeMutation, deleteEdgeMutation, setEdges],
   );
 
   const handleReconnectEnd = useCallback(
@@ -166,7 +167,7 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
 
       edgeReconnectSuccessful.current = true;
     },
-    [deleteEdgeMutation, setEdges]
+    [deleteEdgeMutation, setEdges],
   );
 
   const handleNodeDragStop = useCallback(
@@ -175,10 +176,10 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
         node.id as string,
         Math.round(node.position.x),
         Math.round(node.position.y),
-        selectedGraphId
+        selectedGraphId,
       );
     },
-    [selectedGraphId, updateNodePositionMutation]
+    [selectedGraphId, updateNodePositionMutation],
   );
 
   const handleDoubleClick = useCallback(
@@ -186,7 +187,7 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
       event.preventDefault();
       void fitView({ padding: 0.1, maxZoom: 1, duration: 300 });
     },
-    [fitView]
+    [fitView],
   );
 
   if (!nodesData || !edgesData) return null;
