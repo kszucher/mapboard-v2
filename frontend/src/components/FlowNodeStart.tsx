@@ -1,7 +1,7 @@
 import { CheckIcon, Cross2Icon } from '@radix-ui/react-icons';
 import { Flex, Select, TextField } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
-import { useGraphMutationsContext } from './contexts/GraphMutationsContext.tsx';
+import { useUpdateNode } from '../api/mutations';
 import { EditableList, type ItemHandlers } from './shared/EditableList.tsx';
 import type { AppFlowNode } from './types.ts';
 
@@ -15,7 +15,7 @@ interface FlowNodeStartProps {
 }
 
 export const FlowNodeStart = ({ data }: FlowNodeStartProps) => {
-  const { updateNode } = useGraphMutationsContext();
+  const updateNodeMutation = useUpdateNode();
   const { node } = data;
 
   const schemaFields = (node.node_type_start as { schemaFields?: string[] } | undefined)?.schemaFields ?? [];
@@ -27,7 +27,7 @@ export const FlowNodeStart = ({ data }: FlowNodeStartProps) => {
   }));
 
   const handleFieldsChange = (newFields: SchemaField[]) => {
-    updateNode({
+    updateNodeMutation.mutate({
       nodeId: node.id,
       patch: {
         graph_id: node.graph_id,

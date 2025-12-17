@@ -1,8 +1,8 @@
 import { CheckIcon, Cross2Icon } from '@radix-ui/react-icons';
 import { Flex, IconButton, TextField } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
-import { useEffect, useState } from 'react';
-import { useGraphMutationsContext } from './contexts/GraphMutationsContext.tsx';
+import { useEffect, useRef, useState } from 'react';
+import { useUpdateNode } from '../api/mutations';
 import { EditableList } from './shared/EditableList.tsx';
 import type { AppFlowNode } from './types.ts';
 
@@ -18,15 +18,24 @@ interface LogicAssignmentRowProps {
 
 const LogicAssignmentRow = ({ value, onChange, onDelete }: LogicAssignmentRowProps) => {
   const [localValue, setLocalValue] = useState(value);
+  const lastSavedValueRef = useRef(value);
 
+  // Sync local value when prop changes externally (not from our own save)
   useEffect(() => {
-    setLocalValue(value);
+    // Only sync if the prop changed and it's different from what we last saved
+    // This prevents syncing when the prop update came from our own onChange callback
+    if (value !== lastSavedValueRef.current) {
+      setLocalValue(value);
+      lastSavedValueRef.current = value;
+    }
   }, [value]);
 
+  // Debounced auto-save while typing
   useEffect(() => {
     if (localValue === value) return;
 
     const timeout = setTimeout(() => {
+      lastSavedValueRef.current = localValue;
       onChange(localValue);
     }, 300);
 
@@ -69,13 +78,13 @@ const LogicAssignmentRow = ({ value, onChange, onDelete }: LogicAssignmentRowPro
 };
 
 export const FlowNodeLogic = ({ data }: FlowNodeLogicProps) => {
-  const { updateNode } = useGraphMutationsContext();
+  const updateNodeMutation = useUpdateNode();
   const { node } = data;
 
   const assignments = (node.node_type_logic_input as { logicalAssignments?: string[] } | undefined)?.logicalAssignments ?? [];
 
   const handleAssignmentsChange = (newAssignments: string[]) => {
-    updateNode({
+    updateNodeMutation.mutate({
       nodeId: node.id,
       patch: {
         graph_id: node.graph_id,

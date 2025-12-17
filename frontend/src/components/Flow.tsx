@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query';
 import {
   addEdge,
   type Connection,
@@ -12,18 +11,21 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { connectGraphSocket } from '../api/ws';
-import { GraphMutationsProvider, useGraphMutationsContext } from './contexts/GraphMutationsContext.tsx';
+import { useCreateEdge, useDeleteEdge, useUpdateNodePosition } from '../api/mutations';
+import { useEdges, useNodes } from '../api/queries';
 import FlowEdge from './FlowEdge.tsx';
 import { CustomNode } from './FlowNode.tsx';
+import { useGraphWebSocket } from './hooks/useGraphWebSocket.ts';
 import type { AppFlowEdge, AppFlowNode } from './types.ts';
-import { useGraphQueries } from './useGraphQueries.ts';
 
 const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
-  const queryClient = useQueryClient();
-  const { nodes: nodesData, edges: edgesData } = useGraphQueries(selectedGraphId);
+  const { data: nodesData } = useNodes(selectedGraphId);
+  const { data: edgesData } = useEdges(selectedGraphId);
+  useGraphWebSocket(selectedGraphId);
 
-  const { updateNodePosition, createEdge, deleteEdge } = useGraphMutationsContext();
+  const updateNodePositionMutation = useUpdateNodePosition();
+  const createEdgeMutation = useCreateEdge();
+  const deleteEdgeMutation = useDeleteEdge();
 
   const { fitView } = useReactFlow();
   const nodesInitialized = useNodesInitialized();
@@ -36,26 +38,17 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
   const nodeTypes = useMemo(() => ({ custom: CustomNode }), []);
   const edgeTypes = useMemo(() => ({ custom: FlowEdge }), []);
 
-  useEffect(() => {
-    if (!selectedGraphId) return;
-
-    const disconnect = connectGraphSocket(selectedGraphId, event => {
-      void queryClient.invalidateQueries({ queryKey: ['nodes', selectedGraphId] });
-      void queryClient.invalidateQueries({ queryKey: ['edges', selectedGraphId] });
-    });
-
-    return disconnect;
-  }, [queryClient, selectedGraphId]);
-
+  // Sync nodes from query data to state, preserving local state (measured dimensions, etc.)
   useEffect(() => {
     if (!nodesData) return;
+    
     setNodes(prevNodes => {
       const nodeMap = new Map(prevNodes.map(n => [n.id, n]));
       return nodesData.map(n => {
         const prevNode = nodeMap.get(n.id);
         return {
           id: n.id,
-          type: 'custom',
+          type: 'custom' as const,
           position: { x: n.offset_x, y: n.offset_y },
           data: { node: n },
           // Preserve measured dimensions and other localized state
@@ -67,6 +60,24 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
     });
   }, [nodesData, setNodes]);
 
+  // Sync edges from query data to state
+  useEffect(() => {
+    if (!edgesData) return;
+    
+    const mappedEdges: AppFlowEdge[] = edgesData.map(edge => ({
+      id: edge.id,
+      source: edge.from_node_id,
+      target: edge.to_node_id,
+      sourceHandle: String(edge.handle_index),
+      type: 'custom' as const,
+      animated: true,
+      style: { stroke: '#fff', strokeWidth: 2 },
+    }));
+    
+    setEdges(mappedEdges);
+  }, [edgesData, setEdges]);
+
+  // Fit view when graph changes (minimized useEffect)
   useEffect(() => {
     if (
       nodesInitialized &&
@@ -79,43 +90,29 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
     }
   }, [nodesInitialized, nodes, fitView, selectedGraphId]);
 
-  useEffect(() => {
-    if (!edgesData) return;
-    const mappedEdges: AppFlowEdge[] = edgesData.map(edge => ({
-      id: edge.id,
-      source: edge.from_node_id,
-      target: edge.to_node_id,
-      sourceHandle: String(edge.handle_index),
-      type: 'custom',
-      animated: true,
-      style: { stroke: '#fff', strokeWidth: 2 },
-    }));
-    setEdges(mappedEdges);
-  }, [edgesData, setEdges]);
-
   const handleConnect = useCallback(
     (params: Connection) => {
       if (!params.source || !params.target) return;
 
       setEdges(edges => addEdge(params, edges));
 
-      createEdge(
-        selectedGraphId,
-        params.source as string,
-        params.target as string,
-        Number(params.sourceHandle)
-      );
+      createEdgeMutation.mutate({
+        graphId: selectedGraphId,
+        fromNodeId: params.source as string,
+        toNodeId: params.target as string,
+        handleIndex: Number(params.sourceHandle),
+      });
     },
-    [selectedGraphId, createEdge, setEdges]
+    [selectedGraphId, createEdgeMutation, setEdges]
   );
 
   const handleEdgesDelete = useCallback(
     (edgesToDelete: AppFlowEdge[]) => {
       edgesToDelete.forEach(edge => {
-        deleteEdge(edge.id as string);
+        deleteEdgeMutation.mutate({ edgeId: edge.id as string });
       });
     },
-    [deleteEdge]
+    [deleteEdgeMutation]
   );
 
   const handleReconnectStart = useCallback(() => {
@@ -128,37 +125,42 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
 
       setEdges(edges => reconnectEdge(oldEdge, newConnection, edges));
 
-      deleteEdge(oldEdge.id as string);
+      deleteEdgeMutation.mutate({ edgeId: oldEdge.id as string });
 
       if (newConnection.source && newConnection.target) {
-        createEdge(
-          selectedGraphId,
-          newConnection.source as string,
-          newConnection.target as string,
-          Number(newConnection.sourceHandle)
-        );
+        createEdgeMutation.mutate({
+          graphId: selectedGraphId,
+          fromNodeId: newConnection.source as string,
+          toNodeId: newConnection.target as string,
+          handleIndex: Number(newConnection.sourceHandle),
+        });
       }
     },
-    [selectedGraphId, createEdge, deleteEdge, setEdges]
+    [selectedGraphId, createEdgeMutation, deleteEdgeMutation, setEdges]
   );
 
   const handleReconnectEnd = useCallback(
     (_event: MouseEvent | TouchEvent, edge: AppFlowEdge) => {
       if (!edgeReconnectSuccessful.current) {
         setEdges(edges => edges.filter(e => e.id !== edge.id));
-        deleteEdge(edge.id as string);
+        deleteEdgeMutation.mutate({ edgeId: edge.id as string });
       }
 
       edgeReconnectSuccessful.current = true;
     },
-    [deleteEdge, setEdges]
+    [deleteEdgeMutation, setEdges]
   );
 
   const handleNodeDragStop = useCallback(
     (_event: React.MouseEvent, node: AppFlowNode) => {
-      updateNodePosition(node.id as string, Math.round(node.position.x), Math.round(node.position.y), selectedGraphId);
+      updateNodePositionMutation.mutate(
+        node.id as string,
+        Math.round(node.position.x),
+        Math.round(node.position.y),
+        selectedGraphId
+      );
     },
-    [selectedGraphId, updateNodePosition]
+    [selectedGraphId, updateNodePositionMutation]
   );
 
   const handleDoubleClick = useCallback(
@@ -197,9 +199,5 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
 };
 
 export const Flow = ({ selectedGraphId }: { selectedGraphId: string }) => {
-  return (
-    <GraphMutationsProvider>
-      <FlowContent selectedGraphId={selectedGraphId} />
-    </GraphMutationsProvider>
-  );
+  return <FlowContent selectedGraphId={selectedGraphId} />;
 };

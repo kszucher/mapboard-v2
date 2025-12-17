@@ -1,47 +1,36 @@
 import { CaretDownIcon, CheckIcon, MixIcon, PlayIcon } from '@radix-ui/react-icons';
 import { Box, Button, DropdownMenu, Flex, IconButton, Text } from '@radix-ui/themes';
 import { ReactFlowProvider } from '@xyflow/react';
-import { useEffect, useState } from 'react';
-import { apiClient } from '../api/client';
+import { useCreateGraph, useCreateNode, useSetActiveGraph } from '../api/mutations';
+import { useActiveGraphId, useUserGraphs, useUserId } from '../api/queries';
 import type { components } from '../api/generated/schema';
 import { Flow } from './Flow.tsx';
-import { useGraphMutations } from './useGraphMutations.ts';
-import { useActiveGraphId, useUserGraphs } from './useGraphQueries.ts';
 
 type NodeType = components['schemas']['NodeRead']['node_type'];
 const NODE_TYPES: NodeType[] = ['START', 'LOGIC', 'AGENT', 'LOGICAL_SWITCH', 'AGENTIC_SWITCH'];
 
 export const Frame = () => {
-  const [userId, setUserId] = useState<string | null>(null);
+  const { data: userId } = useUserId();
+  const { data: selectedGraphId } = useActiveGraphId(userId ?? null);
+  const { data: graphs } = useUserGraphs(userId ?? null);
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      const res = await apiClient.POST('/users/get-or-create', {});
-      if (!res.error && res.data) {
-        setUserId(res.data);
-      }
-    };
-    fetchUser();
-  }, []);
-
-  const { data: selectedGraphId } = useActiveGraphId(userId);
-  const { data: graphs } = useUserGraphs(userId);
-
-  const { createNode, createGraph, setActiveGraph } = useGraphMutations();
+  const createNodeMutation = useCreateNode();
+  const createGraphMutation = useCreateGraph();
+  const setActiveGraphMutation = useSetActiveGraph();
 
   const handleCreateNode = (graphId: string, nodeType: NodeType) => {
     if (!graphId) return;
-    createNode(graphId, nodeType);
+    createNodeMutation.mutate({ graphId, nodeType });
   };
 
-  const handleCreateGraph = async () => {
+  const handleCreateGraph = () => {
     if (!userId) return;
-    createGraph(userId, 'New Graph');
+    createGraphMutation.mutate({ userId, graphName: 'New Graph' });
   };
 
   const handleSelectGraph = (graphId: string) => {
     if (!userId) return;
-    setActiveGraph(userId, graphId);
+    setActiveGraphMutation.mutate({ userId, graphId });
   };
 
   const activeGraphName = graphs?.find(graph => graph.id === selectedGraphId)?.name ?? 'Select graph';

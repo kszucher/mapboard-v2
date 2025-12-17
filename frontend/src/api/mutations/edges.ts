@@ -1,0 +1,67 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '../client';
+import { queryKeys } from '../queryKeys';
+
+export const useCreateEdge = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      graphId,
+      fromNodeId,
+      toNodeId,
+      handleIndex,
+    }: {
+      graphId: string;
+      fromNodeId: string;
+      toNodeId: string;
+      handleIndex: number;
+    }) => {
+      const res = await apiClient.POST('/edges', {
+        body: {
+          graph_id: graphId,
+          from_node_id: fromNodeId,
+          to_node_id: toNodeId,
+          handle_index: handleIndex,
+        },
+      });
+      if ('error' in res) throw res.error;
+      return res.data as string;
+    },
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.edges.byGraph(variables.graphId) });
+    },
+  });
+};
+
+export const useDeleteEdge = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ edgeId }: { edgeId: string }) => {
+      const res = await apiClient.DELETE('/edges/{edge_id}', {
+        params: { path: { edge_id: edgeId } },
+      });
+      if ('error' in res) throw res.error;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.edges.all });
+    },
+  });
+};
+
+export const useDeleteEdgesByNodeAndHandles = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ fromNodeId, deletedHandleIndex }: { fromNodeId: string; deletedHandleIndex: number }) => {
+      const res = await apiClient.POST('/edges/delete-by-handle', {
+        body: { from_node_id: fromNodeId, deleted_handle_index: deletedHandleIndex },
+      });
+      if ('error' in res) throw res.error;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.edges.all });
+    },
+  });
+};

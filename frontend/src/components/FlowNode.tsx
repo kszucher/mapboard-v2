@@ -1,8 +1,9 @@
 import { DotsHorizontalIcon } from '@radix-ui/react-icons';
 import { Badge, Box, DropdownMenu, Flex, IconButton } from '@radix-ui/themes';
+import type { BadgeProps } from '@radix-ui/themes';
 import { type NodeProps, useUpdateNodeInternals } from '@xyflow/react';
 import { memo, useEffect } from 'react';
-import { useGraphMutationsContext } from './contexts/GraphMutationsContext.tsx';
+import { useDeleteNode } from '../api/mutations';
 import { FlowNodeAgent } from './FlowNodeAgent.tsx';
 import { FlowNodeAgenticSwitch } from './FlowNodeAgenticSwitch.tsx';
 import { FlowNodeLogic } from './FlowNodeLogic.tsx';
@@ -11,7 +12,7 @@ import { FlowNodeStart } from './FlowNodeStart.tsx';
 import type { AppFlowNode } from './types.ts';
 
 const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
-  const { deleteNode } = useGraphMutationsContext();
+  const deleteNodeMutation = useDeleteNode();
   const updateNodeInternals = useUpdateNodeInternals();
 
   useEffect(() => {
@@ -52,7 +53,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
           <Badge color={'gray'} size="2">
             {'N' + data.node.iid}
           </Badge>
-          <Badge color={data.node.color} size="2">
+          <Badge color={data.node.color as BadgeProps['color']} size="2">
             {data.node.label}
           </Badge>
         </Flex>
@@ -72,7 +73,9 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
                 <DropdownMenu.Item key={1}></DropdownMenu.Item>
               </DropdownMenu.SubContent>
             </DropdownMenu.Sub>
-            <DropdownMenu.Item onClick={() => deleteNode(data.node.id)}>{'Delete'}</DropdownMenu.Item>
+            <DropdownMenu.Item onClick={() => deleteNodeMutation.mutate({ nodeId: data.node.id })}>
+              {'Delete'}
+            </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Root>
       </Box>

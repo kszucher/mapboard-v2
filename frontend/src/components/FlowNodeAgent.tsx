@@ -1,8 +1,8 @@
 import { CheckIcon, Cross2Icon } from '@radix-ui/react-icons';
 import { Flex, IconButton, TextArea, TextField } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
-import { useEffect, useState } from 'react';
-import { useGraphMutationsContext } from './contexts/GraphMutationsContext.tsx';
+import { useEffect, useRef, useState } from 'react';
+import { useUpdateNode } from '../api/mutations';
 import { useResizableTextarea } from './hooks/useResizableTextarea.ts';
 import { EditableList } from './shared/EditableList.tsx';
 import type { AppFlowNode } from './types.ts';
@@ -19,15 +19,24 @@ interface AgentAssignmentRowProps {
 
 const AgentAssignmentRow = ({ value, onChange, onDelete }: AgentAssignmentRowProps) => {
   const [localValue, setLocalValue] = useState(value);
+  const lastSavedValueRef = useRef(value);
 
+  // Sync local value when prop changes externally (not from our own save)
   useEffect(() => {
-    setLocalValue(value);
+    // Only sync if the prop changed and it's different from what we last saved
+    // This prevents syncing when the prop update came from our own onChange callback
+    if (value !== lastSavedValueRef.current) {
+      setLocalValue(value);
+      lastSavedValueRef.current = value;
+    }
   }, [value]);
 
+  // Debounced auto-save while typing
   useEffect(() => {
     if (localValue === value) return;
 
     const timeout = setTimeout(() => {
+      lastSavedValueRef.current = localValue;
       onChange(localValue);
     }, 300);
 
@@ -70,7 +79,7 @@ const AgentAssignmentRow = ({ value, onChange, onDelete }: AgentAssignmentRowPro
 };
 
 export const FlowNodeAgent = ({ data }: FlowNodeAgentProps) => {
-  const { updateNode } = useGraphMutationsContext();
+  const updateNodeMutation = useUpdateNode();
   const { node } = data;
   const agentInput = (node.node_type_agent_input as { agenticAssignments?: string[] } | undefined)?.agenticAssignments?.[0] ?? '';
   const savedHeight = (node.node_type_agent_input as { textareaHeight?: number } | undefined)?.textareaHeight ?? 60;
@@ -88,7 +97,7 @@ export const FlowNodeAgent = ({ data }: FlowNodeAgentProps) => {
     initialValue: agentInput,
     savedHeight,
     onSave: (value, height) => {
-      updateNode({
+      updateNodeMutation.mutate({
         nodeId: node.id,
         patch: {
           graph_id: node.graph_id,
@@ -103,7 +112,7 @@ export const FlowNodeAgent = ({ data }: FlowNodeAgentProps) => {
   });
 
   const handleAssignmentsChange = (newAssignments: string[]) => {
-    updateNode({
+    updateNodeMutation.mutate({
       nodeId: node.id,
       patch: {
         graph_id: node.graph_id,

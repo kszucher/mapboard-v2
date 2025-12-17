@@ -201,7 +201,11 @@ export interface components {
       to_node_id: string;
       handle_index: number;
     };
-    EdgeRead: EdgeCreate & {
+    EdgeRead: {
+      graph_id: string;
+      from_node_id: string;
+      to_node_id: string;
+      handle_index: number;
       id: string;
     };
     DeleteEdgesByHandle: {

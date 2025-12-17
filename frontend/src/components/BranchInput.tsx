@@ -1,6 +1,6 @@
 import { CheckIcon, Cross2Icon } from '@radix-ui/react-icons';
 import { Flex, IconButton, TextField } from '@radix-ui/themes';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface BranchInputProps {
   value: string;
@@ -11,9 +11,16 @@ interface BranchInputProps {
 
 export const BranchInput = ({ value, onChange, onDelete, enableValidation }: BranchInputProps) => {
   const [localValue, setLocalValue] = useState(value);
+  const lastSavedValueRef = useRef(value);
 
+  // Sync local value when prop changes externally (not from our own save)
   useEffect(() => {
-    setLocalValue(value);
+    // Only sync if the prop changed and it's different from what we last saved
+    // This prevents syncing when the prop update came from our own onChange callback
+    if (value !== lastSavedValueRef.current) {
+      setLocalValue(value);
+      lastSavedValueRef.current = value;
+    }
   }, [value]);
 
   const isValid = (text: string) => {
@@ -32,6 +39,7 @@ export const BranchInput = ({ value, onChange, onDelete, enableValidation }: Bra
           onChange={e => setLocalValue(e.target.value)}
           onBlur={() => {
             if (localValue !== value) {
+              lastSavedValueRef.current = localValue;
               onChange(localValue);
             }
           }}

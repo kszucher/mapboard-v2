@@ -1,7 +1,7 @@
 import { Flex } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
+import { useDeleteEdgesByNodeAndHandles, useUpdateNode } from '../api/mutations';
 import { BranchInput } from './BranchInput.tsx';
-import { useGraphMutationsContext } from './contexts/GraphMutationsContext.tsx';
 import { EditableList } from './shared/EditableList.tsx';
 import type { AppFlowNode } from './types.ts';
 
@@ -10,7 +10,8 @@ interface FlowNodeAgenticSwitchProps {
 }
 
 export const FlowNodeAgenticSwitch = ({ data }: FlowNodeAgenticSwitchProps) => {
-  const { updateNode, deleteEdgesByNodeAndHandles } = useGraphMutationsContext();
+  const updateNodeMutation = useUpdateNode();
+  const deleteEdgesByNodeAndHandlesMutation = useDeleteEdgesByNodeAndHandles();
   const { node } = data;
   const SPACING = 40;
   const BASE_OFFSET = 66;
@@ -21,10 +22,10 @@ export const FlowNodeAgenticSwitch = ({ data }: FlowNodeAgenticSwitchProps) => {
 
   const handleBranchesChange = (newBranches: string[], deletedIndex?: number) => {
     if (deletedIndex !== undefined) {
-      deleteEdgesByNodeAndHandles(node.id, deletedIndex);
+      deleteEdgesByNodeAndHandlesMutation.mutate({ fromNodeId: node.id, deletedHandleIndex: deletedIndex });
     }
 
-    updateNode({
+    updateNodeMutation.mutate({
       nodeId: node.id,
       patch: {
         graph_id: node.graph_id,

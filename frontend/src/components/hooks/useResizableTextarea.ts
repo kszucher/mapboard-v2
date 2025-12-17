@@ -24,10 +24,16 @@ export const useResizableTextarea = ({
   const [localValue, setLocalValue] = useState(initialValue);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const initialHeightRef = useRef(savedHeight);
+  const lastSavedValueRef = useRef(initialValue);
 
-  // Sync local value with prop changes
+  // Sync local value when prop changes externally (not from our own save)
   useEffect(() => {
-    setLocalValue(initialValue);
+    // Only sync if the prop changed and it's different from what we last saved
+    // This prevents syncing when the prop update came from our own onSave callback
+    if (initialValue !== lastSavedValueRef.current) {
+      setLocalValue(initialValue);
+      lastSavedValueRef.current = initialValue;
+    }
   }, [initialValue]);
 
   // Debounced auto-save while typing
@@ -36,6 +42,7 @@ export const useResizableTextarea = ({
 
     const timeout = setTimeout(() => {
       const currentHeight = textareaRef.current?.offsetHeight ?? savedHeight;
+      lastSavedValueRef.current = localValue;
       onSave(localValue, currentHeight);
     }, 300);
 

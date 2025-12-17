@@ -1,0 +1,110 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '../client';
+import { queryKeys } from '../queryKeys';
+import type { components } from '../generated/schema';
+
+type NodeType = components['schemas']['NodeRead']['node_type'];
+
+const NODE_COLORS: Record<NodeType, string> = {
+  START: 'gray',
+  LOGIC: 'purple',
+  AGENT: 'blue',
+  LOGICAL_SWITCH: 'amber',
+  AGENTIC_SWITCH: 'grass',
+};
+
+const NODE_LABELS: Record<NodeType, string> = {
+  START: 'Start',
+  LOGIC: 'Logic',
+  AGENT: 'Agent',
+  LOGICAL_SWITCH: 'Logical Switch',
+  AGENTIC_SWITCH: 'Agentic Switch',
+};
+
+export const useCreateNode = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ graphId, nodeType }: { graphId: string; nodeType: NodeType }) => {
+      const res = await apiClient.POST('/nodes', {
+        body: {
+          graph_id: graphId,
+          iid: 1,
+          width: 200,
+          height: 120,
+          offset_x: 0,
+          offset_y: 50,
+          color: NODE_COLORS[nodeType],
+          label: NODE_LABELS[nodeType],
+          num_handles: 1,
+          node_type: nodeType,
+          is_processing: false,
+        },
+      });
+      if ('error' in res) throw res.error;
+      return res.data as string;
+    },
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) });
+    },
+  });
+};
+
+export const useUpdateNode = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ nodeId, patch }: { nodeId: string; patch: Record<string, unknown> }) => {
+      const res = await apiClient.PATCH('/nodes/{node_id}', {
+        params: { path: { node_id: nodeId } },
+        body: patch,
+      });
+      if ('error' in res) throw res.error;
+    },
+    onSuccess: (_data, variables) => {
+      const graphId = variables.patch.graph_id as string | undefined;
+      void queryClient.invalidateQueries({ 
+        queryKey: graphId ? queryKeys.nodes.byGraph(graphId) : queryKeys.nodes.all 
+      });
+    },
+  });
+};
+
+export const useDeleteNode = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ nodeId }: { nodeId: string }) => {
+      const res = await apiClient.DELETE('/nodes/{node_id}', {
+        params: { path: { node_id: nodeId } },
+      });
+      if ('error' in res) throw res.error;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.all });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.edges.all });
+    },
+  });
+};
+
+// Convenience hook for updating node position
+export const useUpdateNodePosition = () => {
+  const updateNode = useUpdateNode();
+
+  return {
+    mutate: (nodeId: string, x: number, y: number, graphId?: string) => {
+      updateNode.mutate({
+        nodeId,
+        patch: {
+          graph_id: graphId,
+          offset_x: Math.round(x),
+          offset_y: Math.round(y),
+        },
+      });
+    },
+    mutateAsync: updateNode.mutateAsync,
+    isPending: updateNode.isPending,
+    isError: updateNode.isError,
+    error: updateNode.error,
+  };
+};
