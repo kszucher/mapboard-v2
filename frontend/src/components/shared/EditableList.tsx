@@ -56,7 +56,7 @@ export const EditableList = <T,>({
         </Flex>
       )}
 
-      <Flex gap="2" align="center" style={{ marginLeft: 16, height: 32 }}>
+      <Flex gap="2" align="center" style={{ height: 32 }}>
         <IconButton onClick={handleAddItem} size="1" variant="ghost" color="gray">
           <PlusIcon />
         </IconButton>

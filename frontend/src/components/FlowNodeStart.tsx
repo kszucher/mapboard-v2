@@ -83,7 +83,7 @@ const SchemaFieldRow = ({ field, handlers }: SchemaFieldRowProps) => {
   const validName = useMemo(() => isValidName(field.name), [field.name, isValidName]);
 
   return (
-    <Flex gap="2" align="center" style={{ marginLeft: 16 }}>
+    <Flex gap="2" align="center">
       <div className="nodrag" style={{ width: 140 }}>
         <TextField.Root
           value={field.name}

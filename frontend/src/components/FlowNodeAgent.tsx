@@ -30,7 +30,7 @@ const AgentAssignmentRow = ({ value, onChange, onDelete }: AgentAssignmentRowPro
   const valid = useMemo(() => isValid(localValue), [localValue, isValid]);
 
   return (
-    <Flex gap="2" align="center" style={{ marginLeft: 16 }}>
+    <Flex gap="2" align="center">
       <div className="nodrag" style={{ width: 240 }}>
         <TextField.Root
           value={localValue}
@@ -113,8 +113,8 @@ export const FlowNodeAgent = ({ data }: FlowNodeAgentProps) => {
 
   return (
     <>
-      <Flex direction="column" gap="3" style={{ marginTop: 38 }}>
-        <div className="nodrag" onMouseDown={handleMouseDown} onMouseUp={handleMouseUp} style={{ marginLeft: 16 }}>
+      <Flex direction="column" gap="3" style={{ marginTop: 34 }}>
+        <div className="nodrag" onMouseDown={handleMouseDown} onMouseUp={handleMouseUp}>
           <TextArea
             ref={textareaRef}
             value={localValue}

@@ -29,7 +29,7 @@ const LogicAssignmentRow = ({ value, onChange, onDelete }: LogicAssignmentRowPro
   const valid = useMemo(() => isValid(localValue), [localValue, isValid]);
 
   return (
-    <Flex gap="2" align="center" style={{ marginLeft: 16 }}>
+    <Flex gap="2" align="center">
       <div className="nodrag" style={{ width: 240 }}>
         <TextField.Root
           value={localValue}
