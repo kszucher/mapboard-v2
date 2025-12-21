@@ -1,11 +1,11 @@
 import { CheckIcon, Cross2Icon } from '@radix-ui/react-icons';
-import { Flex, IconButton, TextField } from '@radix-ui/themes';
+import { Flex, IconButton } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
 import { useCallback, useMemo } from 'react';
 import { useUpdateNode } from '../api/mutations';
-import { useDebouncedInput } from './hooks/useDebouncedInput.ts';
 import { EditableList } from './shared/EditableList.tsx';
 import type { AppFlowNode } from './types.ts';
+import { CodeMirrorEditor } from './CodeMirrorEditor';
 
 interface FlowNodeLogicProps {
   data: AppFlowNode['data'];
@@ -18,35 +18,27 @@ interface LogicAssignmentRowProps {
 }
 
 const LogicAssignmentRow = ({ value, onChange, onDelete }: LogicAssignmentRowProps) => {
-  const { localValue, setLocalValue, handleBlur } = useDebouncedInput({ value, onChange });
-
   const isValid = useCallback((text: string) => {
     if (!text || !text.trim()) return false;
     return /^\s*state\.[a-zA-Z0-9_$]+\s*=/.test(text);
   }, []);
 
-  const showValidation = useMemo(() => localValue.trim().length > 0, [localValue]);
-  const valid = useMemo(() => isValid(localValue), [localValue, isValid]);
+  const showValidation = useMemo(() => value.trim().length > 0, [value]);
+  const valid = useMemo(() => isValid(value), [value, isValid]);
 
   return (
-    <Flex gap="2" align="center">
-      <div className="nodrag" style={{ width: 240 }}>
-        <TextField.Root
-          value={localValue}
-          onChange={e => setLocalValue(e.target.value)}
-          onKeyDown={useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-            }
-          }, [])}
-          onBlur={handleBlur}
-          placeholder="Assignment"
-          style={{ width: '100%', boxShadow: 'none' }}
-        >
-          <TextField.Slot side="right">
-            {showValidation && (valid ? <CheckIcon color="green" /> : <Cross2Icon color="red" />)}
-          </TextField.Slot>
-        </TextField.Root>
+    <Flex gap="2" align="center" style={{ width: '100%' }}>
+      <div className="nodrag" style={{ flexGrow: 1, display: 'flex' }}>
+        <CodeMirrorEditor
+          initialValue={value}
+          onSave={onChange}
+          singleLine={false} // Multiline support
+          minHeight={32}
+          minWidth={240}
+        />
+        <div style={{ marginLeft: 8, display: 'flex', alignItems: 'center' }}>
+          {showValidation && (valid ? <CheckIcon color="green" /> : <Cross2Icon color="red" />)}
+        </div>
       </div>
 
       <IconButton onClick={onDelete} size="1" variant="ghost" color="gray">

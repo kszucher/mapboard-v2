@@ -44,9 +44,9 @@ export const EditableList = <T,>({
   );
 
   return (
-    <Flex direction="column" gap="2">
+    <Flex direction="column" gap="2" style={{ width: 'fit-content', minWidth: '100%' }}>
       {items.length > 0 && (
-        <Flex direction="column" gap="2">
+        <Flex direction="column" gap="2" style={{ width: '100%' }}>
           {items.map((item, i) =>
             renderItem(item, i, {
               onUpdate: (newValue: T) => handleUpdateItem(i, newValue),
