@@ -26,7 +26,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   const renderBody = useMemo(() => {
     switch (data.node.node_type) {
       case 'START':
-        return <FlowNodeStart data={data} />;
+        return <FlowNodeStart />;
       case 'LOGIC':
         return <FlowNodeLogic data={data} />;
       case 'AGENT':
