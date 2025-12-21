@@ -18,7 +18,6 @@ export const CodeMirrorEditor = ({
   initialValue,
   onSave,
   minWidth = 240,
-  minHeight = 60,
   maxWidth = 600,
   singleLine = false,
 }: CodeMirrorEditorProps & { singleLine?: boolean }) => {
@@ -57,35 +56,7 @@ export const CodeMirrorEditor = ({
         }
       }),
       EditorView.baseTheme({
-        '&': {
-          height: (singleLine ? '32px' : 'auto') as string,
-          minHeight: (singleLine ? '32px' : `${minHeight}px`) as string,
-          maxHeight: (singleLine ? '32px' : 'none') as string,
-          fontSize: '13px',
-          cursor: 'text',
-        },
-        '.cm-scroller': {
-          overflow: singleLine ? 'hidden' : 'visible',
-          fontFamily: 'var(--font-mono, monospace)',
-          cursor: 'text',
-          lineHeight: (singleLine ? '32px' : 'inherit') as string,
-          display: singleLine ? 'flex' : 'block',
-          alignItems: singleLine ? 'center' : 'unset',
-        },
-        '.cm-content': {
-          minHeight: (singleLine ? '32px' : `${minHeight}px`) as string,
-          whiteSpace: (singleLine ? 'pre' : 'pre-wrap') as string,
-          padding: (singleLine ? '0 8px' : '8px 4px') as string,
-          cursor: 'text',
-          display: singleLine ? 'flex' : 'block',
-          alignItems: singleLine ? 'center' : 'unset',
-        },
-        '.cm-line': {
-          padding: '0 4px',
-          cursor: 'text',
-          display: singleLine ? 'flex' : 'block',
-          alignItems: singleLine ? 'center' : 'unset',
-        },
+
       }),
     ];
 
@@ -115,7 +86,7 @@ export const CodeMirrorEditor = ({
       view.destroy();
       editorRef.current = null;
     };
-  }, [singleLine, minHeight, maxWidth, minWidth]);
+  }, [singleLine, maxWidth, minWidth]);
 
   return (
     <div
@@ -125,7 +96,7 @@ export const CodeMirrorEditor = ({
         display: 'inline-block',
         minWidth: singleLine ? '100%' : minWidth,
         maxWidth,
-        minHeight: singleLine ? '32px' : minHeight,
+        minHeight: singleLine ? '32px' : '60px',
         height: singleLine ? '32px' : 'auto',
         maxHeight: singleLine ? '32px' : 'none',
         width: 'fit-content',
