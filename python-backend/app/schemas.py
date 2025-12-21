@@ -64,6 +64,19 @@ class GraphRead(OrmModel):
     user_id: uuid.UUID
 
 
+class ExpressionBase(BaseModel):
+    idx: int
+    raw_string: str
+
+
+class ExpressionCreate(ExpressionBase):
+    pass
+
+
+class ExpressionRead(ExpressionBase, OrmModel):
+    id: uuid.UUID
+
+
 class NodeBase(BaseModel):
     graph_id: uuid.UUID
     iid: int
@@ -73,18 +86,12 @@ class NodeBase(BaseModel):
     offset_y: int
     color: Color
     label: str
-    num_handles: int
     is_processing: bool
     node_type: NodeType
-    node_type_start: Optional[dict[str, Any]] = None
-    node_type_logic_input: Optional[dict[str, Any]] = None
-    node_type_agent_input: Optional[dict[str, Any]] = None
-    node_type_logical_switch_input: Optional[dict[str, Any]] = None
-    node_type_agentic_switch_input: Optional[dict[str, Any]] = None
 
 
 class NodeCreate(NodeBase):
-    pass
+    expressions: list[ExpressionCreate] = []
 
 
 class NodeUpdate(BaseModel):
@@ -94,6 +101,8 @@ class NodeUpdate(BaseModel):
 
 class NodeRead(NodeBase, OrmModel):
     id: uuid.UUID
+    expressions: list[ExpressionRead] = []
+    num_handles: int
 
 
 class EdgeCreate(BaseModel):

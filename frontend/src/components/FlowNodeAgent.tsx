@@ -12,9 +12,7 @@ interface FlowNodeAgentProps {
 export const FlowNodeAgent = ({ data }: FlowNodeAgentProps) => {
   const updateNodeMutation = useUpdateNode();
   const { node } = data;
-  const agentInput = (node.node_type_agent_input as {
-    agenticAssignments?: string[]
-  } | undefined)?.agenticAssignments?.[0] ?? '';
+  const agentInput = node.expressions?.[0]?.raw_string ?? '';
 
   const handleEditorSave = useCallback(
     (value: string) => {
@@ -22,14 +20,16 @@ export const FlowNodeAgent = ({ data }: FlowNodeAgentProps) => {
         nodeId: node.id,
         patch: {
           graph_id: node.graph_id,
-          node_type_agent_input: {
-            ...(node.node_type_agent_input || {}),
-            agenticAssignments: [value],
-          },
+          expressions: [
+            {
+              idx: 0,
+              raw_string: value,
+            },
+          ],
         },
       });
     },
-    [node.id, node.graph_id, node.node_type_agent_input, updateNodeMutation],
+    [node.id, node.graph_id, updateNodeMutation],
   );
 
   return (

@@ -1,12 +1,9 @@
 from __future__ import annotations
 
 import uuid
-from typing import Any
-
-from sqlalchemy import Boolean, ForeignKey, Integer, String
+from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from sqlalchemy.types import JSON
 
 
 class Base(DeclarativeBase):
@@ -49,15 +46,9 @@ class Node(Base):
     offset_y: Mapped[int] = mapped_column(Integer, nullable=False)
     color: Mapped[str] = mapped_column(String(32), nullable=False)
     label: Mapped[str] = mapped_column(String(255), nullable=False)
-    num_handles: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    num_handles_db: Mapped[int] = mapped_column("num_handles", Integer, nullable=False, default=0)
     is_processing: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     node_type: Mapped[str] = mapped_column(String(32), nullable=False)
-
-    node_type_start: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
-    node_type_logic_input: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
-    node_type_agent_input: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
-    node_type_logical_switch_input: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
-    node_type_agentic_switch_input: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
 
     graph: Mapped[Graph] = relationship("Graph", back_populates="nodes")
     outgoing_edges: Mapped[list["Edge"]] = relationship(
@@ -72,6 +63,29 @@ class Node(Base):
         foreign_keys="Edge.to_node_id",
         cascade="all, delete-orphan",
     )
+
+    expressions: Mapped[list["Expression"]] = relationship(
+        "Expression",
+        back_populates="node",
+        cascade="all, delete-orphan",
+        order_by="Expression.idx",
+        lazy="selectin",
+    )
+
+    @property
+    def num_handles(self) -> int:
+        return len(self.expressions)
+
+
+class Expression(Base):
+    __tablename__ = "expressions"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    node_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("nodes.id", ondelete="CASCADE"), nullable=False)
+    idx: Mapped[int] = mapped_column(Integer, nullable=False)
+    raw_string: Mapped[str] = mapped_column(Text, nullable=False)
+
+    node: Mapped[Node] = relationship("Node", back_populates="expressions")
 
 
 class Edge(Base):

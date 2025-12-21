@@ -18,7 +18,7 @@ export const FlowNodeAgenticSwitch = ({ data }: FlowNodeAgenticSwitchProps) => {
   const num = Math.max(1, node.num_handles || 0);
   const LEFT_HANDLE_OFFSET = BASE_OFFSET + ((num - 1) * SPACING) / 2;
 
-  const branches = (node.node_type_agentic_switch_input as { agenticExpressions?: string[] } | undefined)?.agenticExpressions ?? [];
+  const branches = node.expressions?.map(e => e.raw_string) ?? [];
 
   const handleBranchesChange = (newBranches: string[], deletedIndex?: number) => {
     if (deletedIndex !== undefined) {
@@ -29,11 +29,7 @@ export const FlowNodeAgenticSwitch = ({ data }: FlowNodeAgenticSwitchProps) => {
       nodeId: node.id,
       patch: {
         graph_id: node.graph_id,
-        node_type_agentic_switch_input: {
-          ...(node.node_type_agentic_switch_input || {}),
-          agenticExpressions: newBranches,
-        },
-        num_handles: newBranches.length,
+        expressions: newBranches.map((raw_string, idx) => ({ idx, raw_string })),
       },
     });
   };

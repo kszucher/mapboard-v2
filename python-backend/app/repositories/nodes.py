@@ -5,6 +5,7 @@ from typing import Any
 
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app import models
 
@@ -14,7 +15,11 @@ class NodeRepository:
         self.session = session
 
     async def list_by_graph(self, graph_id: uuid.UUID) -> list[models.Node]:
-        result = await self.session.execute(select(models.Node).where(models.Node.graph_id == graph_id))
+        result = await self.session.execute(
+            select(models.Node)
+            .where(models.Node.graph_id == graph_id)
+            .options(selectinload(models.Node.expressions))
+        )
         return list(result.scalars().all())
 
     async def create(self, data: dict[str, Any]) -> models.Node:
@@ -30,4 +35,9 @@ class NodeRepository:
         await self.session.execute(delete(models.Node).where(models.Node.id == node_id))
 
     async def get(self, node_id: uuid.UUID) -> models.Node | None:
-        return await self.session.get(models.Node, node_id)
+        result = await self.session.execute(
+            select(models.Node)
+            .where(models.Node.id == node_id)
+            .options(selectinload(models.Node.expressions))
+        )
+        return result.scalars().first()

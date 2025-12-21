@@ -129,6 +129,25 @@ export interface components {
        */
       id: string;
     };
+    /** ExpressionCreate */
+    ExpressionCreate: {
+      /** Idx */
+      idx: number;
+      /** Raw String */
+      raw_string: string;
+    };
+    /** ExpressionRead */
+    ExpressionRead: {
+      /** Idx */
+      idx: number;
+      /** Raw String */
+      raw_string: string;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+    };
     /** GraphCreate */
     GraphCreate: {
       /**
@@ -183,8 +202,6 @@ export interface components {
       color: "gray" | "gold" | "bronze" | "brown" | "yellow" | "amber" | "orange" | "tomato" | "red" | "ruby" | "crimson" | "pink" | "plum" | "purple" | "violet" | "iris" | "indigo" | "blue" | "cyan" | "teal" | "jade" | "green" | "grass" | "lime" | "mint" | "sky";
       /** Label */
       label: string;
-      /** Num Handles */
-      num_handles: number;
       /** Is Processing */
       is_processing: boolean;
       /**
@@ -192,26 +209,11 @@ export interface components {
        * @enum {string}
        */
       node_type: "START" | "LOGIC" | "AGENT" | "LOGICAL_SWITCH" | "AGENTIC_SWITCH";
-      /** Node Type Start */
-      node_type_start?: {
-        [key: string]: unknown;
-      } | null;
-      /** Node Type Logic Input */
-      node_type_logic_input?: {
-        [key: string]: unknown;
-      } | null;
-      /** Node Type Agent Input */
-      node_type_agent_input?: {
-        [key: string]: unknown;
-      } | null;
-      /** Node Type Logical Switch Input */
-      node_type_logical_switch_input?: {
-        [key: string]: unknown;
-      } | null;
-      /** Node Type Agentic Switch Input */
-      node_type_agentic_switch_input?: {
-        [key: string]: unknown;
-      } | null;
+      /**
+       * Expressions
+       * @default []
+       */
+      expressions?: components["schemas"]["ExpressionCreate"][];
     };
     /** NodeRead */
     NodeRead: {
@@ -237,8 +239,6 @@ export interface components {
       color: "gray" | "gold" | "bronze" | "brown" | "yellow" | "amber" | "orange" | "tomato" | "red" | "ruby" | "crimson" | "pink" | "plum" | "purple" | "violet" | "iris" | "indigo" | "blue" | "cyan" | "teal" | "jade" | "green" | "grass" | "lime" | "mint" | "sky";
       /** Label */
       label: string;
-      /** Num Handles */
-      num_handles: number;
       /** Is Processing */
       is_processing: boolean;
       /**
@@ -246,31 +246,18 @@ export interface components {
        * @enum {string}
        */
       node_type: "START" | "LOGIC" | "AGENT" | "LOGICAL_SWITCH" | "AGENTIC_SWITCH";
-      /** Node Type Start */
-      node_type_start?: {
-        [key: string]: unknown;
-      } | null;
-      /** Node Type Logic Input */
-      node_type_logic_input?: {
-        [key: string]: unknown;
-      } | null;
-      /** Node Type Agent Input */
-      node_type_agent_input?: {
-        [key: string]: unknown;
-      } | null;
-      /** Node Type Logical Switch Input */
-      node_type_logical_switch_input?: {
-        [key: string]: unknown;
-      } | null;
-      /** Node Type Agentic Switch Input */
-      node_type_agentic_switch_input?: {
-        [key: string]: unknown;
-      } | null;
       /**
        * Id
        * Format: uuid
        */
       id: string;
+      /**
+       * Expressions
+       * @default []
+       */
+      expressions?: components["schemas"]["ExpressionRead"][];
+      /** Num Handles */
+      num_handles: number;
     };
     /** SetActiveGraph */
     SetActiveGraph: {
@@ -390,6 +377,11 @@ export interface operations {
   };
   /** Create Graph */
   create_graph_graphs__post: {
+    parameters: {
+      header?: {
+        "x-client-id"?: string | null;
+      };
+    };
     requestBody: {
       content: {
         "application/json": components["schemas"]["GraphCreate"];
@@ -456,6 +448,11 @@ export interface operations {
   };
   /** Create Node */
   create_node_nodes__post: {
+    parameters: {
+      header?: {
+        "x-client-id"?: string | null;
+      };
+    };
     requestBody: {
       content: {
         "application/json": components["schemas"]["NodeCreate"];
@@ -479,6 +476,9 @@ export interface operations {
   /** Delete Node */
   delete_node_nodes__node_id__delete: {
     parameters: {
+      header?: {
+        "x-client-id"?: string | null;
+      };
       path: {
         node_id: string;
       };
@@ -499,6 +499,9 @@ export interface operations {
   /** Update Node */
   update_node_nodes__node_id__patch: {
     parameters: {
+      header?: {
+        "x-client-id"?: string | null;
+      };
       path: {
         node_id: string;
       };
@@ -547,6 +550,11 @@ export interface operations {
   };
   /** Create Edge */
   create_edge_edges__post: {
+    parameters: {
+      header?: {
+        "x-client-id"?: string | null;
+      };
+    };
     requestBody: {
       content: {
         "application/json": components["schemas"]["EdgeCreate"];
@@ -570,6 +578,9 @@ export interface operations {
   /** Delete Edge */
   delete_edge_edges__edge_id__delete: {
     parameters: {
+      header?: {
+        "x-client-id"?: string | null;
+      };
       path: {
         edge_id: string;
       };
@@ -589,6 +600,11 @@ export interface operations {
   };
   /** Delete By Handle */
   delete_by_handle_edges_delete_by_handle_post: {
+    parameters: {
+      header?: {
+        "x-client-id"?: string | null;
+      };
+    };
     requestBody: {
       content: {
         "application/json": components["schemas"]["DeleteEdgesByHandle"];

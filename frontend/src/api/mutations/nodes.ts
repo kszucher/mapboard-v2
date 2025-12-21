@@ -28,6 +28,16 @@ export const useCreateNode = () => {
 
   return useMutation({
     mutationFn: async ({ graphId, nodeType }: { graphId: string; nodeType: NodeType }) => {
+      const defaultExpressions =
+        nodeType === 'START'
+          ? []
+          : [
+              {
+                idx: 0,
+                raw_string: '',
+              },
+            ];
+
       const res = await apiClient.POST('/nodes/', {
         headers: { 'X-Client-Id': getClientId() },
         body: {
@@ -39,9 +49,9 @@ export const useCreateNode = () => {
           offset_y: 50,
           color: NODE_COLORS[nodeType],
           label: NODE_LABELS[nodeType],
-          num_handles: 1,
           node_type: nodeType,
           is_processing: false,
+          expressions: defaultExpressions,
         },
       });
       if ('error' in res) throw res.error;
@@ -61,6 +71,11 @@ export const useUpdateNode = () => {
       const graphId = patch.graph_id as string | undefined;
       if (!graphId) return;
 
+      const patchWithDerived = { ...patch } as Record<string, unknown>;
+      if (Array.isArray(patchWithDerived.expressions)) {
+        patchWithDerived.num_handles = patchWithDerived.expressions.length;
+      }
+
       const queryKey = queryKeys.nodes.byGraph(graphId);
       await queryClient.cancelQueries({ queryKey });
 
@@ -69,7 +84,7 @@ export const useUpdateNode = () => {
       if (previous && nodeId) {
         queryClient.setQueryData<NodeRead[]>(queryKey, old => {
           if (!old) return old;
-          return old.map(n => (n.id === nodeId ? ({ ...n, ...patch } as NodeRead) : n));
+          return old.map(n => (n.id === nodeId ? ({ ...n, ...patchWithDerived } as NodeRead) : n));
         });
       }
 
