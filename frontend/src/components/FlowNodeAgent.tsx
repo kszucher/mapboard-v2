@@ -1,8 +1,8 @@
-import { Flex, TextArea } from '@radix-ui/themes';
+import { Flex } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
 import { useCallback } from 'react';
 import { useUpdateNode } from '../api/mutations';
-import { useResizableTextarea } from './hooks/useResizableTextarea.ts';
+import { CodeMirrorEditor } from './CodeMirrorEditor';
 import type { AppFlowNode } from './types.ts';
 
 interface FlowNodeAgentProps {
@@ -15,7 +15,8 @@ export const FlowNodeAgent = ({ data }: FlowNodeAgentProps) => {
   const agentInput = (node.node_type_agent_input as {
     agenticAssignments?: string[]
   } | undefined)?.agenticAssignments?.[0] ?? '';
-  const handleTextareaSave = useCallback(
+
+  const handleEditorSave = useCallback(
     (value: string) => {
       updateNodeMutation.mutate({
         nodeId: node.id,
@@ -31,44 +32,15 @@ export const FlowNodeAgent = ({ data }: FlowNodeAgentProps) => {
     [node.id, node.graph_id, node.node_type_agent_input, updateNodeMutation],
   );
 
-  const {
-    textareaRef,
-    localValue,
-    setLocalValue,
-    handleBlur,
-    handleKeyDown,
-    width,
-    height,
-  } = useResizableTextarea({
-    initialValue: agentInput,
-    onSave: handleTextareaSave,
-    minWidth: 240,
-    maxWidth: 600,
-  });
-
   return (
     <>
       <Flex direction="column" gap="3" style={{ marginTop: 34 }}>
-        <div className="nodrag">
-          <TextArea
-            ref={textareaRef}
-            value={localValue}
-            onChange={e => setLocalValue(e.target.value)}
-            onBlur={handleBlur}
-            onKeyDown={handleKeyDown}
-            placeholder="Agent instructions"
-            style={{
-              width: width,
-              height: height,
-              boxShadow: 'none',
-              resize: 'none',
-              overflow: 'hidden',
-              minHeight: 60,
-              transition: 'width 0.1s, height 0.1s', // Smooth transition
-            }}
-          />
-        </div>
-
+        <CodeMirrorEditor
+          initialValue={agentInput}
+          onSave={handleEditorSave}
+          minWidth={240}
+          maxWidth={600}
+        />
       </Flex>
 
       <Handle type="target" position={Position.Left} />
