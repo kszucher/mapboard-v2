@@ -10,6 +10,9 @@ from app.repositories.edges import EdgeRepository
 from app.repositories.nodes import NodeRepository
 from app.schemas import GraphEvent
 from app.services.events import GraphEventBroker
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def _validate_expressions_for_node_type(node_type: str, expressions: list[dict[str, Any]]) -> None:
@@ -63,8 +66,6 @@ async def create_node(
     _validate_expressions_for_node_type(node_type, expressions)
     expressions = _normalize_expressions(expressions)
 
-    data["num_handles_db"] = len(expressions)
-
     node = await repo.create(data)
     for expr in expressions:
         session.add(models.Expression(node_id=node.id, idx=expr["idx"], raw_string=expr["raw_string"]))
@@ -104,9 +105,15 @@ async def update_node(
     event_patch: dict[str, Any] = dict(patch_without_graph)
 
     # Update scalar fields
+    protected_fields = {"id", "graph_id", "num_handles", "expressions"}
     for k, v in patch_without_graph.items():
+        if k in protected_fields:
+            continue
         if hasattr(node, k):
-            setattr(node, k, v)
+            try:
+                setattr(node, k, v)
+            except Exception as e:
+                logger.warning("Failed to set attribute %s on node %s: %s", k, node_id, e)
 
     # Replace expressions if present
     if expressions_patch is not None:
@@ -116,8 +123,6 @@ async def update_node(
         normalized = _normalize_expressions(expressions_patch)
 
         event_patch["expressions"] = normalized
-
-        node.num_handles_db = len(normalized)
 
         node.expressions.clear()
         for expr in normalized:

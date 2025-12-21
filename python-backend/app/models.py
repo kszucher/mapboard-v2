@@ -46,7 +46,6 @@ class Node(Base):
     offset_y: Mapped[int] = mapped_column(Integer, nullable=False)
     color: Mapped[str] = mapped_column(String(32), nullable=False)
     label: Mapped[str] = mapped_column(String(255), nullable=False)
-    num_handles_db: Mapped[int] = mapped_column("num_handles", Integer, nullable=False, default=0)
     is_processing: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     node_type: Mapped[str] = mapped_column(String(32), nullable=False)
 

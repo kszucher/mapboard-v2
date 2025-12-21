@@ -35,7 +35,6 @@ async def create_graph(
             "offset_x": 100,
             "offset_y": 100,
             "label": "Start",
-            "num_handles_db": 0,
             "is_processing": False,
         }
     )

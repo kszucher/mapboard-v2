@@ -1,17 +1,12 @@
-from __future__ import annotations
-
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
-from app import models
 from app.api import edges, graphs, nodes, users, ws
 from app.config import settings
-from app.db import engine
+import logging
 
-
-async def init_models() -> None:
-    async with engine.begin() as conn:
-        await conn.run_sync(models.Base.metadata.create_all)
+logger = logging.getLogger(__name__)
 
 
 def create_app() -> FastAPI:
@@ -23,7 +18,16 @@ def create_app() -> FastAPI:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=["*"],
     )
+
+    @app.exception_handler(Exception)
+    async def global_exception_handler(request: Request, exc: Exception):
+        logger.exception("Unhandled exception: %s", exc)
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Internal Server Error", "error": str(exc)},
+        )
 
     app.include_router(users.router)
     app.include_router(graphs.router)
@@ -37,7 +41,7 @@ def create_app() -> FastAPI:
 
     @app.on_event("startup")
     async def _startup() -> None:
-        await init_models()
+        return
 
     return app
 
