@@ -1,105 +1,130 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-interface UseResizableTextareaProps {
+interface UseAutoSizingTextareaProps {
   initialValue: string;
-  savedHeight: number;
-  savedWidth: number;
-  onSave: (value: string, height: number, width: number) => void;
+  onSave: (value: string) => void;
+  minWidth?: number;
+  minHeight?: number;
+  maxWidth?: number;
 }
 
-interface UseResizableTextareaReturn {
+interface UseAutoSizingTextareaReturn {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   localValue: string;
   setLocalValue: (value: string) => void;
-  handleMouseDown: () => void;
-  handleMouseUp: () => void;
   handleBlur: () => void;
   handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  width: number;
+  height: number;
 }
 
 export const useResizableTextarea = ({
   initialValue,
-  savedHeight,
-  savedWidth,
   onSave,
-}: UseResizableTextareaProps): UseResizableTextareaReturn => {
+  minWidth = 240,
+  minHeight = 60,
+  maxWidth = 600,
+}: UseAutoSizingTextareaProps): UseAutoSizingTextareaReturn => {
   const [localValue, setLocalValue] = useState(initialValue);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const initialHeightRef = useRef(savedHeight);
-  const initialWidthRef = useRef(savedWidth);
   const lastSavedValueRef = useRef(initialValue);
   const onSaveRef = useRef(onSave);
 
-  // Keep onSave ref up to date without causing re-renders
+  const [dimensions, setDimensions] = useState({ width: minWidth, height: minHeight });
+
+  // Keep onSave ref up to date
   useEffect(() => {
     onSaveRef.current = onSave;
   }, [onSave]);
 
-  // Sync local value when prop changes externally (not from our own save)
+  // Sync local value when prop changes externally
   useEffect(() => {
-    // Only sync if the prop changed and it's different from what we last saved
-    // This prevents syncing when the prop update came from our own onSave callback
     if (initialValue !== lastSavedValueRef.current) {
       setLocalValue(initialValue);
       lastSavedValueRef.current = initialValue;
     }
   }, [initialValue]);
 
-  // Debounced auto-save while typing
+  // Measure text to determine dimensions
+  useEffect(() => {
+    if (!textareaRef.current) return;
+
+    const measureElement = document.createElement('div');
+    const styles = window.getComputedStyle(textareaRef.current);
+
+    measureElement.style.visibility = 'hidden';
+    measureElement.style.position = 'absolute';
+    measureElement.style.whiteSpace = 'pre'; // Start with single line measurement
+    measureElement.style.font = styles.font;
+    measureElement.style.padding = styles.padding;
+    measureElement.style.border = styles.border;
+    measureElement.style.boxSizing = 'border-box';
+
+    // Add a specialized character if ending in newline to force the extra line to render
+    const displayValue = localValue || ' ';
+    measureElement.textContent = displayValue + (displayValue.endsWith('\n') ? '\u200b' : '');
+
+    document.body.appendChild(measureElement);
+
+    // 1. Measure desired width
+    let newWidth = measureElement.offsetWidth + 20; // Add some buffer
+    let newHeight = minHeight;
+
+    if (newWidth > maxWidth) {
+      newWidth = maxWidth;
+      // If width constrained, allow wrapping for height calculation
+      measureElement.style.whiteSpace = 'pre-wrap';
+      measureElement.style.width = `${maxWidth}px`;
+      newHeight = measureElement.offsetHeight;
+    } else {
+      // Even if width is okay, check for explicit newlines causing height growth
+      if (localValue.includes('\n')) {
+        measureElement.style.whiteSpace = 'pre-wrap';
+        newHeight = measureElement.offsetHeight;
+      }
+    }
+
+    document.body.removeChild(measureElement);
+
+    setDimensions({
+      width: Math.max(minWidth, newWidth),
+      height: Math.max(minHeight, newHeight + 10) // buffer
+    });
+
+  }, [localValue, minWidth, minHeight, maxWidth]);
+
+  // Debounced auto-save
   useEffect(() => {
     if (localValue === initialValue) return;
 
     const timeout = setTimeout(() => {
-      const currentHeight = textareaRef.current?.offsetHeight ?? savedHeight;
-      const currentWidth = textareaRef.current?.offsetWidth ?? savedWidth;
       lastSavedValueRef.current = localValue;
-      onSaveRef.current(localValue, currentHeight, currentWidth);
-    }, 300);
+      onSaveRef.current(localValue);
+    }, 500);
 
     return () => clearTimeout(timeout);
-  }, [localValue, initialValue, savedHeight, savedWidth]);
-
-  const handleMouseDown = useCallback(() => {
-    // Track initial dimensions when mouse down
-    initialHeightRef.current = textareaRef.current?.offsetHeight ?? savedHeight;
-    initialWidthRef.current = textareaRef.current?.offsetWidth ?? savedWidth;
-  }, [savedHeight, savedWidth]);
-
-  const handleMouseUp = useCallback(() => {
-    // Only save if dimensions actually changed (user was resizing)
-    const currentHeight = textareaRef.current?.offsetHeight;
-    const currentWidth = textareaRef.current?.offsetWidth;
-
-    if (currentHeight && currentWidth &&
-      (currentHeight !== initialHeightRef.current || currentWidth !== initialWidthRef.current) &&
-      currentHeight >= 60) {
-      onSaveRef.current(localValue, currentHeight, currentWidth);
-    }
-  }, [localValue]);
+  }, [localValue, initialValue]);
 
   const handleBlur = useCallback(() => {
     if (localValue !== initialValue) {
-      const currentHeight = textareaRef.current?.offsetHeight ?? savedHeight;
-      const currentWidth = textareaRef.current?.offsetWidth ?? savedWidth;
-      onSaveRef.current(localValue, currentHeight, currentWidth);
+      onSaveRef.current(localValue);
     }
-  }, [localValue, initialValue, savedHeight, savedWidth]);
+  }, [localValue, initialValue]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       e.currentTarget.blur();
     }
-    // Shift+Enter allows new line (default behavior)
   }, []);
 
   return {
     textareaRef,
     localValue,
     setLocalValue,
-    handleMouseDown,
-    handleMouseUp,
     handleBlur,
     handleKeyDown,
+    width: dimensions.width,
+    height: dimensions.height,
   };
 };

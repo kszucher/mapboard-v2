@@ -15,11 +15,8 @@ export const FlowNodeAgent = ({ data }: FlowNodeAgentProps) => {
   const agentInput = (node.node_type_agent_input as {
     agenticAssignments?: string[]
   } | undefined)?.agenticAssignments?.[0] ?? '';
-  const savedHeight = (node.node_type_agent_input as { textareaHeight?: number } | undefined)?.textareaHeight ?? 60;
-  const savedWidth = (node.node_type_agent_input as { textareaWidth?: number } | undefined)?.textareaWidth ?? 240;
-
   const handleTextareaSave = useCallback(
-    (value: string, height: number, width: number) => {
+    (value: string) => {
       updateNodeMutation.mutate({
         nodeId: node.id,
         patch: {
@@ -27,8 +24,6 @@ export const FlowNodeAgent = ({ data }: FlowNodeAgentProps) => {
           node_type_agent_input: {
             ...(node.node_type_agent_input || {}),
             agenticAssignments: [value],
-            textareaHeight: height,
-            textareaWidth: width,
           },
         },
       });
@@ -40,21 +35,21 @@ export const FlowNodeAgent = ({ data }: FlowNodeAgentProps) => {
     textareaRef,
     localValue,
     setLocalValue,
-    handleMouseDown,
-    handleMouseUp,
     handleBlur,
     handleKeyDown,
+    width,
+    height,
   } = useResizableTextarea({
     initialValue: agentInput,
-    savedHeight,
-    savedWidth,
     onSave: handleTextareaSave,
+    minWidth: 240,
+    maxWidth: 600,
   });
 
   return (
     <>
       <Flex direction="column" gap="3" style={{ marginTop: 34 }}>
-        <div className="nodrag" onMouseDown={handleMouseDown} onMouseUp={handleMouseUp}>
+        <div className="nodrag">
           <TextArea
             ref={textareaRef}
             value={localValue}
@@ -63,10 +58,13 @@ export const FlowNodeAgent = ({ data }: FlowNodeAgentProps) => {
             onKeyDown={handleKeyDown}
             placeholder="Agent instructions"
             style={{
-              width: savedWidth,
-              height: savedHeight,
+              width: width,
+              height: height,
               boxShadow: 'none',
-              resize: 'both',
+              resize: 'none',
+              overflow: 'hidden',
+              minHeight: 60,
+              transition: 'width 0.1s, height 0.1s', // Smooth transition
             }}
           />
         </div>
