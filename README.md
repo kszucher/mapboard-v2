@@ -1,3 +1,3 @@
-Mapboard Rewrite using a modern stack and vibe engineering
+Minimalistic Agentic Builder
 - React/TypeScript/React Flow on Frontend
 - FastAPI, SQLAlchemy, PydancticAI on Backend 
