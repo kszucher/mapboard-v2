@@ -3,7 +3,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 interface UseResizableTextareaProps {
   initialValue: string;
   savedHeight: number;
-  onSave: (value: string, height: number) => void;
+  savedWidth: number;
+  onSave: (value: string, height: number, width: number) => void;
 }
 
 interface UseResizableTextareaReturn {
@@ -19,11 +20,13 @@ interface UseResizableTextareaReturn {
 export const useResizableTextarea = ({
   initialValue,
   savedHeight,
+  savedWidth,
   onSave,
 }: UseResizableTextareaProps): UseResizableTextareaReturn => {
   const [localValue, setLocalValue] = useState(initialValue);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const initialHeightRef = useRef(savedHeight);
+  const initialWidthRef = useRef(savedWidth);
   const lastSavedValueRef = useRef(initialValue);
   const onSaveRef = useRef(onSave);
 
@@ -48,32 +51,39 @@ export const useResizableTextarea = ({
 
     const timeout = setTimeout(() => {
       const currentHeight = textareaRef.current?.offsetHeight ?? savedHeight;
+      const currentWidth = textareaRef.current?.offsetWidth ?? savedWidth;
       lastSavedValueRef.current = localValue;
-      onSaveRef.current(localValue, currentHeight);
+      onSaveRef.current(localValue, currentHeight, currentWidth);
     }, 300);
 
     return () => clearTimeout(timeout);
-  }, [localValue, initialValue, savedHeight]);
+  }, [localValue, initialValue, savedHeight, savedWidth]);
 
   const handleMouseDown = useCallback(() => {
-    // Track initial height when mouse down
+    // Track initial dimensions when mouse down
     initialHeightRef.current = textareaRef.current?.offsetHeight ?? savedHeight;
-  }, [savedHeight]);
+    initialWidthRef.current = textareaRef.current?.offsetWidth ?? savedWidth;
+  }, [savedHeight, savedWidth]);
 
   const handleMouseUp = useCallback(() => {
-    // Only save if height actually changed (user was resizing)
+    // Only save if dimensions actually changed (user was resizing)
     const currentHeight = textareaRef.current?.offsetHeight;
-    if (currentHeight && currentHeight !== initialHeightRef.current && currentHeight >= 60) {
-      onSaveRef.current(localValue, currentHeight);
+    const currentWidth = textareaRef.current?.offsetWidth;
+
+    if (currentHeight && currentWidth &&
+      (currentHeight !== initialHeightRef.current || currentWidth !== initialWidthRef.current) &&
+      currentHeight >= 60) {
+      onSaveRef.current(localValue, currentHeight, currentWidth);
     }
   }, [localValue]);
 
   const handleBlur = useCallback(() => {
     if (localValue !== initialValue) {
       const currentHeight = textareaRef.current?.offsetHeight ?? savedHeight;
-      onSaveRef.current(localValue, currentHeight);
+      const currentWidth = textareaRef.current?.offsetWidth ?? savedWidth;
+      onSaveRef.current(localValue, currentHeight, currentWidth);
     }
-  }, [localValue, initialValue, savedHeight]);
+  }, [localValue, initialValue, savedHeight, savedWidth]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
