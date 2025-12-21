@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Header, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_session
@@ -23,15 +23,28 @@ async def get_nodes(graph_id: uuid.UUID, session: AsyncSession = Depends(get_ses
 
 
 @router.post("/", response_model=uuid.UUID, status_code=status.HTTP_201_CREATED)
-async def create_node(payload: NodeCreate, session: AsyncSession = Depends(get_session)) -> uuid.UUID:
-    return await node_service.create_node(session, payload.model_dump(), broker)
+async def create_node(
+    payload: NodeCreate,
+    session: AsyncSession = Depends(get_session),
+    x_client_id: str | None = Header(default=None),
+) -> uuid.UUID:
+    return await node_service.create_node(session, payload.model_dump(), broker, x_client_id)
 
 
 @router.patch("/{node_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def update_node(node_id: uuid.UUID, patch: dict[str, Any], session: AsyncSession = Depends(get_session)) -> None:
-    await node_service.update_node(session, node_id, patch, broker)
+async def update_node(
+    node_id: uuid.UUID,
+    patch: dict[str, Any],
+    session: AsyncSession = Depends(get_session),
+    x_client_id: str | None = Header(default=None),
+) -> None:
+    await node_service.update_node(session, node_id, patch, broker, x_client_id)
 
 
 @router.delete("/{node_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_node(node_id: uuid.UUID, session: AsyncSession = Depends(get_session)) -> None:
-    await node_service.delete_node(session, node_id, broker)
+async def delete_node(
+    node_id: uuid.UUID,
+    session: AsyncSession = Depends(get_session),
+    x_client_id: str | None = Header(default=None),
+) -> None:
+    await node_service.delete_node(session, node_id, broker, x_client_id)

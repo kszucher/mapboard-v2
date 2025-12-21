@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import uuid
 from collections import defaultdict
-from typing import DefaultDict
+from typing import DefaultDict, Optional
 
 from fastapi import WebSocket
 
@@ -12,22 +12,22 @@ from app.schemas import GraphEvent
 
 class GraphEventBroker:
     def __init__(self) -> None:
-        self._subscribers: DefaultDict[uuid.UUID, set[WebSocket]] = defaultdict(set)
+        self._subscribers: DefaultDict[uuid.UUID, dict[WebSocket, Optional[str]]] = defaultdict(dict)
         self._lock = asyncio.Lock()
 
-    async def subscribe(self, graph_id: uuid.UUID, websocket: WebSocket) -> None:
+    async def subscribe(self, graph_id: uuid.UUID, websocket: WebSocket, client_id: Optional[str]) -> None:
         async with self._lock:
-            self._subscribers[graph_id].add(websocket)
+            self._subscribers[graph_id][websocket] = client_id
 
     async def unsubscribe(self, graph_id: uuid.UUID, websocket: WebSocket) -> None:
         async with self._lock:
-            self._subscribers[graph_id].discard(websocket)
+            self._subscribers[graph_id].pop(websocket, None)
             if not self._subscribers[graph_id]:
                 self._subscribers.pop(graph_id, None)
 
     async def broadcast(self, event: GraphEvent) -> None:
         async with self._lock:
-            listeners = list(self._subscribers.get(event.graph_id, set()))
+            listeners = list(self._subscribers.get(event.graph_id, {}).items())
 
         if not listeners:
             print(f"[GraphEventBroker] No listeners for graph {event.graph_id}, event={event.event}")
@@ -40,7 +40,9 @@ class GraphEventBroker:
             f"to {len(listeners)} listener(s) with payload={payload}"
         )
 
-        for ws in listeners:
+        for ws, client_id in listeners:
+            if event.sender_client_id is not None and client_id == event.sender_client_id:
+                continue
             try:
                 print(f"[GraphEventBroker] sending {event.event} to websocket {id(ws)}")
                 await ws.send_json(payload)

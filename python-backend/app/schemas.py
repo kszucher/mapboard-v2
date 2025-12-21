@@ -142,3 +142,4 @@ class GraphEvent(BaseModel):
     ]
     graph_id: uuid.UUID
     payload: dict[str, Any]
+    sender_client_id: Optional[str] = None

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../client';
+import { apiClient, getClientId } from '../client';
 import { queryKeys } from '../queryKeys';
 
 export const useCreateGraph = () => {
@@ -8,6 +8,7 @@ export const useCreateGraph = () => {
   return useMutation({
     mutationFn: async ({ userId, graphName }: { userId: string; graphName: string }) => {
       const res = await apiClient.POST('/graphs/', {
+        headers: { 'X-Client-Id': getClientId() },
         body: { user_id: userId, graph_name: graphName },
       });
       if ('error' in res) throw res.error;

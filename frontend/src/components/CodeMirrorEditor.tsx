@@ -23,9 +23,11 @@ export const CodeMirrorEditor = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<EditorView | null>(null);
   const internalValueRef = useRef(initialValue);
+  const isFocusedRef = useRef(false);
 
   // Sync initialValue if it changes from outside
   useEffect(() => {
+    if (isFocusedRef.current) return;
     if (editorRef.current && initialValue !== internalValueRef.current) {
       const view = editorRef.current;
       internalValueRef.current = initialValue;
@@ -75,9 +77,20 @@ export const CodeMirrorEditor = ({
       parent: containerRef.current,
     });
 
+    const handleFocus = () => {
+      isFocusedRef.current = true;
+    };
+    const handleBlur = () => {
+      isFocusedRef.current = false;
+    };
+    view.dom.addEventListener('focus', handleFocus, true);
+    view.dom.addEventListener('blur', handleBlur, true);
+
     editorRef.current = view;
 
     return () => {
+      view.dom.removeEventListener('focus', handleFocus, true);
+      view.dom.removeEventListener('blur', handleBlur, true);
       view.destroy();
       editorRef.current = null;
     };

@@ -16,6 +16,7 @@ async def create_graph(
     user_id: uuid.UUID,
     graph_name: str,
     broker: GraphEventBroker,
+    sender_client_id: str | None = None,
 ) -> uuid.UUID:
     graphs_repo = GraphRepository(session)
     nodes_repo = NodeRepository(session)
@@ -43,7 +44,12 @@ async def create_graph(
     await session.commit()
 
     await broker.broadcast(
-        GraphEvent(event="graph_created", graph_id=graph.id, payload={"graphId": str(graph.id)})
+        GraphEvent(
+            event="graph_created",
+            graph_id=graph.id,
+            payload={"graphId": str(graph.id)},
+            sender_client_id=sender_client_id,
+        )
     )
     return graph.id
 

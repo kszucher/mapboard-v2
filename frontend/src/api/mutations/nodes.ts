@@ -1,10 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../client';
+import { apiClient, getClientId } from '../client';
 import type { components } from '../generated/schema';
 import { queryKeys } from '../queryKeys';
 
 type NodeType = components['schemas']['NodeRead']['node_type'];
 type NodeColor = components['schemas']['NodeCreate']['color'];
+type NodeRead = components['schemas']['NodeRead'];
 
 const NODE_COLORS: Record<NodeType, NodeColor> = {
   START: 'gray',
@@ -28,6 +29,7 @@ export const useCreateNode = () => {
   return useMutation({
     mutationFn: async ({ graphId, nodeType }: { graphId: string; nodeType: NodeType }) => {
       const res = await apiClient.POST('/nodes/', {
+        headers: { 'X-Client-Id': getClientId() },
         body: {
           graph_id: graphId,
           iid: 1,
@@ -55,18 +57,36 @@ export const useUpdateNode = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
+    onMutate: async ({ nodeId, patch }) => {
+      const graphId = patch.graph_id as string | undefined;
+      if (!graphId) return;
+
+      const queryKey = queryKeys.nodes.byGraph(graphId);
+      await queryClient.cancelQueries({ queryKey });
+
+      const previous = queryClient.getQueryData<NodeRead[]>(queryKey);
+
+      if (previous && nodeId) {
+        queryClient.setQueryData<NodeRead[]>(queryKey, old => {
+          if (!old) return old;
+          return old.map(n => (n.id === nodeId ? ({ ...n, ...patch } as NodeRead) : n));
+        });
+      }
+
+      return { previous, graphId };
+    },
     mutationFn: async ({ nodeId, patch }: { nodeId: string; patch: Record<string, unknown> }) => {
       const res = await apiClient.PATCH('/nodes/{node_id}', {
         params: { path: { node_id: nodeId } },
+        headers: { 'X-Client-Id': getClientId() },
         body: patch,
       });
       if ('error' in res) throw res.error;
     },
-    onSuccess: (_data, variables) => {
-      const graphId = variables.patch.graph_id as string | undefined;
-      void queryClient.invalidateQueries({ 
-        queryKey: graphId ? queryKeys.nodes.byGraph(graphId) : queryKeys.nodes.all 
-      });
+    onError: (_err, _variables, context) => {
+      if (context?.graphId) {
+        queryClient.setQueryData(queryKeys.nodes.byGraph(context.graphId), context.previous);
+      }
     },
   });
 };
@@ -78,6 +98,7 @@ export const useDeleteNode = () => {
     mutationFn: async ({ nodeId }: { nodeId: string }) => {
       const res = await apiClient.DELETE('/nodes/{node_id}', {
         params: { path: { node_id: nodeId } },
+        headers: { 'X-Client-Id': getClientId() },
       });
       if ('error' in res) throw res.error;
     },

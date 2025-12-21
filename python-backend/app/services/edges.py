@@ -16,28 +16,48 @@ async def list_edges(session: AsyncSession, graph_id: uuid.UUID):
     return await repo.list_by_graph(graph_id)
 
 
-async def create_edge(session: AsyncSession, data: dict, broker: GraphEventBroker) -> uuid.UUID:
+async def create_edge(
+    session: AsyncSession, data: dict, broker: GraphEventBroker, sender_client_id: str | None = None
+) -> uuid.UUID:
     repo = EdgeRepository(session)
     edge = await repo.create(data)
     await session.commit()
     await broker.broadcast(
-        GraphEvent(event="edge_created", graph_id=edge.graph_id, payload={"edgeId": str(edge.id)})
+        GraphEvent(
+            event="edge_created",
+            graph_id=edge.graph_id,
+            payload={"edgeId": str(edge.id)},
+            sender_client_id=sender_client_id,
+        )
     )
     return edge.id
 
 
-async def delete_edge(session: AsyncSession, edge_id: uuid.UUID, broker: GraphEventBroker) -> None:
+async def delete_edge(
+    session: AsyncSession, edge_id: uuid.UUID, broker: GraphEventBroker, sender_client_id: str | None = None
+) -> None:
     repo = EdgeRepository(session)
     edge = await session.get(models.Edge, edge_id)
     await repo.delete(edge_id)
     await session.commit()
     graph_id = edge.graph_id if edge else None
     if graph_id:
-        await broker.broadcast(GraphEvent(event="edge_deleted", graph_id=graph_id, payload={"edgeId": str(edge_id)}))
+        await broker.broadcast(
+            GraphEvent(
+                event="edge_deleted",
+                graph_id=graph_id,
+                payload={"edgeId": str(edge_id)},
+                sender_client_id=sender_client_id,
+            )
+        )
 
 
 async def delete_edges_by_handle(
-    session: AsyncSession, from_node_id: uuid.UUID, deleted_handle_index: int, broker: GraphEventBroker
+    session: AsyncSession,
+    from_node_id: uuid.UUID,
+    deleted_handle_index: int,
+    broker: GraphEventBroker,
+    sender_client_id: str | None = None,
 ) -> None:
     repo = EdgeRepository(session)
     node_repo = NodeRepository(session)
@@ -53,5 +73,6 @@ async def delete_edges_by_handle(
                 event="edges_updated",
                 graph_id=graph_id,
                 payload={"fromNodeId": str(from_node_id), "deletedHandleIndex": deleted_handle_index},
+                sender_client_id=sender_client_id,
             )
         )

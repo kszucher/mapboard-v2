@@ -16,17 +16,30 @@ async def list_nodes(session: AsyncSession, graph_id: uuid.UUID):
     return await repo.list_by_graph(graph_id)
 
 
-async def create_node(session: AsyncSession, data: dict[str, Any], broker: GraphEventBroker) -> uuid.UUID:
+async def create_node(
+    session: AsyncSession, data: dict[str, Any], broker: GraphEventBroker, sender_client_id: str | None = None
+) -> uuid.UUID:
     repo = NodeRepository(session)
     node = await repo.create(data)
     await session.commit()
     await broker.broadcast(
-        GraphEvent(event="node_created", graph_id=node.graph_id, payload={"nodeId": str(node.id)})
+        GraphEvent(
+            event="node_created",
+            graph_id=node.graph_id,
+            payload={"nodeId": str(node.id)},
+            sender_client_id=sender_client_id,
+        )
     )
     return node.id
 
 
-async def update_node(session: AsyncSession, node_id: uuid.UUID, patch: dict[str, Any], broker: GraphEventBroker) -> None:
+async def update_node(
+    session: AsyncSession,
+    node_id: uuid.UUID,
+    patch: dict[str, Any],
+    broker: GraphEventBroker,
+    sender_client_id: str | None = None,
+) -> None:
     repo = NodeRepository(session)
     node = await repo.get(node_id)
     graph_id = node.graph_id if node else None
@@ -38,11 +51,18 @@ async def update_node(session: AsyncSession, node_id: uuid.UUID, patch: dict[str
 
     if graph_id:
         await broker.broadcast(
-            GraphEvent(event="node_updated", graph_id=graph_id, payload={"nodeId": str(node_id), "patch": patch_without_graph})
+            GraphEvent(
+                event="node_updated",
+                graph_id=graph_id,
+                payload={"nodeId": str(node_id), "patch": patch_without_graph},
+                sender_client_id=sender_client_id,
+            )
         )
 
 
-async def delete_node(session: AsyncSession, node_id: uuid.UUID, broker: GraphEventBroker) -> None:
+async def delete_node(
+    session: AsyncSession, node_id: uuid.UUID, broker: GraphEventBroker, sender_client_id: str | None = None
+) -> None:
     nodes_repo = NodeRepository(session)
     edges_repo = EdgeRepository(session)
 
@@ -59,5 +79,10 @@ async def delete_node(session: AsyncSession, node_id: uuid.UUID, broker: GraphEv
     await session.commit()
 
     await broker.broadcast(
-        GraphEvent(event="node_deleted", graph_id=node.graph_id, payload={"nodeId": str(node_id)})
+        GraphEvent(
+            event="node_deleted",
+            graph_id=node.graph_id,
+            payload={"nodeId": str(node_id)},
+            sender_client_id=sender_client_id,
+        )
     )

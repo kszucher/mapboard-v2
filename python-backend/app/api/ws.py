@@ -12,7 +12,8 @@ router = APIRouter(prefix="/ws", tags=["websocket"])
 @router.websocket("/graphs/{graph_id}")
 async def graph_ws(graph_id: uuid.UUID, websocket: WebSocket) -> None:
     await websocket.accept()
-    await broker.subscribe(graph_id, websocket)
+    client_id = websocket.query_params.get("client_id")
+    await broker.subscribe(graph_id, websocket, client_id)
 
     # Debug message to prove this handler talks to the browser websocket
     try:

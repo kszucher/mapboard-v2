@@ -1,4 +1,4 @@
-import { wsBaseUrl } from './client';
+import { getClientId, wsBaseUrl } from './client';
 
 export type GraphEvent =
   | { event: 'graph_created'; graph_id: string; payload: Record<string, unknown> }
@@ -8,18 +8,22 @@ export type GraphEvent =
   | { event: 'node_deleted'; graph_id: string; payload: Record<string, unknown> }
   | { event: 'edge_created'; graph_id: string; payload: Record<string, unknown> }
   | { event: 'edge_deleted'; graph_id: string; payload: Record<string, unknown> }
-  | { event: 'edges_updated'; graph_id: string; payload: Record<string, unknown> };
+  | { event: 'edges_updated'; graph_id: string; payload: Record<string, unknown> }
+  | { event: 'ws_hello'; graph_id: string };
+
+export type GraphEventWithSender = GraphEvent & { sender_client_id?: string | null };
 
 /**
  * Open a websocket for a given graph and keep it alive with simple reconnect logic.
  * Logs connection state so issues are visible in the devtools console.
  */
-export const connectGraphSocket = (graphId: string, onEvent: (event: GraphEvent) => void): (() => void) => {
+export const connectGraphSocket = (graphId: string, onEvent: (event: GraphEventWithSender) => void): (() => void) => {
   let socket: WebSocket | null = null;
   let reconnectTimeout: number | null = null;
   let closedByUser = false;
 
-  const socketUrl = `${wsBaseUrl}/ws/graphs/${graphId}`;
+  const clientId = getClientId();
+  const socketUrl = `${wsBaseUrl}/ws/graphs/${graphId}?client_id=${encodeURIComponent(clientId)}`;
 
   const connect = () => {
     socket = new WebSocket(socketUrl);
@@ -31,7 +35,7 @@ export const connectGraphSocket = (graphId: string, onEvent: (event: GraphEvent)
 
     socket.onmessage = evt => {
       try {
-        const data = JSON.parse(evt.data) as GraphEvent;
+        const data = JSON.parse(evt.data) as GraphEventWithSender;
         onEvent(data);
       } catch (err) {
         console.warn('[Graph WS] Invalid payload', err);

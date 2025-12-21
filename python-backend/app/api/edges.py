@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Header, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_session
@@ -22,15 +22,27 @@ async def get_edges(graph_id: uuid.UUID, session: AsyncSession = Depends(get_ses
 
 
 @router.post("/", response_model=uuid.UUID, status_code=status.HTTP_201_CREATED)
-async def create_edge(payload: EdgeCreate, session: AsyncSession = Depends(get_session)) -> uuid.UUID:
-    return await edge_service.create_edge(session, payload.model_dump(), broker)
+async def create_edge(
+    payload: EdgeCreate,
+    session: AsyncSession = Depends(get_session),
+    x_client_id: str | None = Header(default=None),
+) -> uuid.UUID:
+    return await edge_service.create_edge(session, payload.model_dump(), broker, x_client_id)
 
 
 @router.delete("/{edge_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_edge(edge_id: uuid.UUID, session: AsyncSession = Depends(get_session)) -> None:
-    await edge_service.delete_edge(session, edge_id, broker)
+async def delete_edge(
+    edge_id: uuid.UUID,
+    session: AsyncSession = Depends(get_session),
+    x_client_id: str | None = Header(default=None),
+) -> None:
+    await edge_service.delete_edge(session, edge_id, broker, x_client_id)
 
 
 @router.post("/delete-by-handle", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_by_handle(payload: DeleteEdgesByHandle, session: AsyncSession = Depends(get_session)) -> None:
-    await edge_service.delete_edges_by_handle(session, payload.from_node_id, payload.deleted_handle_index, broker)
+async def delete_by_handle(
+    payload: DeleteEdgesByHandle,
+    session: AsyncSession = Depends(get_session),
+    x_client_id: str | None = Header(default=None),
+) -> None:
+    await edge_service.delete_edges_by_handle(session, payload.from_node_id, payload.deleted_handle_index, broker, x_client_id)

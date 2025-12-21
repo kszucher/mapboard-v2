@@ -1,7 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import { getClientId } from '../../api/client';
 import { queryKeys } from '../../api/queryKeys';
-import { connectGraphSocket, type GraphEvent } from '../../api/ws';
+import { connectGraphSocket, type GraphEventWithSender } from '../../api/ws';
 
 /**
  * Custom hook to manage WebSocket connection for a graph with react-query integration.
@@ -13,7 +14,11 @@ export const useGraphWebSocket = (graphId: string | null) => {
   useEffect(() => {
     if (!graphId) return;
 
-    const handleEvent = (event: GraphEvent) => {
+    const clientId = getClientId();
+
+    const handleEvent = (event: GraphEventWithSender) => {
+      if (event.sender_client_id && event.sender_client_id === clientId) return;
+
       // Invalidate relevant queries based on event type
       switch (event.event) {
         case 'node_created':
