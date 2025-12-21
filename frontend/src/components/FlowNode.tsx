@@ -17,7 +17,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
 
   useEffect(() => {
     updateNodeInternals(id);
-  }, [data.node.num_handles, data.node.node_type, id, updateNodeInternals]);
+  }, [data.node.expressions?.length, data.node.node_type, id, updateNodeInternals]);
 
   const handleDelete = useCallback(() => {
     deleteNodeMutation.mutate({ nodeId: data.node.id });

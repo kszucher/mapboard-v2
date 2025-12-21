@@ -32,11 +32,11 @@ export const useCreateNode = () => {
         nodeType === 'START'
           ? []
           : [
-              {
-                idx: 0,
-                raw_string: '',
-              },
-            ];
+            {
+              idx: 0,
+              raw_string: '',
+            },
+          ];
 
       const res = await apiClient.POST('/nodes/', {
         headers: { 'X-Client-Id': getClientId() },
@@ -72,9 +72,6 @@ export const useUpdateNode = () => {
       if (!graphId) return;
 
       const patchWithDerived = { ...patch } as Record<string, unknown>;
-      if (Array.isArray(patchWithDerived.expressions)) {
-        patchWithDerived.num_handles = patchWithDerived.expressions.length;
-      }
 
       const queryKey = queryKeys.nodes.byGraph(graphId);
       await queryClient.cancelQueries({ queryKey });

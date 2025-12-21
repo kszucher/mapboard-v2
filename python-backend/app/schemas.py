@@ -102,7 +102,6 @@ class NodeUpdate(BaseModel):
 class NodeRead(NodeBase, OrmModel):
     id: uuid.UUID
     expressions: list[ExpressionRead] = []
-    num_handles: int
 
 
 class EdgeCreate(BaseModel):

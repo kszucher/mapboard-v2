@@ -256,8 +256,6 @@ export interface components {
        * @default []
        */
       expressions?: components["schemas"]["ExpressionRead"][];
-      /** Num Handles */
-      num_handles: number;
     };
     /** SetActiveGraph */
     SetActiveGraph: {

@@ -37,7 +37,6 @@ def _normalize_expressions(expressions: list[dict[str, Any]]) -> list[dict[str, 
 
 def _strip_deprecated_node_fields(data: dict[str, Any]) -> dict[str, Any]:
     deprecated = {
-        "num_handles",
         "node_type_start",
         "node_type_logic_input",
         "node_type_agent_input",
@@ -105,7 +104,7 @@ async def update_node(
     event_patch: dict[str, Any] = dict(patch_without_graph)
 
     # Update scalar fields
-    protected_fields = {"id", "graph_id", "num_handles", "expressions"}
+    protected_fields = {"id", "graph_id", "expressions"}
     for k, v in patch_without_graph.items():
         if k in protected_fields:
             continue

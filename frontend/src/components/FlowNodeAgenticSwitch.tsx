@@ -15,7 +15,7 @@ export const FlowNodeAgenticSwitch = ({ data }: FlowNodeAgenticSwitchProps) => {
   const { node } = data;
   const SPACING = 40;
   const BASE_OFFSET = 66;
-  const num = Math.max(1, node.num_handles || 0);
+  const num = Math.max(1, node.expressions?.length || 0);
   const LEFT_HANDLE_OFFSET = BASE_OFFSET + ((num - 1) * SPACING) / 2;
 
   const branches = node.expressions?.map(e => e.raw_string) ?? [];
@@ -55,7 +55,7 @@ export const FlowNodeAgenticSwitch = ({ data }: FlowNodeAgenticSwitchProps) => {
 
       <Handle type="target" position={Position.Left} style={{ top: LEFT_HANDLE_OFFSET }} />
 
-      {Array.from({ length: node.num_handles }).map((_, i) => (
+      {Array.from({ length: node.expressions?.length || 0 }).map((_, i) => (
         <Handle
           key={i}
           id={String(i)}

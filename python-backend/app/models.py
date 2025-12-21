@@ -71,9 +71,6 @@ class Node(Base):
         lazy="selectin",
     )
 
-    @property
-    def num_handles(self) -> int:
-        return len(self.expressions)
 
 
 class Expression(Base):
