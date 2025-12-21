@@ -4,7 +4,6 @@ import { EditorState } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { useEffect, useRef } from 'react';
-import { useDebouncedCallback } from 'use-debounce';
 
 interface CodeMirrorEditorProps {
   initialValue: string;
@@ -24,10 +23,6 @@ export const CodeMirrorEditor = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<EditorView | null>(null);
   const internalValueRef = useRef(initialValue);
-
-  const debouncedSave = useDebouncedCallback((value: string) => {
-    onSave(value);
-  }, 500);
 
   // Sync initialValue if it changes from outside
   useEffect(() => {
@@ -52,7 +47,7 @@ export const CodeMirrorEditor = ({
         if (update.docChanged) {
           const newValue = update.state.doc.toString();
           internalValueRef.current = newValue;
-          debouncedSave(newValue);
+          onSave(newValue);
         }
       }),
       EditorView.baseTheme({
