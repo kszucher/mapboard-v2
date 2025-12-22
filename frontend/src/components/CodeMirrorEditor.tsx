@@ -3,7 +3,7 @@ import { markdown } from '@codemirror/lang-markdown';
 import { EditorState } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { EditorView, keymap, lineNumbers } from '@codemirror/view';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface CodeMirrorEditorProps {
   initialValue: string;
@@ -24,6 +24,7 @@ export const CodeMirrorEditor = ({
   const editorRef = useRef<EditorView | null>(null);
   const internalValueRef = useRef(initialValue);
   const isFocusedRef = useRef(false);
+  const [isFocused, setIsFocused] = useState(false);
 
   // Sync initialValue if it changes from outside
   useEffect(() => {
@@ -53,7 +54,12 @@ export const CodeMirrorEditor = ({
         }
       }),
       EditorView.baseTheme({
-
+        '&.cm-focused': {
+          outline: 'none',
+        },
+        '.cm-scroller': {
+          fontFamily: 'inherit',
+        },
       }),
     ];
 
@@ -79,9 +85,11 @@ export const CodeMirrorEditor = ({
 
     const handleFocus = () => {
       isFocusedRef.current = true;
+      setIsFocused(true);
     };
     const handleBlur = () => {
       isFocusedRef.current = false;
+      setIsFocused(false);
     };
     view.dom.addEventListener('focus', handleFocus, true);
     view.dom.addEventListener('blur', handleBlur, true);
@@ -108,10 +116,14 @@ export const CodeMirrorEditor = ({
         height: singleLine ? '32px' : 'auto',
         maxHeight: singleLine ? '32px' : 'none',
         width: 'fit-content',
-        border: '1px solid var(--gray-5)',
-        borderRadius: 'var(--radius-2)',
+        border: `1px solid ${isFocused ? 'var(--blue-9)' : 'var(--gray-5)'}`,
+        borderRadius: '8px',
         backgroundColor: 'var(--color-panel-solid)',
         boxSizing: 'border-box',
+        overflow: 'hidden',
+        transition: 'border-color 0.2s ease-in-out',
+        boxShadow: isFocused ? '0 0 0 1px var(--blue-9)' : 'none',
+        cursor: 'text',
       }}
     />
   );
