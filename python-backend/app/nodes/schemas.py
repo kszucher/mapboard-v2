@@ -38,9 +38,26 @@ class NodeCreate(NodeBase):
     expressions: list[ExpressionCreate] = []
 
 
-class NodeUpdate(BaseModel):
-    node_id: uuid.UUID
-    patch: dict[str, Any]
+class UpdateNodeOffset(BaseModel):
+    offset_x: int
+    offset_y: int
+
+
+class UpdateNodeDimensions(BaseModel):
+    width: int
+    height: int
+
+
+class UpdateNodeExpressions(BaseModel):
+    expressions: list[ExpressionCreate]
+
+
+class UpdateNodeLabel(BaseModel):
+    label: str
+
+
+class UpdateNodeColor(BaseModel):
+    color: Color
 
 
 class NodeRead(NodeBase, OrmModel):

@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -27,9 +27,6 @@ class NodeRepository:
         self.session.add(node)
         await self.session.flush()
         return node
-
-    async def update(self, node_id: uuid.UUID, patch: dict[str, Any]) -> None:
-        await self.session.execute(update(models.Node).where(models.Node.id == node_id).values(**patch))
 
     async def delete(self, node_id: uuid.UUID) -> None:
         await self.session.execute(delete(models.Node).where(models.Node.id == node_id))

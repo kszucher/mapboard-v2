@@ -63,16 +63,12 @@ export const useCreateNode = () => {
   });
 };
 
-export const useUpdateNode = () => {
+// Hook for updating node expressions
+export const useUpdateNodeExpressions = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    onMutate: async ({ nodeId, patch }) => {
-      const graphId = patch.graph_id as string | undefined;
-      if (!graphId) return;
-
-      const patchWithDerived = { ...patch } as Record<string, unknown>;
-
+    onMutate: async ({ nodeId, expressions, graphId }: { nodeId: string; expressions: components['schemas']['ExpressionCreate'][]; graphId: string }) => {
       const queryKey = queryKeys.nodes.byGraph(graphId);
       await queryClient.cancelQueries({ queryKey });
 
@@ -81,17 +77,53 @@ export const useUpdateNode = () => {
       if (previous && nodeId) {
         queryClient.setQueryData<NodeRead[]>(queryKey, old => {
           if (!old) return old;
-          return old.map(n => (n.id === nodeId ? ({ ...n, ...patchWithDerived } as NodeRead) : n));
+          return old.map(n => (n.id === nodeId ? ({ ...n, expressions: expressions as components['schemas']['ExpressionRead'][] } as NodeRead) : n));
         });
       }
 
       return { previous, graphId };
     },
-    mutationFn: async ({ nodeId, patch }: { nodeId: string; patch: Record<string, unknown> }) => {
-      const res = await apiClient.PATCH('/nodes/{node_id}', {
+    mutationFn: async ({ nodeId, expressions }: { nodeId: string; expressions: components['schemas']['ExpressionCreate'][]; graphId: string }) => {
+      const res = await apiClient.PATCH('/nodes/{node_id}/expressions', {
         params: { path: { node_id: nodeId } },
         headers: { 'X-Client-Id': getClientId() },
-        body: patch,
+        body: { expressions },
+      });
+      if ('error' in res) throw res.error;
+    },
+    onError: (_err, _variables, context) => {
+      if (context?.graphId) {
+        queryClient.setQueryData(queryKeys.nodes.byGraph(context.graphId), context.previous);
+      }
+    },
+  });
+};
+
+// Hook for updating node dimensions
+export const useUpdateNodeDimensions = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    onMutate: async ({ nodeId, width, height, graphId }: { nodeId: string; width: number; height: number; graphId: string }) => {
+      const queryKey = queryKeys.nodes.byGraph(graphId);
+      await queryClient.cancelQueries({ queryKey });
+
+      const previous = queryClient.getQueryData<NodeRead[]>(queryKey);
+
+      if (previous && nodeId) {
+        queryClient.setQueryData<NodeRead[]>(queryKey, old => {
+          if (!old) return old;
+          return old.map(n => (n.id === nodeId ? ({ ...n, width, height } as NodeRead) : n));
+        });
+      }
+
+      return { previous, graphId };
+    },
+    mutationFn: async ({ nodeId, width, height }: { nodeId: string; width: number; height: number; graphId: string }) => {
+      const res = await apiClient.PATCH('/nodes/{node_id}/dimensions', {
+        params: { path: { node_id: nodeId } },
+        headers: { 'X-Client-Id': getClientId() },
+        body: { width, height },
       });
       if ('error' in res) throw res.error;
     },
@@ -121,24 +153,46 @@ export const useDeleteNode = () => {
   });
 };
 
-// Convenience hook for updating node position
+// Hook for updating node offset (position)
 export const useUpdateNodePosition = () => {
-  const updateNode = useUpdateNode();
+  const queryClient = useQueryClient();
 
-  return {
-    mutate: (nodeId: string, x: number, y: number, graphId?: string) => {
-      updateNode.mutate({
-        nodeId,
-        patch: {
-          graph_id: graphId,
+  return useMutation({
+    onMutate: async ({ nodeId, x, y, graphId }: { nodeId: string; x: number; y: number; graphId?: string }) => {
+      if (!graphId) return;
+
+      const offset_x = Math.round(x);
+      const offset_y = Math.round(y);
+
+      const queryKey = queryKeys.nodes.byGraph(graphId);
+      await queryClient.cancelQueries({ queryKey });
+
+      const previous = queryClient.getQueryData<NodeRead[]>(queryKey);
+
+      if (previous && nodeId) {
+        queryClient.setQueryData<NodeRead[]>(queryKey, old => {
+          if (!old) return old;
+          return old.map(n => (n.id === nodeId ? ({ ...n, offset_x, offset_y } as NodeRead) : n));
+        });
+      }
+
+      return { previous, graphId };
+    },
+    mutationFn: async ({ nodeId, x, y }: { nodeId: string; x: number; y: number; graphId?: string }) => {
+      const res = await apiClient.PATCH('/nodes/{node_id}/offset', {
+        params: { path: { node_id: nodeId } },
+        headers: { 'X-Client-Id': getClientId() },
+        body: {
           offset_x: Math.round(x),
           offset_y: Math.round(y),
         },
       });
+      if ('error' in res) throw res.error;
     },
-    mutateAsync: updateNode.mutateAsync,
-    isPending: updateNode.isPending,
-    isError: updateNode.isError,
-    error: updateNode.error,
-  };
+    onError: (_err, _variables, context) => {
+      if (context?.graphId) {
+        queryClient.setQueryData(queryKeys.nodes.byGraph(context.graphId), context.previous);
+      }
+    },
+  });
 };

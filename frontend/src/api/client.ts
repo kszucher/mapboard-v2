@@ -18,5 +18,3 @@ export const apiClient = createClient<paths>({
 });
 
 export const wsBaseUrl = baseUrl.replace(/^http/, 'ws');
-
-

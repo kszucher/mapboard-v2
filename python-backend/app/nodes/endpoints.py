@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_session
 from app.nodes.repository import NodeRepository
+from app.nodes import schemas
 from app.nodes.schemas import NodeCreate, NodeRead
 from app.nodes import service as node_service
 from app.events import broker
@@ -31,14 +32,66 @@ async def create_node(
     return await node_service.create_node(session, payload.model_dump(), broker, x_client_id)
 
 
-@router.patch("/{node_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def update_node(
+
+
+@router.patch("/{node_id}/offset", status_code=status.HTTP_204_NO_CONTENT)
+async def update_node_offset(
     node_id: uuid.UUID,
-    patch: dict[str, Any],
+    payload: schemas.UpdateNodeOffset,
     session: AsyncSession = Depends(get_session),
     x_client_id: str | None = Header(default=None),
 ):
-    await node_service.update_node(session, node_id, patch, broker, x_client_id)
+    await node_service.update_node_offset(
+        session, node_id, payload.offset_x, payload.offset_y, broker, x_client_id
+    )
+
+
+@router.patch("/{node_id}/dimensions", status_code=status.HTTP_204_NO_CONTENT)
+async def update_node_dimensions(
+    node_id: uuid.UUID,
+    payload: schemas.UpdateNodeDimensions,
+    session: AsyncSession = Depends(get_session),
+    x_client_id: str | None = Header(default=None),
+):
+    await node_service.update_node_dimensions(
+        session, node_id, payload.width, payload.height, broker, x_client_id
+    )
+
+
+@router.patch("/{node_id}/expressions", status_code=status.HTTP_204_NO_CONTENT)
+async def update_node_expressions(
+    node_id: uuid.UUID,
+    payload: schemas.UpdateNodeExpressions,
+    session: AsyncSession = Depends(get_session),
+    x_client_id: str | None = Header(default=None),
+):
+    await node_service.update_node_expressions(
+        session, node_id, [e.model_dump() for e in payload.expressions], broker, x_client_id
+    )
+
+
+@router.patch("/{node_id}/label", status_code=status.HTTP_204_NO_CONTENT)
+async def update_node_label(
+    node_id: uuid.UUID,
+    payload: schemas.UpdateNodeLabel,
+    session: AsyncSession = Depends(get_session),
+    x_client_id: str | None = Header(default=None),
+):
+    await node_service.update_node_label(
+        session, node_id, payload.label, broker, x_client_id
+    )
+
+
+@router.patch("/{node_id}/color", status_code=status.HTTP_204_NO_CONTENT)
+async def update_node_color(
+    node_id: uuid.UUID,
+    payload: schemas.UpdateNodeColor,
+    session: AsyncSession = Depends(get_session),
+    x_client_id: str | None = Header(default=None),
+):
+    await node_service.update_node_color(
+        session, node_id, payload.color, broker, x_client_id
+    )
 
 
 @router.delete("/{node_id}", status_code=status.HTTP_204_NO_CONTENT)

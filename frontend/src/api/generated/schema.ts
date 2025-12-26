@@ -37,6 +37,26 @@ export interface paths {
     /** Create Node */
     post: operations["create_node_nodes__post"];
   };
+  "/nodes/{node_id}/offset": {
+    /** Update Node Offset */
+    patch: operations["update_node_offset_nodes__node_id__offset_patch"];
+  };
+  "/nodes/{node_id}/dimensions": {
+    /** Update Node Dimensions */
+    patch: operations["update_node_dimensions_nodes__node_id__dimensions_patch"];
+  };
+  "/nodes/{node_id}/expressions": {
+    /** Update Node Expressions */
+    patch: operations["update_node_expressions_nodes__node_id__expressions_patch"];
+  };
+  "/nodes/{node_id}/label": {
+    /** Update Node Label */
+    patch: operations["update_node_label_nodes__node_id__label_patch"];
+  };
+  "/nodes/{node_id}/color": {
+    /** Update Node Color */
+    patch: operations["update_node_color_nodes__node_id__color_patch"];
+  };
   "/nodes/{node_id}": {
     /** Delete Node */
     delete: operations["delete_node_nodes__node_id__delete"];
@@ -270,6 +290,38 @@ export interface components {
        */
       graph_id: string;
     };
+    /** UpdateNodeColor */
+    UpdateNodeColor: {
+      /**
+       * Color
+       * @enum {string}
+       */
+      color: "gray" | "gold" | "bronze" | "brown" | "yellow" | "amber" | "orange" | "tomato" | "red" | "ruby" | "crimson" | "pink" | "plum" | "purple" | "violet" | "iris" | "indigo" | "blue" | "cyan" | "teal" | "jade" | "green" | "grass" | "lime" | "mint" | "sky";
+    };
+    /** UpdateNodeDimensions */
+    UpdateNodeDimensions: {
+      /** Width */
+      width: number;
+      /** Height */
+      height: number;
+    };
+    /** UpdateNodeExpressions */
+    UpdateNodeExpressions: {
+      /** Expressions */
+      expressions: components["schemas"]["ExpressionCreate"][];
+    };
+    /** UpdateNodeLabel */
+    UpdateNodeLabel: {
+      /** Label */
+      label: string;
+    };
+    /** UpdateNodeOffset */
+    UpdateNodeOffset: {
+      /** Offset X */
+      offset_x: number;
+      /** Offset Y */
+      offset_y: number;
+    };
     /** UserCreate */
     UserCreate: {
       /** User Name */
@@ -462,6 +514,146 @@ export interface operations {
         content: {
           "application/json": string;
         };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Update Node Offset */
+  update_node_offset_nodes__node_id__offset_patch: {
+    parameters: {
+      header?: {
+        "x-client-id"?: string | null;
+      };
+      path: {
+        node_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UpdateNodeOffset"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        content: never;
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Update Node Dimensions */
+  update_node_dimensions_nodes__node_id__dimensions_patch: {
+    parameters: {
+      header?: {
+        "x-client-id"?: string | null;
+      };
+      path: {
+        node_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UpdateNodeDimensions"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        content: never;
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Update Node Expressions */
+  update_node_expressions_nodes__node_id__expressions_patch: {
+    parameters: {
+      header?: {
+        "x-client-id"?: string | null;
+      };
+      path: {
+        node_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UpdateNodeExpressions"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        content: never;
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Update Node Label */
+  update_node_label_nodes__node_id__label_patch: {
+    parameters: {
+      header?: {
+        "x-client-id"?: string | null;
+      };
+      path: {
+        node_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UpdateNodeLabel"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        content: never;
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Update Node Color */
+  update_node_color_nodes__node_id__color_patch: {
+    parameters: {
+      header?: {
+        "x-client-id"?: string | null;
+      };
+      path: {
+        node_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UpdateNodeColor"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        content: never;
       };
       /** @description Validation Error */
       422: {

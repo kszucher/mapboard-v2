@@ -1,6 +1,6 @@
 import { Flex } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
-import { useDeleteEdgesByNodeAndHandles, useUpdateNode } from '../api/mutations';
+import { useDeleteEdgesByNodeAndHandles, useUpdateNodeExpressions } from '../api/mutations';
 import { BranchInput } from './BranchInput.tsx';
 import { EditableList } from './shared/EditableList.tsx';
 import type { AppFlowNode } from './types.ts';
@@ -10,7 +10,7 @@ interface FlowNodeLogicalSwitchProps {
 }
 
 export const FlowNodeLogicalSwitch = ({ data }: FlowNodeLogicalSwitchProps) => {
-  const updateNodeMutation = useUpdateNode();
+  const updateExpressionsMutation = useUpdateNodeExpressions();
   const deleteEdgesByNodeAndHandlesMutation = useDeleteEdgesByNodeAndHandles();
   const { node } = data;
   const SPACING = 40;
@@ -25,12 +25,10 @@ export const FlowNodeLogicalSwitch = ({ data }: FlowNodeLogicalSwitchProps) => {
       deleteEdgesByNodeAndHandlesMutation.mutate({ fromNodeId: node.id, deletedHandleIndex: deletedIndex });
     }
 
-    updateNodeMutation.mutate({
+    updateExpressionsMutation.mutate({
       nodeId: node.id,
-      patch: {
-        graph_id: node.graph_id,
-        expressions: newBranches.map((raw_string, idx) => ({ idx, raw_string })),
-      },
+      graphId: node.graph_id,
+      expressions: newBranches.map((raw_string, idx) => ({ idx, raw_string })),
     });
   };
 

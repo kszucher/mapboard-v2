@@ -81,63 +81,146 @@ async def create_node(
     return node.id
 
 
-async def update_node(
+async def update_node_offset(
     session: AsyncSession,
     node_id: uuid.UUID,
-    patch: dict[str, Any],
+    offset_x: int,
+    offset_y: int,
     broker: GraphEventBroker,
     sender_client_id: str | None = None,
 ) -> None:
     repo = NodeRepository(session)
     node = await repo.get(node_id)
-    graph_id = node.graph_id if node else None
-
+    
     if node is None:
         return
-
-    patch_without_graph = {k: v for k, v in patch.items() if k != "graph_id"}
-    patch_without_graph = _strip_deprecated_node_fields(patch_without_graph)
-
-    expressions_patch = patch_without_graph.pop("expressions", None)
-    effective_node_type = patch_without_graph.get("node_type", node.node_type)
-
-    event_patch: dict[str, Any] = dict(patch_without_graph)
-
-    # Update scalar fields
-    protected_fields = {"id", "graph_id", "expressions"}
-    for k, v in patch_without_graph.items():
-        if k in protected_fields:
-            continue
-        if hasattr(node, k):
-            try:
-                setattr(node, k, v)
-            except Exception as e:
-                logger.warning("Failed to set attribute %s on node %s: %s", k, node_id, e)
-
-    # Replace expressions if present
-    if expressions_patch is not None:
-        if not isinstance(expressions_patch, list):
-            raise ValueError("expressions must be a list")
-        _validate_expressions_for_node_type(str(effective_node_type), expressions_patch)
-        normalized = _normalize_expressions(expressions_patch)
-
-        event_patch["expressions"] = normalized
-
-        node.expressions.clear()
-        for expr in normalized:
-            node.expressions.append(models.Expression(idx=expr["idx"], raw_string=expr["raw_string"]))
-
+    
+    node.offset_x = offset_x
+    node.offset_y = offset_y
+    
     await session.commit()
-
-    if graph_id:
-        await broker.broadcast(
-            GraphEvent(
-                event="node_updated",
-                graph_id=graph_id,
-                payload={"nodeId": str(node_id), "patch": event_patch},
-                sender_client_id=sender_client_id,
-            )
+    
+    await broker.broadcast(
+        GraphEvent(
+            event="node_updated",
+            graph_id=node.graph_id,
+            payload={"nodeId": str(node_id), "patch": {"offset_x": offset_x, "offset_y": offset_y}},
+            sender_client_id=sender_client_id,
         )
+    )
+
+
+async def update_node_dimensions(
+    session: AsyncSession,
+    node_id: uuid.UUID,
+    width: int,
+    height: int,
+    broker: GraphEventBroker,
+    sender_client_id: str | None = None,
+) -> None:
+    repo = NodeRepository(session)
+    node = await repo.get(node_id)
+    
+    if node is None:
+        return
+    
+    node.width = width
+    node.height = height
+    
+    await session.commit()
+    
+    await broker.broadcast(
+        GraphEvent(
+            event="node_updated",
+            graph_id=node.graph_id,
+            payload={"nodeId": str(node_id), "patch": {"width": width, "height": height}},
+            sender_client_id=sender_client_id,
+        )
+    )
+
+
+async def update_node_expressions(
+    session: AsyncSession,
+    node_id: uuid.UUID,
+    expressions: list[dict[str, Any]],
+    broker: GraphEventBroker,
+    sender_client_id: str | None = None,
+) -> None:
+    repo = NodeRepository(session)
+    node = await repo.get(node_id)
+    
+    if node is None:
+        return
+    
+    _validate_expressions_for_node_type(str(node.node_type), expressions)
+    normalized = _normalize_expressions(expressions)
+    
+    node.expressions.clear()
+    for expr in normalized:
+        node.expressions.append(models.Expression(idx=expr["idx"], raw_string=expr["raw_string"]))
+        
+    await session.commit()
+    
+    await broker.broadcast(
+        GraphEvent(
+            event="node_updated",
+            graph_id=node.graph_id,
+            payload={"nodeId": str(node_id), "patch": {"expressions": normalized}},
+            sender_client_id=sender_client_id,
+        )
+    )
+
+
+async def update_node_label(
+    session: AsyncSession,
+    node_id: uuid.UUID,
+    label: str,
+    broker: GraphEventBroker,
+    sender_client_id: str | None = None,
+) -> None:
+    repo = NodeRepository(session)
+    node = await repo.get(node_id)
+    
+    if node is None:
+        return
+    
+    node.label = label
+    await session.commit()
+    
+    await broker.broadcast(
+        GraphEvent(
+            event="node_updated",
+            graph_id=node.graph_id,
+            payload={"nodeId": str(node_id), "patch": {"label": label}},
+            sender_client_id=sender_client_id,
+        )
+    )
+
+
+async def update_node_color(
+    session: AsyncSession,
+    node_id: uuid.UUID,
+    color: str,
+    broker: GraphEventBroker,
+    sender_client_id: str | None = None,
+) -> None:
+    repo = NodeRepository(session)
+    node = await repo.get(node_id)
+    
+    if node is None:
+        return
+    
+    node.color = color
+    await session.commit()
+    
+    await broker.broadcast(
+        GraphEvent(
+            event="node_updated",
+            graph_id=node.graph_id,
+            payload={"nodeId": str(node_id), "patch": {"color": color}},
+            sender_client_id=sender_client_id,
+        )
+    )
 
 
 async def delete_node(

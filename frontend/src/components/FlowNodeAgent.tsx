@@ -1,7 +1,7 @@
 import { Flex } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
 import { useCallback } from 'react';
-import { useUpdateNode } from '../api/mutations';
+import { useUpdateNodeExpressions } from '../api/mutations';
 import { CodeMirrorEditor } from './CodeMirrorEditor';
 import type { AppFlowNode } from './types.ts';
 
@@ -10,26 +10,24 @@ interface FlowNodeAgentProps {
 }
 
 export const FlowNodeAgent = ({ data }: FlowNodeAgentProps) => {
-  const updateNodeMutation = useUpdateNode();
+  const updateExpressionsMutation = useUpdateNodeExpressions();
   const { node } = data;
   const agentInput = node.expressions?.[0]?.raw_string ?? '';
 
   const handleEditorSave = useCallback(
     (value: string) => {
-      updateNodeMutation.mutate({
+      updateExpressionsMutation.mutate({
         nodeId: node.id,
-        patch: {
-          graph_id: node.graph_id,
-          expressions: [
-            {
-              idx: 0,
-              raw_string: value,
-            },
-          ],
-        },
+        graphId: node.graph_id,
+        expressions: [
+          {
+            idx: 0,
+            raw_string: value,
+          },
+        ],
       });
     },
-    [node.id, node.graph_id, updateNodeMutation],
+    [node.id, node.graph_id, updateExpressionsMutation],
   );
 
   return (
