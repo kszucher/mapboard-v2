@@ -6,10 +6,10 @@ from fastapi import APIRouter, Depends, Header, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_session
-from app.repositories.graphs import GraphRepository
-from app.schemas import GraphCreate, GraphRead
-from app.services import graphs as graph_service
-from app.services.events import broker
+from app.graphs.repository import GraphRepository
+from app.graphs.schemas import GraphCreate, GraphRead
+from app.graphs import service as graph_service
+from app.events import broker
 
 router = APIRouter(prefix="/graphs", tags=["graphs"])
 

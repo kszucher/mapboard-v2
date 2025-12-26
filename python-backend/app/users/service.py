@@ -4,7 +4,7 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.repositories.users import UserRepository
+from app.users.repository import UserRepository
 
 
 async def get_or_create_user(session: AsyncSession) -> uuid.UUID:

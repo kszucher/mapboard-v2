@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import edges, graphs, nodes, users, ws
+from app import edges, graphs, nodes, users, ws
 from app.config import settings
 import logging
 

@@ -4,11 +4,11 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.repositories.graphs import GraphRepository
-from app.repositories.nodes import NodeRepository
-from app.repositories.users import UserRepository
+from app.graphs.repository import GraphRepository
+from app.nodes.repository import NodeRepository
+from app.users.repository import UserRepository
 from app.schemas import GraphEvent
-from app.services.events import GraphEventBroker
+from app.events import GraphEventBroker
 
 
 async def create_graph(

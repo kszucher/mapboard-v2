@@ -6,10 +6,10 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models
-from app.repositories.edges import EdgeRepository
-from app.repositories.nodes import NodeRepository
+from app.edges.repository import EdgeRepository
+from app.nodes.repository import NodeRepository
 from app.schemas import GraphEvent
-from app.services.events import GraphEventBroker
+from app.events import GraphEventBroker
 import logging
 
 logger = logging.getLogger(__name__)

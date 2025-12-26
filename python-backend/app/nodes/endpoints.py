@@ -7,10 +7,10 @@ from fastapi import APIRouter, Depends, Header, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_session
-from app.repositories.nodes import NodeRepository
-from app.schemas import NodeCreate, NodeRead
-from app.services import nodes as node_service
-from app.services.events import broker
+from app.nodes.repository import NodeRepository
+from app.nodes.schemas import NodeCreate, NodeRead
+from app.nodes import service as node_service
+from app.events import broker
 
 router = APIRouter(prefix="/nodes", tags=["nodes"])
 
@@ -37,7 +37,7 @@ async def update_node(
     patch: dict[str, Any],
     session: AsyncSession = Depends(get_session),
     x_client_id: str | None = Header(default=None),
-) -> None:
+):
     await node_service.update_node(session, node_id, patch, broker, x_client_id)
 
 
@@ -46,5 +46,5 @@ async def delete_node(
     node_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
     x_client_id: str | None = Header(default=None),
-) -> None:
+):
     await node_service.delete_node(session, node_id, broker, x_client_id)
