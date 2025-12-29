@@ -1,6 +1,6 @@
-import { Theme } from '@radix-ui/themes';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Frame } from './Frame.tsx';
+import { Theme } from '@radix-ui/themes'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Frame } from './Frame.tsx'
 
 const queryClient = new QueryClient({
   defaultOptions: {

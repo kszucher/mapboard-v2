@@ -1,5 +1,5 @@
-import { Flex } from '@radix-ui/themes';
-import { Handle, Position } from '@xyflow/react';
+import { Flex } from '@radix-ui/themes'
+import { Handle, Position } from '@xyflow/react'
 
 export const FlowNodeStart = () => {
   return (

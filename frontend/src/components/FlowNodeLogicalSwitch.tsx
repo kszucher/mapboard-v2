@@ -1,13 +1,9 @@
-import { Flex } from '@radix-ui/themes';
-import { Handle, Position } from '@xyflow/react';
-import {
-  useCreateExpression,
-  useUpdateExpression,
-  useDeleteExpression
-} from '../api/mutations';
-import { BranchInput } from './BranchInput.tsx';
-import { EditableList } from './shared/EditableList.tsx';
-import type { AppFlowNode } from './types.ts';
+import { Flex } from '@radix-ui/themes'
+import { Handle, Position } from '@xyflow/react'
+import { useCreateExpression, useDeleteExpression, useUpdateExpression } from '../api/mutations'
+import { BranchInput } from './BranchInput.tsx'
+import { EditableList } from './shared/EditableList.tsx'
+import type { AppFlowNode } from './types.ts'
 
 interface FlowNodeLogicalSwitchProps {
   data: AppFlowNode['data'];

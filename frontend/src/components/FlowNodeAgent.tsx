@@ -1,9 +1,9 @@
-import { Flex } from '@radix-ui/themes';
-import { Handle, Position } from '@xyflow/react';
-import { useCallback } from 'react';
-import { useUpdateExpression } from '../api/mutations';
-import { CodeMirrorEditor } from './CodeMirrorEditor';
-import type { AppFlowNode } from './types.ts';
+import { Flex } from '@radix-ui/themes'
+import { Handle, Position } from '@xyflow/react'
+import { useCallback } from 'react'
+import { useUpdateExpression } from '../api/mutations'
+import { CodeMirrorEditor } from './CodeMirrorEditor'
+import type { AppFlowNode } from './types.ts'
 
 interface FlowNodeAgentProps {
   data: AppFlowNode['data'];

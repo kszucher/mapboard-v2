@@ -1,9 +1,9 @@
-import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
-import { markdown } from '@codemirror/lang-markdown';
-import { EditorState } from '@codemirror/state';
-import { oneDark } from '@codemirror/theme-one-dark';
-import { EditorView, keymap, lineNumbers } from '@codemirror/view';
-import { useEffect, useRef, useState } from 'react';
+import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
+import { markdown } from '@codemirror/lang-markdown'
+import { EditorState } from '@codemirror/state'
+import { oneDark } from '@codemirror/theme-one-dark'
+import { EditorView, keymap, lineNumbers } from '@codemirror/view'
+import { useEffect, useRef, useState } from 'react'
 
 interface CodeMirrorEditorProps {
   initialValue: string;

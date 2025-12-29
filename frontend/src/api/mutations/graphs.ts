@@ -1,6 +1,6 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient, getClientId } from '../client';
-import { queryKeys } from '../queryKeys';
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { apiClient, getClientId } from '../client'
+import { queryKeys } from '../queryKeys'
 
 export const useCreateGraph = () => {
   const queryClient = useQueryClient();

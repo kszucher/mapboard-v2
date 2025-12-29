@@ -1,5 +1,5 @@
-import type { Edge, Node } from '@xyflow/react';
-import type { components } from '../api/generated/schema';
+import type { Edge, Node } from '@xyflow/react'
+import type { components } from '../api/generated/schema'
 
 export type ApiNode = components['schemas']['NodeRead'];
 export type ApiEdge = components['schemas']['EdgeRead'];

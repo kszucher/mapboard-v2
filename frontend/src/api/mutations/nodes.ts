@@ -1,7 +1,7 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient, getClientId } from '../client';
-import type { components } from '../generated/schema';
-import { queryKeys } from '../queryKeys';
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { apiClient, getClientId } from '../client'
+import type { components } from '../generated/schema'
+import { queryKeys } from '../queryKeys'
 
 type NodeType = components['schemas']['NodeRead']['node_type'];
 type NodeColor = components['schemas']['NodeCreate']['color'];

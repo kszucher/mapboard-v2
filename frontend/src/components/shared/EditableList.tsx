@@ -1,7 +1,7 @@
-import { PlusIcon } from '@radix-ui/react-icons';
-import { Flex, IconButton } from '@radix-ui/themes';
-import type { ReactNode } from 'react';
-import { useCallback } from 'react';
+import { PlusIcon } from '@radix-ui/react-icons'
+import { Flex, IconButton } from '@radix-ui/themes'
+import type { ReactNode } from 'react'
+import { useCallback } from 'react'
 
 export interface ItemHandlers<T = string> {
   onUpdate: (newValue: T) => void;

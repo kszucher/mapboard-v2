@@ -1,15 +1,15 @@
-import { DotsHorizontalIcon } from '@radix-ui/react-icons';
-import type { BadgeProps } from '@radix-ui/themes';
-import { Badge, Box, DropdownMenu, Flex, IconButton } from '@radix-ui/themes';
-import { type NodeProps, useUpdateNodeInternals } from '@xyflow/react';
-import { memo, useCallback, useEffect, useMemo } from 'react';
-import { useDeleteNode } from '../api/mutations';
-import { FlowNodeAgent } from './FlowNodeAgent.tsx';
-import { FlowNodeAgenticSwitch } from './FlowNodeAgenticSwitch.tsx';
-import { FlowNodeLogic } from './FlowNodeLogic.tsx';
-import { FlowNodeLogicalSwitch } from './FlowNodeLogicalSwitch.tsx';
-import { FlowNodeStart } from './FlowNodeStart.tsx';
-import type { AppFlowNode } from './types.ts';
+import { DotsHorizontalIcon } from '@radix-ui/react-icons'
+import type { BadgeProps } from '@radix-ui/themes'
+import { Badge, Box, DropdownMenu, Flex, IconButton } from '@radix-ui/themes'
+import { type NodeProps, useUpdateNodeInternals } from '@xyflow/react'
+import { memo, useCallback, useEffect, useMemo } from 'react'
+import { useDeleteNode } from '../api/mutations'
+import { FlowNodeAgent } from './FlowNodeAgent.tsx'
+import { FlowNodeAgenticSwitch } from './FlowNodeAgenticSwitch.tsx'
+import { FlowNodeLogic } from './FlowNodeLogic.tsx'
+import { FlowNodeLogicalSwitch } from './FlowNodeLogicalSwitch.tsx'
+import { FlowNodeStart } from './FlowNodeStart.tsx'
+import type { AppFlowNode } from './types.ts'
 
 const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   const deleteNodeMutation = useDeleteNode();

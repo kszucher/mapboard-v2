@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '../client';
-import type { components } from '../generated/schema';
-import { queryKeys } from '../queryKeys';
+import { useQuery } from '@tanstack/react-query'
+import { apiClient } from '../client'
+import type { components } from '../generated/schema'
+import { queryKeys } from '../queryKeys'
 
 type NodeRead = components['schemas']['NodeRead'];
 

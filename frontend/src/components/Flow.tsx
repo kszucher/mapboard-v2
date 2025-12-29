@@ -8,15 +8,15 @@ import {
   useNodesInitialized,
   useNodesState,
   useReactFlow,
-} from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { useCreateEdge, useDeleteEdge, useUpdateNodePosition } from '../api/mutations';
-import { useEdges, useNodes } from '../api/queries';
-import FlowEdge from './FlowEdge.tsx';
-import { CustomNode } from './FlowNode.tsx';
-import { useGraphWebSocket } from './hooks/useGraphWebSocket.ts';
-import type { AppFlowEdge, AppFlowNode } from './types.ts';
+} from '@xyflow/react'
+import '@xyflow/react/dist/style.css'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCreateEdge, useDeleteEdge, useUpdateNodePosition } from '../api/mutations'
+import { useEdges, useNodes } from '../api/queries'
+import FlowEdge from './FlowEdge.tsx'
+import { CustomNode } from './FlowNode.tsx'
+import { useGraphWebSocket } from './hooks/useGraphWebSocket.ts'
+import type { AppFlowEdge, AppFlowNode } from './types.ts'
 
 const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
   // data fetching

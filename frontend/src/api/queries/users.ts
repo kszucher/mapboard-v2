@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '../client';
-import { queryKeys } from '../queryKeys';
+import { useQuery } from '@tanstack/react-query'
+import { apiClient } from '../client'
+import { queryKeys } from '../queryKeys'
 
 export const useUserId = () => {
   return useQuery({

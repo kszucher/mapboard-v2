@@ -1,7 +1,7 @@
-import { CheckIcon, Cross2Icon } from '@radix-ui/react-icons';
-import { Flex, IconButton } from '@radix-ui/themes';
-import { useCallback, useMemo } from 'react';
-import { CodeMirrorEditor } from './CodeMirrorEditor';
+import { CheckIcon, Cross2Icon } from '@radix-ui/react-icons'
+import { Flex, IconButton } from '@radix-ui/themes'
+import { useCallback, useMemo } from 'react'
+import { CodeMirrorEditor } from './CodeMirrorEditor'
 
 interface BranchInputProps {
   value: string;
