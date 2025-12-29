@@ -60,29 +60,6 @@ async def update_node_dimensions(
 
 
 
-@router.patch("/{node_id}/label", status_code=status.HTTP_204_NO_CONTENT)
-async def update_node_label(
-    node_id: uuid.UUID,
-    payload: schemas.UpdateNodeLabel,
-    session: AsyncSession = Depends(get_session),
-    x_client_id: str | None = Header(default=None),
-) -> None:
-    await node_service.update_node_label(
-        session, node_id, payload.label, broker, x_client_id
-    )
-
-
-@router.patch("/{node_id}/color", status_code=status.HTTP_204_NO_CONTENT)
-async def update_node_color(
-    node_id: uuid.UUID,
-    payload: schemas.UpdateNodeColor,
-    session: AsyncSession = Depends(get_session),
-    x_client_id: str | None = Header(default=None),
-) -> None:
-    await node_service.update_node_color(
-        session, node_id, payload.color, broker, x_client_id
-    )
-
 
 @router.delete("/{node_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_node(

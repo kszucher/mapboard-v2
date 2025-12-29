@@ -38,13 +38,6 @@ class UpdateNodeDimensions(BaseModel):
     height: int
 
 
-class UpdateNodeLabel(BaseModel):
-    label: str
-
-
-class UpdateNodeColor(BaseModel):
-    color: Color
-
 
 class NodeRead(NodeBase, OrmModel):
     id: uuid.UUID

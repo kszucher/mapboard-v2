@@ -113,39 +113,3 @@ export const useUpdateNodePosition = () => {
     },
   });
 };
-
-export const useUpdateNodeLabel = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ nodeId, label }: { nodeId: string; label: string; graphId: string }) => {
-      const res = await apiClient.PATCH('/nodes/{node_id}/label', {
-        params: { path: { node_id: nodeId } },
-        headers: { 'X-Client-Id': getClientId() },
-        body: { label },
-      });
-      if ('error' in res) throw res.error;
-    },
-    onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) });
-    },
-  });
-};
-
-export const useUpdateNodeColor = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ nodeId, color }: { nodeId: string; color: NodeColor; graphId: string }) => {
-      const res = await apiClient.PATCH('/nodes/{node_id}/color', {
-        params: { path: { node_id: nodeId } },
-        headers: { 'X-Client-Id': getClientId() },
-        body: { color },
-      });
-      if ('error' in res) throw res.error;
-    },
-    onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) });
-    },
-  });
-};

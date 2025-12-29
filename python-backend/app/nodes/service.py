@@ -105,57 +105,6 @@ async def update_node_dimensions(
 
 
 
-async def update_node_label(
-    session: AsyncSession,
-    node_id: uuid.UUID,
-    label: str,
-    broker: GraphEventBroker,
-    sender_client_id: str | None = None,
-) -> None:
-    repo = NodeRepository(session)
-    node = await repo.get(node_id)
-    
-    if node is None:
-        return
-    
-    node.label = label
-    await session.commit()
-    
-    await broker.broadcast(
-        GraphEvent(
-            event="node_updated",
-            graph_id=node.graph_id,
-            payload={"nodeId": str(node_id), "patch": {"label": label}},
-            sender_client_id=sender_client_id,
-        )
-    )
-
-
-async def update_node_color(
-    session: AsyncSession,
-    node_id: uuid.UUID,
-    color: str,
-    broker: GraphEventBroker,
-    sender_client_id: str | None = None,
-) -> None:
-    repo = NodeRepository(session)
-    node = await repo.get(node_id)
-    
-    if node is None:
-        return
-    
-    node.color = color
-    await session.commit()
-    
-    await broker.broadcast(
-        GraphEvent(
-            event="node_updated",
-            graph_id=node.graph_id,
-            payload={"nodeId": str(node_id), "patch": {"color": color}},
-            sender_client_id=sender_client_id,
-        )
-    )
-
 
 async def delete_node(
     session: AsyncSession, node_id: uuid.UUID, broker: GraphEventBroker, sender_client_id: str | None = None
