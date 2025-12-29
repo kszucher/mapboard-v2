@@ -9,6 +9,7 @@ from app.nodes.repository import NodeRepository
 from app.users.repository import UserRepository
 from app.schemas import GraphEvent
 from app.events import GraphEventBroker
+from app.nodes.schemas import NodeCreate
 
 
 async def create_graph(
@@ -25,18 +26,18 @@ async def create_graph(
     graph = await graphs_repo.create(user_id=user_id, name=graph_name)
 
     await nodes_repo.create(
-        {
-            "graph_id": graph.id,
-            "node_type": "START",
-            "color": "gray",
-            "iid": 1,
-            "width": 200,
-            "height": 200,
-            "offset_x": 100,
-            "offset_y": 100,
-            "label": "Start",
-            "is_processing": False,
-        }
+        NodeCreate(
+            graph_id=graph.id,
+            node_type="START",
+            color="gray",
+            iid=1,
+            width=200,
+            height=200,
+            offset_x=100,
+            offset_y=100,
+            label="Start",
+            is_processing=False,
+        )
     )
 
     await users_repo.set_active_graph(user_id, graph.id)

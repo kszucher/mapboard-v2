@@ -6,6 +6,7 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models
+from app.edges.schemas import EdgeCreate
 
 
 class EdgeRepository:
@@ -16,8 +17,8 @@ class EdgeRepository:
         result = await self.session.execute(select(models.Edge).where(models.Edge.graph_id == graph_id))
         return list(result.scalars().all())
 
-    async def create(self, data: dict) -> models.Edge:
-        edge = models.Edge(**data)
+    async def create(self, data: EdgeCreate) -> models.Edge:
+        edge = models.Edge(**data.model_dump())
         self.session.add(edge)
         await self.session.flush()
         return edge

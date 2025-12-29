@@ -27,7 +27,7 @@ async def create_edge(
     session: AsyncSession = Depends(get_session),
     x_client_id: str | None = Header(default=None),
 ) -> uuid.UUID:
-    return await edge_service.create_edge(session, payload.model_dump(), broker, x_client_id)
+    return await edge_service.create_edge(session, payload, broker, x_client_id)
 
 
 @router.delete("/{edge_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -35,7 +35,7 @@ async def delete_edge(
     edge_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
     x_client_id: str | None = Header(default=None),
-):
+) -> None:
     await edge_service.delete_edge(session, edge_id, broker, x_client_id)
 
 
@@ -44,5 +44,5 @@ async def delete_by_handle(
     payload: DeleteEdgesByHandle,
     session: AsyncSession = Depends(get_session),
     x_client_id: str | None = Header(default=None),
-):
+) -> None:
     await edge_service.delete_edges_by_handle(session, payload.from_node_id, payload.deleted_handle_index, broker, x_client_id)

@@ -6,18 +6,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models
 from app.edges.repository import EdgeRepository
+from app.edges.schemas import EdgeCreate
 from app.nodes.repository import NodeRepository
 from app.schemas import GraphEvent
 from app.events import GraphEventBroker
 
 
-async def list_edges(session: AsyncSession, graph_id: uuid.UUID):
+async def list_edges(session: AsyncSession, graph_id: uuid.UUID) -> list[models.Edge]:
     repo = EdgeRepository(session)
     return await repo.list_by_graph(graph_id)
 
 
 async def create_edge(
-    session: AsyncSession, data: dict, broker: GraphEventBroker, sender_client_id: str | None = None
+    session: AsyncSession, data: EdgeCreate, broker: GraphEventBroker, sender_client_id: str | None = None
 ) -> uuid.UUID:
     repo = EdgeRepository(session)
     edge = await repo.create(data)

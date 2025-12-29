@@ -31,5 +31,5 @@ async def get_active_graph_id(user_id: uuid.UUID, session: AsyncSession = Depend
 
 
 @router.post("/set-active-graph", status_code=status.HTTP_204_NO_CONTENT)
-async def set_active_graph(payload: SetActiveGraph, session: AsyncSession = Depends(get_session)):
+async def set_active_graph(payload: SetActiveGraph, session: AsyncSession = Depends(get_session)) -> None:
     await user_service.set_active_graph(session, payload.user_id, payload.graph_id)

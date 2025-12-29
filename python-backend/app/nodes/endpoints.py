@@ -29,7 +29,7 @@ async def create_node(
     session: AsyncSession = Depends(get_session),
     x_client_id: str | None = Header(default=None),
 ) -> uuid.UUID:
-    return await node_service.create_node(session, payload.model_dump(), broker, x_client_id)
+    return await node_service.create_node(session, payload, broker, x_client_id)
 
 
 
@@ -40,7 +40,7 @@ async def update_node_offset(
     payload: schemas.UpdateNodeOffset,
     session: AsyncSession = Depends(get_session),
     x_client_id: str | None = Header(default=None),
-):
+) -> None:
     await node_service.update_node_offset(
         session, node_id, payload.offset_x, payload.offset_y, broker, x_client_id
     )
@@ -52,7 +52,7 @@ async def update_node_dimensions(
     payload: schemas.UpdateNodeDimensions,
     session: AsyncSession = Depends(get_session),
     x_client_id: str | None = Header(default=None),
-):
+) -> None:
     await node_service.update_node_dimensions(
         session, node_id, payload.width, payload.height, broker, x_client_id
     )
@@ -64,9 +64,9 @@ async def update_node_expressions(
     payload: schemas.UpdateNodeExpressions,
     session: AsyncSession = Depends(get_session),
     x_client_id: str | None = Header(default=None),
-):
+) -> None:
     await node_service.update_node_expressions(
-        session, node_id, [e.model_dump() for e in payload.expressions], broker, x_client_id
+        session, node_id, payload.expressions, broker, x_client_id
     )
 
 
@@ -76,7 +76,7 @@ async def update_node_label(
     payload: schemas.UpdateNodeLabel,
     session: AsyncSession = Depends(get_session),
     x_client_id: str | None = Header(default=None),
-):
+) -> None:
     await node_service.update_node_label(
         session, node_id, payload.label, broker, x_client_id
     )
@@ -88,7 +88,7 @@ async def update_node_color(
     payload: schemas.UpdateNodeColor,
     session: AsyncSession = Depends(get_session),
     x_client_id: str | None = Header(default=None),
-):
+) -> None:
     await node_service.update_node_color(
         session, node_id, payload.color, broker, x_client_id
     )
@@ -99,5 +99,5 @@ async def delete_node(
     node_id: uuid.UUID,
     session: AsyncSession = Depends(get_session),
     x_client_id: str | None = Header(default=None),
-):
+) -> None:
     await node_service.delete_node(session, node_id, broker, x_client_id)

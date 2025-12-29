@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app import models
+from app.nodes.schemas import NodeCreate
 
 
 class NodeRepository:
@@ -22,8 +23,8 @@ class NodeRepository:
         )
         return list(result.scalars().all())
 
-    async def create(self, data: dict[str, Any]) -> models.Node:
-        node = models.Node(**data)
+    async def create(self, data: NodeCreate) -> models.Node:
+        node = models.Node(**data.model_dump(exclude={"expressions"}))
         self.session.add(node)
         await self.session.flush()
         return node
