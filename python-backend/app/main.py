@@ -34,6 +34,8 @@ def create_app() -> FastAPI:
     app.include_router(nodes.router)
     app.include_router(edges.router)
     app.include_router(ws.router)
+    from app import expressions
+    app.include_router(expressions.router)
 
     @app.get("/health")
     async def health() -> dict[str, str]:

@@ -58,16 +58,6 @@ async def update_node_dimensions(
     )
 
 
-@router.patch("/{node_id}/expressions", status_code=status.HTTP_204_NO_CONTENT)
-async def update_node_expressions(
-    node_id: uuid.UUID,
-    payload: schemas.UpdateNodeExpressions,
-    session: AsyncSession = Depends(get_session),
-    x_client_id: str | None = Header(default=None),
-) -> None:
-    await node_service.update_node_expressions(
-        session, node_id, payload.expressions, broker, x_client_id
-    )
 
 
 @router.patch("/{node_id}/label", status_code=status.HTTP_204_NO_CONTENT)

@@ -8,17 +8,7 @@ from pydantic import BaseModel
 from app.schemas import Color, NodeType, OrmModel
 
 
-class ExpressionBase(BaseModel):
-    idx: int
-    raw_string: str
-
-
-class ExpressionCreate(ExpressionBase):
-    pass
-
-
-class ExpressionRead(ExpressionBase, OrmModel):
-    id: uuid.UUID
+from app.expressions.schemas import ExpressionRead, ExpressionCreate
 
 
 class NodeBase(BaseModel):
@@ -35,7 +25,7 @@ class NodeBase(BaseModel):
 
 
 class NodeCreate(NodeBase):
-    expressions: list[ExpressionCreate] = []
+    pass
 
 
 class UpdateNodeOffset(BaseModel):
@@ -46,10 +36,6 @@ class UpdateNodeOffset(BaseModel):
 class UpdateNodeDimensions(BaseModel):
     width: int
     height: int
-
-
-class UpdateNodeExpressions(BaseModel):
-    expressions: list[ExpressionCreate]
 
 
 class UpdateNodeLabel(BaseModel):

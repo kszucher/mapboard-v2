@@ -52,3 +52,7 @@ class GraphEventBroker:
                 await self.unsubscribe(event.graph_id, ws)
 
 broker = GraphEventBroker()
+
+
+def get_broker() -> GraphEventBroker:
+    return broker

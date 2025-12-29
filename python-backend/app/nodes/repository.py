@@ -24,7 +24,7 @@ class NodeRepository:
         return list(result.scalars().all())
 
     async def create(self, data: NodeCreate) -> models.Node:
-        node = models.Node(**data.model_dump(exclude={"expressions"}))
+        node = models.Node(**data.model_dump())
         self.session.add(node)
         await self.session.flush()
         return node
