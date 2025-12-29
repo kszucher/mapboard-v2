@@ -55,6 +55,9 @@ class GraphEvent(BaseModel):
         "edge_created",
         "edge_deleted",
         "edges_updated",
+        "expression_created",
+        "expression_updated",
+        "expression_deleted",
     ]
     graph_id: uuid.UUID
     payload: dict[str, Any]

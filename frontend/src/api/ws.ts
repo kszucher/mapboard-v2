@@ -9,6 +9,9 @@ export type GraphEvent =
   | { event: 'edge_created'; graph_id: string; payload: Record<string, unknown> }
   | { event: 'edge_deleted'; graph_id: string; payload: Record<string, unknown> }
   | { event: 'edges_updated'; graph_id: string; payload: Record<string, unknown> }
+  | { event: 'expression_created'; graph_id: string; payload: Record<string, unknown> }
+  | { event: 'expression_updated'; graph_id: string; payload: Record<string, unknown> }
+  | { event: 'expression_deleted'; graph_id: string; payload: Record<string, unknown> }
   | { event: 'ws_hello'; graph_id: string };
 
 export type GraphEventWithSender = GraphEvent & { sender_client_id?: string | null };

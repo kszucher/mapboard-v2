@@ -45,10 +45,6 @@ export interface paths {
     /** Update Node Dimensions */
     patch: operations["update_node_dimensions_nodes__node_id__dimensions_patch"];
   };
-  "/nodes/{node_id}/expressions": {
-    /** Update Node Expressions */
-    patch: operations["update_node_expressions_nodes__node_id__expressions_patch"];
-  };
   "/nodes/{node_id}/label": {
     /** Update Node Label */
     patch: operations["update_node_label_nodes__node_id__label_patch"];
@@ -60,8 +56,6 @@ export interface paths {
   "/nodes/{node_id}": {
     /** Delete Node */
     delete: operations["delete_node_nodes__node_id__delete"];
-    /** Update Node */
-    patch: operations["update_node_nodes__node_id__patch"];
   };
   "/edges/graph/{graph_id}": {
     /** Get Edges */
@@ -78,6 +72,16 @@ export interface paths {
   "/edges/delete-by-handle": {
     /** Delete By Handle */
     post: operations["delete_by_handle_edges_delete_by_handle_post"];
+  };
+  "/expressions": {
+    /** Create Expression */
+    post: operations["create_expression_expressions_post"];
+  };
+  "/expressions/{expression_id}": {
+    /** Delete Expression */
+    delete: operations["delete_expression_expressions__expression_id__delete"];
+    /** Update Expression */
+    patch: operations["update_expression_expressions__expression_id__patch"];
   };
   "/health": {
     /** Health */
@@ -123,6 +127,8 @@ export interface components {
       to_node_id: string;
       /** Handle Index */
       handle_index: number;
+      /** From Expression Id */
+      from_expression_id?: string | null;
     };
     /** EdgeRead */
     EdgeRead: {
@@ -143,6 +149,8 @@ export interface components {
       to_node_id: string;
       /** Handle Index */
       handle_index: number;
+      /** From Expression Id */
+      from_expression_id?: string | null;
       /**
        * Id
        * Format: uuid
@@ -155,6 +163,11 @@ export interface components {
       idx: number;
       /** Raw String */
       raw_string: string;
+      /**
+       * Node Id
+       * Format: uuid
+       */
+      node_id: string;
     };
     /** ExpressionRead */
     ExpressionRead: {
@@ -167,6 +180,18 @@ export interface components {
        * Format: uuid
        */
       id: string;
+      /**
+       * Node Id
+       * Format: uuid
+       */
+      node_id: string;
+    };
+    /** ExpressionUpdate */
+    ExpressionUpdate: {
+      /** Raw String */
+      raw_string?: string | null;
+      /** Idx */
+      idx?: number | null;
     };
     /** GraphCreate */
     GraphCreate: {
@@ -229,11 +254,6 @@ export interface components {
        * @enum {string}
        */
       node_type: "START" | "LOGIC" | "AGENT" | "LOGICAL_SWITCH" | "AGENTIC_SWITCH";
-      /**
-       * Expressions
-       * @default []
-       */
-      expressions?: components["schemas"]["ExpressionCreate"][];
     };
     /** NodeRead */
     NodeRead: {
@@ -304,11 +324,6 @@ export interface components {
       width: number;
       /** Height */
       height: number;
-    };
-    /** UpdateNodeExpressions */
-    UpdateNodeExpressions: {
-      /** Expressions */
-      expressions: components["schemas"]["ExpressionCreate"][];
     };
     /** UpdateNodeLabel */
     UpdateNodeLabel: {
@@ -579,34 +594,6 @@ export interface operations {
       };
     };
   };
-  /** Update Node Expressions */
-  update_node_expressions_nodes__node_id__expressions_patch: {
-    parameters: {
-      header?: {
-        "x-client-id"?: string | null;
-      };
-      path: {
-        node_id: string;
-      };
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateNodeExpressions"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      204: {
-        content: never;
-      };
-      /** @description Validation Error */
-      422: {
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
   /** Update Node Label */
   update_node_label_nodes__node_id__label_patch: {
     parameters: {
@@ -671,36 +658,6 @@ export interface operations {
       };
       path: {
         node_id: string;
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      204: {
-        content: never;
-      };
-      /** @description Validation Error */
-      422: {
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  /** Update Node */
-  update_node_nodes__node_id__patch: {
-    parameters: {
-      header?: {
-        "x-client-id"?: string | null;
-      };
-      path: {
-        node_id: string;
-      };
-    };
-    requestBody: {
-      content: {
-        "application/json": {
-          [key: string]: unknown;
-        };
       };
     };
     responses: {
@@ -804,6 +761,77 @@ export interface operations {
       /** @description Successful Response */
       204: {
         content: never;
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Create Expression */
+  create_expression_expressions_post: {
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ExpressionCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ExpressionRead"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Delete Expression */
+  delete_expression_expressions__expression_id__delete: {
+    parameters: {
+      path: {
+        expression_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Update Expression */
+  update_expression_expressions__expression_id__patch: {
+    parameters: {
+      path: {
+        expression_id: string;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ExpressionUpdate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ExpressionRead"];
+        };
       };
       /** @description Validation Error */
       422: {

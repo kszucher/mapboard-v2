@@ -24,7 +24,11 @@ export const useGraphWebSocket = (graphId: string | null) => {
         case 'node_created':
         case 'node_updated':
         case 'node_deleted':
+        case 'expression_created':
+        case 'expression_updated':
+        case 'expression_deleted':
           void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(event.graph_id) });
+          void queryClient.invalidateQueries({ queryKey: queryKeys.edges.byGraph(event.graph_id) });
           break;
         case 'edge_created':
         case 'edge_deleted':

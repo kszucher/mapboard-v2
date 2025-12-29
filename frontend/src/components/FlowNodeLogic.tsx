@@ -1,7 +1,7 @@
 import { Flex } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
 import { useCallback } from 'react';
-import { useUpdateNodeExpressions } from '../api/mutations';
+import { useUpdateExpression } from '../api/mutations';
 import type { AppFlowNode } from './types.ts';
 import { CodeMirrorEditor } from './CodeMirrorEditor';
 
@@ -10,25 +10,25 @@ interface FlowNodeLogicProps {
 }
 
 export const FlowNodeLogic = ({ data }: FlowNodeLogicProps) => {
-  const updateExpressionsMutation = useUpdateNodeExpressions();
+  const updateExpressionMutation = useUpdateExpression();
   const { node } = data;
 
-  const raw = node.expressions?.[0]?.raw_string ?? '';
+  const expression = node.expressions?.[0];
+  const raw = expression?.raw_string ?? '';
 
   const handleEditorSave = useCallback(
     (value: string) => {
-      updateExpressionsMutation.mutate({
-        nodeId: node.id,
+      if (!expression) return;
+
+      updateExpressionMutation.mutate({
+        expressionId: expression.id,
         graphId: node.graph_id,
-        expressions: [
-          {
-            idx: 0,
-            raw_string: value,
-          },
-        ],
+        patch: {
+          raw_string: value,
+        },
       });
     },
-    [node.id, node.graph_id, updateExpressionsMutation]
+    [expression, node.graph_id, updateExpressionMutation]
   );
 
   return (

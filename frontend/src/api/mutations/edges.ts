@@ -11,11 +11,13 @@ export const useCreateEdge = () => {
       fromNodeId,
       toNodeId,
       handleIndex,
+      fromExpressionId,
     }: {
       graphId: string;
       fromNodeId: string;
       toNodeId: string;
       handleIndex: number;
+      fromExpressionId?: string;
     }) => {
       const res = await apiClient.POST('/edges/', {
         headers: { 'X-Client-Id': getClientId() },
@@ -24,10 +26,11 @@ export const useCreateEdge = () => {
           from_node_id: fromNodeId,
           to_node_id: toNodeId,
           handle_index: handleIndex,
+          from_expression_id: fromExpressionId,
         },
       });
       if ('error' in res) throw res.error;
-      return res.data as string;
+      return res.data;
     },
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.edges.byGraph(variables.graphId) });

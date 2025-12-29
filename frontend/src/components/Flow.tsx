@@ -55,19 +55,34 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
     [],
   );
 
-  // Map edges from query data to ReactFlow format
   const mappedEdges = useMemo<AppFlowEdge[]>(() => {
-    if (!edgesData) return [];
-    return edgesData.map(edge => ({
-      id: edge.id,
-      source: edge.from_node_id,
-      target: edge.to_node_id,
-      sourceHandle: String(edge.handle_index),
-      type: 'custom' as const,
-      animated: true,
-      style: { stroke: '#fff', strokeWidth: 2 },
-    }));
-  }, [edgesData]);
+    if (!edgesData || !nodesData) return [];
+
+    // Build a lookup for expression IDs by node and index to resolve legacy edges
+    const expressionMap = new Map<string, Map<number, string>>();
+    nodesData.forEach(node => {
+      const nodeExprs = new Map<number, string>();
+      node.expressions?.forEach(expr => {
+        nodeExprs.set(expr.idx, expr.id);
+      });
+      expressionMap.set(node.id, nodeExprs);
+    });
+
+    return edgesData.map(edge => {
+      // Prioritize the hard link (UUID), fallback to resolving the legacy index
+      const resolvedHandleId = edge.from_expression_id || expressionMap.get(edge.from_node_id)?.get(edge.handle_index);
+
+      return {
+        id: edge.id,
+        source: edge.from_node_id,
+        target: edge.to_node_id,
+        sourceHandle: resolvedHandleId ?? String(edge.handle_index),
+        type: 'custom' as const,
+        animated: true,
+        style: { stroke: '#fff', strokeWidth: 2 },
+      };
+    });
+  }, [edgesData, nodesData]);
 
   // Sync nodes from query data to state, preserving local state (measured dimensions, etc.)
   useEffect(() => {
@@ -115,11 +130,15 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
 
       setEdges(edges => addEdge(params, edges));
 
+      const sourceHandle = params.sourceHandle;
+      const isExpressionId = !!sourceHandle && sourceHandle.length > 5;
+
       createEdgeMutation.mutate({
         graphId: selectedGraphId,
         fromNodeId: params.source as string,
         toNodeId: params.target as string,
-        handleIndex: Number(params.sourceHandle),
+        handleIndex: isExpressionId ? 0 : (Number(sourceHandle) || 0),
+        fromExpressionId: isExpressionId ? (sourceHandle as string) : undefined,
       });
     },
     [selectedGraphId, createEdgeMutation, setEdges],
@@ -147,11 +166,15 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
       deleteEdgeMutation.mutate({ edgeId: oldEdge.id as string });
 
       if (newConnection.source && newConnection.target) {
+        const sourceHandle = newConnection.sourceHandle;
+        const isExpressionId = !!sourceHandle && sourceHandle.length > 5;
+
         createEdgeMutation.mutate({
           graphId: selectedGraphId,
           fromNodeId: newConnection.source as string,
           toNodeId: newConnection.target as string,
-          handleIndex: Number(newConnection.sourceHandle),
+          handleIndex: isExpressionId ? 0 : (Number(sourceHandle) || 0),
+          fromExpressionId: isExpressionId ? (sourceHandle as string) : undefined,
         });
       }
     },

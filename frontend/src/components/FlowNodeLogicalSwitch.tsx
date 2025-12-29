@@ -1,6 +1,11 @@
 import { Flex } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
-import { useDeleteEdgesByNodeAndHandles, useUpdateNodeExpressions } from '../api/mutations';
+import {
+  useDeleteEdgesByNodeAndHandles,
+  useCreateExpression,
+  useUpdateExpression,
+  useDeleteExpression
+} from '../api/mutations';
 import { BranchInput } from './BranchInput.tsx';
 import { EditableList } from './shared/EditableList.tsx';
 import type { AppFlowNode } from './types.ts';
@@ -10,26 +15,69 @@ interface FlowNodeLogicalSwitchProps {
 }
 
 export const FlowNodeLogicalSwitch = ({ data }: FlowNodeLogicalSwitchProps) => {
-  const updateExpressionsMutation = useUpdateNodeExpressions();
+  const createExpressionMutation = useCreateExpression();
+  const updateExpressionMutation = useUpdateExpression();
+  const deleteExpressionMutation = useDeleteExpression();
   const deleteEdgesByNodeAndHandlesMutation = useDeleteEdgesByNodeAndHandles();
+
   const { node } = data;
   const SPACING = 40;
   const BASE_OFFSET = 66;
-  const num = Math.max(1, node.expressions?.length || 0);
+  const expressions = node.expressions ?? [];
+  const num = Math.max(1, expressions.length);
   const LEFT_HANDLE_OFFSET = BASE_OFFSET + ((num - 1) * SPACING) / 2;
 
-  const branches = node.expressions?.map(e => e.raw_string) ?? [];
+  const branches = expressions.map(e => e.raw_string);
 
   const handleBranchesChange = (newBranches: string[], deletedIndex?: number) => {
+    const graphId = node.graph_id;
+
+    // 1. Handle Deletion
     if (deletedIndex !== undefined) {
-      deleteEdgesByNodeAndHandlesMutation.mutate({ fromNodeId: node.id, deletedHandleIndex: deletedIndex });
+      const deletedExpr = expressions[deletedIndex];
+      if (deletedExpr) {
+        // We still call this to handle the index-based edge re-indexing in the backend repo
+        deleteEdgesByNodeAndHandlesMutation.mutate({ fromNodeId: node.id, deletedHandleIndex: deletedIndex });
+        deleteExpressionMutation.mutate({ expressionId: deletedExpr.id, graphId });
+
+        // After deletion, we need to update indices of subsequent expressions
+        expressions.slice(deletedIndex + 1).forEach((expr, i) => {
+          updateExpressionMutation.mutate({
+            expressionId: expr.id,
+            graphId,
+            patch: { idx: deletedIndex + i }
+          });
+        });
+      }
+      return;
     }
 
-    updateExpressionsMutation.mutate({
-      nodeId: node.id,
-      graphId: node.graph_id,
-      expressions: newBranches.map((raw_string, idx) => ({ idx, raw_string })),
-    });
+    // 2. Handle Addition
+    if (newBranches.length > expressions.length) {
+      const lastIdx = newBranches.length - 1;
+      const raw_string = newBranches[lastIdx];
+      createExpressionMutation.mutate({
+        nodeId: node.id,
+        idx: lastIdx,
+        raw_string,
+        graphId,
+      });
+      return;
+    }
+
+    // 3. Handle Update (Only if lengths match to avoid race conditions during deletion)
+    if (newBranches.length === expressions.length) {
+      newBranches.forEach((raw_string, idx) => {
+        const expr = expressions[idx];
+        if (expr && expr.raw_string !== raw_string) {
+          updateExpressionMutation.mutate({
+            expressionId: expr.id,
+            patch: { raw_string },
+            graphId,
+          });
+        }
+      });
+    }
   };
 
   return (
@@ -53,10 +101,10 @@ export const FlowNodeLogicalSwitch = ({ data }: FlowNodeLogicalSwitchProps) => {
 
       <Handle type="target" position={Position.Left} style={{ top: LEFT_HANDLE_OFFSET }} />
 
-      {Array.from({ length: node.expressions?.length || 0 }).map((_, i) => (
+      {expressions.map((expr, i) => (
         <Handle
-          key={i}
-          id={String(i)}
+          key={expr.id}
+          id={expr.id}
           type="source"
           position={Position.Right}
           style={{
