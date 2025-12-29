@@ -5,7 +5,7 @@ import { queryKeys } from '../queryKeys';
 
 type NodeType = components['schemas']['NodeRead']['node_type'];
 type NodeColor = components['schemas']['NodeCreate']['color'];
-type NodeRead = components['schemas']['NodeRead'];
+
 
 const NODE_COLORS: Record<NodeType, NodeColor> = {
   START: 'gray',
@@ -58,21 +58,6 @@ export const useUpdateNodeDimensions = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    onMutate: async ({ nodeId, width, height, graphId }: { nodeId: string; width: number; height: number; graphId: string }) => {
-      const queryKey = queryKeys.nodes.byGraph(graphId);
-      await queryClient.cancelQueries({ queryKey });
-
-      const previous = queryClient.getQueryData<NodeRead[]>(queryKey);
-
-      if (previous && nodeId) {
-        queryClient.setQueryData<NodeRead[]>(queryKey, old => {
-          if (!old) return old;
-          return old.map(n => (n.id === nodeId ? ({ ...n, width, height } as NodeRead) : n));
-        });
-      }
-
-      return { previous, graphId };
-    },
     mutationFn: async ({ nodeId, width, height }: { nodeId: string; width: number; height: number; graphId: string }) => {
       const res = await apiClient.PATCH('/nodes/{node_id}/dimensions', {
         params: { path: { node_id: nodeId } },
@@ -81,10 +66,8 @@ export const useUpdateNodeDimensions = () => {
       });
       if ('error' in res) throw res.error;
     },
-    onError: (_err, _variables, context) => {
-      if (context?.graphId) {
-        queryClient.setQueryData(queryKeys.nodes.byGraph(context.graphId), context.previous);
-      }
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) });
     },
   });
 };
@@ -112,26 +95,6 @@ export const useUpdateNodePosition = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    onMutate: async ({ nodeId, x, y, graphId }: { nodeId: string; x: number; y: number; graphId?: string }) => {
-      if (!graphId) return;
-
-      const offset_x = Math.round(x);
-      const offset_y = Math.round(y);
-
-      const queryKey = queryKeys.nodes.byGraph(graphId);
-      await queryClient.cancelQueries({ queryKey });
-
-      const previous = queryClient.getQueryData<NodeRead[]>(queryKey);
-
-      if (previous && nodeId) {
-        queryClient.setQueryData<NodeRead[]>(queryKey, old => {
-          if (!old) return old;
-          return old.map(n => (n.id === nodeId ? ({ ...n, offset_x, offset_y } as NodeRead) : n));
-        });
-      }
-
-      return { previous, graphId };
-    },
     mutationFn: async ({ nodeId, x, y }: { nodeId: string; x: number; y: number; graphId?: string }) => {
       const res = await apiClient.PATCH('/nodes/{node_id}/offset', {
         params: { path: { node_id: nodeId } },
@@ -143,9 +106,9 @@ export const useUpdateNodePosition = () => {
       });
       if ('error' in res) throw res.error;
     },
-    onError: (_err, _variables, context) => {
-      if (context?.graphId) {
-        queryClient.setQueryData(queryKeys.nodes.byGraph(context.graphId), context.previous);
+    onSuccess: (_data, variables) => {
+      if (variables.graphId) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) });
       }
     },
   });
@@ -155,21 +118,6 @@ export const useUpdateNodeLabel = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    onMutate: async ({ nodeId, label, graphId }: { nodeId: string; label: string; graphId: string }) => {
-      const queryKey = queryKeys.nodes.byGraph(graphId);
-      await queryClient.cancelQueries({ queryKey });
-
-      const previous = queryClient.getQueryData<NodeRead[]>(queryKey);
-
-      if (previous && nodeId) {
-        queryClient.setQueryData<NodeRead[]>(queryKey, old => {
-          if (!old) return old;
-          return old.map(n => (n.id === nodeId ? ({ ...n, label } as NodeRead) : n));
-        });
-      }
-
-      return { previous, graphId };
-    },
     mutationFn: async ({ nodeId, label }: { nodeId: string; label: string; graphId: string }) => {
       const res = await apiClient.PATCH('/nodes/{node_id}/label', {
         params: { path: { node_id: nodeId } },
@@ -178,10 +126,8 @@ export const useUpdateNodeLabel = () => {
       });
       if ('error' in res) throw res.error;
     },
-    onError: (_err, _variables, context) => {
-      if (context?.graphId) {
-        queryClient.setQueryData(queryKeys.nodes.byGraph(context.graphId), context.previous);
-      }
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) });
     },
   });
 };
@@ -190,21 +136,6 @@ export const useUpdateNodeColor = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    onMutate: async ({ nodeId, color, graphId }: { nodeId: string; color: NodeColor; graphId: string }) => {
-      const queryKey = queryKeys.nodes.byGraph(graphId);
-      await queryClient.cancelQueries({ queryKey });
-
-      const previous = queryClient.getQueryData<NodeRead[]>(queryKey);
-
-      if (previous && nodeId) {
-        queryClient.setQueryData<NodeRead[]>(queryKey, old => {
-          if (!old) return old;
-          return old.map(n => (n.id === nodeId ? ({ ...n, color } as NodeRead) : n));
-        });
-      }
-
-      return { previous, graphId };
-    },
     mutationFn: async ({ nodeId, color }: { nodeId: string; color: NodeColor; graphId: string }) => {
       const res = await apiClient.PATCH('/nodes/{node_id}/color', {
         params: { path: { node_id: nodeId } },
@@ -213,10 +144,8 @@ export const useUpdateNodeColor = () => {
       });
       if ('error' in res) throw res.error;
     },
-    onError: (_err, _variables, context) => {
-      if (context?.graphId) {
-        queryClient.setQueryData(queryKeys.nodes.byGraph(context.graphId), context.previous);
-      }
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) });
     },
   });
 };

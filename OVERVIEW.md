@@ -50,8 +50,8 @@ The app uses a "Broadcast and Invalidate" pattern:
 3. All clients (including the sender) receive the event and invalidate the relevant TanStack Query keys.
 4. UI refreshes automatically.
 
-### Optimistic Updates
-To maintain a snappy feel, major operations (like updating position or deleting expressions) use **Optimistic UI Updates**. The UI reflects the change immediately while the network request is in flight.
+### Optimistic Updates (Currently Disabled)
+To maintain a snappy feel, major operations (like updating position or deleting expressions) previously used **Optimistic UI Updates**. These are currently disabled to simplify development and will be added back later.
 
 ---
 
