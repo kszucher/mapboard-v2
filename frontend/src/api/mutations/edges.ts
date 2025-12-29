@@ -55,19 +55,4 @@ export const useDeleteEdge = () => {
   });
 };
 
-export const useDeleteEdgesByNodeAndHandles = () => {
-  const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async ({ fromNodeId, deletedHandleIndex }: { fromNodeId: string; deletedHandleIndex: number }) => {
-      const res = await apiClient.POST('/edges/delete-by-handle', {
-        headers: { 'X-Client-Id': getClientId() },
-        body: { from_node_id: fromNodeId, deleted_handle_index: deletedHandleIndex },
-      });
-      if ('error' in res) throw res.error;
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.edges.all });
-    },
-  });
-};

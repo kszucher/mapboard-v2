@@ -23,6 +23,4 @@ class DeleteEdge(BaseModel):
     edge_id: uuid.UUID
 
 
-class DeleteEdgesByHandle(BaseModel):
-    from_node_id: uuid.UUID
-    deleted_handle_index: int
+

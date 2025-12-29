@@ -8,7 +8,7 @@ export const FlowNodeStart = () => {
 
       </Flex>
 
-      <Handle type="target" position={Position.Left} />
+      <Handle id="0" type="source" position={Position.Right} />
     </>
   );
 };

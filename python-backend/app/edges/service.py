@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models
 from app.edges.repository import EdgeRepository
 from app.edges.schemas import EdgeCreate
-from app.nodes.repository import NodeRepository
+
 from app.schemas import GraphEvent
 from app.events import GraphEventBroker
 
@@ -48,32 +48,6 @@ async def delete_edge(
                 event="edge_deleted",
                 graph_id=graph_id,
                 payload={"edgeId": str(edge_id)},
-                sender_client_id=sender_client_id,
-            )
-        )
-
-
-async def delete_edges_by_handle(
-    session: AsyncSession,
-    from_node_id: uuid.UUID,
-    deleted_handle_index: int,
-    broker: GraphEventBroker,
-    sender_client_id: str | None = None,
-) -> None:
-    repo = EdgeRepository(session)
-    node_repo = NodeRepository(session)
-    node = await node_repo.get(from_node_id)
-    graph_id = node.graph_id if node else None
-
-    await repo.delete_by_from_handle(from_node_id, deleted_handle_index)
-    await session.commit()
-
-    if graph_id:
-        await broker.broadcast(
-            GraphEvent(
-                event="edges_updated",
-                graph_id=graph_id,
-                payload={"fromNodeId": str(from_node_id), "deletedHandleIndex": deleted_handle_index},
                 sender_client_id=sender_client_id,
             )
         )

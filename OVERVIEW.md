@@ -58,7 +58,7 @@ To maintain a snappy feel, major operations (like updating position or deleting 
 ## Recent Major Improvements
 - **Migration to Atomic Expressions**: Transitioned from bulk-updating node expressions to individual CRUD endpoints for Expressions.
 - **UUID-based Handles**: Handles on switch nodes now use Expression UUIDs instead of numeric indices (`0`, `1`, `2`).
-- **Legacy Mapper**: A runtime resolution layer in the frontend bridges the gap for older graphs that still use index-based edges.
+
 
 ---
 

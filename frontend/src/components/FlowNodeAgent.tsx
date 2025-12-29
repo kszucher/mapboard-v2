@@ -44,7 +44,7 @@ export const FlowNodeAgent = ({ data }: FlowNodeAgentProps) => {
       <Handle type="target" position={Position.Left} />
 
       <Handle
-        id="0"
+        id={expression?.id}
         type="source"
         position={Position.Right}
       />

@@ -46,7 +46,7 @@ export const FlowNodeLogic = ({ data }: FlowNodeLogicProps) => {
       <Handle type="target" position={Position.Left} />
 
       <Handle
-        id="0"
+        id={expression?.id}
         type="source"
         position={Position.Right}
       />

@@ -56,33 +56,18 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
   );
 
   const mappedEdges = useMemo<AppFlowEdge[]>(() => {
-    if (!edgesData || !nodesData) return [];
+    if (!edgesData) return [];
 
-    // Build a lookup for expression IDs by node and index to resolve legacy edges
-    const expressionMap = new Map<string, Map<number, string>>();
-    nodesData.forEach(node => {
-      const nodeExprs = new Map<number, string>();
-      node.expressions?.forEach(expr => {
-        nodeExprs.set(expr.idx, expr.id);
-      });
-      expressionMap.set(node.id, nodeExprs);
-    });
-
-    return edgesData.map(edge => {
-      // Prioritize the hard link (UUID), fallback to resolving the legacy index
-      const resolvedHandleId = edge.from_expression_id || expressionMap.get(edge.from_node_id)?.get(edge.handle_index);
-
-      return {
-        id: edge.id,
-        source: edge.from_node_id,
-        target: edge.to_node_id,
-        sourceHandle: resolvedHandleId ?? String(edge.handle_index),
-        type: 'custom' as const,
-        animated: true,
-        style: { stroke: '#fff', strokeWidth: 2 },
-      };
-    });
-  }, [edgesData, nodesData]);
+    return edgesData.map(edge => ({
+      id: edge.id,
+      source: edge.from_node_id,
+      target: edge.to_node_id,
+      sourceHandle: edge.from_expression_id ?? String(edge.handle_index),
+      type: 'custom' as const,
+      animated: true,
+      style: { stroke: '#fff', strokeWidth: 2 },
+    }));
+  }, [edgesData]);
 
   // Sync nodes from query data to state, preserving local state (measured dimensions, etc.)
   useEffect(() => {

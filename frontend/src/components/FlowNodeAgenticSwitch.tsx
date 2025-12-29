@@ -1,7 +1,6 @@
 import { Flex } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
 import {
-  useDeleteEdgesByNodeAndHandles,
   useCreateExpression,
   useUpdateExpression,
   useDeleteExpression
@@ -18,7 +17,7 @@ export const FlowNodeAgenticSwitch = ({ data }: FlowNodeAgenticSwitchProps) => {
   const createExpressionMutation = useCreateExpression();
   const updateExpressionMutation = useUpdateExpression();
   const deleteExpressionMutation = useDeleteExpression();
-  const deleteEdgesByNodeAndHandlesMutation = useDeleteEdgesByNodeAndHandles();
+
   const { node } = data;
   const SPACING = 40;
   const BASE_OFFSET = 66;
@@ -35,8 +34,6 @@ export const FlowNodeAgenticSwitch = ({ data }: FlowNodeAgenticSwitchProps) => {
     if (deletedIndex !== undefined) {
       const deletedExpr = expressions[deletedIndex];
       if (deletedExpr) {
-        // We still call this to handle the index-based edge re-indexing in the backend repo
-        deleteEdgesByNodeAndHandlesMutation.mutate({ fromNodeId: node.id, deletedHandleIndex: deletedIndex });
         deleteExpressionMutation.mutate({ expressionId: deletedExpr.id, graphId });
 
         // After deletion, we need to update indices of subsequent expressions
