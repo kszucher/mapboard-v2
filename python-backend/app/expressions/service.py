@@ -7,6 +7,7 @@ from app.expressions.repository import ExpressionRepository
 from app.expressions.schemas import ExpressionCreate, ExpressionUpdate
 from app.schemas import GraphEvent
 from app.events import GraphEventBroker
+from app.nodes.repository import NodeRepository
 
 def validate_expressions_for_node_type(node_type: str, expressions: list[models.Expression] | list[ExpressionCreate]) -> None:
     if node_type == "START":
@@ -23,7 +24,6 @@ def validate_expressions_for_node_type(node_type: str, expressions: list[models.
 async def create_expression(
     session: AsyncSession, data: ExpressionCreate, broker: GraphEventBroker, sender_client_id: str | None = None
 ) -> models.Expression:
-    from app.nodes.repository import NodeRepository
     repo = ExpressionRepository(session)
     node_repo = NodeRepository(session)
     
@@ -51,7 +51,6 @@ async def create_expression(
 async def update_expression(
     session: AsyncSession, expression_id: uuid.UUID, data: ExpressionUpdate, broker: GraphEventBroker, sender_client_id: str | None = None
 ) -> models.Expression | None:
-    from app.nodes.repository import NodeRepository
     repo = ExpressionRepository(session)
     expr = await repo.update(expression_id, data)
     if not expr:
@@ -76,7 +75,6 @@ async def update_expression(
 async def delete_expression(
     session: AsyncSession, expression_id: uuid.UUID, broker: GraphEventBroker, sender_client_id: str | None = None
 ) -> None:
-    from app.nodes.repository import NodeRepository
     repo = ExpressionRepository(session)
     expr = await repo.get(expression_id)
     if not expr:
