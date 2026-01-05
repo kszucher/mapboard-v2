@@ -1,8 +1,9 @@
 import { PlusIcon } from '@radix-ui/react-icons'
 import { Flex, IconButton } from '@radix-ui/themes'
 import { Handle, Position } from '@xyflow/react'
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useCreateExpression, useDeleteExpression, useUpdateExpression } from '../api/mutations'
+import { useExpressions } from '../api/queries'
 import { BranchInput } from './BranchInput.tsx'
 import type { AppFlowNode } from './types.ts'
 
@@ -16,9 +17,15 @@ export const FlowNodeLogicalSwitch = ({ data }: FlowNodeLogicalSwitchProps) => {
   const updateExpression = useUpdateExpression();
 
   const { node } = data;
+  const { data: allExpressions } = useExpressions(node.graph_id);
+
+  const expressions = useMemo(() =>
+    allExpressions?.filter(e => e.node_id === node.id) ?? [],
+    [allExpressions, node.id]
+  );
+
   const SPACING = 40;
   const BASE_OFFSET = 66;
-  const expressions = node.expressions ?? [];
   const num = Math.max(1, expressions.length);
   const LEFT_HANDLE_OFFSET = BASE_OFFSET + ((num - 1) * SPACING) / 2;
 

@@ -18,14 +18,5 @@ class NodeRepository(BaseRepository[models.Node, NodeCreate, NodeCreate]):
         result = await self.session.execute(
             select(models.Node)
             .where(models.Node.graph_id == graph_id)
-            .options(selectinload(models.Node.expressions))
         )
         return list(result.scalars().all())
-
-    async def get(self, node_id: uuid.UUID) -> models.Node | None:
-        result = await self.session.execute(
-            select(models.Node)
-            .where(models.Node.id == node_id)
-            .options(selectinload(models.Node.expressions))
-        )
-        return result.scalars().first()

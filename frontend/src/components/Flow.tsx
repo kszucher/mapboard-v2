@@ -12,7 +12,7 @@ import {
 import '@xyflow/react/dist/style.css'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useCreateEdge, useDeleteEdge, useUpdateNodePosition } from '../api/mutations'
-import { useEdges, useNodes } from '../api/queries'
+import { useEdges, useExpressions, useNodes } from '../api/queries'
 import FlowEdge from './FlowEdge.tsx'
 import { CustomNode } from './FlowNode.tsx'
 import { useGraphWebSocket } from './hooks/useGraphWebSocket.ts'
@@ -22,6 +22,7 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
   // data fetching
   const { data: nodesData } = useNodes(selectedGraphId);
   const { data: edgesData } = useEdges(selectedGraphId);
+  const { data: expressionsData } = useExpressions(selectedGraphId);
 
   // subscriptions / side effects
   useGraphWebSocket(selectedGraphId);
@@ -198,7 +199,7 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
     [fitView],
   );
 
-  if (!nodesData || !edgesData) return null;
+  if (!nodesData || !edgesData || !expressionsData) return null;
 
   return (
     <ReactFlow<AppFlowNode, AppFlowEdge>

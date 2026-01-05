@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from sqlalchemy import select, update
+from sqlalchemy import select, update, join
 from sqlalchemy.ext.asyncio import AsyncSession
 from app import models
 from app.expressions.schemas import ExpressionCreate, ExpressionUpdate
@@ -29,4 +29,13 @@ class ExpressionRepository(BaseRepository[models.Expression, ExpressionCreate, E
         )
         result = await self.session.execute(stmt)
         await self.session.flush()
+        return list(result.scalars().all())
+
+    async def list_by_graph(self, graph_id: uuid.UUID) -> list[models.Expression]:
+        result = await self.session.execute(
+            select(models.Expression)
+            .join(models.Node)
+            .where(models.Node.graph_id == graph_id)
+            .order_by(models.Expression.idx)
+        )
         return list(result.scalars().all())

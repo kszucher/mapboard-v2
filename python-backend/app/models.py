@@ -68,7 +68,6 @@ class Node(Base):
         back_populates="node",
         cascade="all, delete-orphan",
         order_by="Expression.idx",
-        lazy="selectin",
     )
 
 

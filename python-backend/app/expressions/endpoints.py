@@ -37,3 +37,11 @@ async def delete_expression(
     await service.delete_expression(uow, expression_id)
     await uow.commit()
     return {"status": "ok"}
+
+@router.get("/graph/{graph_id}", response_model=list[ExpressionRead])
+async def get_expressions_by_graph(
+    graph_id: uuid.UUID,
+    uow: Any = Depends(get_uow)
+):
+    exprs = await service.list_expressions_by_graph(uow, graph_id)
+    return exprs

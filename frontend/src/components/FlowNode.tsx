@@ -4,6 +4,7 @@ import { Badge, Box, DropdownMenu, Flex, IconButton } from '@radix-ui/themes'
 import { type NodeProps, useUpdateNodeInternals } from '@xyflow/react'
 import { memo, useCallback, useEffect, useMemo } from 'react'
 import { useDeleteNode } from '../api/mutations'
+import { useExpressions } from '../api/queries'
 import { FlowNodeAgent } from './FlowNodeAgent.tsx'
 import { FlowNodeAgenticSwitch } from './FlowNodeAgenticSwitch.tsx'
 import { FlowNodeLogic } from './FlowNodeLogic.tsx'
@@ -15,9 +16,15 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   const deleteNodeMutation = useDeleteNode();
   const updateNodeInternals = useUpdateNodeInternals();
 
+  const { data: allExpressions } = useExpressions(data.node.graph_id);
+  const myExpressionsCount = useMemo(() =>
+    allExpressions?.filter(e => e.node_id === id).length ?? 0,
+    [allExpressions, id]
+  );
+
   useEffect(() => {
     updateNodeInternals(id);
-  }, [data.node.expressions?.length, data.node.node_type, id, updateNodeInternals]);
+  }, [myExpressionsCount, data.node.node_type, id, updateNodeInternals]);
 
   const handleDelete = useCallback(() => {
     deleteNodeMutation.mutate({ nodeId: data.node.id });

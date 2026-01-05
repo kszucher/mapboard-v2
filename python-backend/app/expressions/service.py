@@ -93,3 +93,6 @@ async def delete_expression(uow: UnitOfWork, expression_id: uuid.UUID) -> None:
 async def create_default_expressions_for_node(uow: UnitOfWork, node: models.Node) -> None:
     if node.node_type in {NodeType.LOGIC, NodeType.AGENT}:
         await uow.expressions.create(ExpressionCreate(node_id=node.id, idx=0, raw_string=""))
+
+async def list_expressions_by_graph(uow: UnitOfWork, graph_id: uuid.UUID) -> list[models.Expression]:
+    return await uow.expressions.list_by_graph(graph_id)

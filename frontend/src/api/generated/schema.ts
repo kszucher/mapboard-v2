@@ -71,6 +71,10 @@ export interface paths {
     /** Update Expression */
     patch: operations["update_expression_expressions__expression_id__patch"];
   };
+  "/expressions/graph/{graph_id}": {
+    /** Get Expressions By Graph */
+    get: operations["get_expressions_by_graph_expressions_graph__graph_id__get"];
+  };
   "/health": {
     /** Health */
     get: operations["health_health_get"];
@@ -227,11 +231,7 @@ export interface components {
       label: string;
       /** Is Processing */
       is_processing: boolean;
-      /**
-       * Node Type
-       * @enum {string}
-       */
-      node_type: "START" | "LOGIC" | "AGENT" | "LOGICAL_SWITCH" | "AGENTIC_SWITCH";
+      node_type: components["schemas"]["NodeType"];
     };
     /** NodeRead */
     NodeRead: {
@@ -259,22 +259,18 @@ export interface components {
       label: string;
       /** Is Processing */
       is_processing: boolean;
-      /**
-       * Node Type
-       * @enum {string}
-       */
-      node_type: "START" | "LOGIC" | "AGENT" | "LOGICAL_SWITCH" | "AGENTIC_SWITCH";
+      node_type: components["schemas"]["NodeType"];
       /**
        * Id
        * Format: uuid
        */
       id: string;
-      /**
-       * Expressions
-       * @default []
-       */
-      expressions?: components["schemas"]["ExpressionRead"][];
     };
+    /**
+     * NodeType
+     * @enum {string}
+     */
+    NodeType: "START" | "LOGIC" | "AGENT" | "LOGICAL_SWITCH" | "AGENTIC_SWITCH";
     /** SetActiveGraph */
     SetActiveGraph: {
       /**
@@ -435,6 +431,9 @@ export interface operations {
   /** List Graphs */
   list_graphs_graphs_user__user_id__get: {
     parameters: {
+      header?: {
+        "x-client-id"?: string | null;
+      };
       path: {
         user_id: string;
       };
@@ -457,6 +456,9 @@ export interface operations {
   /** Get Nodes */
   get_nodes_nodes_graph__graph_id__get: {
     parameters: {
+      header?: {
+        "x-client-id"?: string | null;
+      };
       path: {
         graph_id: string;
       };
@@ -585,6 +587,9 @@ export interface operations {
   /** Get Edges */
   get_edges_edges_graph__graph_id__get: {
     parameters: {
+      header?: {
+        "x-client-id"?: string | null;
+      };
       path: {
         graph_id: string;
       };
@@ -656,6 +661,11 @@ export interface operations {
   };
   /** Create Expression */
   create_expression_expressions_post: {
+    parameters: {
+      header?: {
+        "x-client-id"?: string | null;
+      };
+    };
     requestBody: {
       content: {
         "application/json": components["schemas"]["ExpressionCreate"];
@@ -679,6 +689,9 @@ export interface operations {
   /** Delete Expression */
   delete_expression_expressions__expression_id__delete: {
     parameters: {
+      header?: {
+        "x-client-id"?: string | null;
+      };
       path: {
         expression_id: string;
       };
@@ -701,6 +714,9 @@ export interface operations {
   /** Update Expression */
   update_expression_expressions__expression_id__patch: {
     parameters: {
+      header?: {
+        "x-client-id"?: string | null;
+      };
       path: {
         expression_id: string;
       };
@@ -715,6 +731,31 @@ export interface operations {
       200: {
         content: {
           "application/json": components["schemas"]["ExpressionRead"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  /** Get Expressions By Graph */
+  get_expressions_by_graph_expressions_graph__graph_id__get: {
+    parameters: {
+      header?: {
+        "x-client-id"?: string | null;
+      };
+      path: {
+        graph_id: string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        content: {
+          "application/json": components["schemas"]["ExpressionRead"][];
         };
       };
       /** @description Validation Error */
