@@ -45,7 +45,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
       default:
         return <div>Unknown Node Type</div>;
     }
-  }, [data]);
+  }, [data, myExpressionsCount]);
 
   if (!data) return null;
 
@@ -96,6 +96,4 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   );
 };
 
-export const CustomNode = memo(CustomNodeComponent, (prev, next) => {
-  return prev.data === next.data;
-});
+export const CustomNode = memo(CustomNodeComponent);

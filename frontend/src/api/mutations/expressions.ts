@@ -27,6 +27,7 @@ export const useCreateExpression = () => {
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) })
       void queryClient.invalidateQueries({ queryKey: queryKeys.edges.byGraph(variables.graphId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.expressions.byGraph(variables.graphId) })
     },
   })
 }
@@ -49,6 +50,7 @@ export const useUpdateExpression = () => {
     },
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.expressions.byGraph(variables.graphId) })
     },
   })
 }
@@ -67,6 +69,7 @@ export const useDeleteExpression = () => {
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) })
       void queryClient.invalidateQueries({ queryKey: queryKeys.edges.byGraph(variables.graphId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.expressions.byGraph(variables.graphId) })
     },
   })
 }

@@ -90,7 +90,7 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
         };
       });
     });
-  }, [nodesData, setNodes]);
+  }, [nodesData, expressionsData, setNodes]);
 
   // Sync edges from query data to state
   useEffect(() => {
