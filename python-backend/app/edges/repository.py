@@ -26,4 +26,11 @@ class EdgeRepository:
     async def delete(self, edge_id: uuid.UUID) -> None:
         await self.session.execute(delete(models.Edge).where(models.Edge.id == edge_id))
 
+    async def delete_by_node(self, node_id: uuid.UUID) -> None:
+        await self.session.execute(
+            delete(models.Edge).where(
+                (models.Edge.from_node_id == node_id) | (models.Edge.to_node_id == node_id)
+            )
+        )
+
 

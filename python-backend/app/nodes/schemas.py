@@ -39,6 +39,8 @@ class UpdateNodeDimensions(BaseModel):
 
 
 
+
+
 class NodeRead(NodeBase, OrmModel):
     id: uuid.UUID
     expressions: list[ExpressionRead] = []

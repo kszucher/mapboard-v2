@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from app import models
 from app.expressions.schemas import ExpressionCreate, ExpressionUpdate
@@ -46,3 +46,15 @@ class ExpressionRepository:
         await self.session.execute(
             delete(models.Expression).where(models.Expression.id == expression_id)
         )
+
+    async def shift_indices_after_deletion(self, node_id: uuid.UUID, deleted_idx: int) -> list[models.Expression]:
+        stmt = (
+            update(models.Expression)
+            .where(models.Expression.node_id == node_id)
+            .where(models.Expression.idx > deleted_idx)
+            .values(idx=models.Expression.idx - 1)
+            .returning(models.Expression)
+        )
+        result = await self.session.execute(stmt)
+        await self.session.flush()
+        return list(result.scalars().all())

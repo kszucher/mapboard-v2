@@ -57,9 +57,9 @@ export const useDeleteExpression = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ expressionId }: { expressionId: string; graphId: string }) => {
+    mutationFn: async (variables: { expressionId: string; graphId: string }) => {
       const res = await apiClient.DELETE('/expressions/{expression_id}', {
-        params: { path: { expression_id: expressionId } },
+        params: { path: { expression_id: variables.expressionId } },
         headers: { 'X-Client-Id': getClientId() },
       })
       if ('error' in res) throw res.error
@@ -67,6 +67,24 @@ export const useDeleteExpression = () => {
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) })
       void queryClient.invalidateQueries({ queryKey: queryKeys.edges.byGraph(variables.graphId) })
+    },
+  })
+}
+
+export const useAppendExpression = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (variables: { nodeId: string; rawString: string; graphId: string }) => {
+      const res = await (apiClient as any).POST('/expressions/append', {
+        headers: { 'X-Client-Id': getClientId() },
+        body: { node_id: variables.nodeId, raw_string: variables.rawString },
+      })
+      if ('error' in res) throw res.error
+      return res.data
+    },
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) })
     },
   })
 }

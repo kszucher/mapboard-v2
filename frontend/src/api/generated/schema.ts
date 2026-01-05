@@ -45,13 +45,13 @@ export interface paths {
     /** Update Node Dimensions */
     patch: operations["update_node_dimensions_nodes__node_id__dimensions_patch"];
   };
-  "/nodes/{node_id}/label": {
-    /** Update Node Label */
-    patch: operations["update_node_label_nodes__node_id__label_patch"];
+  "/nodes/{node_id}/expressions": {
+    /** Append Node Expression */
+    post: operations["append_node_expression_nodes__node_id__expressions_post"];
   };
-  "/nodes/{node_id}/color": {
-    /** Update Node Color */
-    patch: operations["update_node_color_nodes__node_id__color_patch"];
+  "/nodes/{node_id}/expressions/{expression_id}": {
+    /** Delete Node Expression */
+    delete: operations["delete_node_expression_nodes__node_id__expressions__expression_id__delete"];
   };
   "/nodes/{node_id}": {
     /** Delete Node */
@@ -68,10 +68,6 @@ export interface paths {
   "/edges/{edge_id}": {
     /** Delete Edge */
     delete: operations["delete_edge_edges__edge_id__delete"];
-  };
-  "/edges/delete-by-handle": {
-    /** Delete By Handle */
-    post: operations["delete_by_handle_edges_delete_by_handle_post"];
   };
   "/expressions": {
     /** Create Expression */
@@ -97,16 +93,6 @@ export interface components {
     ActiveGraphResponse: {
       /** Graph Id */
       graph_id: string | null;
-    };
-    /** DeleteEdgesByHandle */
-    DeleteEdgesByHandle: {
-      /**
-       * From Node Id
-       * Format: uuid
-       */
-      from_node_id: string;
-      /** Deleted Handle Index */
-      deleted_handle_index: number;
     };
     /** EdgeCreate */
     EdgeCreate: {
@@ -255,6 +241,11 @@ export interface components {
        */
       node_type: "START" | "LOGIC" | "AGENT" | "LOGICAL_SWITCH" | "AGENTIC_SWITCH";
     };
+    /** NodeExpressionAppend */
+    NodeExpressionAppend: {
+      /** Raw String */
+      raw_string: string;
+    };
     /** NodeRead */
     NodeRead: {
       /**
@@ -310,25 +301,12 @@ export interface components {
        */
       graph_id: string;
     };
-    /** UpdateNodeColor */
-    UpdateNodeColor: {
-      /**
-       * Color
-       * @enum {string}
-       */
-      color: "gray" | "gold" | "bronze" | "brown" | "yellow" | "amber" | "orange" | "tomato" | "red" | "ruby" | "crimson" | "pink" | "plum" | "purple" | "violet" | "iris" | "indigo" | "blue" | "cyan" | "teal" | "jade" | "green" | "grass" | "lime" | "mint" | "sky";
-    };
     /** UpdateNodeDimensions */
     UpdateNodeDimensions: {
       /** Width */
       width: number;
       /** Height */
       height: number;
-    };
-    /** UpdateNodeLabel */
-    UpdateNodeLabel: {
-      /** Label */
-      label: string;
     };
     /** UpdateNodeOffset */
     UpdateNodeOffset: {
@@ -594,8 +572,8 @@ export interface operations {
       };
     };
   };
-  /** Update Node Label */
-  update_node_label_nodes__node_id__label_patch: {
+  /** Append Node Expression */
+  append_node_expression_nodes__node_id__expressions_post: {
     parameters: {
       header?: {
         "x-client-id"?: string | null;
@@ -606,13 +584,15 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["UpdateNodeLabel"];
+        "application/json": components["schemas"]["NodeExpressionAppend"];
       };
     };
     responses: {
       /** @description Successful Response */
-      204: {
-        content: never;
+      201: {
+        content: {
+          "application/json": unknown;
+        };
       };
       /** @description Validation Error */
       422: {
@@ -622,19 +602,15 @@ export interface operations {
       };
     };
   };
-  /** Update Node Color */
-  update_node_color_nodes__node_id__color_patch: {
+  /** Delete Node Expression */
+  delete_node_expression_nodes__node_id__expressions__expression_id__delete: {
     parameters: {
       header?: {
         "x-client-id"?: string | null;
       };
       path: {
         node_id: string;
-      };
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateNodeColor"];
+        expression_id: string;
       };
     };
     responses: {
@@ -730,31 +706,6 @@ export interface operations {
       };
       path: {
         edge_id: string;
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      204: {
-        content: never;
-      };
-      /** @description Validation Error */
-      422: {
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  /** Delete By Handle */
-  delete_by_handle_edges_delete_by_handle_post: {
-    parameters: {
-      header?: {
-        "x-client-id"?: string | null;
-      };
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["DeleteEdgesByHandle"];
       };
     };
     responses: {

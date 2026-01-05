@@ -69,6 +69,47 @@ async def update_expression(
         )
     return expr
 
+async def append_expression(
+    session: AsyncSession,
+    node_id: uuid.UUID,
+    raw_string: str,
+    broker: GraphEventBroker,
+    sender_client_id: str | None = None,
+) -> models.Expression | None:
+    from app.nodes.repository import NodeRepository
+    repo = ExpressionRepository(session)
+    node_repo = NodeRepository(session)
+
+    node = await node_repo.get(node_id)
+    if not node:
+        return None
+
+    expressions = await repo.list_by_node(node_id)
+    new_idx = len(expressions)
+    
+    expr_data = ExpressionCreate(node_id=node_id, idx=new_idx, raw_string=raw_string)
+    expr = await repo.create(expr_data)
+    
+    await session.commit()
+    
+    await broker.broadcast(
+        GraphEvent(
+            event="expression_created",
+            graph_id=node.graph_id,
+            payload={
+                "expressionId": str(expr.id),
+                "nodeId": str(node.id),
+                "expression": {
+                    "id": str(expr.id),
+                    "idx": expr.idx,
+                    "raw_string": expr.raw_string
+                }
+            },
+            sender_client_id=sender_client_id,
+        )
+    )
+    return expr
+
 async def delete_expression(
     session: AsyncSession, expression_id: uuid.UUID, broker: GraphEventBroker, sender_client_id: str | None = None
 ) -> None:
@@ -80,19 +121,40 @@ async def delete_expression(
         
     node_repo = NodeRepository(session)
     node = await node_repo.get(expr.node_id)
-    
+    if not node:
+        return
+
+    deleted_idx = expr.idx
+
+    # Delete the expression
     await repo.delete(expression_id)
+    
+    # Shift subsequent expressions natively in DB
+    expression_updates = await repo.shift_indices_after_deletion(expr.node_id, deleted_idx)
+
     await session.commit()
     
-    if node:
+    # Broadcast deletion
+    await broker.broadcast(
+        GraphEvent(
+            event="expression_deleted",
+            graph_id=node.graph_id,
+            payload={"expressionId": str(expression_id), "nodeId": str(node.id)},
+            sender_client_id=sender_client_id,
+        )
+    )
+    
+    # Broadcast updates for shifted indices
+    for updated_expr in expression_updates:
         await broker.broadcast(
             GraphEvent(
-                event="expression_deleted",
+                event="expression_updated",
                 graph_id=node.graph_id,
-                payload={"expressionId": str(expression_id), "nodeId": str(node.id)},
+                payload={"expressionId": str(updated_expr.id), "patch": {"idx": updated_expr.idx}},
                 sender_client_id=sender_client_id,
             )
         )
+
 
 async def create_default_expressions_for_node(
     session: AsyncSession, node: models.Node

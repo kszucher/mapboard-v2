@@ -8,9 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models
 from app.edges.repository import EdgeRepository
 from app.nodes.repository import NodeRepository
+from app.expressions import service as expression_service
 from app.schemas import GraphEvent
 from app.events import GraphEventBroker
-from app.nodes.schemas import NodeCreate, ExpressionCreate
+from app.nodes.schemas import NodeCreate
 import logging
 
 logger = logging.getLogger(__name__)
@@ -24,14 +25,13 @@ async def list_nodes(session: AsyncSession, graph_id: uuid.UUID) -> list[models.
 async def create_node(
     session: AsyncSession, data: NodeCreate, broker: GraphEventBroker, sender_client_id: str | None = None
 ) -> uuid.UUID:
-    from app.expressions.service import create_default_expressions_for_node
     repo = NodeRepository(session)
 
     # Repository now handles the simplified node creation
     node = await repo.create(data)
     
     # Isolate expression creation to its own service logic
-    await create_default_expressions_for_node(session, node)
+    await expression_service.create_default_expressions_for_node(session, node)
 
     await session.commit()
     await broker.broadcast(
@@ -105,7 +105,6 @@ async def update_node_dimensions(
 
 
 
-
 async def delete_node(
     session: AsyncSession, node_id: uuid.UUID, broker: GraphEventBroker, sender_client_id: str | None = None
 ) -> None:
@@ -113,13 +112,10 @@ async def delete_node(
     edges_repo = EdgeRepository(session)
 
     node = await nodes_repo.get(node_id)
-    if node is None:
+    if not node:
         return
 
-    outgoing = await edges_repo.list_by_graph(node.graph_id)
-    for edge in outgoing:
-        if edge.from_node_id == node_id or edge.to_node_id == node_id:
-            await edges_repo.delete(edge.id)
+    await edges_repo.delete_by_node(node_id)
 
     await nodes_repo.delete(node_id)
     await session.commit()

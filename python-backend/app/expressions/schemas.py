@@ -11,6 +11,11 @@ class ExpressionBase(BaseModel):
 class ExpressionCreate(ExpressionBase):
     node_id: uuid.UUID
 
+class ExpressionAppend(BaseModel):
+    node_id: uuid.UUID
+    raw_string: str
+
+
 class ExpressionUpdate(BaseModel):
     raw_string: str | None = None
     idx: int | None = None

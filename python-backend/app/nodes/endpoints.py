@@ -10,7 +10,7 @@ from app.db import get_session
 from app.nodes.repository import NodeRepository
 from app.nodes import schemas
 from app.nodes.schemas import NodeCreate, NodeRead
-from app.nodes import service as node_service
+from app.expressions import service as expression_service
 from app.events import broker
 
 router = APIRouter(prefix="/nodes", tags=["nodes"])
@@ -56,6 +56,8 @@ async def update_node_dimensions(
     await node_service.update_node_dimensions(
         session, node_id, payload.width, payload.height, broker, x_client_id
     )
+
+
 
 
 

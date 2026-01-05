@@ -1,8 +1,9 @@
-import { Flex } from '@radix-ui/themes'
+import { PlusIcon } from '@radix-ui/react-icons'
+import { Flex, IconButton } from '@radix-ui/themes'
 import { Handle, Position } from '@xyflow/react'
-import { useCreateExpression, useDeleteExpression, useUpdateExpression } from '../api/mutations'
+import { useCallback } from 'react'
+import { useAppendExpression, useDeleteExpression, useUpdateExpression } from '../api/mutations'
 import { BranchInput } from './BranchInput.tsx'
-import { EditableList } from './shared/EditableList.tsx'
 import type { AppFlowNode } from './types.ts'
 
 interface FlowNodeAgenticSwitchProps {
@@ -10,9 +11,9 @@ interface FlowNodeAgenticSwitchProps {
 }
 
 export const FlowNodeAgenticSwitch = ({ data }: FlowNodeAgenticSwitchProps) => {
-  const createExpressionMutation = useCreateExpression();
-  const updateExpressionMutation = useUpdateExpression();
-  const deleteExpressionMutation = useDeleteExpression();
+  const appendExpression = useAppendExpression();
+  const deleteExpression = useDeleteExpression();
+  const updateExpression = useUpdateExpression();
 
   const { node } = data;
   const SPACING = 40;
@@ -23,72 +24,56 @@ export const FlowNodeAgenticSwitch = ({ data }: FlowNodeAgenticSwitchProps) => {
 
   const branches = expressions.map(e => e.raw_string);
 
-  const handleBranchesChange = (newBranches: string[], deletedIndex?: number) => {
-    const graphId = node.graph_id;
+  const handleAddItem = useCallback(() => {
+    appendExpression.mutate({ nodeId: node.id, rawString: '', graphId: node.graph_id });
+  }, [appendExpression, node.id, node.graph_id]);
 
-    // 1. Handle Deletion
-    if (deletedIndex !== undefined) {
-      const deletedExpr = expressions[deletedIndex];
-      if (deletedExpr) {
-        deleteExpressionMutation.mutate({ expressionId: deletedExpr.id, graphId });
-
-        // After deletion, we need to update indices of subsequent expressions
-        expressions.slice(deletedIndex + 1).forEach((expr, i) => {
-          updateExpressionMutation.mutate({
-            expressionId: expr.id,
-            graphId,
-            patch: { idx: deletedIndex + i }
-          });
+  const handleUpdateItem = useCallback(
+    (index: number, newValue: string) => {
+      const expr = expressions[index];
+      if (expr) {
+        updateExpression.mutate({
+          expressionId: expr.id,
+          patch: { raw_string: newValue },
+          graphId: node.graph_id,
         });
       }
-      return;
-    }
+    },
+    [expressions, updateExpression, node.graph_id]
+  );
 
-    // 2. Handle Addition
-    if (newBranches.length > expressions.length) {
-      const lastIdx = newBranches.length - 1;
-      const raw_string = newBranches[lastIdx];
-      createExpressionMutation.mutate({
-        nodeId: node.id,
-        idx: lastIdx,
-        raw_string,
-        graphId,
-      });
-      return;
-    }
-
-    // 3. Handle Update (Only if lengths match to avoid race conditions during deletion)
-    if (newBranches.length === expressions.length) {
-      newBranches.forEach((raw_string, idx) => {
-        const expr = expressions[idx];
-        if (expr && expr.raw_string !== raw_string) {
-          updateExpressionMutation.mutate({
-            expressionId: expr.id,
-            patch: { raw_string },
-            graphId,
-          });
-        }
-      });
-    }
-  };
+  const handleDeleteItem = useCallback(
+    (index: number) => {
+      const expr = expressions[index];
+      if (expr) {
+        deleteExpression.mutate({ expressionId: expr.id, graphId: node.graph_id });
+      }
+    },
+    [expressions, deleteExpression, node.graph_id]
+  );
 
   return (
     <>
-      <Flex direction="column" gap="3" style={{ marginTop: 38 }}>
-        <EditableList<string>
-          items={branches}
-          onItemsChange={handleBranchesChange}
-          createNewItem={() => ''}
-          renderItem={(branch, index, { onUpdate, onDelete }) => (
-            <BranchInput
-              key={index}
-              value={branch}
-              onChange={onUpdate}
-              onDelete={onDelete}
-              enableValidation={true}
-            />
-          )}
-        />
+      <Flex direction="column" gap="2" style={{ marginTop: 38, width: 'fit-content', minWidth: '100%' }}>
+        {branches.length > 0 && (
+          <Flex direction="column" gap="2" style={{ width: '100%' }}>
+            {branches.map((branch, i) => (
+              <BranchInput
+                key={expressions[i].id}
+                value={branch}
+                onChange={(newValue) => handleUpdateItem(i, newValue)}
+                onDelete={() => handleDeleteItem(i)}
+                enableValidation={true}
+              />
+            ))}
+          </Flex>
+        )}
+
+        <Flex gap="2" align="center" style={{ height: 32 }}>
+          <IconButton onClick={handleAddItem} size="1" variant="ghost" color="gray">
+            <PlusIcon />
+          </IconButton>
+        </Flex>
       </Flex>
 
       <Handle type="target" position={Position.Left} style={{ top: LEFT_HANDLE_OFFSET }} />
