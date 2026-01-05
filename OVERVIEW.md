@@ -41,23 +41,19 @@ Edges connect nodes. A critical feature of Graphboard is **Hard Links**:
 
 ---
 
-## Key Architectures
-
-### Real-Time Synchronization
-The app uses a "Broadcast and Invalidate" pattern:
-1. Client sends a mutation (e.g., `PATCH /nodes/...`).
-2. Backend updates the DB and broadcasts a `node_updated` event via WebSockets.
-3. All clients (including the sender) receive the event and invalidate the relevant TanStack Query keys.
-4. UI refreshes automatically.
-
-### Optimistic Updates (Currently Disabled)
-To maintain a snappy feel, major operations (like updating position or deleting expressions) previously used **Optimistic UI Updates**. These are currently disabled to simplify development and will be added back later.
+### Unit of Work & Transaction Management
+The backend utilizes the **Unit of Work (UoW)** pattern (`app/context.py`) to manage database sessions and repositories:
+- **Atomicity**: Ensures that multiple operations (e.g., deleting a node and its edges) occur within a single transaction.
+- **Event Buffering**: WebSocket events are buffered within the UoW. They are only broadcasted to clients **after** the database transaction has successfully committed. This prevents "phantom" UI updates if a server-side error occurs.
+- **Centralized Repositories**: All database access is channeled through repositories lazy-loaded via the UoW (e.g., `uow.nodes`, `uow.expressions`).
 
 ---
 
 ## Recent Major Improvements
+- **Unit of Work Pattern**: Standardized transaction handling and event consistency.
+- **Type-Safe Constants**: Replaced all "magic strings" for node types and event names with centralized Enums (`app/constants.py`).
 - **Migration to Atomic Expressions**: Transitioned from bulk-updating node expressions to individual CRUD endpoints for Expressions.
-- **UUID-based Handles**: Handles on switch nodes now use Expression UUIDs instead of numeric indices (`0`, `1`, `2`).
+- **UUID-based Handles**: Handles on switch nodes now use Expression UUIDs instead of numeric indices.
 
 
 ---

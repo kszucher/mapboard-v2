@@ -2,8 +2,9 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app import edges, graphs, nodes, users, ws
+from app import edges, graphs, nodes, users, ws, expressions
 from app.config import settings
+from app.exceptions import GraphboardError
 import logging
 
 logger = logging.getLogger(__name__)
@@ -21,6 +22,14 @@ def create_app() -> FastAPI:
         expose_headers=["*"],
     )
 
+
+    @app.exception_handler(GraphboardError)
+    async def graphboard_exception_handler(request: Request, exc: GraphboardError):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.message},
+        )
+
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):
         logger.exception("Unhandled exception: %s", exc)
@@ -34,7 +43,6 @@ def create_app() -> FastAPI:
     app.include_router(nodes.router)
     app.include_router(edges.router)
     app.include_router(ws.router)
-    from app import expressions
     app.include_router(expressions.router)
 
     @app.get("/health")

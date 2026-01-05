@@ -1,40 +1,35 @@
 from __future__ import annotations
 
 import uuid
-
-from fastapi import APIRouter, Depends, Header, status
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.db import get_session
-from app.edges.repository import EdgeRepository
+from typing import Any
+from fastapi import APIRouter, Depends, status
+from app.db import get_uow
 from app.edges.schemas import EdgeCreate, EdgeRead
 from app.edges import service as edge_service
-from app.events import broker
 
 router = APIRouter(prefix="/edges", tags=["edges"])
 
 
 @router.get("/graph/{graph_id}", response_model=list[EdgeRead])
-async def get_edges(graph_id: uuid.UUID, session: AsyncSession = Depends(get_session)) -> list[EdgeRead]:
-    repo = EdgeRepository(session)
-    edges = await repo.list_by_graph(graph_id)
+async def get_edges(graph_id: uuid.UUID, uow: Any = Depends(get_uow)) -> list[EdgeRead]:
+    edges = await edge_service.list_edges(uow, graph_id)
     return [EdgeRead.model_validate(e) for e in edges]
 
 
 @router.post("/", response_model=uuid.UUID, status_code=status.HTTP_201_CREATED)
 async def create_edge(
     payload: EdgeCreate,
-    session: AsyncSession = Depends(get_session),
-    x_client_id: str | None = Header(default=None),
+    uow: Any = Depends(get_uow)
 ) -> uuid.UUID:
-    return await edge_service.create_edge(session, payload, broker, x_client_id)
+    edge_id = await edge_service.create_edge(uow, payload)
+    await uow.commit()
+    return edge_id
 
 
 @router.delete("/{edge_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_edge(
     edge_id: uuid.UUID,
-    session: AsyncSession = Depends(get_session),
-    x_client_id: str | None = Header(default=None),
+    uow: Any = Depends(get_uow)
 ) -> None:
-    await edge_service.delete_edge(session, edge_id, broker, x_client_id)
-
+    await edge_service.delete_edge(uow, edge_id)
+    await uow.commit()

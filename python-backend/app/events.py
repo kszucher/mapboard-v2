@@ -40,9 +40,9 @@ class GraphEventBroker:
             f"to {len(listeners)} listener(s) with payload={payload}"
         )
 
-        for ws, client_id in listeners:
+        async def _send(ws, client_id):
             if event.sender_client_id is not None and client_id == event.sender_client_id:
-                continue
+                return
             try:
                 print(f"[GraphEventBroker] sending {event.event} to websocket {id(ws)}")
                 await ws.send_json(payload)
@@ -50,6 +50,25 @@ class GraphEventBroker:
             except Exception as e:
                 print(f"[GraphEventBroker] ERROR sending {event.event} to websocket {id(ws)}: {e}")
                 await self.unsubscribe(event.graph_id, ws)
+
+        await asyncio.gather(*[_send(ws, client_id) for ws, client_id in listeners])
+
+    async def emit(
+        self,
+        event: str,
+        graph_id: uuid.UUID,
+        payload: dict[str, Any],
+        sender_client_id: Optional[str] = None,
+    ) -> None:
+        """Convenience method to broadcast an event without manual GraphEvent instantiation."""
+        await self.broadcast(
+            GraphEvent(
+                event=event,  # type: ignore
+                graph_id=graph_id,
+                payload=payload,
+                sender_client_id=sender_client_id,
+            )
+        )
 
 broker = GraphEventBroker()
 

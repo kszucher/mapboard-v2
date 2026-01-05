@@ -4,6 +4,7 @@ import uuid
 from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
+from app.constants import EventName, NodeType
 
 # Shared type definitions
 ColorMode = Literal["DARK", "LIGHT"]
@@ -36,7 +37,6 @@ Color = Literal[
     "sky",
 ]
 
-NodeType = Literal["START", "LOGIC", "AGENT", "LOGICAL_SWITCH", "AGENTIC_SWITCH"]
 
 
 # Base classes
@@ -46,19 +46,7 @@ class OrmModel(BaseModel):
 
 # Shared event model
 class GraphEvent(BaseModel):
-    event: Literal[
-        "graph_created",
-        "graph_updated",
-        "node_created",
-        "node_updated",
-        "node_deleted",
-        "edge_created",
-        "edge_deleted",
-        "edges_updated",
-        "expression_created",
-        "expression_updated",
-        "expression_deleted",
-    ]
+    event: EventName
     graph_id: uuid.UUID
     payload: dict[str, Any]
     sender_client_id: Optional[str] = None
