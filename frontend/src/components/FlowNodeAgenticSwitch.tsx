@@ -2,7 +2,7 @@ import { PlusIcon } from '@radix-ui/react-icons'
 import { Flex, IconButton } from '@radix-ui/themes'
 import { Handle, Position } from '@xyflow/react'
 import { useCallback } from 'react'
-import { useAppendExpression, useDeleteExpression, useUpdateExpression } from '../api/mutations'
+import { useCreateExpression, useDeleteExpression, useUpdateExpression } from '../api/mutations'
 import { BranchInput } from './BranchInput.tsx'
 import type { AppFlowNode } from './types.ts'
 
@@ -11,7 +11,7 @@ interface FlowNodeAgenticSwitchProps {
 }
 
 export const FlowNodeAgenticSwitch = ({ data }: FlowNodeAgenticSwitchProps) => {
-  const appendExpression = useAppendExpression();
+  const createExpression = useCreateExpression();
   const deleteExpression = useDeleteExpression();
   const updateExpression = useUpdateExpression();
 
@@ -25,8 +25,8 @@ export const FlowNodeAgenticSwitch = ({ data }: FlowNodeAgenticSwitchProps) => {
   const branches = expressions.map(e => e.raw_string);
 
   const handleAddItem = useCallback(() => {
-    appendExpression.mutate({ nodeId: node.id, rawString: '', graphId: node.graph_id });
-  }, [appendExpression, node.id, node.graph_id]);
+    createExpression.mutate({ nodeId: node.id, raw_string: '', graphId: node.graph_id });
+  }, [createExpression, node.id, node.graph_id]);
 
   const handleUpdateItem = useCallback(
     (index: number, newValue: string) => {

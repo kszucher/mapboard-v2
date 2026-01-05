@@ -45,14 +45,6 @@ export interface paths {
     /** Update Node Dimensions */
     patch: operations["update_node_dimensions_nodes__node_id__dimensions_patch"];
   };
-  "/nodes/{node_id}/expressions": {
-    /** Append Node Expression */
-    post: operations["append_node_expression_nodes__node_id__expressions_post"];
-  };
-  "/nodes/{node_id}/expressions/{expression_id}": {
-    /** Delete Node Expression */
-    delete: operations["delete_node_expression_nodes__node_id__expressions__expression_id__delete"];
-  };
   "/nodes/{node_id}": {
     /** Delete Node */
     delete: operations["delete_node_nodes__node_id__delete"];
@@ -145,8 +137,6 @@ export interface components {
     };
     /** ExpressionCreate */
     ExpressionCreate: {
-      /** Idx */
-      idx: number;
       /** Raw String */
       raw_string: string;
       /**
@@ -154,11 +144,11 @@ export interface components {
        * Format: uuid
        */
       node_id: string;
+      /** Idx */
+      idx?: number | null;
     };
     /** ExpressionRead */
     ExpressionRead: {
-      /** Idx */
-      idx: number;
       /** Raw String */
       raw_string: string;
       /**
@@ -171,6 +161,8 @@ export interface components {
        * Format: uuid
        */
       node_id: string;
+      /** Idx */
+      idx: number;
     };
     /** ExpressionUpdate */
     ExpressionUpdate: {
@@ -240,11 +232,6 @@ export interface components {
        * @enum {string}
        */
       node_type: "START" | "LOGIC" | "AGENT" | "LOGICAL_SWITCH" | "AGENTIC_SWITCH";
-    };
-    /** NodeExpressionAppend */
-    NodeExpressionAppend: {
-      /** Raw String */
-      raw_string: string;
     };
     /** NodeRead */
     NodeRead: {
@@ -557,60 +544,6 @@ export interface operations {
     requestBody: {
       content: {
         "application/json": components["schemas"]["UpdateNodeDimensions"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      204: {
-        content: never;
-      };
-      /** @description Validation Error */
-      422: {
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  /** Append Node Expression */
-  append_node_expression_nodes__node_id__expressions_post: {
-    parameters: {
-      header?: {
-        "x-client-id"?: string | null;
-      };
-      path: {
-        node_id: string;
-      };
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["NodeExpressionAppend"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        content: {
-          "application/json": unknown;
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  /** Delete Node Expression */
-  delete_node_expression_nodes__node_id__expressions__expression_id__delete: {
-    parameters: {
-      header?: {
-        "x-client-id"?: string | null;
-      };
-      path: {
-        node_id: string;
-        expression_id: string;
       };
     };
     responses: {

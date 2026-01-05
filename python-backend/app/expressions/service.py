@@ -31,6 +31,10 @@ async def create_expression(
     if not node:
         raise ValueError(f"Node {data.node_id} not found")
         
+    if data.idx is None:
+        expressions = await repo.list_by_node(data.node_id)
+        data.idx = len(expressions)
+
     expr = await repo.create(data)
     await session.commit()
     
@@ -67,47 +71,6 @@ async def update_expression(
                 sender_client_id=sender_client_id,
             )
         )
-    return expr
-
-async def append_expression(
-    session: AsyncSession,
-    node_id: uuid.UUID,
-    raw_string: str,
-    broker: GraphEventBroker,
-    sender_client_id: str | None = None,
-) -> models.Expression | None:
-    from app.nodes.repository import NodeRepository
-    repo = ExpressionRepository(session)
-    node_repo = NodeRepository(session)
-
-    node = await node_repo.get(node_id)
-    if not node:
-        return None
-
-    expressions = await repo.list_by_node(node_id)
-    new_idx = len(expressions)
-    
-    expr_data = ExpressionCreate(node_id=node_id, idx=new_idx, raw_string=raw_string)
-    expr = await repo.create(expr_data)
-    
-    await session.commit()
-    
-    await broker.broadcast(
-        GraphEvent(
-            event="expression_created",
-            graph_id=node.graph_id,
-            payload={
-                "expressionId": str(expr.id),
-                "nodeId": str(node.id),
-                "expression": {
-                    "id": str(expr.id),
-                    "idx": expr.idx,
-                    "raw_string": expr.raw_string
-                }
-            },
-            sender_client_id=sender_client_id,
-        )
-    )
     return expr
 
 async def delete_expression(
