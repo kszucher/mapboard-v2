@@ -18,6 +18,26 @@ class EdgeRepository(BaseRepository[models.Edge, EdgeCreate, EdgeCreate]):
         )
         return list(result.scalars().all())
 
+    async def list_by_expression(self, expression_id: uuid.UUID) -> list[models.Edge]:
+        result = await self.session.execute(
+            select(models.Edge).where(models.Edge.from_expression_id == expression_id)
+        )
+        return list(result.scalars().all())
+
+    async def list_by_node(self, node_id: uuid.UUID) -> list[models.Edge]:
+        result = await self.session.execute(
+            select(models.Edge).where(
+                (models.Edge.from_node_id == node_id) | (models.Edge.to_node_id == node_id)
+            )
+        )
+        return list(result.scalars().all())
+
+    async def delete_by_expression(self, expression_id: uuid.UUID) -> None:
+        await self.session.execute(
+            delete(models.Edge).where(models.Edge.from_expression_id == expression_id)
+        )
+        await self.session.flush()
+
     async def delete_by_node(self, node_id: uuid.UUID) -> None:
         await self.session.execute(
             delete(models.Edge).where(

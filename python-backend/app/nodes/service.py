@@ -79,6 +79,7 @@ async def delete_node(uow: UnitOfWork, node_id: uuid.UUID) -> None:
     if not node:
         return
 
+    edges = await uow.edges.list_by_node(node_id)
     await uow.edges.delete_by_node(node_id)
     await uow.nodes.delete(node_id)
 
@@ -87,3 +88,11 @@ async def delete_node(uow: UnitOfWork, node_id: uuid.UUID) -> None:
         graph_id=node.graph_id,
         payload={"nodeId": node_id},
     )
+
+    # Broadcast edge deletions
+    for edge in edges:
+        uow.emit(
+            event=EventName.EDGE_DELETED,
+            graph_id=node.graph_id,
+            payload={"edgeId": edge.id},
+        )

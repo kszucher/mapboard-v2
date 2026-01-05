@@ -67,6 +67,9 @@ async def delete_expression(uow: UnitOfWork, expression_id: uuid.UUID) -> None:
     if not node:
         return
 
+    # Find edges associated with this expression
+    edges = await uow.edges.list_by_expression(expression_id)
+
     deleted_idx = expr.idx
 
     # Delete the expression
@@ -81,6 +84,14 @@ async def delete_expression(uow: UnitOfWork, expression_id: uuid.UUID) -> None:
         graph_id=node.graph_id,
         payload={"expressionId": expression_id, "nodeId": node.id},
     )
+
+    # Broadcast updates for edges that were deleted via cascade
+    for edge in edges:
+        uow.emit(
+            event=EventName.EDGE_DELETED,
+            graph_id=node.graph_id,
+            payload={"edgeId": edge.id},
+        )
 
     # Broadcast updates for shifted indices
     for updated_expr in expression_updates:

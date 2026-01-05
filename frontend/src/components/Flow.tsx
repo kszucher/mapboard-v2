@@ -57,18 +57,33 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
   );
 
   const mappedEdges = useMemo<AppFlowEdge[]>(() => {
-    if (!edgesData) return [];
+    if (!edgesData || !nodesData || !expressionsData) return [];
 
-    return edgesData.map(edge => ({
-      id: edge.id,
-      source: edge.from_node_id,
-      target: edge.to_node_id,
-      sourceHandle: edge.from_expression_id ?? String(edge.handle_index),
-      type: 'custom' as const,
-      animated: true,
-      style: { stroke: '#fff', strokeWidth: 2 },
-    }));
-  }, [edgesData]);
+    const nodeIds = new Set(nodesData.map(n => n.id));
+    const expressionIds = new Set(expressionsData.map(e => e.id));
+
+    return edgesData
+      .filter(edge => {
+        // Ensure source and target nodes exist
+        if (!nodeIds.has(edge.from_node_id) || !nodeIds.has(edge.to_node_id)) {
+          return false;
+        }
+        // Ensure source expression exists if it's a hard link
+        if (edge.from_expression_id && !expressionIds.has(edge.from_expression_id)) {
+          return false;
+        }
+        return true;
+      })
+      .map(edge => ({
+        id: edge.id,
+        source: edge.from_node_id,
+        target: edge.to_node_id,
+        sourceHandle: edge.from_expression_id ?? String(edge.handle_index),
+        type: 'custom' as const,
+        animated: true,
+        style: { stroke: '#fff', strokeWidth: 2 },
+      }));
+  }, [edgesData, nodesData, expressionsData]);
 
   // Sync nodes from query data to state, preserving local state (measured dimensions, etc.)
   useEffect(() => {
