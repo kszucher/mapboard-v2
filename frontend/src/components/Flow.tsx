@@ -195,7 +195,7 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
   );
 
   const handleNodeDragStop = useCallback(
-    (_event: React.MouseEvent, node: AppFlowNode) => {
+    (_event: MouseEvent | TouchEvent, node: AppFlowNode) => {
       updateNodePositionMutation.mutate({
         nodeId: node.id as string,
         x: Math.round(node.position.x),

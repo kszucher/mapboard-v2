@@ -3,780 +3,1163 @@
  * Do not make direct changes to the file.
  */
 
-
 export interface paths {
-  "/users/get-or-create": {
-    /** Get Or Create User */
-    post: operations["get_or_create_user_users_get_or_create_post"];
-  };
-  "/users/": {
-    /** Create User */
-    post: operations["create_user_users__post"];
-  };
-  "/users/{user_id}/active-graph": {
-    /** Get Active Graph Id */
-    get: operations["get_active_graph_id_users__user_id__active_graph_get"];
-  };
-  "/users/set-active-graph": {
-    /** Set Active Graph */
-    post: operations["set_active_graph_users_set_active_graph_post"];
-  };
-  "/graphs/": {
-    /** Create Graph */
-    post: operations["create_graph_graphs__post"];
-  };
-  "/graphs/user/{user_id}": {
-    /** List Graphs */
-    get: operations["list_graphs_graphs_user__user_id__get"];
-  };
-  "/nodes/graph/{graph_id}": {
-    /** Get Nodes */
-    get: operations["get_nodes_nodes_graph__graph_id__get"];
-  };
-  "/nodes/": {
-    /** Create Node */
-    post: operations["create_node_nodes__post"];
-  };
-  "/nodes/{node_id}/offset": {
-    /** Update Node Offset */
-    patch: operations["update_node_offset_nodes__node_id__offset_patch"];
-  };
-  "/nodes/{node_id}/dimensions": {
-    /** Update Node Dimensions */
-    patch: operations["update_node_dimensions_nodes__node_id__dimensions_patch"];
-  };
-  "/nodes/{node_id}": {
-    /** Delete Node */
-    delete: operations["delete_node_nodes__node_id__delete"];
-  };
-  "/edges/graph/{graph_id}": {
-    /** Get Edges */
-    get: operations["get_edges_edges_graph__graph_id__get"];
-  };
-  "/edges/": {
-    /** Create Edge */
-    post: operations["create_edge_edges__post"];
-  };
-  "/edges/{edge_id}": {
-    /** Delete Edge */
-    delete: operations["delete_edge_edges__edge_id__delete"];
-  };
-  "/expressions": {
-    /** Create Expression */
-    post: operations["create_expression_expressions_post"];
-  };
-  "/expressions/{expression_id}": {
-    /** Delete Expression */
-    delete: operations["delete_expression_expressions__expression_id__delete"];
-    /** Update Expression */
-    patch: operations["update_expression_expressions__expression_id__patch"];
-  };
-  "/expressions/graph/{graph_id}": {
-    /** Get Expressions By Graph */
-    get: operations["get_expressions_by_graph_expressions_graph__graph_id__get"];
-  };
-  "/health": {
-    /** Health */
-    get: operations["health_health_get"];
-  };
+    "/users/get-or-create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Get Or Create User */
+        post: operations["get_or_create_user_users_get_or_create_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create User */
+        post: operations["create_user_users__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{user_id}/active-graph": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Active Graph Id */
+        get: operations["get_active_graph_id_users__user_id__active_graph_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/set-active-graph": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Active Graph */
+        post: operations["set_active_graph_users_set_active_graph_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/graphs/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Graph */
+        post: operations["create_graph_graphs__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/graphs/user/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Graphs */
+        get: operations["list_graphs_graphs_user__user_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nodes/graph/{graph_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Nodes */
+        get: operations["get_nodes_nodes_graph__graph_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nodes/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Node */
+        post: operations["create_node_nodes__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nodes/{node_id}/offset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Node Offset */
+        patch: operations["update_node_offset_nodes__node_id__offset_patch"];
+        trace?: never;
+    };
+    "/nodes/{node_id}/dimensions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Node Dimensions */
+        patch: operations["update_node_dimensions_nodes__node_id__dimensions_patch"];
+        trace?: never;
+    };
+    "/nodes/{node_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Node */
+        delete: operations["delete_node_nodes__node_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/edges/graph/{graph_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Edges */
+        get: operations["get_edges_edges_graph__graph_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/edges/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Edge */
+        post: operations["create_edge_edges__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/edges/{edge_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Edge */
+        delete: operations["delete_edge_edges__edge_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/expressions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Expression */
+        post: operations["create_expression_expressions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/expressions/{expression_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Expression */
+        delete: operations["delete_expression_expressions__expression_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Expression */
+        patch: operations["update_expression_expressions__expression_id__patch"];
+        trace?: never;
+    };
+    "/expressions/graph/{graph_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Expressions By Graph */
+        get: operations["get_expressions_by_graph_expressions_graph__graph_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Health */
+        get: operations["health_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
-
 export type webhooks = Record<string, never>;
-
 export interface components {
-  schemas: {
-    /** ActiveGraphResponse */
-    ActiveGraphResponse: {
-      /** Graph Id */
-      graph_id: string | null;
+    schemas: {
+        /** ActiveGraphResponse */
+        ActiveGraphResponse: {
+            /** Graph Id */
+            graph_id: string | null;
+        };
+        /** EdgeCreate */
+        EdgeCreate: {
+            /**
+             * Graph Id
+             * Format: uuid
+             */
+            graph_id: string;
+            /**
+             * From Node Id
+             * Format: uuid
+             */
+            from_node_id: string;
+            /**
+             * To Node Id
+             * Format: uuid
+             */
+            to_node_id: string;
+            /** Handle Index */
+            handle_index: number;
+            /** From Expression Id */
+            from_expression_id?: string | null;
+        };
+        /** EdgeRead */
+        EdgeRead: {
+            /**
+             * Graph Id
+             * Format: uuid
+             */
+            graph_id: string;
+            /**
+             * From Node Id
+             * Format: uuid
+             */
+            from_node_id: string;
+            /**
+             * To Node Id
+             * Format: uuid
+             */
+            to_node_id: string;
+            /** Handle Index */
+            handle_index: number;
+            /** From Expression Id */
+            from_expression_id?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+        };
+        /** ExpressionCreate */
+        ExpressionCreate: {
+            /** Raw String */
+            raw_string: string;
+            /**
+             * Node Id
+             * Format: uuid
+             */
+            node_id: string;
+            /** Idx */
+            idx?: number | null;
+        };
+        /** ExpressionRead */
+        ExpressionRead: {
+            /** Raw String */
+            raw_string: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Node Id
+             * Format: uuid
+             */
+            node_id: string;
+            /** Idx */
+            idx: number;
+        };
+        /** ExpressionUpdate */
+        ExpressionUpdate: {
+            /** Raw String */
+            raw_string?: string | null;
+            /** Idx */
+            idx?: number | null;
+        };
+        /** GraphCreate */
+        GraphCreate: {
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+            /** Graph Name */
+            graph_name: string;
+        };
+        /** GraphRead */
+        GraphRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+        };
+        /** HTTPValidationError */
+        HTTPValidationError: {
+            /** Detail */
+            detail?: components["schemas"]["ValidationError"][];
+        };
+        /** NodeCreate */
+        NodeCreate: {
+            /**
+             * Graph Id
+             * Format: uuid
+             */
+            graph_id: string;
+            /** Iid */
+            iid: number;
+            /** Width */
+            width: number;
+            /** Height */
+            height: number;
+            /** Offset X */
+            offset_x: number;
+            /** Offset Y */
+            offset_y: number;
+            /**
+             * Color
+             * @enum {string}
+             */
+            color: "gray" | "gold" | "bronze" | "brown" | "yellow" | "amber" | "orange" | "tomato" | "red" | "ruby" | "crimson" | "pink" | "plum" | "purple" | "violet" | "iris" | "indigo" | "blue" | "cyan" | "teal" | "jade" | "green" | "grass" | "lime" | "mint" | "sky";
+            /** Label */
+            label: string;
+            /** Is Processing */
+            is_processing: boolean;
+            node_type: components["schemas"]["NodeType"];
+        };
+        /** NodeRead */
+        NodeRead: {
+            /**
+             * Graph Id
+             * Format: uuid
+             */
+            graph_id: string;
+            /** Iid */
+            iid: number;
+            /** Width */
+            width: number;
+            /** Height */
+            height: number;
+            /** Offset X */
+            offset_x: number;
+            /** Offset Y */
+            offset_y: number;
+            /**
+             * Color
+             * @enum {string}
+             */
+            color: "gray" | "gold" | "bronze" | "brown" | "yellow" | "amber" | "orange" | "tomato" | "red" | "ruby" | "crimson" | "pink" | "plum" | "purple" | "violet" | "iris" | "indigo" | "blue" | "cyan" | "teal" | "jade" | "green" | "grass" | "lime" | "mint" | "sky";
+            /** Label */
+            label: string;
+            /** Is Processing */
+            is_processing: boolean;
+            node_type: components["schemas"]["NodeType"];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+        };
+        /**
+         * NodeType
+         * @enum {string}
+         */
+        NodeType: "START" | "LOGIC" | "AGENT" | "LOGICAL_SWITCH" | "AGENTIC_SWITCH";
+        /** SetActiveGraph */
+        SetActiveGraph: {
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+            /**
+             * Graph Id
+             * Format: uuid
+             */
+            graph_id: string;
+        };
+        /** UpdateNodeDimensions */
+        UpdateNodeDimensions: {
+            /** Width */
+            width: number;
+            /** Height */
+            height: number;
+        };
+        /** UpdateNodeOffset */
+        UpdateNodeOffset: {
+            /** Offset X */
+            offset_x: number;
+            /** Offset Y */
+            offset_y: number;
+        };
+        /** UserCreate */
+        UserCreate: {
+            /** User Name */
+            user_name: string;
+        };
+        /** ValidationError */
+        ValidationError: {
+            /** Location */
+            loc: (string | number)[];
+            /** Message */
+            msg: string;
+            /** Error Type */
+            type: string;
+        };
     };
-    /** EdgeCreate */
-    EdgeCreate: {
-      /**
-       * Graph Id
-       * Format: uuid
-       */
-      graph_id: string;
-      /**
-       * From Node Id
-       * Format: uuid
-       */
-      from_node_id: string;
-      /**
-       * To Node Id
-       * Format: uuid
-       */
-      to_node_id: string;
-      /** Handle Index */
-      handle_index: number;
-      /** From Expression Id */
-      from_expression_id?: string | null;
-    };
-    /** EdgeRead */
-    EdgeRead: {
-      /**
-       * Graph Id
-       * Format: uuid
-       */
-      graph_id: string;
-      /**
-       * From Node Id
-       * Format: uuid
-       */
-      from_node_id: string;
-      /**
-       * To Node Id
-       * Format: uuid
-       */
-      to_node_id: string;
-      /** Handle Index */
-      handle_index: number;
-      /** From Expression Id */
-      from_expression_id?: string | null;
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-    };
-    /** ExpressionCreate */
-    ExpressionCreate: {
-      /** Raw String */
-      raw_string: string;
-      /**
-       * Node Id
-       * Format: uuid
-       */
-      node_id: string;
-      /** Idx */
-      idx?: number | null;
-    };
-    /** ExpressionRead */
-    ExpressionRead: {
-      /** Raw String */
-      raw_string: string;
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /**
-       * Node Id
-       * Format: uuid
-       */
-      node_id: string;
-      /** Idx */
-      idx: number;
-    };
-    /** ExpressionUpdate */
-    ExpressionUpdate: {
-      /** Raw String */
-      raw_string?: string | null;
-      /** Idx */
-      idx?: number | null;
-    };
-    /** GraphCreate */
-    GraphCreate: {
-      /**
-       * User Id
-       * Format: uuid
-       */
-      user_id: string;
-      /** Graph Name */
-      graph_name: string;
-    };
-    /** GraphRead */
-    GraphRead: {
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /** Name */
-      name: string;
-      /**
-       * User Id
-       * Format: uuid
-       */
-      user_id: string;
-    };
-    /** HTTPValidationError */
-    HTTPValidationError: {
-      /** Detail */
-      detail?: components["schemas"]["ValidationError"][];
-    };
-    /** NodeCreate */
-    NodeCreate: {
-      /**
-       * Graph Id
-       * Format: uuid
-       */
-      graph_id: string;
-      /** Iid */
-      iid: number;
-      /** Width */
-      width: number;
-      /** Height */
-      height: number;
-      /** Offset X */
-      offset_x: number;
-      /** Offset Y */
-      offset_y: number;
-      /**
-       * Color
-       * @enum {string}
-       */
-      color: "gray" | "gold" | "bronze" | "brown" | "yellow" | "amber" | "orange" | "tomato" | "red" | "ruby" | "crimson" | "pink" | "plum" | "purple" | "violet" | "iris" | "indigo" | "blue" | "cyan" | "teal" | "jade" | "green" | "grass" | "lime" | "mint" | "sky";
-      /** Label */
-      label: string;
-      /** Is Processing */
-      is_processing: boolean;
-      node_type: components["schemas"]["NodeType"];
-    };
-    /** NodeRead */
-    NodeRead: {
-      /**
-       * Graph Id
-       * Format: uuid
-       */
-      graph_id: string;
-      /** Iid */
-      iid: number;
-      /** Width */
-      width: number;
-      /** Height */
-      height: number;
-      /** Offset X */
-      offset_x: number;
-      /** Offset Y */
-      offset_y: number;
-      /**
-       * Color
-       * @enum {string}
-       */
-      color: "gray" | "gold" | "bronze" | "brown" | "yellow" | "amber" | "orange" | "tomato" | "red" | "ruby" | "crimson" | "pink" | "plum" | "purple" | "violet" | "iris" | "indigo" | "blue" | "cyan" | "teal" | "jade" | "green" | "grass" | "lime" | "mint" | "sky";
-      /** Label */
-      label: string;
-      /** Is Processing */
-      is_processing: boolean;
-      node_type: components["schemas"]["NodeType"];
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-    };
-    /**
-     * NodeType
-     * @enum {string}
-     */
-    NodeType: "START" | "LOGIC" | "AGENT" | "LOGICAL_SWITCH" | "AGENTIC_SWITCH";
-    /** SetActiveGraph */
-    SetActiveGraph: {
-      /**
-       * User Id
-       * Format: uuid
-       */
-      user_id: string;
-      /**
-       * Graph Id
-       * Format: uuid
-       */
-      graph_id: string;
-    };
-    /** UpdateNodeDimensions */
-    UpdateNodeDimensions: {
-      /** Width */
-      width: number;
-      /** Height */
-      height: number;
-    };
-    /** UpdateNodeOffset */
-    UpdateNodeOffset: {
-      /** Offset X */
-      offset_x: number;
-      /** Offset Y */
-      offset_y: number;
-    };
-    /** UserCreate */
-    UserCreate: {
-      /** User Name */
-      user_name: string;
-    };
-    /** ValidationError */
-    ValidationError: {
-      /** Location */
-      loc: (string | number)[];
-      /** Message */
-      msg: string;
-      /** Error Type */
-      type: string;
-    };
-  };
-  responses: never;
-  parameters: never;
-  requestBodies: never;
-  headers: never;
-  pathItems: never;
+    responses: never;
+    parameters: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
-
 export type $defs = Record<string, never>;
-
-export type external = Record<string, never>;
-
 export interface operations {
-
-  /** Get Or Create User */
-  get_or_create_user_users_get_or_create_post: {
-    responses: {
-      /** @description Successful Response */
-      200: {
-        content: {
-          "application/json": string;
+    get_or_create_user_users_get_or_create_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-      };
-    };
-  };
-  /** Create User */
-  create_user_users__post: {
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UserCreate"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        content: {
-          "application/json": string;
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
         };
-      };
-      /** @description Validation Error */
-      422: {
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
+    };
+    create_user_users__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-      };
-    };
-  };
-  /** Get Active Graph Id */
-  get_active_graph_id_users__user_id__active_graph_get: {
-    parameters: {
-      path: {
-        user_id: string;
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        content: {
-          "application/json": components["schemas"]["ActiveGraphResponse"];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserCreate"];
+            };
         };
-      };
-      /** @description Validation Error */
-      422: {
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
-      };
     };
-  };
-  /** Set Active Graph */
-  set_active_graph_users_set_active_graph_post: {
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["SetActiveGraph"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      204: {
-        content: never;
-      };
-      /** @description Validation Error */
-      422: {
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
+    get_active_graph_id_users__user_id__active_graph_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
         };
-      };
-    };
-  };
-  /** Create Graph */
-  create_graph_graphs__post: {
-    parameters: {
-      header?: {
-        "x-client-id"?: string | null;
-      };
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["GraphCreate"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        content: {
-          "application/json": string;
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActiveGraphResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
-      };
-      /** @description Validation Error */
-      422: {
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
+    };
+    set_active_graph_users_set_active_graph_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-      };
-    };
-  };
-  /** List Graphs */
-  list_graphs_graphs_user__user_id__get: {
-    parameters: {
-      header?: {
-        "x-client-id"?: string | null;
-      };
-      path: {
-        user_id: string;
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        content: {
-          "application/json": components["schemas"]["GraphRead"][];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetActiveGraph"];
+            };
         };
-      };
-      /** @description Validation Error */
-      422: {
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
-      };
     };
-  };
-  /** Get Nodes */
-  get_nodes_nodes_graph__graph_id__get: {
-    parameters: {
-      header?: {
-        "x-client-id"?: string | null;
-      };
-      path: {
-        graph_id: string;
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        content: {
-          "application/json": components["schemas"]["NodeRead"][];
+    create_graph_graphs__post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-client-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
         };
-      };
-      /** @description Validation Error */
-      422: {
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GraphCreate"];
+            };
         };
-      };
-    };
-  };
-  /** Create Node */
-  create_node_nodes__post: {
-    parameters: {
-      header?: {
-        "x-client-id"?: string | null;
-      };
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["NodeCreate"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        content: {
-          "application/json": string;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
-      };
-      /** @description Validation Error */
-      422: {
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
+    };
+    list_graphs_graphs_user__user_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-client-id"?: string | null;
+            };
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
         };
-      };
-    };
-  };
-  /** Update Node Offset */
-  update_node_offset_nodes__node_id__offset_patch: {
-    parameters: {
-      header?: {
-        "x-client-id"?: string | null;
-      };
-      path: {
-        node_id: string;
-      };
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateNodeOffset"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      204: {
-        content: never;
-      };
-      /** @description Validation Error */
-      422: {
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GraphRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
-      };
     };
-  };
-  /** Update Node Dimensions */
-  update_node_dimensions_nodes__node_id__dimensions_patch: {
-    parameters: {
-      header?: {
-        "x-client-id"?: string | null;
-      };
-      path: {
-        node_id: string;
-      };
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateNodeDimensions"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      204: {
-        content: never;
-      };
-      /** @description Validation Error */
-      422: {
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
+    get_nodes_nodes_graph__graph_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-client-id"?: string | null;
+            };
+            path: {
+                graph_id: string;
+            };
+            cookie?: never;
         };
-      };
-    };
-  };
-  /** Delete Node */
-  delete_node_nodes__node_id__delete: {
-    parameters: {
-      header?: {
-        "x-client-id"?: string | null;
-      };
-      path: {
-        node_id: string;
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      204: {
-        content: never;
-      };
-      /** @description Validation Error */
-      422: {
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
-      };
     };
-  };
-  /** Get Edges */
-  get_edges_edges_graph__graph_id__get: {
-    parameters: {
-      header?: {
-        "x-client-id"?: string | null;
-      };
-      path: {
-        graph_id: string;
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        content: {
-          "application/json": components["schemas"]["EdgeRead"][];
+    create_node_nodes__post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-client-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
         };
-      };
-      /** @description Validation Error */
-      422: {
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NodeCreate"];
+            };
         };
-      };
-    };
-  };
-  /** Create Edge */
-  create_edge_edges__post: {
-    parameters: {
-      header?: {
-        "x-client-id"?: string | null;
-      };
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["EdgeCreate"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        content: {
-          "application/json": string;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
-      };
-      /** @description Validation Error */
-      422: {
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
+    };
+    update_node_offset_nodes__node_id__offset_patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-client-id"?: string | null;
+            };
+            path: {
+                node_id: string;
+            };
+            cookie?: never;
         };
-      };
-    };
-  };
-  /** Delete Edge */
-  delete_edge_edges__edge_id__delete: {
-    parameters: {
-      header?: {
-        "x-client-id"?: string | null;
-      };
-      path: {
-        edge_id: string;
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      204: {
-        content: never;
-      };
-      /** @description Validation Error */
-      422: {
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateNodeOffset"];
+            };
         };
-      };
-    };
-  };
-  /** Create Expression */
-  create_expression_expressions_post: {
-    parameters: {
-      header?: {
-        "x-client-id"?: string | null;
-      };
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ExpressionCreate"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        content: {
-          "application/json": components["schemas"]["ExpressionRead"];
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
-      };
-      /** @description Validation Error */
-      422: {
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
+    };
+    update_node_dimensions_nodes__node_id__dimensions_patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-client-id"?: string | null;
+            };
+            path: {
+                node_id: string;
+            };
+            cookie?: never;
         };
-      };
-    };
-  };
-  /** Delete Expression */
-  delete_expression_expressions__expression_id__delete: {
-    parameters: {
-      header?: {
-        "x-client-id"?: string | null;
-      };
-      path: {
-        expression_id: string;
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        content: {
-          "application/json": unknown;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateNodeDimensions"];
+            };
         };
-      };
-      /** @description Validation Error */
-      422: {
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
-      };
     };
-  };
-  /** Update Expression */
-  update_expression_expressions__expression_id__patch: {
-    parameters: {
-      header?: {
-        "x-client-id"?: string | null;
-      };
-      path: {
-        expression_id: string;
-      };
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ExpressionUpdate"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        content: {
-          "application/json": components["schemas"]["ExpressionRead"];
+    delete_node_nodes__node_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-client-id"?: string | null;
+            };
+            path: {
+                node_id: string;
+            };
+            cookie?: never;
         };
-      };
-      /** @description Validation Error */
-      422: {
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
-      };
     };
-  };
-  /** Get Expressions By Graph */
-  get_expressions_by_graph_expressions_graph__graph_id__get: {
-    parameters: {
-      header?: {
-        "x-client-id"?: string | null;
-      };
-      path: {
-        graph_id: string;
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        content: {
-          "application/json": components["schemas"]["ExpressionRead"][];
+    get_edges_edges_graph__graph_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-client-id"?: string | null;
+            };
+            path: {
+                graph_id: string;
+            };
+            cookie?: never;
         };
-      };
-      /** @description Validation Error */
-      422: {
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EdgeRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
-      };
     };
-  };
-  /** Health */
-  health_health_get: {
-    responses: {
-      /** @description Successful Response */
-      200: {
-        content: {
-          "application/json": {
-            [key: string]: string;
-          };
+    create_edge_edges__post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-client-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
         };
-      };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EdgeCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
     };
-  };
+    delete_edge_edges__edge_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-client-id"?: string | null;
+            };
+            path: {
+                edge_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_expression_expressions_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-client-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExpressionCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpressionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_expression_expressions__expression_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-client-id"?: string | null;
+            };
+            path: {
+                expression_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_expression_expressions__expression_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-client-id"?: string | null;
+            };
+            path: {
+                expression_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExpressionUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpressionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_expressions_by_graph_expressions_graph__graph_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-client-id"?: string | null;
+            };
+            path: {
+                graph_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpressionRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    health_health_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
+            };
+        };
+    };
 }
