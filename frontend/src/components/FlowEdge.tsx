@@ -58,9 +58,9 @@ function getRoundedOrthogonalPath(points: { x: number; y: number }[], radius = 2
 
 /**
  * Custom FlowEdge
- * - Renders precise ELK-calculated orthogonal path if node positions are aligned
- * - Otherwise falls back to a dynamic smoothstep edge
- * - Prevents backward (right -> left) overlapping in fallback using staggered hashing
+ * - Renders precise ELK-calculated orthogonal path if node positions are aligned (forward edges only)
+ * - Custom around-the-graph detour path for backlinks (right-to-left)
+ * - SmoothStep fallback path for forward edges when not aligned
  */
 function FlowEdge({
   id,
@@ -78,13 +78,12 @@ function FlowEdge({
 }: EdgeProps<AppFlowEdge>) {
   const { getNodes } = useReactFlow();
 
-  // 1. Check if ELK layout is present and aligns with current handle positions
+  const isRightToLeft = sourceX > targetX;
   const sections = data?.sections;
   let useElkPath = false;
   let elkPath = '';
 
-  const isRightToLeft = sourceX > targetX;
-
+  // 1. Process ELK layout path (forward edges only)
   if (!isRightToLeft && sections && sections.length > 0) {
     const firstSection = sections[0];
     const lastSection = sections[sections.length - 1];
@@ -99,38 +98,22 @@ function FlowEdge({
     const isSourceMatch = Math.abs(sourceX - startX) < tolerance && Math.abs(sourceY - startY) < tolerance;
     const isTargetMatch = Math.abs(targetX - endX) < tolerance && Math.abs(targetY - endY) < tolerance;
     
-    const isReversedSourceMatch = Math.abs(sourceX - endX) < tolerance && Math.abs(sourceY - endY) < tolerance;
-    const isReversedTargetMatch = Math.abs(targetX - startX) < tolerance && Math.abs(targetY - startY) < tolerance;
-    
-    if ((isSourceMatch && isTargetMatch) || (isReversedSourceMatch && isReversedTargetMatch)) {
+    if (isSourceMatch && isTargetMatch) {
       useElkPath = true;
-      const isReversed = isReversedSourceMatch && isReversedTargetMatch;
-      
-      const allPoints: { x: number; y: number }[] = [];
+      let pathStr = '';
       for (const section of sections) {
-        allPoints.push(section.startPoint);
-        if (section.bendPoints) {
-          allPoints.push(...section.bendPoints);
-        }
-        allPoints.push(section.endPoint);
+        const points = [
+          section.startPoint,
+          ...(section.bendPoints || []),
+          section.endPoint,
+        ];
+        pathStr += (pathStr ? ' ' : '') + getRoundedOrthogonalPath(points, 20);
       }
-      
-      // Remove consecutive duplicates
-      const uniquePoints = allPoints.filter((pt, idx) => {
-        if (idx === 0) return true;
-        const prev = allPoints[idx - 1];
-        return Math.hypot(pt.x - prev.x, pt.y - prev.y) > 0.1;
-      });
-
-      if (isReversed) {
-        uniquePoints.reverse();
-      }
-      
-      elkPath = getRoundedOrthogonalPath(uniquePoints, 20);
+      elkPath = pathStr;
     }
   }
 
-  // 2. Generate path
+  // 2. Generate final path
   let path = '';
 
   if (isRightToLeft) {
@@ -152,17 +135,12 @@ function FlowEdge({
     if (maxRight === -Infinity) maxRight = Math.max(sourceX, targetX) + 100;
     if (maxBottom === -Infinity) maxBottom = Math.max(sourceY, targetY) + 100;
 
-    const edgeKey = `${id}-${source}-${target}`;
-    const hash = getStableHash(edgeKey);
-    const offsetIndex = hash % 5; // 0..4
+    const hash = getStableHash(`${id}-${source}-${target}`);
+    const stagger = 30 + (hash % 5) * 15; // Spreads offsets: 30px, 45px, 60px, 75px, 90px
 
-    const staggerRight = 30 + offsetIndex * 15;
-    const staggerBottom = 30 + offsetIndex * 15;
-    const staggerLeft = 30 + offsetIndex * 15;
-
-    const targetRightX = maxRight + staggerRight;
-    const targetBottomY = maxBottom + staggerBottom;
-    const targetLeftX = targetX - staggerLeft;
+    const targetRightX = maxRight + stagger;
+    const targetBottomY = maxBottom + stagger;
+    const targetLeftX = targetX - stagger;
 
     const points = [
       { x: sourceX, y: sourceY },
