@@ -38,7 +38,14 @@ class UpdateNodeDimensions(BaseModel):
     height: int
 
 
+class NodeOffsetUpdate(BaseModel):
+    id: uuid.UUID
+    offset_x: int
+    offset_y: int
 
+
+class BulkUpdateNodeOffsets(BaseModel):
+    offsets: list[NodeOffsetUpdate]
 
 
 class NodeRead(NodeBase, OrmModel):

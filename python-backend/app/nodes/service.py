@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from app import models
 from app.expressions import service as expression_service
-from app.nodes.schemas import NodeCreate
+from app.nodes.schemas import NodeCreate, NodeOffsetUpdate
 from app.constants import EventName
 
 if TYPE_CHECKING:
@@ -52,6 +52,22 @@ async def update_node_offset(
         graph_id=node.graph_id,
         payload={"nodeId": node_id, "patch": {"offset_x": offset_x, "offset_y": offset_y}},
     )
+
+
+async def update_nodes_offsets(
+    uow: UnitOfWork,
+    offsets: list[NodeOffsetUpdate],
+) -> None:
+    for update in offsets:
+        node = await uow.nodes.get(update.id)
+        if node is not None:
+            node.offset_x = update.offset_x
+            node.offset_y = update.offset_y
+            uow.emit(
+                event=EventName.NODE_UPDATED,
+                graph_id=node.graph_id,
+                payload={"nodeId": update.id, "patch": {"offset_x": update.offset_x, "offset_y": update.offset_y}},
+            )
 
 
 async def update_node_dimensions(

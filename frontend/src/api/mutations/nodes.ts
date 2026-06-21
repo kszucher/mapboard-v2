@@ -149,3 +149,61 @@ export const useUpdateNodePosition = () => {
   });
 };
 
+
+export const useUpdateNodesPositions = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      offsets,
+    }: {
+      offsets: { id: string; offset_x: number; offset_y: number }[];
+      graphId: string;
+    }) => {
+      const res = await apiClient.PATCH('/nodes/bulk-offset', {
+        headers: { 'X-Client-Id': getClientId() },
+        body: { offsets },
+      });
+      if ('error' in res) throw res.error;
+    },
+    onMutate: async ({ offsets, graphId }) => {
+      if (!graphId) return;
+
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: queryKeys.nodes.byGraph(graphId) });
+
+      // Snapshot the previous value
+      const previousNodes = queryClient.getQueryData<NodeRead[]>(queryKeys.nodes.byGraph(graphId));
+
+      // Optimistically update
+      if (previousNodes) {
+        const offsetMap = new Map(offsets.map((o) => [o.id, o]));
+        queryClient.setQueryData<NodeRead[]>(
+          queryKeys.nodes.byGraph(graphId),
+          previousNodes.map((node) => {
+            const update = offsetMap.get(node.id);
+            return update
+              ? { ...node, offset_x: Math.round(update.offset_x), offset_y: Math.round(update.offset_y) }
+              : node;
+          })
+        );
+      }
+
+      return { previousNodes, graphId };
+    },
+    onError: (_err, _variables, context) => {
+      if (context?.previousNodes && context.graphId) {
+        queryClient.setQueryData(
+          queryKeys.nodes.byGraph(context.graphId),
+          context.previousNodes
+        );
+      }
+    },
+    onSettled: (_data, _error, variables) => {
+      if (variables?.graphId) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) });
+      }
+    },
+  });
+};
+

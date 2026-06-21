@@ -27,6 +27,15 @@ async def create_node(
     return node_id
 
 
+@router.patch("/bulk-offset", status_code=status.HTTP_204_NO_CONTENT)
+async def update_nodes_offsets(
+    payload: schemas.BulkUpdateNodeOffsets,
+    uow: Any = Depends(get_uow)
+) -> None:
+    await node_service.update_nodes_offsets(uow, payload.offsets)
+    await uow.commit()
+
+
 @router.patch("/{node_id}/offset", status_code=status.HTTP_204_NO_CONTENT)
 async def update_node_offset(
     node_id: uuid.UUID,

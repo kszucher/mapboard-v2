@@ -10,15 +10,26 @@ import {
   useReactFlow,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { useCallback, useEffect, useMemo, useRef } from 'react'
-import { useCreateEdge, useDeleteEdge, useUpdateNodePosition } from '../api/mutations'
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react'
+import { useCreateEdge, useDeleteEdge, useUpdateNodePosition, useUpdateNodesPositions } from '../api/mutations'
 import { useEdges, useExpressions, useNodes } from '../api/queries'
 import FlowEdge from './FlowEdge.tsx'
 import { CustomNode } from './FlowNode.tsx'
 import { useGraphWebSocket } from './hooks/useGraphWebSocket.ts'
 import type { AppFlowEdge, AppFlowNode } from './types.ts'
+import { getLayoutedElements } from './layout.ts'
 
-const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
+export interface FlowRef {
+  triggerLayout: () => Promise<void>;
+}
+
+const FlowContent = ({
+  selectedGraphId,
+  flowRef,
+}: {
+  selectedGraphId: string;
+  flowRef: React.RefObject<FlowRef | null>;
+}) => {
   // data fetching
   const { data: nodesData } = useNodes(selectedGraphId);
   const { data: edgesData } = useEdges(selectedGraphId);
@@ -29,6 +40,7 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
 
   // mutations
   const updateNodePositionMutation = useUpdateNodePosition();
+  const updateNodesPositionsMutation = useUpdateNodesPositions();
   const createEdgeMutation = useCreateEdge();
   const deleteEdgeMutation = useDeleteEdge();
 
@@ -45,6 +57,12 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
   // refs
   const prevGraphId = useRef<string | null>(null);
   const edgeReconnectSuccessful = useRef(true);
+  const edgeSectionsRef = useRef<Record<string, any[]>>({});
+
+  // Clear edge layout sections when changing graphs
+  useEffect(() => {
+    edgeSectionsRef.current = {};
+  }, [selectedGraphId]);
 
   // memoized values
   const nodeTypes = useMemo(
@@ -82,6 +100,9 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
         type: 'custom' as const,
         animated: true,
         style: { stroke: '#fff', strokeWidth: 2 },
+        data: {
+          sections: edgeSectionsRef.current[edge.id],
+        },
       }));
   }, [edgesData, nodesData, expressionsData]);
 
@@ -219,6 +240,49 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
     [fitView],
   );
 
+  const performLayout = useCallback(async () => {
+    if (nodes.length === 0) return;
+
+    try {
+      const { nodes: layoutedNodes, edges: layoutedEdges } = await getLayoutedElements(nodes, edges, expressionsData);
+      
+      // Store the layouted edge sections in ref so they are preserved on sync
+      const sectionsMap: Record<string, any[]> = {};
+      layoutedEdges.forEach(e => {
+        if (e.data?.sections) {
+          sectionsMap[e.id] = e.data.sections;
+        }
+      });
+      edgeSectionsRef.current = sectionsMap;
+
+      // Update local nodes and edges state immediately for visual response
+      setNodes(layoutedNodes);
+      setEdges(layoutedEdges);
+
+      // Prepare bulk update payload
+      const offsets = layoutedNodes.map((node) => ({
+        id: node.id,
+        offset_x: Math.round(node.position.x),
+        offset_y: Math.round(node.position.y),
+      }));
+
+      // Persist to database
+      await updateNodesPositionsMutation.mutateAsync({
+        offsets,
+        graphId: selectedGraphId,
+      });
+
+      // Fit view nicely after layout
+      void fitView({ padding: 0.1, duration: 300 });
+    } catch (error) {
+      console.error('Failed to auto-layout nodes:', error);
+    }
+  }, [nodes, edges, expressionsData, selectedGraphId, setNodes, setEdges, updateNodesPositionsMutation, fitView]);
+
+  useImperativeHandle(flowRef, () => ({
+    triggerLayout: performLayout,
+  }));
+
   if (!nodesData || !edgesData || !expressionsData) return null;
 
   return (
@@ -246,6 +310,18 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
   );
 };
 
-export const Flow = ({ selectedGraphId }: { selectedGraphId: string }) => {
-  return <FlowContent selectedGraphId={selectedGraphId} />;
-};
+export const Flow = forwardRef<FlowRef, { selectedGraphId: string }>(
+  ({ selectedGraphId }, ref) => {
+    const flowContentRef = useRef<FlowRef | null>(null);
+
+    useImperativeHandle(ref, () => ({
+      triggerLayout: async () => {
+        await flowContentRef.current?.triggerLayout();
+      },
+    }));
+
+    return (
+      <FlowContent selectedGraphId={selectedGraphId} flowRef={flowContentRef} />
+    );
+  }
+);

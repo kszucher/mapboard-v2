@@ -50,6 +50,7 @@ The backend utilizes the **Unit of Work (UoW)** pattern (`app/context.py`) to ma
 ---
 
 ## Recent Major Improvements
+- **Auto-Layout Alignment**: Integrated client-side `elkjs` layout calculation in React Flow (utilizing measured custom node dimensions to prevent overlap) paired with a high-performance backend `PATCH /nodes/bulk-offset` endpoint for atomic coordinate storage and WebSocket broadcasting.
 - **Unit of Work Pattern**: Standardized transaction handling and event consistency.
 - **Type-Safe Constants**: Replaced all "magic strings" for node types and event names with centralized Enums (`app/constants.py`).
 - **Migration to Atomic Expressions**: Transitioned from bulk-updating node expressions to individual CRUD endpoints for Expressions.

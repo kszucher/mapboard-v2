@@ -140,6 +140,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/nodes/bulk-offset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Nodes Offsets */
+        patch: operations["update_nodes_offsets_nodes_bulk_offset_patch"];
+        trace?: never;
+    };
     "/nodes/{node_id}/offset": {
         parameters: {
             query?: never;
@@ -320,6 +337,11 @@ export interface components {
             /** Graph Id */
             graph_id: string | null;
         };
+        /** BulkUpdateNodeOffsets */
+        BulkUpdateNodeOffsets: {
+            /** Offsets */
+            offsets: components["schemas"]["NodeOffsetUpdate"][];
+        };
         /** EdgeCreate */
         EdgeCreate: {
             /**
@@ -462,6 +484,18 @@ export interface components {
             /** Is Processing */
             is_processing: boolean;
             node_type: components["schemas"]["NodeType"];
+        };
+        /** NodeOffsetUpdate */
+        NodeOffsetUpdate: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Offset X */
+            offset_x: number;
+            /** Offset Y */
+            offset_y: number;
         };
         /** NodeRead */
         NodeRead: {
@@ -790,6 +824,39 @@ export interface operations {
                 content: {
                     "application/json": string;
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_nodes_offsets_nodes_bulk_offset_patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-client-id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkUpdateNodeOffsets"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
