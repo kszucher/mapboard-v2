@@ -1,9 +1,14 @@
+from pathlib import Path
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_prefix="GRAPHBOARD_", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=BASE_DIR / ".env", env_prefix="GRAPHBOARD_", extra="ignore"
+    )
 
     database_url: str = Field(
         default="postgresql+asyncpg://postgres:postgres@localhost:5432/graphboard",

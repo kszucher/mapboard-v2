@@ -26,6 +26,11 @@ export const CodeMirrorEditor = ({
   const isFocusedRef = useRef(false);
   const [isFocused, setIsFocused] = useState(false);
 
+  const onSaveRef = useRef(onSave);
+  useEffect(() => {
+    onSaveRef.current = onSave;
+  }, [onSave]);
+
   // Sync initialValue if it changes from outside
   useEffect(() => {
     if (isFocusedRef.current) return;
@@ -50,7 +55,7 @@ export const CodeMirrorEditor = ({
         if (update.docChanged) {
           const newValue = update.state.doc.toString();
           internalValueRef.current = newValue;
-          onSave(newValue);
+          onSaveRef.current(newValue);
         }
       }),
       EditorView.baseTheme({
@@ -74,7 +79,7 @@ export const CodeMirrorEditor = ({
     }
 
     const startState = EditorState.create({
-      doc: initialValue,
+      doc: internalValueRef.current,
       extensions,
     });
 

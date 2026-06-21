@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { queryOptions, useQuery } from '@tanstack/react-query'
 import { apiClient } from '../client'
 import type { components } from '../generated/schema'
 import { queryKeys } from '../queryKeys'
@@ -13,10 +13,14 @@ const fetchNodes = async (graphId: string): Promise<NodeRead[]> => {
   return res.data ?? [];
 };
 
-export const useNodes = (graphId: string) => {
-  return useQuery({
+export const nodeQueries = {
+  byGraph: (graphId: string) => queryOptions({
     queryKey: queryKeys.nodes.byGraph(graphId),
     queryFn: () => fetchNodes(graphId),
     enabled: Boolean(graphId),
-  });
+  }),
+};
+
+export const useNodes = (graphId: string) => {
+  return useQuery(nodeQueries.byGraph(graphId));
 };

@@ -1,12 +1,9 @@
-import { useQuery } from '@tanstack/react-query'
+import { queryOptions, useQuery } from '@tanstack/react-query'
 import { apiClient } from '../client'
-import type { components } from '../generated/schema'
 import { queryKeys } from '../queryKeys'
 
-type GraphRead = components['schemas']['GraphRead'];
-
-export const useUserGraphs = (userId: string | null) => {
-  return useQuery<GraphRead[]>({
+export const graphQueries = {
+  byUser: (userId: string | null) => queryOptions({
     queryKey: queryKeys.graphs.byUser(userId),
     queryFn: async () => {
       const res = await apiClient.GET('/graphs/user/{user_id}', {
@@ -16,5 +13,9 @@ export const useUserGraphs = (userId: string | null) => {
       return res.data ?? [];
     },
     enabled: Boolean(userId),
-  });
+  }),
+};
+
+export const useUserGraphs = (userId: string | null) => {
+  return useQuery(graphQueries.byUser(userId));
 };

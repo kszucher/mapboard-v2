@@ -45,7 +45,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
       default:
         return <div>Unknown Node Type</div>;
     }
-  }, [data, myExpressionsCount]);
+  }, [data]);
 
   if (!data) return null;
 
