@@ -76,17 +76,16 @@ function FlowEdge({
   markerEnd,
   data,
 }: EdgeProps<AppFlowEdge>) {
-  const { getNode } = useReactFlow();
-
-  const sourceNode = source ? getNode(source) : null;
-  const targetNode = target ? getNode(target) : null;
+  const { getNodes } = useReactFlow();
 
   // 1. Check if ELK layout is present and aligns with current handle positions
   const sections = data?.sections;
   let useElkPath = false;
   let elkPath = '';
 
-  if (sections && sections.length > 0) {
+  const isRightToLeft = sourceX > targetX;
+
+  if (!isRightToLeft && sections && sections.length > 0) {
     const firstSection = sections[0];
     const lastSection = sections[sections.length - 1];
     
@@ -100,60 +99,100 @@ function FlowEdge({
     const isSourceMatch = Math.abs(sourceX - startX) < tolerance && Math.abs(sourceY - startY) < tolerance;
     const isTargetMatch = Math.abs(targetX - endX) < tolerance && Math.abs(targetY - endY) < tolerance;
     
-    if (isSourceMatch && isTargetMatch) {
+    const isReversedSourceMatch = Math.abs(sourceX - endX) < tolerance && Math.abs(sourceY - endY) < tolerance;
+    const isReversedTargetMatch = Math.abs(targetX - startX) < tolerance && Math.abs(targetY - startY) < tolerance;
+    
+    if ((isSourceMatch && isTargetMatch) || (isReversedSourceMatch && isReversedTargetMatch)) {
       useElkPath = true;
-      let path = '';
-      for (const section of sections) {
-        const points = [
-          section.startPoint,
-          ...(section.bendPoints || []),
-          section.endPoint,
-        ];
-        path += (path ? ' ' : '') + getRoundedOrthogonalPath(points, 20);
-      }
-      elkPath = path;
-    }
-  }
-
-  // 2. Generate fallback path if ELK layout is not active/aligned
-  const isRightToLeft = sourceX > targetX;
-
-  const getNodeBottom = (node: typeof sourceNode) => {
-    if (!node) return null;
-    const height = node.measured?.height ?? node.height ?? node.data?.height ?? 80;
-    return node.position.y + (height as number);
-  };
-
-  let centerY: number | undefined;
-  if (isRightToLeft && sourceNode && targetNode) {
-    const sourceBottom = getNodeBottom(sourceNode);
-    const targetBottom = getNodeBottom(targetNode);
-
-    if (sourceBottom !== null && targetBottom !== null) {
-      const lowerBottom = Math.max(sourceBottom, targetBottom);
+      const isReversed = isReversedSourceMatch && isReversedTargetMatch;
       
-      // Calculate a stable staggered offset using a hash of the edge key to prevent overlapping
-      const edgeKey = `${id}-${source}-${target}`;
-      const hash = getStableHash(edgeKey);
-      const offset = 20 + (hash % 5) * 15; // Spreads offsets: 20px, 35px, 50px, 65px, 80px
-      centerY = lowerBottom + offset;
+      const allPoints: { x: number; y: number }[] = [];
+      for (const section of sections) {
+        allPoints.push(section.startPoint);
+        if (section.bendPoints) {
+          allPoints.push(...section.bendPoints);
+        }
+        allPoints.push(section.endPoint);
+      }
+      
+      // Remove consecutive duplicates
+      const uniquePoints = allPoints.filter((pt, idx) => {
+        if (idx === 0) return true;
+        const prev = allPoints[idx - 1];
+        return Math.hypot(pt.x - prev.x, pt.y - prev.y) > 0.1;
+      });
+
+      if (isReversed) {
+        uniquePoints.reverse();
+      }
+      
+      elkPath = getRoundedOrthogonalPath(uniquePoints, 20);
     }
   }
 
-  const [fallbackPath] = getSmoothStepPath({
-    sourceX,
-    sourceY,
-    sourcePosition,
-    targetX,
-    targetY,
-    targetPosition,
-    borderRadius: 30,
-    ...(centerY !== undefined && { centerY }),
-  });
+  // 2. Generate path
+  let path = '';
+
+  if (isRightToLeft) {
+    const allNodes = getNodes();
+    let maxRight = -Infinity;
+    let maxBottom = -Infinity;
+
+    for (const node of allNodes) {
+      const width = node.measured?.width ?? node.width ?? 200;
+      const height = node.measured?.height ?? node.height ?? 120;
+      const right = node.position.x + width;
+      const bottom = node.position.y + height;
+
+      if (right > maxRight) maxRight = right;
+      if (bottom > maxBottom) maxBottom = bottom;
+    }
+
+    // Default fallbacks in case maxRight or maxBottom is invalid
+    if (maxRight === -Infinity) maxRight = Math.max(sourceX, targetX) + 100;
+    if (maxBottom === -Infinity) maxBottom = Math.max(sourceY, targetY) + 100;
+
+    const edgeKey = `${id}-${source}-${target}`;
+    const hash = getStableHash(edgeKey);
+    const offsetIndex = hash % 5; // 0..4
+
+    const staggerRight = 30 + offsetIndex * 15;
+    const staggerBottom = 30 + offsetIndex * 15;
+    const staggerLeft = 30 + offsetIndex * 15;
+
+    const targetRightX = maxRight + staggerRight;
+    const targetBottomY = maxBottom + staggerBottom;
+    const targetLeftX = targetX - staggerLeft;
+
+    const points = [
+      { x: sourceX, y: sourceY },
+      { x: targetRightX, y: sourceY },
+      { x: targetRightX, y: targetBottomY },
+      { x: targetLeftX, y: targetBottomY },
+      { x: targetLeftX, y: targetY },
+      { x: targetX, y: targetY },
+    ];
+
+    path = getRoundedOrthogonalPath(points, 20);
+  } else if (useElkPath) {
+    path = elkPath;
+  } else {
+    // Generate fallback path for forward edges if ELK is not aligned
+    const [fallbackPath] = getSmoothStepPath({
+      sourceX,
+      sourceY,
+      sourcePosition,
+      targetX,
+      targetY,
+      targetPosition,
+      borderRadius: 30,
+    });
+    path = fallbackPath;
+  }
 
   return (
     <BaseEdge
-      path={useElkPath ? elkPath : fallbackPath}
+      path={path}
       markerEnd={markerEnd}
       style={style}
     />

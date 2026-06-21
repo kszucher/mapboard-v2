@@ -167,6 +167,7 @@ export const getLayoutedElements = async (
       'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
       'elk.layered.crossingMinimization.forceNodeModelOrder': true,
       'elk.layered.crossingMinimization.semiInteractive': true,
+      'elk.layered.feedbackEdges': true,
       'elk.randomSeed': '42',
     } as any,
     children: elkNodes,
