@@ -1,4 +1,5 @@
 import { BaseEdge, type EdgeProps, getSmoothStepPath, useReactFlow } from '@xyflow/react'
+import { memo } from 'react'
 
 /**
  * Custom FlowEdge
@@ -6,7 +7,7 @@ import { BaseEdge, type EdgeProps, getSmoothStepPath, useReactFlow } from '@xyfl
  * - If source is to the right of target, horizontal segment
  *   is 20px below the lower of the two nodes' bottoms
  */
-export default function FlowEdge({
+function FlowEdge({
   source,
   target,
   sourceX,
@@ -65,3 +66,5 @@ export default function FlowEdge({
     />
   );
 }
+
+export default memo(FlowEdge);

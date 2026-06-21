@@ -3,7 +3,8 @@ import { apiClient, getClientId } from '../client'
 import type { components } from '../generated/schema'
 import { queryKeys } from '../queryKeys'
 
-type NodeType = components['schemas']['NodeRead']['node_type'];
+type NodeRead = components['schemas']['NodeRead'];
+type NodeType = NodeRead['node_type'];
 type NodeColor = components['schemas']['NodeCreate']['color'];
 
 
@@ -106,7 +107,41 @@ export const useUpdateNodePosition = () => {
       });
       if ('error' in res) throw res.error;
     },
-    onSuccess: (_data, variables) => {
+    onMutate: async ({ nodeId, x, y, graphId }) => {
+      if (!graphId) return;
+
+      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+      await queryClient.cancelQueries({ queryKey: queryKeys.nodes.byGraph(graphId) });
+
+      // Snapshot the previous value
+      const previousNodes = queryClient.getQueryData<NodeRead[]>(queryKeys.nodes.byGraph(graphId));
+
+      // Optimistically update to the new value
+      if (previousNodes) {
+        queryClient.setQueryData<NodeRead[]>(
+          queryKeys.nodes.byGraph(graphId),
+          previousNodes.map(node =>
+            node.id === nodeId
+              ? { ...node, offset_x: Math.round(x), offset_y: Math.round(y) }
+              : node
+          )
+        );
+      }
+
+      // Return a context object with the snapshotted value
+      return { previousNodes, graphId };
+    },
+    onError: (_err, _variables, context) => {
+      // Rollback to the previous value if mutation fails
+      if (context?.previousNodes && context.graphId) {
+        queryClient.setQueryData(
+          queryKeys.nodes.byGraph(context.graphId),
+          context.previousNodes
+        );
+      }
+    },
+    onSettled: (_data, _error, variables) => {
+      // Always refetch after error or success to make sure we're in sync with the server
       if (variables.graphId) {
         void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) });
       }

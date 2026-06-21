@@ -93,19 +93,24 @@ const FlowContent = ({ selectedGraphId }: { selectedGraphId: string }) => {
       const nodeMap = new Map(prevNodes.map(n => [n.id, n]));
       return nodesData.map(n => {
         const prevNode = nodeMap.get(n.id);
+        const position = prevNode?.dragging
+          ? prevNode.position
+          : { x: n.offset_x, y: n.offset_y };
+
         return {
           id: n.id,
           type: 'custom' as const,
-          position: { x: n.offset_x, y: n.offset_y },
+          position,
           data: { node: n },
           // Preserve measured dimensions and other localized state
           measured: prevNode?.measured,
           width: prevNode?.width,
           height: prevNode?.height,
+          dragging: prevNode?.dragging,
         };
       });
     });
-  }, [nodesData, expressionsData, setNodes]);
+  }, [nodesData, setNodes]);
 
   // Sync edges from query data to state
   useEffect(() => {
