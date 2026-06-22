@@ -147,11 +147,16 @@ export const getLayoutedElements = async (
     };
   });
 
+  const nodesMap = new Map<string, typeof nodes[0]>();
+  for (const node of nodes) {
+    nodesMap.set(node.id, node);
+  }
+
   const layerMap = getDynamicLayers(nodes);
   const elkEdges = edges
     .filter((edge) => {
-      const sNode = nodes.find((n) => n.id === edge.source);
-      const tNode = nodes.find((n) => n.id === edge.target);
+      const sNode = nodesMap.get(edge.source);
+      const tNode = nodesMap.get(edge.target);
       return !checkIsBackEdge(sNode, tNode, layerMap);
     })
     .map((edge) => ({
