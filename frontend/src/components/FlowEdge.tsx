@@ -91,13 +91,17 @@ function FlowEdge({
       );
       const track = trackMap.get(id) ?? 0;
 
-      // 1. Identify the source node and its layer index
-      const sourceNodeObj = allNodes.find((n) => n.id === source);
-      const sLayer = layerMap.get(sourceNodeObj?.id ?? '');
+      // 1. Pre-map nodes for O(1) lookups
+      const nodesMap = new Map<string, AppFlowNode>();
+      for (const node of allNodes) {
+        nodesMap.set(node.id, node as AppFlowNode);
+      }
 
-      // 2. Identify the target node and its layer index
-      const targetNodeObj = allNodes.find((n) => n.id === target);
-      const tLayer = layerMap.get(targetNodeObj?.id ?? '');
+      // 2. Identify the source/target nodes and their layer indices
+      const sourceNodeObj = nodesMap.get(source);
+      const targetNodeObj = nodesMap.get(target);
+      const sLayer = sourceNodeObj ? layerMap.get(sourceNodeObj.id) : undefined;
+      const tLayer = targetNodeObj ? layerMap.get(targetNodeObj.id) : undefined;
 
       // 3. Identify all nodes in the same layer/column as the source node
       const sameColumnNodes = allNodes.filter((n) => {
@@ -117,25 +121,29 @@ function FlowEdge({
         return rightEdge > max ? rightEdge : max;
       }, -Infinity);
 
-      // 5. Find all backedges originating from this column
-      const columnBackEdges = allEdges
-        .map((e) => {
-          const sNode = allNodes.find((n) => n.id === e.source) as AppFlowNode | undefined;
-          const tNode = allNodes.find((n) => n.id === e.target) as AppFlowNode | undefined;
-          return { edge: e, sNode, tNode, isBack: checkIsBackEdge(sNode, tNode, layerMap) };
-        })
-        .filter((x) => {
-          if (!x.isBack || !x.sNode) return false;
-          if (!sourceNodeObj) return false;
-          
-          const nLayer = layerMap.get(x.sNode.id);
-          if (sLayer !== undefined && nLayer !== undefined) {
-            return sLayer === nLayer;
+      // 5. Gather and filter all backedges using nodesMap
+      const allBackEdges: { edge: AppFlowEdge; sNode: AppFlowNode; tNode: AppFlowNode }[] = [];
+      for (const e of allEdges) {
+        const sNode = nodesMap.get(e.source);
+        const tNode = nodesMap.get(e.target);
+        if (sNode && tNode) {
+          const isBack = checkIsBackEdge(sNode, tNode, layerMap);
+          if (isBack) {
+            allBackEdges.push({ edge: e as AppFlowEdge, sNode, tNode });
           }
-          return Math.abs(x.sNode.position.x - sourceNodeObj.position.x) < 15;
-        });
+        }
+      }
 
-      // Sort columnBackEdges by track ascending to compute Local Source Sub-Lane
+      // 6. Find all backedges originating from this column and calculate Local Source Sub-Lane
+      const columnBackEdges = allBackEdges.filter((x) => {
+        if (!sourceNodeObj) return false;
+        const nLayer = layerMap.get(x.sNode.id);
+        if (sLayer !== undefined && nLayer !== undefined) {
+          return sLayer === nLayer;
+        }
+        return Math.abs(x.sNode.position.x - sourceNodeObj.position.x) < 15;
+      });
+
       const sortedSourceEdges = [...columnBackEdges].sort((a, b) => {
         const trackA = trackMap.get(a.edge.id) ?? 0;
         const trackB = trackMap.get(b.edge.id) ?? 0;
@@ -144,25 +152,16 @@ function FlowEdge({
       const activeSourceSubLane = sortedSourceEdges.findIndex((x) => x.edge.id === id);
       const activeSourceSubLaneIndex = activeSourceSubLane !== -1 ? activeSourceSubLane : 0;
 
-      // 6. Find all backedges targeting this column
-      const targetColumnBackEdges = allEdges
-        .map((e) => {
-          const sNode = allNodes.find((n) => n.id === e.source) as AppFlowNode | undefined;
-          const tNode = allNodes.find((n) => n.id === e.target) as AppFlowNode | undefined;
-          return { edge: e, sNode, tNode, isBack: checkIsBackEdge(sNode, tNode, layerMap) };
-        })
-        .filter((x) => {
-          if (!x.isBack || !x.tNode) return false;
-          if (!targetNodeObj) return false;
-          
-          const nLayer = layerMap.get(x.tNode.id);
-          if (tLayer !== undefined && nLayer !== undefined) {
-            return tLayer === nLayer;
-          }
-          return Math.abs(x.tNode.position.x - targetNodeObj.position.x) < 15;
-        });
+      // 7. Find all backedges targeting this column and calculate Local Target Sub-Lane
+      const targetColumnBackEdges = allBackEdges.filter((x) => {
+        if (!targetNodeObj) return false;
+        const nLayer = layerMap.get(x.tNode.id);
+        if (tLayer !== undefined && nLayer !== undefined) {
+          return tLayer === nLayer;
+        }
+        return Math.abs(x.tNode.position.x - targetNodeObj.position.x) < 15;
+      });
 
-      // Sort targetColumnBackEdges by track ascending to compute Local Target Sub-Lane
       const sortedTargetEdges = [...targetColumnBackEdges].sort((a, b) => {
         const trackA = trackMap.get(a.edge.id) ?? 0;
         const trackB = trackMap.get(b.edge.id) ?? 0;
