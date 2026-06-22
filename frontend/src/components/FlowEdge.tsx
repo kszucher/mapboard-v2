@@ -1,17 +1,7 @@
-import { BaseEdge, type EdgeProps, getBezierPath, useReactFlow } from '@xyflow/react'
+import { BaseEdge, type EdgeProps, getBezierPath, useNodes, useEdges } from '@xyflow/react'
 import { memo } from 'react'
 import type { AppFlowEdge, AppFlowNode } from './types'
-import { checkIsBackEdge } from './shared/edgeUtils'
-
-// Helper to generate a stable, positive 32-bit integer hash from a string
-function getStableHash(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash << 5) - hash + str.charCodeAt(i);
-    hash |= 0; // Convert to 32bit integer
-  }
-  return Math.abs(hash);
-}
+import { checkIsBackEdge, getDynamicLayers, assignBackLinkTracks } from './shared/edgeUtils'
 
 // Helper to construct an SVG path string from orthogonal points with rounded corners
 function getRoundedOrthogonalPath(points: { x: number; y: number }[], radius = 20) {
@@ -57,46 +47,7 @@ function getRoundedOrthogonalPath(points: { x: number; y: number }[], radius = 2
   return path;
 }
 
-interface GraphHull {
-  left: number;
-  right: number;
-  top: number;
-  bottom: number;
-}
 
-// Compute the AABB hull of all nodes with 60px padding
-function computeGraphHull(nodes: AppFlowNode[]): GraphHull {
-  let minX = Infinity;
-  let maxX = -Infinity;
-  let minY = Infinity;
-  let maxY = -Infinity;
-
-  for (const node of nodes) {
-    const width = node.measured?.width ?? node.width ?? 200;
-    const height = node.measured?.height ?? node.height ?? 120;
-    const left = node.position.x;
-    const right = node.position.x + width;
-    const top = node.position.y;
-    const bottom = node.position.y + height;
-
-    if (left < minX) minX = left;
-    if (right > maxX) maxX = right;
-    if (top < minY) minY = top;
-    if (bottom > maxY) maxY = bottom;
-  }
-
-  if (minX === Infinity) {
-    return { left: 0, right: 0, top: 0, bottom: 0 };
-  }
-
-  const padding = 60;
-  return {
-    left: minX - padding,
-    right: maxX + padding,
-    top: minY - padding,
-    bottom: maxY + padding,
-  };
-}
 
 /**
  * Custom FlowEdge component.
@@ -115,64 +66,132 @@ function FlowEdge({
   style = {},
   markerEnd,
 }: EdgeProps<AppFlowEdge>) {
-  const { getNodes, getEdges } = useReactFlow();
-
-  const allNodes = getNodes();
-  const allEdges = getEdges();
+  const allNodes = useNodes();
+  const allEdges = useEdges();
 
   const sourceNode = allNodes.find((n) => n.id === source) as AppFlowNode | undefined;
   const targetNode = allNodes.find((n) => n.id === target) as AppFlowNode | undefined;
 
+  const layerMap = getDynamicLayers(allNodes as AppFlowNode[]);
+
   // Stronger semantic rule: sourceLayer > targetLayer OR sourceX > targetX
-  const isBackEdge = checkIsBackEdge(sourceNode, targetNode, sourceX, targetX);
+  const isBackEdge = checkIsBackEdge(sourceNode, targetNode, layerMap, sourceX, targetX);
 
-  // Filter and sort all back edges dynamically by geometry to assign a unique, stable lane index
-  const backEdges = allEdges
-    .filter((e) => {
-      const sNode = allNodes.find((n) => n.id === e.source) as AppFlowNode | undefined;
-      const tNode = allNodes.find((n) => n.id === e.target) as AppFlowNode | undefined;
-      return checkIsBackEdge(sNode, tNode);
-    })
-    .sort((a, b) => {
-      const aSource = allNodes.find((n) => n.id === a.source);
-      const bSource = allNodes.find((n) => n.id === b.source);
-      const aSourceY = aSource?.position.y ?? 0;
-      const bSourceY = bSource?.position.y ?? 0;
-      if (aSourceY !== bSourceY) return aSourceY - bSourceY;
 
-      const aTarget = allNodes.find((n) => n.id === a.target);
-      const bTarget = allNodes.find((n) => n.id === b.target);
-      const aTargetY = aTarget?.position.y ?? 0;
-      const bTargetY = bTarget?.position.y ?? 0;
-      if (aTargetY !== bTargetY) return aTargetY - bTargetY;
 
-      return a.id.localeCompare(b.id);
-    });
 
-  const backEdgeIndex = backEdges.findIndex((e) => e.id === id);
-  const laneIndex = backEdgeIndex !== -1 ? backEdgeIndex : (getStableHash(id) % 8);
 
   const getPath = (): string => {
     if (isBackEdge) {
       // ROUTE: BACKEDGE PERIMETER PATH
-      const hull = computeGraphHull(allNodes as AppFlowNode[]);
+      const trackMap = assignBackLinkTracks(
+        allEdges as AppFlowEdge[],
+        allNodes as AppFlowNode[],
+        layerMap
+      );
+      const track = trackMap.get(id) ?? 0;
 
-      const corridorMargin = 80;
-      const laneGap = 20;
+      // 1. Identify the source node and its layer index
+      const sourceNodeObj = allNodes.find((n) => n.id === source);
+      const sLayer = layerMap.get(sourceNodeObj?.id ?? '');
 
-      const corridorX = hull.right + corridorMargin;
-      const corridorY = hull.bottom + corridorMargin;
+      // 2. Identify the target node and its layer index
+      const targetNodeObj = allNodes.find((n) => n.id === target);
+      const tLayer = layerMap.get(targetNodeObj?.id ?? '');
 
-      const rightLaneX = corridorX + laneIndex * laneGap;
-      const bottomLaneY = corridorY + laneIndex * laneGap;
-      
-      // Dynamic offset for approach to prevent vertical overlap
-      const targetApproachX = targetX - (35 + laneIndex * 10);
+      // 3. Identify all nodes in the same layer/column as the source node
+      const sameColumnNodes = allNodes.filter((n) => {
+        if (!sourceNodeObj) return false;
+        const nLayer = layerMap.get(n.id);
+        if (sLayer !== undefined && nLayer !== undefined) {
+          return sLayer === nLayer;
+        }
+        // Fallback to vertical column alignment (X coordinate tolerance)
+        return Math.abs(n.position.x - sourceNodeObj.position.x) < 15;
+      });
+
+      // 4. Find the max right edge position among all nodes in this column
+      const maxRight = sameColumnNodes.reduce((max, n) => {
+        const width = n.measured?.width ?? n.width ?? 200;
+        const rightEdge = n.position.x + width;
+        return rightEdge > max ? rightEdge : max;
+      }, -Infinity);
+
+      // 5. Find all backedges originating from this column
+      const columnBackEdges = allEdges
+        .map((e) => {
+          const sNode = allNodes.find((n) => n.id === e.source) as AppFlowNode | undefined;
+          const tNode = allNodes.find((n) => n.id === e.target) as AppFlowNode | undefined;
+          return { edge: e, sNode, tNode, isBack: checkIsBackEdge(sNode, tNode, layerMap) };
+        })
+        .filter((x) => {
+          if (!x.isBack || !x.sNode) return false;
+          if (!sourceNodeObj) return false;
+          
+          const nLayer = layerMap.get(x.sNode.id);
+          if (sLayer !== undefined && nLayer !== undefined) {
+            return sLayer === nLayer;
+          }
+          return Math.abs(x.sNode.position.x - sourceNodeObj.position.x) < 15;
+        });
+
+      // Sort columnBackEdges by track ascending to compute Local Source Sub-Lane
+      const sortedSourceEdges = [...columnBackEdges].sort((a, b) => {
+        const trackA = trackMap.get(a.edge.id) ?? 0;
+        const trackB = trackMap.get(b.edge.id) ?? 0;
+        return trackA - trackB;
+      });
+      const activeSourceSubLane = sortedSourceEdges.findIndex((x) => x.edge.id === id);
+      const activeSourceSubLaneIndex = activeSourceSubLane !== -1 ? activeSourceSubLane : 0;
+
+      // 6. Find all backedges targeting this column
+      const targetColumnBackEdges = allEdges
+        .map((e) => {
+          const sNode = allNodes.find((n) => n.id === e.source) as AppFlowNode | undefined;
+          const tNode = allNodes.find((n) => n.id === e.target) as AppFlowNode | undefined;
+          return { edge: e, sNode, tNode, isBack: checkIsBackEdge(sNode, tNode, layerMap) };
+        })
+        .filter((x) => {
+          if (!x.isBack || !x.tNode) return false;
+          if (!targetNodeObj) return false;
+          
+          const nLayer = layerMap.get(x.tNode.id);
+          if (tLayer !== undefined && nLayer !== undefined) {
+            return tLayer === nLayer;
+          }
+          return Math.abs(x.tNode.position.x - targetNodeObj.position.x) < 15;
+        });
+
+      // Sort targetColumnBackEdges by track ascending to compute Local Target Sub-Lane
+      const sortedTargetEdges = [...targetColumnBackEdges].sort((a, b) => {
+        const trackA = trackMap.get(a.edge.id) ?? 0;
+        const trackB = trackMap.get(b.edge.id) ?? 0;
+        return trackA - trackB;
+      });
+      const activeTargetSubLane = sortedTargetEdges.findIndex((x) => x.edge.id === id);
+      const activeTargetSubLaneIndex = activeTargetSubLane !== -1 ? activeTargetSubLane : 0;
+
+      // 7. Calculate local hull bottom of all columns <= sLayer (hull per layer)
+      const localNodes = allNodes.filter((n) => {
+        const nLayer = layerMap.get(n.id);
+        return nLayer !== undefined && sLayer !== undefined && nLayer <= sLayer;
+      });
+      const localMaxY = localNodes.reduce((max, n) => {
+        const height = n.measured?.height ?? n.height ?? 120;
+        const bottomEdge = n.position.y + height;
+        return bottomEdge > max ? bottomEdge : max;
+      }, -Infinity);
+      const localBottom = localMaxY === -Infinity ? 500 : localMaxY;
+
+      // 8. Calculate parallel path offsets
+      const bottomLaneY = localBottom + 80 + track * 20;
+      const localRightX = (maxRight === -Infinity ? sourceX : maxRight) + 40 + activeSourceSubLaneIndex * 10;
+      const targetApproachX = targetX - (35 + activeTargetSubLaneIndex * 10);
 
       const points = [
         { x: sourceX, y: sourceY },
-        { x: rightLaneX, y: sourceY },
-        { x: rightLaneX, y: bottomLaneY },
+        { x: localRightX, y: sourceY },
+        { x: localRightX, y: bottomLaneY },
         { x: targetApproachX, y: bottomLaneY },
         { x: targetApproachX, y: targetY },
         { x: targetX, y: targetY },

@@ -1,6 +1,6 @@
 import ELK from 'elkjs/lib/elk.bundled.js';
 import type { AppFlowNode, AppFlowEdge, ApiExpression } from './types';
-import { checkIsBackEdge } from './shared/edgeUtils';
+import { checkIsBackEdge, getDynamicLayers } from './shared/edgeUtils';
 
 const elk = new ELK();
 
@@ -147,11 +147,12 @@ export const getLayoutedElements = async (
     };
   });
 
+  const layerMap = getDynamicLayers(nodes);
   const elkEdges = edges
     .filter((edge) => {
       const sNode = nodes.find((n) => n.id === edge.source);
       const tNode = nodes.find((n) => n.id === edge.target);
-      return !checkIsBackEdge(sNode, tNode);
+      return !checkIsBackEdge(sNode, tNode, layerMap);
     })
     .map((edge) => ({
       id: edge.id,
@@ -196,6 +197,23 @@ export const getLayoutedElements = async (
       },
     };
   });
+
+  // Assign discrete layer/column index based on X coordinate clustering
+  const sortedNodes = [...layoutedNodes].sort((a, b) => a.position.x - b.position.x);
+  let currentLayer = 0;
+  let lastX = -Infinity;
+  for (const n of sortedNodes) {
+    if (lastX === -Infinity) {
+      lastX = n.position.x;
+    } else if (n.position.x - lastX > 50) {
+      currentLayer++;
+      lastX = n.position.x;
+    }
+    n.data = {
+      ...n.data,
+      layer: currentLayer,
+    };
+  }
 
   const layoutedEdges = edges.map((edge) => {
     const elkEdge = (layoutedGraph.edges as any[])?.find((e) => e.id === edge.id);

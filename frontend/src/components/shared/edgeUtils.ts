@@ -5,7 +5,7 @@
  * By identifying loop structures based on layers and coordinates, we can isolate them from the 
  * main layout calculations and apply specific perimeter routing to improve workflow readability.
  */
-import type { AppFlowNode } from '../types';
+import type { AppFlowNode, AppFlowEdge } from '../types';
 
 /**
  * Extracts the layer number from a node data structure.
@@ -24,24 +24,209 @@ export const getLayer = (node: AppFlowNode | undefined): number | undefined => {
 };
 
 /**
+ * Clusters nodes by their X positions to assign each node a discrete column/layer index.
+ * This is computed dynamically at render time to avoid losing it during React Flow state synchronization.
+ */
+export const getDynamicLayers = (nodes: AppFlowNode[]): Map<string, number> => {
+  const sorted = [...nodes].sort((a, b) => a.position.x - b.position.x);
+  const layerMap = new Map<string, number>();
+  let currentLayer = 0;
+  let lastX = -Infinity;
+
+  for (const node of sorted) {
+    if (lastX === -Infinity) {
+      lastX = node.position.x;
+    } else if (node.position.x - lastX > 50) {
+      currentLayer++;
+      lastX = node.position.x;
+    }
+    layerMap.set(node.id, currentLayer);
+  }
+
+  return layerMap;
+};
+
+/**
  * Determines whether an edge is a backward edge.
  * Supports passing handle X coordinates directly (for runtime rendering offsets) or node positions (for layout).
  */
 export const checkIsBackEdge = (
   sourceNode: AppFlowNode | undefined,
   targetNode: AppFlowNode | undefined,
+  layerMap?: Map<string, number>,
   sourceX?: number,
   targetX?: number
 ): boolean => {
   if (!sourceNode || !targetNode) return false;
 
-  const sourceLayer = getLayer(sourceNode);
-  const targetLayer = getLayer(targetNode);
+  const sourceLayer = layerMap ? layerMap.get(sourceNode.id) : getLayer(sourceNode);
+  const targetLayer = layerMap ? layerMap.get(targetNode.id) : getLayer(targetNode);
 
-  const sX = sourceX ?? sourceNode.position.x;
+  if (sourceLayer !== undefined && targetLayer !== undefined) {
+    return sourceLayer >= targetLayer;
+  }
+
+  // If sourceX is not provided, estimate it using the node's width to represent the EAST handle.
+  const sWidth = sourceNode.measured?.width ?? sourceNode.width ?? 200;
+  const sX = sourceX ?? (sourceNode.position.x + sWidth);
   const tX = targetX ?? targetNode.position.x;
 
-  return sourceLayer !== undefined && targetLayer !== undefined
-    ? sX > tX || sourceLayer > targetLayer
-    : sX > tX;
+  return sX >= tX;
+};
+
+/**
+ * Computes a Map of Node ID to its BFS index starting from the START nodes.
+ * Used for deterministic geometric sorting of edge lanes.
+ */
+export const getBfsOrderedIndices = (
+  nodes: AppFlowNode[],
+  edges: AppFlowEdge[]
+): Map<string, number> => {
+  const startNodes = nodes.filter((n) => n.data?.node?.node_type === 'START');
+  const orderedIds: string[] = [];
+  const visited = new Set<string>();
+  const queue: AppFlowNode[] = [...startNodes];
+
+  if (queue.length === 0 && nodes[0]) {
+    queue.push(nodes[0]);
+  }
+
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    if (visited.has(current.id)) continue;
+    visited.add(current.id);
+    orderedIds.push(current.id);
+
+    const childrenIds = edges
+      .filter((e) => e.source === current.id)
+      .map((e) => e.target);
+
+    for (const childId of childrenIds) {
+      const childNode = nodes.find((n) => n.id === childId);
+      if (childNode && !visited.has(childId)) {
+        queue.push(childNode);
+      }
+    }
+  }
+
+  // Append remaining disconnected nodes
+  for (const node of nodes) {
+    if (!visited.has(node.id)) {
+      orderedIds.push(node.id);
+    }
+  }
+
+  const bfsMap = new Map<string, number>();
+  orderedIds.forEach((id, idx) => {
+    bfsMap.set(id, idx);
+  });
+
+  return bfsMap;
+};
+
+/**
+ * Assigns a unique track index to each backedge using an Interval Coloring (greedy channel routing) algorithm.
+ * Shorter loops (inner loops) are processed first to receive lower track indexes.
+ * Ties are broken using source/target Y positions (descending) to avoid vertical crossing.
+ */
+export const assignBackLinkTracks = (
+  edges: AppFlowEdge[],
+  nodes: AppFlowNode[],
+  layerMap: Map<string, number>
+): Map<string, number> => {
+  interface BackEdgeInterval {
+    id: string;
+    sourceLayer: number;
+    targetLayer: number;
+    sourceY: number;
+    targetY: number;
+    length: number;
+    edge: AppFlowEdge;
+  }
+
+  const backlinkIntervals: BackEdgeInterval[] = [];
+
+  for (const edge of edges) {
+    const sourceNode = nodes.find((n) => n.id === edge.source);
+    const targetNode = nodes.find((n) => n.id === edge.target);
+    if (!sourceNode || !targetNode) continue;
+
+    const isBack = checkIsBackEdge(sourceNode, targetNode, layerMap);
+    if (!isBack) continue;
+
+    const sourceLayer = layerMap.get(sourceNode.id) ?? 0;
+    const targetLayer = layerMap.get(targetNode.id) ?? 0;
+    const sourceY = sourceNode.position.y;
+    const targetY = targetNode.position.y;
+
+    backlinkIntervals.push({
+      id: edge.id,
+      sourceLayer,
+      targetLayer,
+      sourceY,
+      targetY,
+      length: sourceLayer - targetLayer,
+      edge,
+    });
+  }
+
+  // Sort intervals:
+  // 1. Shorter length first (inner loops get lower track indices)
+  // 2. Descending Y position of source node (lower node gets processed first, getting lower track index)
+  // 3. Descending Y position of target node (lower target gets processed first, getting lower track index)
+  backlinkIntervals.sort((a, b) => {
+    if (a.length !== b.length) {
+      return a.length - b.length;
+    }
+    if (a.sourceY !== b.sourceY) {
+      return b.sourceY - a.sourceY;
+    }
+    if (a.targetY !== b.targetY) {
+      return b.targetY - a.targetY;
+    }
+    return a.id.localeCompare(b.id);
+  });
+
+  const trackMap = new Map<string, number>();
+  const trackIntervals: BackEdgeInterval[][] = [];
+
+  for (const interval of backlinkIntervals) {
+    let assignedTrack = -1;
+
+    for (let trackIdx = 0; trackIdx < trackIntervals.length; trackIdx++) {
+      let hasOverlap = false;
+      for (const existing of trackIntervals[trackIdx]) {
+        // Overlap if they share source layer or target layer
+        const shareSourceOrTarget =
+          existing.sourceLayer === interval.sourceLayer ||
+          existing.targetLayer === interval.targetLayer;
+        
+        // Overlap if their open intervals intersect
+        const openIntervalOverlap =
+          Math.max(existing.targetLayer, interval.targetLayer) <
+          Math.min(existing.sourceLayer, interval.sourceLayer);
+
+        if (shareSourceOrTarget || openIntervalOverlap) {
+          hasOverlap = true;
+          break;
+        }
+      }
+
+      if (!hasOverlap) {
+        assignedTrack = trackIdx;
+        break;
+      }
+    }
+
+    if (assignedTrack === -1) {
+      assignedTrack = trackIntervals.length;
+      trackIntervals.push([interval]);
+    } else {
+      trackIntervals[assignedTrack].push(interval);
+    }
+
+    trackMap.set(interval.id, assignedTrack);
+  }
+
+  return trackMap;
 };

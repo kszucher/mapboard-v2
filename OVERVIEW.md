@@ -43,7 +43,10 @@ Edges connect nodes. A critical feature of Graphboard is **Hard Links**:
 Graphboard optimizes layout presentation to focus visual attention on the primary linear agent execution sequence while keeping feedback loops cleanly isolated:
 - **Layout Calculation (ELK)**: Uses the ELK layered algorithm to position nodes. Crucially, **backward edges (feedback loops) are filtered out prior to passing the edge set to ELK**. This guarantees that introducing or editing backward loops does not distort, shift, or alter the stable layout of the main forward execution path.
 - **Forward Edges (Main Flow)**: Rendered as clean, smooth **bezier curves** (`getBezierPath`) to highlight the linear main pipeline flow.
-- **Backward Edges (Feedback Loops)**: Routed around the outside of the graph using a custom **AABB hull algorithm**. To prevent overlaps, back edges are dynamically sorted geometrically and mapped to **non-crossing parallel lanes** with capped vertical and horizontal offsets.
+- **Backward Edges (Feedback Loops)**: Drop down vertically in the column gap to the right of their source column, run horizontally along the bottom of the graph (calculated via an AABB hull boundary), and rise back up to their target. To prevent overlaps and crossings:
+  1. **Global Interval Coloring (Channel Routing)**: All feedback loops are grouped and modeled as layer span intervals `[targetLayer, sourceLayer]`. A greedy coloring algorithm assigns each backlink to a unique track index. Shorter loops (inner nested loops) receive lower track indexes (inner corridors closer to nodes) to ensure nested routing. Disjoint loops share track indexes to optimize vertical space. Overlapping loops (e.g., layers 1-to-3 and 2-to-4) get separate tracks and only cross at their unavoidable horizontal intersections.
+  2. **Deterministic Tie-Breaks**: Ties for identical layers/intervals are broken by sorting source/target Y positions in descending order (lower on screen gets a lower track index first), routing outer/higher loops around inner/lower ones.
+  3. **Column-Based Sub-Lanes**: Within each column, drop-down and target-approach sub-lanes are dynamically assigned by sorting the column's active backlinks by their global track indexes. The first drop lane is at `maxRight + 40px`, and the target approach lane is at `targetX - 35px`.
 
 ---
 
