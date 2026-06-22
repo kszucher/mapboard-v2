@@ -113,12 +113,8 @@ const buildElkNodes = (
     }
 
     // 2. Source ports (output) on the right (EAST)
-    const sourcePorts = Array.from(new Set(edges.filter((e) => e.source === node.id).map((e) => e.sourceHandle).filter(Boolean) as string[]));
-    sourcePorts.sort((a, b) => {
-      const idxA = nodeExpressions.findIndex((expr) => expr.id === a);
-      const idxB = nodeExpressions.findIndex((expr) => expr.id === b);
-      return idxA - idxB;
-    });
+    const sourcePorts = Array.from(new Set(edges.filter((e) => e.source === node.id).map((e) => e.sourceHandle).filter(Boolean) as string[]))
+      .sort((a, b) => nodeExpressions.findIndex((expr) => expr.id === a) - nodeExpressions.findIndex((expr) => expr.id === b));
     if (sourcePorts.length === 0) {
       sourcePorts.push(nodeType === 'START' ? '0' : (nodeExpressions[0]?.id ?? '0'));
     }

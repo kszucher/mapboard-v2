@@ -29,33 +29,9 @@ function FlowEdge({
   const layerMap = getDynamicLayers(allNodes as AppFlowNode[], allEdges as AppFlowEdge[]);
   const isBackEdge = checkIsBackEdge(sourceNode, targetNode, layerMap, sourceX, targetX);
 
-  const getPath = (): string => {
-    if (isBackEdge) {
-      return getBacklinkPath(
-        id,
-        source,
-        target,
-        sourceX,
-        sourceY,
-        targetX,
-        targetY,
-        allNodes as AppFlowNode[],
-        allEdges as AppFlowEdge[],
-        layerMap
-      );
-    }
-    const [bezierPath] = getBezierPath({
-      sourceX,
-      sourceY,
-      sourcePosition,
-      targetX,
-      targetY,
-      targetPosition,
-    });
-    return bezierPath;
-  };
-
-  const path = getPath();
+  const path = isBackEdge
+    ? getBacklinkPath(id, source, target, sourceX, sourceY, targetX, targetY, allNodes as AppFlowNode[], allEdges as AppFlowEdge[], layerMap)
+    : getBezierPath({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition })[0];
 
   return <BaseEdge path={path} markerEnd={markerEnd} style={style} />;
 }

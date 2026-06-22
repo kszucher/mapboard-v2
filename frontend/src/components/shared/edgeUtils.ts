@@ -66,20 +66,11 @@ export const getDynamicLayers = (
     topoOrder.unshift(nodeId);
   };
 
-  // Traverse all nodes starting from START nodes first
-  nodes
-    .filter((n) => n.data?.node?.node_type === 'START')
-    .sort(sortNodesByIdAndIid)
-    .forEach((n) => {
-      if (!visited.has(n.id)) dfs(n.id);
-    });
-
-  nodes
-    .filter((n) => !visited.has(n.id))
-    .sort(sortNodesByIdAndIid)
-    .forEach((n) => {
-      if (!visited.has(n.id)) dfs(n.id);
-    });
+  const sortedStart = nodes.filter((n) => n.data?.node?.node_type === 'START').sort(sortNodesByIdAndIid);
+  const sortedOther = nodes.filter((n) => n.data?.node?.node_type !== 'START').sort(sortNodesByIdAndIid);
+  [...sortedStart, ...sortedOther].forEach((n) => {
+    if (!visited.has(n.id)) dfs(n.id);
+  });
 
   // Calculate topological depths along the topological order
   const layerMap = new Map(nodes.map((n) => [n.id, 0]));
@@ -117,14 +108,7 @@ export const checkIsBackEdge = (
     return true;
   }
 
-  if (ignoreCoordinates) return false;
-
-  // If sourceX is not provided, estimate it using the node's width to represent the EAST handle.
-  const sWidth = sourceNode.measured?.width ?? sourceNode.width ?? 200;
-  const sX = sourceX ?? (sourceNode.position.x + sWidth);
-  const tX = targetX ?? targetNode.position.x;
-
-  return sX >= tX;
+  return !ignoreCoordinates && (sourceX ?? (sourceNode.position.x + (sourceNode.measured?.width ?? sourceNode.width ?? 200))) >= (targetX ?? targetNode.position.x);
 };
 
 let lastEdgesRef: AppFlowEdge[] | null = null;
@@ -153,15 +137,11 @@ export const assignBackLinkTracks = (
   });
 
   backEdges.sort((a, b) => {
+    const lenA = (layerMap.get(a.source) ?? 0) - (layerMap.get(a.target) ?? 0);
+    const lenB = (layerMap.get(b.source) ?? 0) - (layerMap.get(b.target) ?? 0);
     const sA = nodesMap.get(a.source)!, tA = nodesMap.get(a.target)!;
     const sB = nodesMap.get(b.source)!, tB = nodesMap.get(b.target)!;
-    return (
-      ((layerMap.get(sA.id) ?? 0) - (layerMap.get(tA.id) ?? 0)) -
-      ((layerMap.get(sB.id) ?? 0) - (layerMap.get(tB.id) ?? 0)) ||
-      sB.position.y - sA.position.y ||
-      tB.position.y - tA.position.y ||
-      a.id.localeCompare(b.id)
-    );
+    return lenA - lenB || sB.position.y - sA.position.y || tB.position.y - tA.position.y || a.id.localeCompare(b.id);
   });
 
   const trackMap = new Map<string, number>();
@@ -171,19 +151,14 @@ export const assignBackLinkTracks = (
     const s = layerMap.get(edge.source) ?? 0;
     const t = layerMap.get(edge.target) ?? 0;
     let assignedTrack = trackIntervals.findIndex((track) =>
-      !track.some((existing) => {
-        const exS = layerMap.get(existing.source) ?? 0;
-        const exT = layerMap.get(existing.target) ?? 0;
+      !track.some((ex) => {
+        const exS = layerMap.get(ex.source) ?? 0, exT = layerMap.get(ex.target) ?? 0;
         return exS === s || exT === t || Math.max(exT, t) < Math.min(exS, s);
       })
     );
 
-    if (assignedTrack === -1) {
-      assignedTrack = trackIntervals.length;
-      trackIntervals.push([edge]);
-    } else {
-      trackIntervals[assignedTrack].push(edge);
-    }
+    if (assignedTrack === -1) assignedTrack = trackIntervals.push([]) - 1;
+    trackIntervals[assignedTrack].push(edge);
     trackMap.set(edge.id, assignedTrack);
   }
 
@@ -271,10 +246,7 @@ export const getBacklinkPath = (
   const activeTargetSubLaneIndex = getSubLaneIndex('target', tLayer);
 
   const localMaxY = allNodes
-    .filter((n) => {
-      const nLayer = layerMap.get(n.id);
-      return nLayer !== undefined && sLayer !== undefined && nLayer <= sLayer;
-    })
+    .filter((n) => (layerMap.get(n.id) ?? 0) <= (sLayer ?? 0))
     .reduce((max, n) => Math.max(max, n.position.y + (n.measured?.height ?? n.height ?? 120)), -Infinity);
 
   const localBottom = localMaxY === -Infinity ? 500 : localMaxY;
