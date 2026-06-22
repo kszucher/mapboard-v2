@@ -33,15 +33,27 @@ const sortNodesByIdAndIid = (a: AppFlowNode, b: AppFlowNode): number => {
   return (a.data?.node?.iid ?? 0) - (b.data?.node?.iid ?? 0) || a.id.localeCompare(b.id);
 };
 
-// DFS cycle detection to identify backward edges
-const findBackEdges = (
+/**
+ * Computes topological layers for each node deterministically using a single DFS pass
+ * that simultaneously breaks cycle back-edges and generates topological finish order.
+ */
+export const getDynamicLayers = (
   nodes: AppFlowNode[],
-  edges: AppFlowEdge[],
-  nodesMap: Map<string, AppFlowNode>
-): Set<string> => {
+  edges: AppFlowEdge[] = []
+): Map<string, number> => {
+  if (
+    lastNodesForLayers === nodes &&
+    lastEdgesForLayers === edges &&
+    lastLayerMap !== null
+  ) {
+    return lastLayerMap;
+  }
+
+  const nodesMap = new Map(nodes.map((n) => [n.id, n]));
   const visited = new Set<string>();
   const visiting = new Set<string>();
   const backEdges = new Set<string>();
+  const topoOrder: string[] = [];
 
   const dfs = (nodeId: string) => {
     visiting.add(nodeId);
@@ -67,9 +79,10 @@ const findBackEdges = (
 
     visiting.delete(nodeId);
     visited.add(nodeId);
+    topoOrder.unshift(nodeId);
   };
 
-  // Process START nodes first, then remaining nodes, both sorted deterministically
+  // Traverse all nodes starting from START nodes first
   nodes
     .filter((n) => n.data?.node?.node_type === 'START')
     .sort(sortNodesByIdAndIid)
@@ -84,85 +97,19 @@ const findBackEdges = (
       if (!visited.has(n.id)) dfs(n.id);
     });
 
-  return backEdges;
-};
-
-// Topological DAG depth calculator
-const computeTopologicalLayers = (
-  nodes: AppFlowNode[],
-  forwardEdges: AppFlowEdge[]
-): Map<string, number> => {
+  // Calculate topological depths along the topological order
   const layerMap = new Map(nodes.map((n) => [n.id, 0]));
-  const inDegree = new Map(nodes.map((n) => [n.id, 0]));
-
-  for (const edge of forwardEdges) {
-    inDegree.set(edge.target, (inDegree.get(edge.target) || 0) + 1);
-  }
-
-  const roots = nodes
-    .filter((n) => (inDegree.get(n.id) || 0) === 0)
-    .sort((a, b) => {
-      const isStartA = a.data?.node?.node_type === 'START' ? 1 : 0;
-      const isStartB = b.data?.node?.node_type === 'START' ? 1 : 0;
-      return isStartB - isStartA || sortNodesByIdAndIid(a, b);
-    });
-
-  const topoQueue = roots.map((n) => n.id);
-  const topoOrder: string[] = [];
-
-  while (topoQueue.length > 0) {
-    const current = topoQueue.shift()!;
-    topoOrder.push(current);
-
-    const outgoing = forwardEdges.filter((e) => e.source === current);
-    outgoing.sort((a, b) => a.target.localeCompare(b.target));
-
-    for (const edge of outgoing) {
-      const target = edge.target;
-      inDegree.set(target, (inDegree.get(target) || 1) - 1);
-      if (inDegree.get(target) === 0) {
-        topoQueue.push(target);
-      }
-    }
-  }
-
   for (const nodeId of topoOrder) {
     const currentLayer = layerMap.get(nodeId) || 0;
-    const outgoing = forwardEdges.filter((e) => e.source === nodeId);
+    const outgoing = edges.filter((e) => e.source === nodeId && !backEdges.has(e.id));
     for (const edge of outgoing) {
-      const target = edge.target;
-      layerMap.set(target, Math.max(layerMap.get(target) || 0, currentLayer + 1));
+      layerMap.set(edge.target, Math.max(layerMap.get(edge.target) || 0, currentLayer + 1));
     }
   }
-
-  return layerMap;
-};
-
-/**
- * Computes topological layers for each node deterministically using a cycle-breaking DFS
- * followed by DAG depth calculation. This replaces coordinate-based dynamic clustering.
- */
-export const getDynamicLayers = (
-  nodes: AppFlowNode[],
-  edges: AppFlowEdge[] = []
-): Map<string, number> => {
-  if (
-    lastNodesForLayers === nodes &&
-    lastEdgesForLayers === edges &&
-    lastLayerMap !== null
-  ) {
-    return lastLayerMap;
-  }
-
-  const nodesMap = new Map(nodes.map((n) => [n.id, n]));
-  const backEdges = findBackEdges(nodes, edges, nodesMap);
-  const forwardEdges = edges.filter(
-    (e) => !backEdges.has(e.id) && nodesMap.has(e.source) && nodesMap.has(e.target)
-  );
 
   lastNodesForLayers = nodes;
   lastEdgesForLayers = edges;
-  return (lastLayerMap = computeTopologicalLayers(nodes, forwardEdges));
+  return (lastLayerMap = layerMap);
 };
 
 /**
