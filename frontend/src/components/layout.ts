@@ -1,5 +1,6 @@
 import ELK from 'elkjs/lib/elk.bundled.js';
 import type { AppFlowNode, AppFlowEdge, ApiExpression } from './types';
+import { checkIsBackEdge } from './shared/edgeUtils';
 
 const elk = new ELK();
 
@@ -14,6 +15,10 @@ interface ElkPort {
   };
 }
 
+/**
+ * Computes deterministic node positions using the ELK layered layout algorithm.
+ * Excludes backward edges from the layout pass to stabilize the forward sequence.
+ */
 export const getLayoutedElements = async (
   nodes: AppFlowNode[],
   edges: AppFlowEdge[],
@@ -142,13 +147,19 @@ export const getLayoutedElements = async (
     };
   });
 
-  const elkEdges = edges.map((edge) => ({
-    id: edge.id,
-    sources: [edge.source],
-    targets: [edge.target],
-    sourcePort: edge.sourceHandle ?? undefined,
-    targetPort: edge.targetHandle ?? 'target',
-  }));
+  const elkEdges = edges
+    .filter((edge) => {
+      const sNode = nodes.find((n) => n.id === edge.source);
+      const tNode = nodes.find((n) => n.id === edge.target);
+      return !checkIsBackEdge(sNode, tNode);
+    })
+    .map((edge) => ({
+      id: edge.id,
+      sources: [edge.source],
+      targets: [edge.target],
+      sourcePort: edge.sourceHandle ?? undefined,
+      targetPort: edge.targetHandle ?? 'target',
+    }));
 
   const graph = {
     id: 'root',

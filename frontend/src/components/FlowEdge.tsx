@@ -1,6 +1,7 @@
 import { BaseEdge, type EdgeProps, getBezierPath, useReactFlow } from '@xyflow/react'
 import { memo } from 'react'
 import type { AppFlowEdge, AppFlowNode } from './types'
+import { checkIsBackEdge } from './shared/edgeUtils'
 
 // Helper to generate a stable, positive 32-bit integer hash from a string
 function getStableHash(str: string): number {
@@ -98,10 +99,8 @@ function computeGraphHull(nodes: AppFlowNode[]): GraphHull {
 }
 
 /**
- * Custom FlowEdge
- * - Renders precise ELK-calculated orthogonal path if node positions are aligned (forward edges only)
- * - Custom around-the-graph detour path for backlinks (right-to-left or sourceLayer > targetLayer)
- * - SmoothStep fallback path for forward edges when not aligned
+ * Custom FlowEdge component.
+ * Renders forward edges as bezier curves and backward edges (feedback loops) as perimeter detour lanes.
  */
 function FlowEdge({
   id,
@@ -116,43 +115,47 @@ function FlowEdge({
   style = {},
   markerEnd,
 }: EdgeProps<AppFlowEdge>) {
-  const { getNodes } = useReactFlow();
+  const { getNodes, getEdges } = useReactFlow();
 
   const allNodes = getNodes();
-
-  // Helper to extract node layer
-  const getLayer = (node: AppFlowNode | undefined): number | undefined => {
-    if (!node) return undefined;
-    const nodeData = node.data as Record<string, unknown> | undefined;
-    const innerNode = nodeData?.node as Record<string, unknown> | undefined;
-    const val = nodeData?.layer ?? innerNode?.layer ?? (node as unknown as Record<string, unknown>)?.layer;
-    if (typeof val === 'number') return val;
-    if (typeof val === 'string') {
-      const parsed = parseInt(val, 10);
-      return isNaN(parsed) ? undefined : parsed;
-    }
-    return undefined;
-  };
+  const allEdges = getEdges();
 
   const sourceNode = allNodes.find((n) => n.id === source) as AppFlowNode | undefined;
   const targetNode = allNodes.find((n) => n.id === target) as AppFlowNode | undefined;
-  const sourceLayer = getLayer(sourceNode);
-  const targetLayer = getLayer(targetNode);
 
   // Stronger semantic rule: sourceLayer > targetLayer OR sourceX > targetX
-  const isBackEdge =
-    sourceLayer !== undefined && targetLayer !== undefined
-      ? sourceX > targetX || sourceLayer > targetLayer
-      : sourceX > targetX;
+  const isBackEdge = checkIsBackEdge(sourceNode, targetNode, sourceX, targetX);
+
+  // Filter and sort all back edges dynamically by geometry to assign a unique, stable lane index
+  const backEdges = allEdges
+    .filter((e) => {
+      const sNode = allNodes.find((n) => n.id === e.source) as AppFlowNode | undefined;
+      const tNode = allNodes.find((n) => n.id === e.target) as AppFlowNode | undefined;
+      return checkIsBackEdge(sNode, tNode);
+    })
+    .sort((a, b) => {
+      const aSource = allNodes.find((n) => n.id === a.source);
+      const bSource = allNodes.find((n) => n.id === b.source);
+      const aSourceY = aSource?.position.y ?? 0;
+      const bSourceY = bSource?.position.y ?? 0;
+      if (aSourceY !== bSourceY) return aSourceY - bSourceY;
+
+      const aTarget = allNodes.find((n) => n.id === a.target);
+      const bTarget = allNodes.find((n) => n.id === b.target);
+      const aTargetY = aTarget?.position.y ?? 0;
+      const bTargetY = bTarget?.position.y ?? 0;
+      if (aTargetY !== bTargetY) return aTargetY - bTargetY;
+
+      return a.id.localeCompare(b.id);
+    });
+
+  const backEdgeIndex = backEdges.findIndex((e) => e.id === id);
+  const laneIndex = backEdgeIndex !== -1 ? backEdgeIndex : (getStableHash(id) % 8);
 
   const getPath = (): string => {
     if (isBackEdge) {
       // ROUTE: BACKEDGE PERIMETER PATH
       const hull = computeGraphHull(allNodes as AppFlowNode[]);
-
-      const MAX_LANES = 8;
-      const hashVal = getStableHash(id);
-      const laneIndex = hashVal % MAX_LANES;
 
       const corridorMargin = 80;
       const laneGap = 20;
@@ -162,7 +165,9 @@ function FlowEdge({
 
       const rightLaneX = corridorX + laneIndex * laneGap;
       const bottomLaneY = corridorY + laneIndex * laneGap;
-      const targetApproachX = targetX - 40;
+      
+      // Dynamic offset for approach to prevent vertical overlap
+      const targetApproachX = targetX - (35 + laneIndex * 10);
 
       const points = [
         { x: sourceX, y: sourceY },

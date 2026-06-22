@@ -39,6 +39,12 @@ Edges connect nodes. A critical feature of Graphboard is **Hard Links**:
 - Edges are connected to specific **Expression IDs** via the `from_expression_id` field.
 - This ensures that if you reorder branches in a Switch node, the outgoing wires stay attached to the correct logic/condition rather than breaking or shifting.
 
+### 4. Layout & Edge Routing (Agentic AI Workflow Visualization)
+Graphboard optimizes layout presentation to focus visual attention on the primary linear agent execution sequence while keeping feedback loops cleanly isolated:
+- **Layout Calculation (ELK)**: Uses the ELK layered algorithm to position nodes. Crucially, **backward edges (feedback loops) are filtered out prior to passing the edge set to ELK**. This guarantees that introducing or editing backward loops does not distort, shift, or alter the stable layout of the main forward execution path.
+- **Forward Edges (Main Flow)**: Rendered as clean, smooth **bezier curves** (`getBezierPath`) to highlight the linear main pipeline flow.
+- **Backward Edges (Feedback Loops)**: Routed around the outside of the graph using a custom **AABB hull algorithm**. To prevent overlaps, back edges are dynamically sorted geometrically and mapped to **non-crossing parallel lanes** with capped vertical and horizontal offsets.
+
 ---
 
 ### Unit of Work & Transaction Management
