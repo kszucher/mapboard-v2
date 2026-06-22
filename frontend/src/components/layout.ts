@@ -1,4 +1,5 @@
 import ELK from 'elkjs/lib/elk.bundled.js';
+import type { ElkNode, ElkExtendedEdge, LayoutOptions } from 'elkjs';
 import type { AppFlowNode, AppFlowEdge, ApiExpression } from './types';
 import { checkIsBackEdge, getDynamicLayers, sortNodesByIdAndIid } from './shared/edgeUtils';
 
@@ -15,7 +16,7 @@ interface ElkPort {
   };
 }
 
-const ELK_LAYOUT_OPTIONS = {
+const ELK_LAYOUT_OPTIONS: LayoutOptions = {
   'elk.algorithm': 'layered',
   'elk.direction': 'RIGHT',
   'elk.edgeRouting': 'ORTHOGONAL',
@@ -28,10 +29,10 @@ const ELK_LAYOUT_OPTIONS = {
   'elk.layered.cycleBreaking.strategy': 'MODEL_ORDER',
   'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
   'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
-  'elk.layered.crossingMinimization.forceNodeModelOrder': true,
-  'elk.layered.crossingMinimization.semiInteractive': false,
+  'elk.layered.crossingMinimization.forceNodeModelOrder': 'true',
+  'elk.layered.crossingMinimization.semiInteractive': 'false',
   'elk.randomSeed': '42',
-} as any;
+};
 
 // Generates deterministic BFS traversal node list
 const getDeterministicBFSOrder = (
@@ -86,7 +87,7 @@ const buildElkNodes = (
   orderedNodes: AppFlowNode[],
   edges: AppFlowEdge[],
   expressions: ApiExpression[]
-): any[] => {
+): ElkNode[] => {
   return orderedNodes.map((node) => {
     const nodeWidth = node.measured?.width ?? node.width ?? 200;
     const nodeHeight = node.measured?.height ?? node.height ?? 120;
@@ -156,7 +157,7 @@ const buildElkEdges = (
   layerMap: Map<string, number>,
   orderedNodes: AppFlowNode[],
   expressions: ApiExpression[]
-): any[] => {
+): ElkExtendedEdge[] => {
   return edges
     .filter((edge) => {
       const sNode = nodesMap.get(edge.source);
@@ -203,7 +204,7 @@ export const getLayoutedElements = async (
   const layerMap = getDynamicLayers(nodes, edges);
   const elkEdges = buildElkEdges(edges, nodesMap, layerMap, orderedNodes, expressions);
 
-  const graph = {
+  const graph: ElkNode = {
     id: 'root',
     layoutOptions: ELK_LAYOUT_OPTIONS,
     children: elkNodes,
@@ -228,7 +229,7 @@ export const getLayoutedElements = async (
   });
 
   const layoutedEdges = edges.map((edge) => {
-    const elkEdge = (layoutedGraph.edges as any[])?.find((e) => e.id === edge.id);
+    const elkEdge = layoutedGraph.edges?.find((e) => e.id === edge.id);
     return {
       ...edge,
       data: {
