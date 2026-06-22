@@ -29,7 +29,7 @@ let lastEdgesForLayers: AppFlowEdge[] | null = null;
 let lastLayerMap: Map<string, number> | null = null;
 
 // Helper to sort nodes deterministically by iid and id
-const sortNodesByIdAndIid = (a: AppFlowNode, b: AppFlowNode): number => {
+export const sortNodesByIdAndIid = (a: AppFlowNode, b: AppFlowNode): number => {
   return (a.data?.node?.iid ?? 0) - (b.data?.node?.iid ?? 0) || a.id.localeCompare(b.id);
 };
 

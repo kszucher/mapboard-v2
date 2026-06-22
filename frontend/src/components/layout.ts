@@ -1,6 +1,6 @@
 import ELK from 'elkjs/lib/elk.bundled.js';
 import type { AppFlowNode, AppFlowEdge, ApiExpression } from './types';
-import { checkIsBackEdge, getDynamicLayers } from './shared/edgeUtils';
+import { checkIsBackEdge, getDynamicLayers, sortNodesByIdAndIid } from './shared/edgeUtils';
 
 const elk = new ELK();
 
@@ -61,9 +61,7 @@ const getDeterministicBFSOrder = (
 
       const nodeA = nodesMap.get(a.target);
       const nodeB = nodesMap.get(b.target);
-      const iidA = nodeA?.data?.node?.iid ?? 0;
-      const iidB = nodeB?.data?.node?.iid ?? 0;
-      return iidA !== iidB ? iidA - iidB : a.target.localeCompare(b.target);
+      return nodeA && nodeB ? sortNodesByIdAndIid(nodeA, nodeB) : a.target.localeCompare(b.target);
     });
 
     for (const edge of outgoingEdges) {
