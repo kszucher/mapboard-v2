@@ -7,22 +7,6 @@
  */
 import type { AppFlowNode, AppFlowEdge } from '../types';
 
-/**
- * Extracts the layer number from a node data structure.
- */
-export const getLayer = (node: AppFlowNode | undefined): number | undefined => {
-  if (!node) return undefined;
-  const nodeData = node.data as Record<string, unknown> | undefined;
-  const innerNode = nodeData?.node as Record<string, unknown> | undefined;
-  const val = nodeData?.layer ?? innerNode?.layer ?? (node as unknown as Record<string, unknown>)?.layer;
-  if (typeof val === 'number') return val;
-  if (typeof val === 'string') {
-    const parsed = parseInt(val, 10);
-    return isNaN(parsed) ? undefined : parsed;
-  }
-  return undefined;
-};
-
 // Module-level caches for React component re-render performance optimization
 let lastNodesForLayers: AppFlowNode[] | null = null;
 let lastEdgesForLayers: AppFlowEdge[] | null = null;
@@ -119,18 +103,18 @@ export const getDynamicLayers = (
 export const checkIsBackEdge = (
   sourceNode: AppFlowNode | undefined,
   targetNode: AppFlowNode | undefined,
-  layerMap?: Map<string, number>,
+  layerMap: Map<string, number>,
   sourceX?: number,
   targetX?: number,
   ignoreCoordinates = false
 ): boolean => {
   if (!sourceNode || !targetNode) return false;
 
-  const sourceLayer = layerMap ? layerMap.get(sourceNode.id) : getLayer(sourceNode);
-  const targetLayer = layerMap ? layerMap.get(targetNode.id) : getLayer(targetNode);
+  const sourceLayer = layerMap.get(sourceNode.id);
+  const targetLayer = layerMap.get(targetNode.id);
 
-  if (sourceLayer !== undefined && targetLayer !== undefined) {
-    if (sourceLayer >= targetLayer) return true;
+  if (sourceLayer !== undefined && targetLayer !== undefined && sourceLayer >= targetLayer) {
+    return true;
   }
 
   if (ignoreCoordinates) return false;
@@ -162,90 +146,45 @@ export const assignBackLinkTracks = (
     return lastTrackMap;
   }
 
-  interface BackEdgeInterval {
-    id: string;
-    sourceLayer: number;
-    targetLayer: number;
-    sourceY: number;
-    targetY: number;
-    length: number;
-    edge: AppFlowEdge;
-  }
+  const nodesMap = new Map(nodes.map((n) => [n.id, n]));
+  const backEdges = edges.filter((e) => {
+    const s = nodesMap.get(e.source), t = nodesMap.get(e.target);
+    return s && t && checkIsBackEdge(s, t, layerMap);
+  });
 
-  const nodesMap = new Map<string, AppFlowNode>();
-  for (const node of nodes) {
-    nodesMap.set(node.id, node);
-  }
-
-  const backlinkIntervals: BackEdgeInterval[] = [];
-
-  for (const edge of edges) {
-    const sourceNode = nodesMap.get(edge.source);
-    const targetNode = nodesMap.get(edge.target);
-    if (!sourceNode || !targetNode) continue;
-
-    const isBack = checkIsBackEdge(sourceNode, targetNode, layerMap);
-    if (!isBack) continue;
-
-    const sourceLayer = layerMap.get(sourceNode.id) ?? 0;
-    const targetLayer = layerMap.get(targetNode.id) ?? 0;
-    const sourceY = sourceNode.position.y;
-    const targetY = targetNode.position.y;
-
-    backlinkIntervals.push({
-      id: edge.id,
-      sourceLayer,
-      targetLayer,
-      sourceY,
-      targetY,
-      length: sourceLayer - targetLayer,
-      edge,
-    });
-  }
-
-  // Sort intervals:
-  // 1. Shorter length first (inner loops get lower track indices)
-  // 2. Descending Y position of source node (lower node gets processed first, getting lower track index)
-  // 3. Descending Y position of target node (lower target gets processed first, getting lower track index)
-  backlinkIntervals.sort(
-    (a, b) =>
-      a.length - b.length ||
-      b.sourceY - a.sourceY ||
-      b.targetY - a.targetY ||
+  backEdges.sort((a, b) => {
+    const sA = nodesMap.get(a.source)!, tA = nodesMap.get(a.target)!;
+    const sB = nodesMap.get(b.source)!, tB = nodesMap.get(b.target)!;
+    return (
+      ((layerMap.get(sA.id) ?? 0) - (layerMap.get(tA.id) ?? 0)) -
+      ((layerMap.get(sB.id) ?? 0) - (layerMap.get(tB.id) ?? 0)) ||
+      sB.position.y - sA.position.y ||
+      tB.position.y - tA.position.y ||
       a.id.localeCompare(b.id)
-  );
+    );
+  });
 
   const trackMap = new Map<string, number>();
-  const trackIntervals: BackEdgeInterval[][] = [];
+  const trackIntervals: AppFlowEdge[][] = [];
 
-  for (const interval of backlinkIntervals) {
-    let assignedTrack = -1;
-
-    for (let trackIdx = 0; trackIdx < trackIntervals.length; trackIdx++) {
-      let hasOverlap = false;
-      for (const existing of trackIntervals[trackIdx]) {
-        const share = existing.sourceLayer === interval.sourceLayer || existing.targetLayer === interval.targetLayer;
-        const intersect = Math.max(existing.targetLayer, interval.targetLayer) < Math.min(existing.sourceLayer, interval.sourceLayer);
-        if (share || intersect) {
-          hasOverlap = true;
-          break;
-        }
-      }
-
-      if (!hasOverlap) {
-        assignedTrack = trackIdx;
-        break;
-      }
-    }
+  for (const edge of backEdges) {
+    const s = layerMap.get(edge.source) ?? 0;
+    const t = layerMap.get(edge.target) ?? 0;
+    let assignedTrack = trackIntervals.findIndex((track) =>
+      !track.some((existing) => {
+        const exS = layerMap.get(existing.source) ?? 0;
+        const exT = layerMap.get(existing.target) ?? 0;
+        return exS === s || exT === t || Math.max(exT, t) < Math.min(exS, s);
+      })
+    );
 
     if (assignedTrack === -1) {
       assignedTrack = trackIntervals.length;
-      trackIntervals.push([interval]);
+      trackIntervals.push([edge]);
     } else {
-      trackIntervals[assignedTrack].push(interval);
+      trackIntervals[assignedTrack].push(edge);
     }
-
-    trackMap.set(interval.id, assignedTrack);
+    trackMap.set(edge.id, assignedTrack);
   }
 
   lastEdgesRef = edges;
@@ -319,23 +258,17 @@ export const getBacklinkPath = (
     .filter((n) => layerMap.get(n.id) === sLayer)
     .reduce((max, n) => Math.max(max, n.position.x + (n.measured?.width ?? n.width ?? 200)), -Infinity);
 
-  const mappedEdges = allEdges.map((e) => ({
-    edge: e,
-    sNode: nodesMap.get(e.source)!,
-    tNode: nodesMap.get(e.target)!,
-  }));
-
-  const getSubLaneIndex = (matchNodeField: 'sNode' | 'tNode', layerTarget: number | undefined) => {
-    const filtered = mappedEdges.filter(
-      (x) => x.sNode && x.tNode && checkIsBackEdge(x.sNode, x.tNode, layerMap) && layerMap.get(x[matchNodeField].id) === layerTarget
-    );
-    const sorted = [...filtered].sort((a, b) => (trackMap.get(a.edge.id) ?? 0) - (trackMap.get(b.edge.id) ?? 0));
-    const idx = sorted.findIndex((x) => x.edge.id === id);
-    return idx !== -1 ? idx : 0;
+  const getSubLaneIndex = (nodeField: 'source' | 'target', layerTarget: number | undefined) => {
+    const filtered = allEdges.filter((e) => {
+      const s = nodesMap.get(e.source), t = nodesMap.get(e.target);
+      return s && t && checkIsBackEdge(s, t, layerMap) && layerMap.get(e[nodeField]) === layerTarget;
+    });
+    const sorted = [...filtered].sort((a, b) => (trackMap.get(a.id) ?? 0) - (trackMap.get(b.id) ?? 0));
+    return Math.max(0, sorted.findIndex((e) => e.id === id));
   };
 
-  const activeSourceSubLaneIndex = getSubLaneIndex('sNode', sLayer);
-  const activeTargetSubLaneIndex = getSubLaneIndex('tNode', tLayer);
+  const activeSourceSubLaneIndex = getSubLaneIndex('source', sLayer);
+  const activeTargetSubLaneIndex = getSubLaneIndex('target', tLayer);
 
   const localMaxY = allNodes
     .filter((n) => {
