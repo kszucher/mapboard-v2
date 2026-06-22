@@ -101,14 +101,9 @@ function FlowEdge({
 
       // 3. Identify all nodes in the same layer/column as the source node
       const sameColumnNodes = allNodes.filter((n) => {
-        if (!sourceNodeObj) return false
-        const nLayer = layerMap.get(n.id)
-        if (sLayer !== undefined && nLayer !== undefined) {
-          return sLayer === nLayer
-        }
-        // Fallback to vertical column alignment (X coordinate tolerance)
-        return Math.abs(n.position.x - sourceNodeObj.position.x) < 15
-      })
+        const nLayer = layerMap.get(n.id);
+        return sLayer !== undefined && nLayer !== undefined && sLayer === nLayer;
+      });
 
       // 4. Find the max right edge position among all nodes in this column
       const maxRight = sameColumnNodes.reduce((max, n) => {
@@ -132,13 +127,9 @@ function FlowEdge({
 
       // 6. Find all backedges originating from this column and calculate Local Source Sub-Lane
       const columnBackEdges = allBackEdges.filter((x) => {
-        if (!sourceNodeObj) return false
-        const nLayer = layerMap.get(x.sNode.id)
-        if (sLayer !== undefined && nLayer !== undefined) {
-          return sLayer === nLayer
-        }
-        return Math.abs(x.sNode.position.x - sourceNodeObj.position.x) < 15
-      })
+        const nLayer = layerMap.get(x.sNode.id);
+        return sLayer !== undefined && nLayer !== undefined && sLayer === nLayer;
+      });
 
       const sortedSourceEdges = [...columnBackEdges].sort((a, b) => {
         const trackA = trackMap.get(a.edge.id) ?? 0
@@ -150,13 +141,9 @@ function FlowEdge({
 
       // 7. Find all backedges targeting this column and calculate Local Target Sub-Lane
       const targetColumnBackEdges = allBackEdges.filter((x) => {
-        if (!targetNodeObj) return false
-        const nLayer = layerMap.get(x.tNode.id)
-        if (tLayer !== undefined && nLayer !== undefined) {
-          return tLayer === nLayer
-        }
-        return Math.abs(x.tNode.position.x - targetNodeObj.position.x) < 15
-      })
+        const nLayer = layerMap.get(x.tNode.id);
+        return tLayer !== undefined && nLayer !== undefined && tLayer === nLayer;
+      });
 
       const sortedTargetEdges = [...targetColumnBackEdges].sort((a, b) => {
         const trackA = trackMap.get(a.edge.id) ?? 0
