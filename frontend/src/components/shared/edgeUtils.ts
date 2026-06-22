@@ -207,18 +207,13 @@ export const assignBackLinkTracks = (
   // 1. Shorter length first (inner loops get lower track indices)
   // 2. Descending Y position of source node (lower node gets processed first, getting lower track index)
   // 3. Descending Y position of target node (lower target gets processed first, getting lower track index)
-  backlinkIntervals.sort((a, b) => {
-    if (a.length !== b.length) {
-      return a.length - b.length;
-    }
-    if (a.sourceY !== b.sourceY) {
-      return b.sourceY - a.sourceY;
-    }
-    if (a.targetY !== b.targetY) {
-      return b.targetY - a.targetY;
-    }
-    return a.id.localeCompare(b.id);
-  });
+  backlinkIntervals.sort(
+    (a, b) =>
+      a.length - b.length ||
+      b.sourceY - a.sourceY ||
+      b.targetY - a.targetY ||
+      a.id.localeCompare(b.id)
+  );
 
   const trackMap = new Map<string, number>();
   const trackIntervals: BackEdgeInterval[][] = [];
@@ -229,17 +224,9 @@ export const assignBackLinkTracks = (
     for (let trackIdx = 0; trackIdx < trackIntervals.length; trackIdx++) {
       let hasOverlap = false;
       for (const existing of trackIntervals[trackIdx]) {
-        // Overlap if they share source layer or target layer
-        const shareSourceOrTarget =
-          existing.sourceLayer === interval.sourceLayer ||
-          existing.targetLayer === interval.targetLayer;
-        
-        // Overlap if their open intervals intersect
-        const openIntervalOverlap =
-          Math.max(existing.targetLayer, interval.targetLayer) <
-          Math.min(existing.sourceLayer, interval.sourceLayer);
-
-        if (shareSourceOrTarget || openIntervalOverlap) {
+        const share = existing.sourceLayer === interval.sourceLayer || existing.targetLayer === interval.targetLayer;
+        const intersect = Math.max(existing.targetLayer, interval.targetLayer) < Math.min(existing.sourceLayer, interval.sourceLayer);
+        if (share || intersect) {
           hasOverlap = true;
           break;
         }
@@ -324,73 +311,40 @@ export const getBacklinkPath = (
   const trackMap = assignBackLinkTracks(allEdges, allNodes, layerMap);
   const track = trackMap.get(id) ?? 0;
 
-  const nodesMap = new Map<string, AppFlowNode>();
-  for (const node of allNodes) {
-    nodesMap.set(node.id, node);
-  }
+  const nodesMap = new Map(allNodes.map((n) => [n.id, n]));
+  const sLayer = layerMap.get(source);
+  const tLayer = layerMap.get(target);
 
-  const sourceNodeObj = nodesMap.get(source);
-  const targetNodeObj = nodesMap.get(target);
-  const sLayer = sourceNodeObj ? layerMap.get(sourceNodeObj.id) : undefined;
-  const tLayer = targetNodeObj ? layerMap.get(targetNodeObj.id) : undefined;
+  const maxRight = allNodes
+    .filter((n) => layerMap.get(n.id) === sLayer)
+    .reduce((max, n) => Math.max(max, n.position.x + (n.measured?.width ?? n.width ?? 200)), -Infinity);
 
-  const sameColumnNodes = allNodes.filter((n) => {
-    const nLayer = layerMap.get(n.id);
-    return sLayer !== undefined && nLayer !== undefined && sLayer === nLayer;
-  });
+  const mappedEdges = allEdges.map((e) => ({
+    edge: e,
+    sNode: nodesMap.get(e.source)!,
+    tNode: nodesMap.get(e.target)!,
+  }));
 
-  const maxRight = sameColumnNodes.reduce((max, n) => {
-    const width = n.measured?.width ?? n.width ?? 200;
-    const rightEdge = n.position.x + width;
-    return rightEdge > max ? rightEdge : max;
-  }, -Infinity);
+  const getSubLaneIndex = (matchNodeField: 'sNode' | 'tNode', layerTarget: number | undefined) => {
+    const filtered = mappedEdges.filter(
+      (x) => x.sNode && x.tNode && checkIsBackEdge(x.sNode, x.tNode, layerMap) && layerMap.get(x[matchNodeField].id) === layerTarget
+    );
+    const sorted = [...filtered].sort((a, b) => (trackMap.get(a.edge.id) ?? 0) - (trackMap.get(b.edge.id) ?? 0));
+    const idx = sorted.findIndex((x) => x.edge.id === id);
+    return idx !== -1 ? idx : 0;
+  };
 
-  const allBackEdges: { edge: AppFlowEdge; sNode: AppFlowNode; tNode: AppFlowNode }[] = [];
-  for (const e of allEdges) {
-    const sNode = nodesMap.get(e.source);
-    const tNode = nodesMap.get(e.target);
-    if (sNode && tNode && checkIsBackEdge(sNode, tNode, layerMap)) {
-      allBackEdges.push({ edge: e, sNode, tNode });
-    }
-  }
+  const activeSourceSubLaneIndex = getSubLaneIndex('sNode', sLayer);
+  const activeTargetSubLaneIndex = getSubLaneIndex('tNode', tLayer);
 
-  const columnBackEdges = allBackEdges.filter((x) => {
-    const nLayer = layerMap.get(x.sNode.id);
-    return sLayer !== undefined && nLayer !== undefined && sLayer === nLayer;
-  });
+  const localMaxY = allNodes
+    .filter((n) => {
+      const nLayer = layerMap.get(n.id);
+      return nLayer !== undefined && sLayer !== undefined && nLayer <= sLayer;
+    })
+    .reduce((max, n) => Math.max(max, n.position.y + (n.measured?.height ?? n.height ?? 120)), -Infinity);
 
-  const sortedSourceEdges = [...columnBackEdges].sort((a, b) => {
-    const trackA = trackMap.get(a.edge.id) ?? 0;
-    const trackB = trackMap.get(b.edge.id) ?? 0;
-    return trackA - trackB;
-  });
-  const activeSourceSubLane = sortedSourceEdges.findIndex((x) => x.edge.id === id);
-  const activeSourceSubLaneIndex = activeSourceSubLane !== -1 ? activeSourceSubLane : 0;
-
-  const targetColumnBackEdges = allBackEdges.filter((x) => {
-    const nLayer = layerMap.get(x.tNode.id);
-    return tLayer !== undefined && nLayer !== undefined && tLayer === nLayer;
-  });
-
-  const sortedTargetEdges = [...targetColumnBackEdges].sort((a, b) => {
-    const trackA = trackMap.get(a.edge.id) ?? 0;
-    const trackB = trackMap.get(b.edge.id) ?? 0;
-    return trackA - trackB;
-  });
-  const activeTargetSubLane = sortedTargetEdges.findIndex((x) => x.edge.id === id);
-  const activeTargetSubLaneIndex = activeTargetSubLane !== -1 ? activeTargetSubLane : 0;
-
-  const localNodes = allNodes.filter((n) => {
-    const nLayer = layerMap.get(n.id);
-    return nLayer !== undefined && sLayer !== undefined && nLayer <= sLayer;
-  });
-  const localMaxY = localNodes.reduce((max, n) => {
-    const height = n.measured?.height ?? n.height ?? 120;
-    const bottomEdge = n.position.y + height;
-    return bottomEdge > max ? bottomEdge : max;
-  }, -Infinity);
   const localBottom = localMaxY === -Infinity ? 500 : localMaxY;
-
   const bottomLaneY = localBottom + 80 + track * 20;
   const localRightX = (maxRight === -Infinity ? sourceX : maxRight) + 40 + activeSourceSubLaneIndex * 10;
   const targetApproachX = targetX - (35 + activeTargetSubLaneIndex * 10);
