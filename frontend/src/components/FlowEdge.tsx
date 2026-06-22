@@ -71,7 +71,7 @@ function FlowEdge({
   const sourceNode = allNodes.find((n) => n.id === source) as AppFlowNode | undefined
   const targetNode = allNodes.find((n) => n.id === target) as AppFlowNode | undefined
 
-  const layerMap = getDynamicLayers(allNodes as AppFlowNode[])
+  const layerMap = getDynamicLayers(allNodes as AppFlowNode[], allEdges as AppFlowEdge[])
 
   // Stronger semantic rule: sourceLayer > targetLayer OR sourceX > targetX
   const isBackEdge = checkIsBackEdge(sourceNode, targetNode, layerMap, sourceX, targetX)
