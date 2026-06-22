@@ -23,11 +23,20 @@ export const getLayer = (node: AppFlowNode | undefined): number | undefined => {
   return undefined;
 };
 
+// Module-level caches for React component re-render performance optimization
+let lastNodesForLayers: AppFlowNode[] | null = null;
+let lastLayerMap: Map<string, number> | null = null;
+
 /**
  * Clusters nodes by their X positions to assign each node a discrete column/layer index.
  * This is computed dynamically at render time to avoid losing it during React Flow state synchronization.
+ * Cached based on node array references to optimize multi-edge rendering cycles.
  */
 export const getDynamicLayers = (nodes: AppFlowNode[]): Map<string, number> => {
+  if (lastNodesForLayers === nodes && lastLayerMap !== null) {
+    return lastLayerMap;
+  }
+
   const sorted = [...nodes].sort((a, b) => a.position.x - b.position.x);
   const layerMap = new Map<string, number>();
   let currentLayer = 0;
@@ -43,6 +52,8 @@ export const getDynamicLayers = (nodes: AppFlowNode[]): Map<string, number> => {
     layerMap.set(node.id, currentLayer);
   }
 
+  lastNodesForLayers = nodes;
+  lastLayerMap = layerMap;
   return layerMap;
 };
 
@@ -74,66 +85,25 @@ export const checkIsBackEdge = (
   return sX >= tX;
 };
 
-/**
- * Computes a Map of Node ID to its BFS index starting from the START nodes.
- * Used for deterministic geometric sorting of edge lanes.
- */
-export const getBfsOrderedIndices = (
-  nodes: AppFlowNode[],
-  edges: AppFlowEdge[]
-): Map<string, number> => {
-  const startNodes = nodes.filter((n) => n.data?.node?.node_type === 'START');
-  const orderedIds: string[] = [];
-  const visited = new Set<string>();
-  const queue: AppFlowNode[] = [...startNodes];
-
-  if (queue.length === 0 && nodes[0]) {
-    queue.push(nodes[0]);
-  }
-
-  while (queue.length > 0) {
-    const current = queue.shift()!;
-    if (visited.has(current.id)) continue;
-    visited.add(current.id);
-    orderedIds.push(current.id);
-
-    const childrenIds = edges
-      .filter((e) => e.source === current.id)
-      .map((e) => e.target);
-
-    for (const childId of childrenIds) {
-      const childNode = nodes.find((n) => n.id === childId);
-      if (childNode && !visited.has(childId)) {
-        queue.push(childNode);
-      }
-    }
-  }
-
-  // Append remaining disconnected nodes
-  for (const node of nodes) {
-    if (!visited.has(node.id)) {
-      orderedIds.push(node.id);
-    }
-  }
-
-  const bfsMap = new Map<string, number>();
-  orderedIds.forEach((id, idx) => {
-    bfsMap.set(id, idx);
-  });
-
-  return bfsMap;
-};
+let lastEdgesRef: AppFlowEdge[] | null = null;
+let lastNodesRef: AppFlowNode[] | null = null;
+let lastTrackMap: Map<string, number> | null = null;
 
 /**
  * Assigns a unique track index to each backedge using an Interval Coloring (greedy channel routing) algorithm.
  * Shorter loops (inner loops) are processed first to receive lower track indexes.
  * Ties are broken using source/target Y positions (descending) to avoid vertical crossing.
+ * Optimized with O(1) node lookup and reference-caching across multi-edge rendering passes.
  */
 export const assignBackLinkTracks = (
   edges: AppFlowEdge[],
   nodes: AppFlowNode[],
   layerMap: Map<string, number>
 ): Map<string, number> => {
+  if (lastEdgesRef === edges && lastNodesRef === nodes && lastTrackMap !== null) {
+    return lastTrackMap;
+  }
+
   interface BackEdgeInterval {
     id: string;
     sourceLayer: number;
@@ -144,11 +114,16 @@ export const assignBackLinkTracks = (
     edge: AppFlowEdge;
   }
 
+  const nodesMap = new Map<string, AppFlowNode>();
+  for (const node of nodes) {
+    nodesMap.set(node.id, node);
+  }
+
   const backlinkIntervals: BackEdgeInterval[] = [];
 
   for (const edge of edges) {
-    const sourceNode = nodes.find((n) => n.id === edge.source);
-    const targetNode = nodes.find((n) => n.id === edge.target);
+    const sourceNode = nodesMap.get(edge.source);
+    const targetNode = nodesMap.get(edge.target);
     if (!sourceNode || !targetNode) continue;
 
     const isBack = checkIsBackEdge(sourceNode, targetNode, layerMap);
@@ -228,5 +203,8 @@ export const assignBackLinkTracks = (
     trackMap.set(interval.id, assignedTrack);
   }
 
+  lastEdgesRef = edges;
+  lastNodesRef = nodes;
+  lastTrackMap = trackMap;
   return trackMap;
 };
