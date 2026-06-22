@@ -24,7 +24,13 @@ export const getLayoutedElements = async (
   edges: AppFlowEdge[],
   expressions: ApiExpression[] = []
 ): Promise<{ nodes: AppFlowNode[]; edges: AppFlowEdge[] }> => {
-  // 1. Sort nodes deterministically using a BFS starting from START nodes
+  // 1. Build a lookup Map for O(1) node retrievals to optimize BFS performance
+  const nodesMap = new Map<string, AppFlowNode>();
+  for (const node of nodes) {
+    nodesMap.set(node.id, node);
+  }
+
+  // 2. Sort nodes deterministically using a BFS starting from START nodes
   const startNodes = nodes.filter((n) => n.data?.node?.node_type === 'START');
   const orderedNodes: AppFlowNode[] = [];
   const visited = new Set<string>();
@@ -53,8 +59,8 @@ export const getLayoutedElements = async (
         return idxA - idxB;
       }
 
-      const nodeA = nodes.find((n) => n.id === a.target);
-      const nodeB = nodes.find((n) => n.id === b.target);
+      const nodeA = nodesMap.get(a.target);
+      const nodeB = nodesMap.get(b.target);
 
       const yA = nodeA?.position?.y ?? 0;
       const yB = nodeB?.position?.y ?? 0;
@@ -74,7 +80,7 @@ export const getLayoutedElements = async (
     const childrenIds = outgoingEdges.map((e) => e.target);
 
     for (const childId of childrenIds) {
-      const childNode = nodes.find((n) => n.id === childId);
+      const childNode = nodesMap.get(childId);
       if (childNode && !visited.has(childId)) {
         queue.push(childNode);
       }
@@ -146,11 +152,6 @@ export const getLayoutedElements = async (
       },
     };
   });
-
-  const nodesMap = new Map<string, typeof nodes[0]>();
-  for (const node of nodes) {
-    nodesMap.set(node.id, node);
-  }
 
   const layerMap = getDynamicLayers(nodes);
   const elkEdges = edges
