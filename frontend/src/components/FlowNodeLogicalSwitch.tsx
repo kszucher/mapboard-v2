@@ -32,8 +32,8 @@ export const FlowNodeLogicalSwitch = ({ data }: FlowNodeLogicalSwitchProps) => {
     return [...filtered].sort((a, b) => a.idx - b.idx);
   }, [allExpressions, node.id]);
 
-  const SPACING = 40;
-  const BASE_OFFSET = 66;
+  const SPACING = 32;
+  const BASE_OFFSET = 62;
   const num = Math.max(1, expressions.length);
   const LEFT_HANDLE_OFFSET = BASE_OFFSET + ((num - 1) * SPACING) / 2;
 

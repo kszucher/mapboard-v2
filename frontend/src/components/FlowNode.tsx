@@ -50,6 +50,8 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
 
   if (!data) return null;
 
+  const isStart = data.node.node_type === 'START';
+
   return (
     <div
       style={{
@@ -57,7 +59,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
         borderRadius: 16,
         padding: 12,
         minWidth: 200,
-        minHeight: 80,
+        minHeight: isStart ? 80 : undefined,
       }}
     >
       <Box position="absolute" top="8px" left="8px">

@@ -25,7 +25,6 @@ export const PlainEditor = ({
   const internalValueRef = useRef(initialValue);
 
   const isFocusedRef = useRef(false);
-  const [, setIsFocused] = useState(false);
 
   const spanRef = useRef<HTMLSpanElement>(null);
   const [measuredWidth, setMeasuredWidth] = useState<number>(minWidth);
@@ -92,12 +91,10 @@ export const PlainEditor = ({
 
   const handleFocus = () => {
     isFocusedRef.current = true;
-    setIsFocused(true);
   };
 
   const handleBlur = () => {
     isFocusedRef.current = false;
-    setIsFocused(false);
   };
 
   const commonStyles: React.CSSProperties = {

@@ -41,31 +41,32 @@ export const FlowNodeAgent = ({ data }: FlowNodeAgentProps) => {
 
   return (
     <>
-      <Flex gap="2" align="center" style={{ marginTop: 34, width: '100%' }}>
-        <div className="nodrag" style={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
-          <PlainEditor
-            initialValue={agentInput}
-            onSave={handleEditorSave}
-            minWidth={240}
-            maxWidth={600}
-          />
-        </div>
+      <div style={{ position: 'relative', margin: '34px -12px 0 -12px', padding: '0 12px' }}>
+        <Flex gap="2" align="center" style={{ width: '100%' }}>
+          <div className="nodrag" style={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
+            <PlainEditor
+              initialValue={agentInput}
+              onSave={handleEditorSave}
+              minWidth={240}
+              maxWidth={600}
+            />
+          </div>
 
-        {expression && (
-          <ExpressionActionsDropdown
-            expressionId={expression.id}
-            graphId={node.graph_id}
-          />
-        )}
-      </Flex>
+          {expression && (
+            <ExpressionActionsDropdown
+              expressionId={expression.id}
+              graphId={node.graph_id}
+            />
+          )}
+        </Flex>
 
-      <Handle type="target" position={Position.Left} />
-
-      <Handle
-        id={expression?.id}
-        type="source"
-        position={Position.Right}
-      />
+        <Handle type="target" position={Position.Left} />
+        <Handle
+          id={expression?.id}
+          type="source"
+          position={Position.Right}
+        />
+      </div>
     </>
   );
 };
