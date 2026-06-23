@@ -8,25 +8,25 @@ import {
   useNodesInitialized,
   useNodesState,
   useReactFlow,
-} from '@xyflow/react'
-import '@xyflow/react/dist/style.css'
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react'
-import { useCreateEdge, useDeleteEdge, useUpdateNodePosition, useUpdateNodesPositions } from '../api/mutations'
-import { useEdges, useExpressions, useNodes } from '../api/queries'
-import FlowEdge from './FlowEdge.tsx'
-import { CustomNode } from './FlowNode.tsx'
-import { useGraphWebSocket } from './hooks/useGraphWebSocket.ts'
-import type { AppFlowEdge, AppFlowNode } from './types.ts'
-import { getLayoutedElements } from './layout.ts'
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
+import { useCreateEdge, useDeleteEdge, useUpdateNodePosition, useUpdateNodesPositions } from '../api/mutations';
+import { useEdges, useExpressions, useNodes } from '../api/queries';
+import FlowEdge from './FlowEdge.tsx';
+import { CustomNode } from './FlowNode.tsx';
+import { useGraphWebSocket } from './hooks/useGraphWebSocket.ts';
+import { getLayoutedElements } from './layout.ts';
+import type { AppFlowEdge, AppFlowNode } from './types.ts';
 
 export interface FlowRef {
   triggerLayout: () => Promise<void>;
 }
 
 const FlowContent = ({
-  selectedGraphId,
-  flowRef,
-}: {
+                       selectedGraphId,
+                       flowRef,
+                     }: {
   selectedGraphId: string;
   flowRef: React.RefObject<FlowRef | null>;
 }) => {
@@ -245,7 +245,7 @@ const FlowContent = ({
 
     try {
       const { nodes: layoutedNodes, edges: layoutedEdges } = await getLayoutedElements(nodes, edges, expressionsData);
-      
+
       // Store the layouted edge sections in ref so they are preserved on sync
       const sectionsMap: Record<string, any[]> = {};
       layoutedEdges.forEach(e => {
@@ -305,7 +305,7 @@ const FlowContent = ({
       zoomOnDoubleClick={false}
       panOnScroll={false}
     >
-      <Controls />
+      <Controls/>
     </ReactFlow>
   );
 };
@@ -321,7 +321,7 @@ export const Flow = forwardRef<FlowRef, { selectedGraphId: string }>(
     }));
 
     return (
-      <FlowContent selectedGraphId={selectedGraphId} flowRef={flowContentRef} />
+      <FlowContent selectedGraphId={selectedGraphId} flowRef={flowContentRef}/>
     );
   }
 );

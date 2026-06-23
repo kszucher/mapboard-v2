@@ -1,16 +1,16 @@
-import { DotsHorizontalIcon } from '@radix-ui/react-icons'
-import type { BadgeProps } from '@radix-ui/themes'
-import { Badge, Box, DropdownMenu, Flex, IconButton } from '@radix-ui/themes'
-import { type NodeProps, useUpdateNodeInternals } from '@xyflow/react'
-import { memo, useCallback, useEffect, useMemo } from 'react'
-import { useDeleteNode } from '../api/mutations'
-import { useExpressions } from '../api/queries'
-import { FlowNodeAgent } from './FlowNodeAgent.tsx'
-import { FlowNodeAgenticSwitch } from './FlowNodeAgenticSwitch.tsx'
-import { FlowNodeLogic } from './FlowNodeLogic.tsx'
-import { FlowNodeLogicalSwitch } from './FlowNodeLogicalSwitch.tsx'
-import { FlowNodeStart } from './FlowNodeStart.tsx'
-import type { AppFlowNode } from './types.ts'
+import { DotsHorizontalIcon } from '@radix-ui/react-icons';
+import type { BadgeProps } from '@radix-ui/themes';
+import { Badge, Box, DropdownMenu, Flex, IconButton } from '@radix-ui/themes';
+import { type NodeProps, useUpdateNodeInternals } from '@xyflow/react';
+import { memo, useCallback, useEffect, useMemo } from 'react';
+import { useDeleteNode } from '../api/mutations';
+import { useExpressions } from '../api/queries';
+import { FlowNodeAgent } from './FlowNodeAgent.tsx';
+import { FlowNodeAgenticSwitch } from './FlowNodeAgenticSwitch.tsx';
+import { FlowNodeLogic } from './FlowNodeLogic.tsx';
+import { FlowNodeLogicalSwitch } from './FlowNodeLogicalSwitch.tsx';
+import { FlowNodeStart } from './FlowNodeStart.tsx';
+import type { AppFlowNode } from './types.ts';
 
 const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   const deleteNodeMutation = useDeleteNode();
@@ -34,15 +34,15 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   const renderBody = useMemo(() => {
     switch (data.node.node_type) {
       case 'START':
-        return <FlowNodeStart />;
+        return <FlowNodeStart/>;
       case 'LOGIC':
-        return <FlowNodeLogic data={data} />;
+        return <FlowNodeLogic data={data}/>;
       case 'AGENT':
-        return <FlowNodeAgent data={data} />;
+        return <FlowNodeAgent data={data}/>;
       case 'LOGICAL_SWITCH':
-        return <FlowNodeLogicalSwitch data={data} />;
+        return <FlowNodeLogicalSwitch data={data}/>;
       case 'AGENTIC_SWITCH':
-        return <FlowNodeAgenticSwitch data={data} />;
+        return <FlowNodeAgenticSwitch data={data}/>;
       default:
         return <div>Unknown Node Type</div>;
     }
@@ -77,7 +77,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
         <DropdownMenu.Root modal={false}>
           <DropdownMenu.Trigger>
             <IconButton variant="soft" size="1" color="gray" style={{ pointerEvents: 'auto', background: 'none' }}>
-              <DotsHorizontalIcon />
+              <DotsHorizontalIcon/>
             </IconButton>
           </DropdownMenu.Trigger>
           <DropdownMenu.Content onCloseAutoFocus={e => e.preventDefault()}>

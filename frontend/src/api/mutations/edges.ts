@@ -1,18 +1,18 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { apiClient, getClientId } from '../client'
-import { queryKeys } from '../queryKeys'
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiClient, getClientId } from '../client';
+import { queryKeys } from '../queryKeys';
 
 export const useCreateEdge = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({
-      graphId,
-      fromNodeId,
-      toNodeId,
-      handleIndex,
-      fromExpressionId,
-    }: {
+                         graphId,
+                         fromNodeId,
+                         toNodeId,
+                         handleIndex,
+                         fromExpressionId,
+                       }: {
       graphId: string;
       fromNodeId: string;
       toNodeId: string;

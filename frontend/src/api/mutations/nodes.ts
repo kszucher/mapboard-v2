@@ -1,7 +1,7 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { apiClient, getClientId } from '../client'
-import type { components } from '../generated/schema'
-import { queryKeys } from '../queryKeys'
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiClient, getClientId } from '../client';
+import type { components } from '../generated/schema';
+import { queryKeys } from '../queryKeys';
 
 type NodeRead = components['schemas']['NodeRead'];
 type NodeType = NodeRead['node_type'];
@@ -59,7 +59,12 @@ export const useUpdateNodeDimensions = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ nodeId, width, height }: { nodeId: string; width: number; height: number; graphId: string }) => {
+    mutationFn: async ({ nodeId, width, height }: {
+      nodeId: string;
+      width: number;
+      height: number;
+      graphId: string
+    }) => {
       const res = await apiClient.PATCH('/nodes/{node_id}/dimensions', {
         params: { path: { node_id: nodeId } },
         headers: { 'X-Client-Id': getClientId() },
@@ -155,8 +160,8 @@ export const useUpdateNodesPositions = () => {
 
   return useMutation({
     mutationFn: async ({
-      offsets,
-    }: {
+                         offsets,
+                       }: {
       offsets: { id: string; offset_x: number; offset_y: number }[];
       graphId: string;
     }) => {
@@ -208,7 +213,7 @@ export const useUpdateNodesPositions = () => {
 };
 
 export const useAddConnectedNode = () => {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (variables: {
@@ -222,15 +227,15 @@ export const useAddConnectedNode = () => {
           query: { node_type: variables.nodeType },
         },
         headers: { 'X-Client-Id': getClientId() },
-      })
-      if ('error' in res) throw res.error
-      return res.data
+      });
+      if ('error' in res) throw res.error;
+      return res.data;
     },
     onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) })
-      void queryClient.invalidateQueries({ queryKey: queryKeys.edges.byGraph(variables.graphId) })
-      void queryClient.invalidateQueries({ queryKey: queryKeys.expressions.byGraph(variables.graphId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.edges.byGraph(variables.graphId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.expressions.byGraph(variables.graphId) });
     },
-  })
-}
+  });
+};
 

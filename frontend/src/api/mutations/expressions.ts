@@ -1,10 +1,10 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { apiClient, getClientId } from '../client'
-import type { components } from '../generated/schema'
-import { queryKeys } from '../queryKeys'
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiClient, getClientId } from '../client';
+import type { components } from '../generated/schema';
+import { queryKeys } from '../queryKeys';
 
 export const useCreateExpression = () => {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ nodeId, idx, raw_string }: {
@@ -20,20 +20,20 @@ export const useCreateExpression = () => {
           idx,
           raw_string,
         },
-      })
-      if ('error' in res) throw res.error
-      return res.data
+      });
+      if ('error' in res) throw res.error;
+      return res.data;
     },
     onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) })
-      void queryClient.invalidateQueries({ queryKey: queryKeys.edges.byGraph(variables.graphId) })
-      void queryClient.invalidateQueries({ queryKey: queryKeys.expressions.byGraph(variables.graphId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.edges.byGraph(variables.graphId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.expressions.byGraph(variables.graphId) });
     },
-  })
-}
+  });
+};
 
 export const useUpdateExpression = () => {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ expressionId, patch }: {
@@ -45,69 +45,69 @@ export const useUpdateExpression = () => {
         params: { path: { expression_id: expressionId } },
         headers: { 'X-Client-Id': getClientId() },
         body: patch,
-      })
-      if ('error' in res) throw res.error
+      });
+      if ('error' in res) throw res.error;
     },
     onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) })
-      void queryClient.invalidateQueries({ queryKey: queryKeys.expressions.byGraph(variables.graphId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.expressions.byGraph(variables.graphId) });
     },
-  })
-}
+  });
+};
 
 export const useDeleteExpression = () => {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (variables: { expressionId: string; graphId: string }) => {
       const res = await apiClient.DELETE('/expressions/{expression_id}', {
         params: { path: { expression_id: variables.expressionId } },
         headers: { 'X-Client-Id': getClientId() },
-      })
-      if ('error' in res) throw res.error
+      });
+      if ('error' in res) throw res.error;
     },
     onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) })
-      void queryClient.invalidateQueries({ queryKey: queryKeys.edges.byGraph(variables.graphId) })
-      void queryClient.invalidateQueries({ queryKey: queryKeys.expressions.byGraph(variables.graphId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.edges.byGraph(variables.graphId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.expressions.byGraph(variables.graphId) });
     },
-  })
-}
+  });
+};
 
 export const useMoveExpressionUp = () => {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (variables: { expressionId: string; graphId: string }) => {
       const res = await apiClient.POST('/expressions/{expression_id}/move-up', {
         params: { path: { expression_id: variables.expressionId } },
         headers: { 'X-Client-Id': getClientId() },
-      })
-      if ('error' in res) throw res.error
-      return res.data
+      });
+      if ('error' in res) throw res.error;
+      return res.data;
     },
     onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) })
-      void queryClient.invalidateQueries({ queryKey: queryKeys.expressions.byGraph(variables.graphId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.expressions.byGraph(variables.graphId) });
     },
-  })
-}
+  });
+};
 
 export const useMoveExpressionDown = () => {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (variables: { expressionId: string; graphId: string }) => {
       const res = await apiClient.POST('/expressions/{expression_id}/move-down', {
         params: { path: { expression_id: variables.expressionId } },
         headers: { 'X-Client-Id': getClientId() },
-      })
-      if ('error' in res) throw res.error
-      return res.data
+      });
+      if ('error' in res) throw res.error;
+      return res.data;
     },
     onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) })
-      void queryClient.invalidateQueries({ queryKey: queryKeys.expressions.byGraph(variables.graphId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.expressions.byGraph(variables.graphId) });
     },
-  })
-}
+  });
+};

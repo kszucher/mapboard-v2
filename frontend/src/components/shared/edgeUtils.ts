@@ -1,11 +1,11 @@
 /**
  * Edge Classification Utilities for Agentic AI Workflow Visualization
- * 
+ *
  * Separates the classification of forward (pipeline flow) and backward (feedback loop) edges.
- * By identifying loop structures based on layers and coordinates, we can isolate them from the 
+ * By identifying loop structures based on layers and coordinates, we can isolate them from the
  * main layout calculations and apply specific perimeter routing to improve workflow readability.
  */
-import type { AppFlowNode, AppFlowEdge } from '../types';
+import type { AppFlowEdge, AppFlowNode } from '../types';
 
 // Module-level caches for React component re-render performance optimization
 let lastNodesForLayers: AppFlowNode[] | null = null;
@@ -47,7 +47,7 @@ export const getDynamicLayers = (
       const handleA = a.sourceHandle || '';
       const handleB = b.sourceHandle || '';
       if (handleA !== handleB) return handleA.localeCompare(handleB);
-      
+
       const targetA = nodesMap.get(a.target);
       const targetB = nodesMap.get(b.target);
       return targetA && targetB ? sortNodesByIdAndIid(targetA, targetB) : a.target.localeCompare(b.target);

@@ -1,6 +1,6 @@
 import { BaseEdge, type EdgeProps, getBezierPath, useEdges, useNodes } from '@xyflow/react';
 import { memo } from 'react';
-import { checkIsBackEdge, getDynamicLayers, getBacklinkPath } from './shared/edgeUtils';
+import { checkIsBackEdge, getBacklinkPath, getDynamicLayers } from './shared/edgeUtils';
 import type { AppFlowEdge, AppFlowNode } from './types';
 
 /**
@@ -8,18 +8,18 @@ import type { AppFlowEdge, AppFlowNode } from './types';
  * Renders forward edges as bezier curves and backward edges (feedback loops) as perimeter detour lanes.
  */
 function FlowEdge({
-  id,
-  source,
-  target,
-  sourceX,
-  sourceY,
-  targetX,
-  targetY,
-  sourcePosition,
-  targetPosition,
-  style = {},
-  markerEnd,
-}: EdgeProps<AppFlowEdge>) {
+                    id,
+                    source,
+                    target,
+                    sourceX,
+                    sourceY,
+                    targetX,
+                    targetY,
+                    sourcePosition,
+                    targetPosition,
+                    style = {},
+                    markerEnd,
+                  }: EdgeProps<AppFlowEdge>) {
   const allNodes = useNodes();
   const allEdges = useEdges();
 
@@ -33,7 +33,7 @@ function FlowEdge({
     ? getBacklinkPath(id, source, target, sourceX, sourceY, targetX, targetY, allNodes as AppFlowNode[], allEdges as AppFlowEdge[], layerMap)
     : getBezierPath({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition })[0];
 
-  return <BaseEdge path={path} markerEnd={markerEnd} style={style} />;
+  return <BaseEdge path={path} markerEnd={markerEnd} style={style}/>;
 }
 
 export default memo(FlowEdge);

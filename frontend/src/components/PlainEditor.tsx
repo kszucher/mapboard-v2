@@ -1,4 +1,4 @@
-import { TextField, TextArea, Box } from '@radix-ui/themes';
+import { Box, TextArea, TextField } from '@radix-ui/themes';
 import { useEffect, useRef, useState } from 'react';
 
 interface PlainEditorProps {
@@ -11,13 +11,13 @@ interface PlainEditorProps {
 }
 
 export const PlainEditor = ({
-  initialValue,
-  onSave,
-  minWidth = 240,
-  maxWidth = 600,
-  minHeight = 24, // Matches the size="1" Radix button height (24px)
-  singleLine = false,
-}: PlainEditorProps) => {
+                              initialValue,
+                              onSave,
+                              minWidth = 240,
+                              maxWidth = 600,
+                              minHeight = 24, // Matches the size="1" Radix button height (24px)
+                              singleLine = false,
+                            }: PlainEditorProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 

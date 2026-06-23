@@ -1,8 +1,8 @@
-import { useQueryClient } from '@tanstack/react-query'
-import { useEffect } from 'react'
-import { getClientId } from '../../api/client'
-import { queryKeys } from '../../api/queryKeys'
-import { connectGraphSocket, type GraphEventWithSender } from '../../api/ws'
+import { useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { getClientId } from '../../api/client';
+import { queryKeys } from '../../api/queryKeys';
+import { connectGraphSocket, type GraphEventWithSender } from '../../api/ws';
 
 /**
  * Custom hook to manage WebSocket connection for a graph with react-query integration.

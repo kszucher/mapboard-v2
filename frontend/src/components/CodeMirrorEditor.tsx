@@ -1,9 +1,9 @@
-import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
-import { markdown } from '@codemirror/lang-markdown'
-import { EditorState } from '@codemirror/state'
-import { oneDark } from '@codemirror/theme-one-dark'
-import { EditorView, keymap, lineNumbers } from '@codemirror/view'
-import { useEffect, useRef, useState } from 'react'
+import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
+import { markdown } from '@codemirror/lang-markdown';
+import { EditorState } from '@codemirror/state';
+import { oneDark } from '@codemirror/theme-one-dark';
+import { EditorView, keymap, lineNumbers } from '@codemirror/view';
+import { useEffect, useRef, useState } from 'react';
 
 interface CodeMirrorEditorProps {
   initialValue: string;
@@ -14,12 +14,12 @@ interface CodeMirrorEditorProps {
 }
 
 export const CodeMirrorEditor = ({
-  initialValue,
-  onSave,
-  minWidth = 240,
-  maxWidth = 600,
-  singleLine = false,
-}: CodeMirrorEditorProps & { singleLine?: boolean }) => {
+                                   initialValue,
+                                   onSave,
+                                   minWidth = 240,
+                                   maxWidth = 600,
+                                   singleLine = false,
+                                 }: CodeMirrorEditorProps & { singleLine?: boolean }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<EditorView | null>(null);
   const internalValueRef = useRef(initialValue);

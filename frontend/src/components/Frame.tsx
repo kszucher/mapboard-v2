@@ -1,11 +1,11 @@
-import { CaretDownIcon, CheckIcon, MixIcon, PlayIcon, MagicWandIcon } from '@radix-ui/react-icons'
-import { Box, Button, DropdownMenu, Flex, IconButton, Text } from '@radix-ui/themes'
-import { ReactFlowProvider } from '@xyflow/react'
-import { useCallback, useMemo, useRef } from 'react'
-import type { components } from '../api/generated/schema'
-import { useCreateGraph, useCreateNode, useSetActiveGraph } from '../api/mutations'
-import { useActiveGraphId, useUserGraphs, useUserId } from '../api/queries'
-import { Flow, type FlowRef } from './Flow.tsx'
+import { CaretDownIcon, CheckIcon, MagicWandIcon, MixIcon, PlayIcon } from '@radix-ui/react-icons';
+import { Box, Button, DropdownMenu, Flex, IconButton, Text } from '@radix-ui/themes';
+import { ReactFlowProvider } from '@xyflow/react';
+import { useCallback, useMemo, useRef } from 'react';
+import type { components } from '../api/generated/schema';
+import { useCreateGraph, useCreateNode, useSetActiveGraph } from '../api/mutations';
+import { useActiveGraphId, useUserGraphs, useUserId } from '../api/queries';
+import { Flow, type FlowRef } from './Flow.tsx';
 
 type NodeType = components['schemas']['NodeRead']['node_type'];
 const NODE_TYPES: NodeType[] = ['START', 'LOGIC', 'AGENT', 'LOGICAL_SWITCH', 'AGENTIC_SWITCH'];
@@ -83,7 +83,7 @@ export const Frame = () => {
             <DropdownMenu.Root>
               <DropdownMenu.Trigger>
                 <IconButton variant="soft" color="gray" radius="full">
-                  <CaretDownIcon />
+                  <CaretDownIcon/>
                 </IconButton>
               </DropdownMenu.Trigger>
               <DropdownMenu.Content onCloseAutoFocus={e => e.preventDefault()}>
@@ -93,7 +93,7 @@ export const Frame = () => {
                 {graphs?.map(graph => (
                   <DropdownMenu.Item key={graph.id} onClick={() => handleSelectGraph(graph.id)}>
                     <Flex align="center" gap="2">
-                      {graph.id === selectedGraphId && <CheckIcon />}
+                      {graph.id === selectedGraphId && <CheckIcon/>}
                       <Text>{graph.name}</Text>
                     </Flex>
                   </DropdownMenu.Item>
@@ -116,7 +116,7 @@ export const Frame = () => {
             <DropdownMenu.Root>
               <DropdownMenu.Trigger>
                 <IconButton variant="solid" color="gray" radius="full" disabled={!isGraphSelected}>
-                  <MixIcon width="20" height="20" />
+                  <MixIcon width="20" height="20"/>
                 </IconButton>
               </DropdownMenu.Trigger>
               {isGraphSelected && (
@@ -138,11 +138,11 @@ export const Frame = () => {
               onClick={handleAutoLayout}
               title="Auto Layout"
             >
-              <MagicWandIcon width="20" height="20" />
+              <MagicWandIcon width="20" height="20"/>
             </IconButton>
 
             <IconButton variant="solid" color="gray" radius="full" onClick={() => console.log('play...')}>
-              <PlayIcon width="20" height="20" />
+              <PlayIcon width="20" height="20"/>
             </IconButton>
           </Flex>
         </Flex>
@@ -152,7 +152,7 @@ export const Frame = () => {
       {isGraphSelected && (
         <div style={{ width: '100vw', height: '100vh' }}>
           <ReactFlowProvider>
-            <Flow ref={flowRef} selectedGraphId={selectedGraphId} />
+            <Flow ref={flowRef} selectedGraphId={selectedGraphId}/>
           </ReactFlowProvider>
         </div>
       )}

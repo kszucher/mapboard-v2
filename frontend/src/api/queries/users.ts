@@ -1,6 +1,6 @@
-import { queryOptions, useQuery } from '@tanstack/react-query'
-import { apiClient } from '../client'
-import { queryKeys } from '../queryKeys'
+import { queryOptions, useQuery } from '@tanstack/react-query';
+import { apiClient } from '../client';
+import { queryKeys } from '../queryKeys';
 
 export const userQueries = {
   current: () => queryOptions({

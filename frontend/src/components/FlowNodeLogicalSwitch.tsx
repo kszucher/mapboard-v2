@@ -1,17 +1,17 @@
-import { PlusIcon } from '@radix-ui/react-icons'
-import { Flex, IconButton } from '@radix-ui/themes'
-import { Handle, Position } from '@xyflow/react'
-import { useCallback, useMemo } from 'react'
+import { PlusIcon } from '@radix-ui/react-icons';
+import { Flex, IconButton } from '@radix-ui/themes';
+import { Handle, Position } from '@xyflow/react';
+import { useCallback, useMemo } from 'react';
 import {
   useCreateExpression,
   useDeleteExpression,
-  useUpdateExpression,
-  useMoveExpressionUp,
   useMoveExpressionDown,
-} from '../api/mutations'
-import { useExpressions } from '../api/queries'
-import { BranchInput } from './BranchInput.tsx'
-import type { AppFlowNode } from './types.ts'
+  useMoveExpressionUp,
+  useUpdateExpression,
+} from '../api/mutations';
+import { useExpressions } from '../api/queries';
+import { BranchInput } from './BranchInput.tsx';
+import type { AppFlowNode } from './types.ts';
 
 interface FlowNodeLogicalSwitchProps {
   data: AppFlowNode['data'];
@@ -111,12 +111,12 @@ export const FlowNodeLogicalSwitch = ({ data }: FlowNodeLogicalSwitchProps) => {
 
         <Flex gap="2" align="center" style={{ height: 32 }}>
           <IconButton onClick={handleAddItem} size="1" variant="ghost" color="gray">
-            <PlusIcon />
+            <PlusIcon/>
           </IconButton>
         </Flex>
       </Flex>
 
-      <Handle type="target" position={Position.Left} style={{ top: LEFT_HANDLE_OFFSET }} />
+      <Handle type="target" position={Position.Left} style={{ top: LEFT_HANDLE_OFFSET }}/>
 
       {expressions.map((expr, i) => (
         <Handle

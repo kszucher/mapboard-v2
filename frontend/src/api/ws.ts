@@ -1,4 +1,4 @@
-import { getClientId, wsBaseUrl } from './client'
+import { getClientId, wsBaseUrl } from './client';
 
 export type GraphEvent =
   | { event: 'graph_created'; graph_id: string; payload: Record<string, unknown> }

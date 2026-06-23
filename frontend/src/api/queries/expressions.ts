@@ -1,7 +1,7 @@
-import { queryOptions, useQuery } from '@tanstack/react-query'
-import { apiClient } from '../client'
-import type { components } from '../generated/schema'
-import { queryKeys } from '../queryKeys'
+import { queryOptions, useQuery } from '@tanstack/react-query';
+import { apiClient } from '../client';
+import type { components } from '../generated/schema';
+import { queryKeys } from '../queryKeys';
 
 type ExpressionRead = components['schemas']['ExpressionRead'];
 
@@ -22,5 +22,5 @@ export const expressionQueries = {
 };
 
 export const useExpressions = (graphId: string) => {
-    return useQuery(expressionQueries.byGraph(graphId));
+  return useQuery(expressionQueries.byGraph(graphId));
 };

@@ -1,11 +1,11 @@
-import { Flex } from '@radix-ui/themes'
-import { Handle, Position } from '@xyflow/react'
-import { useCallback, useMemo } from 'react'
-import { useUpdateExpression } from '../api/mutations'
-import { useExpressions } from '../api/queries'
-import { PlainEditor } from './PlainEditor'
-import { ExpressionActionsDropdown } from './ExpressionActionsDropdown'
-import type { AppFlowNode } from './types.ts'
+import { Flex } from '@radix-ui/themes';
+import { Handle, Position } from '@xyflow/react';
+import { useCallback, useMemo } from 'react';
+import { useUpdateExpression } from '../api/mutations';
+import { useExpressions } from '../api/queries';
+import { ExpressionActionsDropdown } from './ExpressionActionsDropdown';
+import { PlainEditor } from './PlainEditor';
+import type { AppFlowNode } from './types.ts';
 
 interface FlowNodeAgentProps {
   data: AppFlowNode['data'];
@@ -18,7 +18,7 @@ export const FlowNodeAgent = ({ data }: FlowNodeAgentProps) => {
   const { data: allExpressions } = useExpressions(node.graph_id);
 
   const expression = useMemo(() =>
-    allExpressions?.find(e => e.node_id === node.id),
+      allExpressions?.find(e => e.node_id === node.id),
     [allExpressions, node.id]
   );
 
@@ -60,7 +60,7 @@ export const FlowNodeAgent = ({ data }: FlowNodeAgentProps) => {
           )}
         </Flex>
 
-        <Handle type="target" position={Position.Left} />
+        <Handle type="target" position={Position.Left}/>
         <Handle
           id={expression?.id}
           type="source"

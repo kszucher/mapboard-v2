@@ -1,13 +1,13 @@
-import { queryOptions, useQuery } from '@tanstack/react-query'
-import { apiClient } from '../client'
-import type { components } from '../generated/schema'
-import { queryKeys } from '../queryKeys'
+import { queryOptions, useQuery } from '@tanstack/react-query';
+import { apiClient } from '../client';
+import type { components } from '../generated/schema';
+import { queryKeys } from '../queryKeys';
 
 type EdgeRead = components['schemas']['EdgeRead'];
 
 const fetchEdges = async (graphId: string): Promise<EdgeRead[]> => {
-  const res = await apiClient.GET('/edges/graph/{graph_id}', { 
-    params: { path: { graph_id: graphId } } 
+  const res = await apiClient.GET('/edges/graph/{graph_id}', {
+    params: { path: { graph_id: graphId } }
   });
   if ('error' in res) throw res.error;
   return res.data ?? [];

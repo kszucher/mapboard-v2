@@ -1,6 +1,6 @@
-import { Flex } from '@radix-ui/themes'
-import { PlainEditor } from './PlainEditor'
-import { ExpressionActionsDropdown } from './ExpressionActionsDropdown'
+import { Flex } from '@radix-ui/themes';
+import { ExpressionActionsDropdown } from './ExpressionActionsDropdown';
+import { PlainEditor } from './PlainEditor';
 
 interface BranchInputProps {
   expressionId: string;
@@ -15,16 +15,16 @@ interface BranchInputProps {
 }
 
 export const BranchInput = ({
-  expressionId,
-  graphId,
-  value,
-  onChange,
-  onDelete,
-  onMoveUp,
-  onMoveDown,
-  canMoveUp = false,
-  canMoveDown = false,
-}: BranchInputProps) => {
+                              expressionId,
+                              graphId,
+                              value,
+                              onChange,
+                              onDelete,
+                              onMoveUp,
+                              onMoveDown,
+                              canMoveUp = false,
+                              canMoveDown = false,
+                            }: BranchInputProps) => {
   // Direct pass-through since PlainEditor handles local state
   const localValue = value;
 
@@ -38,7 +38,7 @@ export const BranchInput = ({
           minWidth={100}
         />
       </div>
-      
+
       <ExpressionActionsDropdown
         expressionId={expressionId}
         graphId={graphId}
