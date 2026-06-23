@@ -301,9 +301,9 @@ const FlowContent = ({
       onNodeDragStop={handleNodeDragStop}
       onDoubleClick={handleDoubleClick}
       colorMode="dark"
-      zoomOnScroll={false}
+      zoomOnScroll={true}
       zoomOnDoubleClick={false}
-      panOnScroll
+      panOnScroll={false}
     >
       <Controls />
     </ReactFlow>
