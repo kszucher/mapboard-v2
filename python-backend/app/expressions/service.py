@@ -105,5 +105,49 @@ async def create_default_expressions_for_node(uow: UnitOfWork, node: models.Node
     if node.node_type in {NodeType.LOGIC, NodeType.AGENT}:
         await uow.expressions.create(ExpressionCreate(node_id=node.id, idx=0, raw_string=""))
 
+async def swap_expression_indices(uow: UnitOfWork, expression_id: uuid.UUID, direction: str) -> bool:
+    expr = await uow.expressions.get(expression_id)
+    if not expr:
+        return False
+        
+    node = await uow.nodes.get(expr.node_id)
+    if not node:
+        return False
+        
+    expressions = await uow.expressions.list_by_node(expr.node_id)
+    
+    idx = -1
+    for i, e in enumerate(expressions):
+        if e.id == expression_id:
+            idx = i
+            break
+            
+    if idx == -1:
+        return False
+        
+    target_idx = -1
+    if direction == "up" and idx > 0:
+        target_idx = idx - 1
+    elif direction == "down" and idx < len(expressions) - 1:
+        target_idx = idx + 1
+        
+    if target_idx == -1:
+        return False
+        
+    other = expressions[target_idx]
+    await uow.expressions.swap_indices(expr, other)
+    
+    uow.emit(
+        event=EventName.EXPRESSION_UPDATED,
+        graph_id=node.graph_id,
+        payload={"expressionId": expr.id, "patch": {"idx": expr.idx}},
+    )
+    uow.emit(
+        event=EventName.EXPRESSION_UPDATED,
+        graph_id=node.graph_id,
+        payload={"expressionId": other.id, "patch": {"idx": other.idx}},
+    )
+    return True
+
 async def list_expressions_by_graph(uow: UnitOfWork, graph_id: uuid.UUID) -> list[models.Expression]:
     return await uow.expressions.list_by_graph(graph_id)

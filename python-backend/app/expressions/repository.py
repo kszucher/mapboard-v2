@@ -19,6 +19,12 @@ class ExpressionRepository(BaseRepository[models.Expression, ExpressionCreate, E
         )
         return list(result.scalars().all())
 
+    async def swap_indices(self, expr1: models.Expression, expr2: models.Expression) -> None:
+        temp = expr1.idx
+        expr1.idx = expr2.idx
+        expr2.idx = temp
+        await self.session.flush()
+
     async def shift_indices_after_deletion(self, node_id: uuid.UUID, deleted_idx: int) -> list[models.Expression]:
         stmt = (
             update(models.Expression)

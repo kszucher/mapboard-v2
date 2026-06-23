@@ -294,6 +294,40 @@ export interface paths {
         patch: operations["update_expression_expressions__expression_id__patch"];
         trace?: never;
     };
+    "/expressions/{expression_id}/move-up": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move Expression Up */
+        post: operations["move_expression_up_expressions__expression_id__move_up_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/expressions/{expression_id}/move-down": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move Expression Down */
+        post: operations["move_expression_down_expressions__expression_id__move_down_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/expressions/graph/{graph_id}": {
         parameters: {
             query?: never;
@@ -1161,6 +1195,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExpressionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    move_expression_up_expressions__expression_id__move_up_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-client-id"?: string | null;
+            };
+            path: {
+                expression_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    move_expression_down_expressions__expression_id__move_down_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-client-id"?: string | null;
+            };
+            path: {
+                expression_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */

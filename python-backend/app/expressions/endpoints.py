@@ -38,6 +38,30 @@ async def delete_expression(
     await uow.commit()
     return {"status": "ok"}
 
+@router.post("/{expression_id}/move-up", response_model=dict)
+async def move_expression_up(
+    expression_id: uuid.UUID,
+    uow: Any = Depends(get_uow)
+):
+    success = await service.swap_expression_indices(uow, expression_id, "up")
+    if not success:
+        await uow.rollback()
+        raise HTTPException(status_code=400, detail="Cannot move expression up")
+    await uow.commit()
+    return {"status": "ok"}
+
+@router.post("/{expression_id}/move-down", response_model=dict)
+async def move_expression_down(
+    expression_id: uuid.UUID,
+    uow: Any = Depends(get_uow)
+):
+    success = await service.swap_expression_indices(uow, expression_id, "down")
+    if not success:
+        await uow.rollback()
+        raise HTTPException(status_code=400, detail="Cannot move expression down")
+    await uow.commit()
+    return {"status": "ok"}
+
 @router.get("/graph/{graph_id}", response_model=list[ExpressionRead])
 async def get_expressions_by_graph(
     graph_id: uuid.UUID,

@@ -2,8 +2,15 @@ import { PlusIcon } from '@radix-ui/react-icons'
 import { Flex, IconButton } from '@radix-ui/themes'
 import { Handle, Position } from '@xyflow/react'
 import { useCallback, useMemo } from 'react'
-import { useCreateExpression, useDeleteExpression, useUpdateExpression } from '../api/mutations'
-import { useExpressions } from '../api/queries'
+import {
+  useCreateExpression,
+  useDeleteExpression,
+  useUpdateExpression,
+  useMoveExpressionUp,
+  useMoveExpressionDown,
+  useDeleteNode,
+} from '../api/mutations'
+import { useExpressions, useEdges } from '../api/queries'
 import { BranchInput } from './BranchInput.tsx'
 import type { AppFlowNode } from './types.ts'
 
@@ -15,21 +22,23 @@ export const FlowNodeLogicalSwitch = ({ data }: FlowNodeLogicalSwitchProps) => {
   const createExpression = useCreateExpression();
   const deleteExpression = useDeleteExpression();
   const updateExpression = useUpdateExpression();
+  const moveExpressionUp = useMoveExpressionUp();
+  const moveExpressionDown = useMoveExpressionDown();
+  const deleteNode = useDeleteNode();
 
   const { node } = data;
   const { data: allExpressions } = useExpressions(node.graph_id);
+  const { data: allEdges } = useEdges(node.graph_id);
 
-  const expressions = useMemo(() =>
-    allExpressions?.filter(e => e.node_id === node.id) ?? [],
-    [allExpressions, node.id]
-  );
+  const expressions = useMemo(() => {
+    const filtered = allExpressions?.filter(e => e.node_id === node.id) ?? [];
+    return [...filtered].sort((a, b) => a.idx - b.idx);
+  }, [allExpressions, node.id]);
 
   const SPACING = 40;
   const BASE_OFFSET = 66;
   const num = Math.max(1, expressions.length);
   const LEFT_HANDLE_OFFSET = BASE_OFFSET + ((num - 1) * SPACING) / 2;
-
-  const branches = expressions.map(e => e.raw_string);
 
   const handleAddItem = useCallback(() => {
     createExpression.mutate({ nodeId: node.id, raw_string: '', graphId: node.graph_id });
@@ -59,20 +68,59 @@ export const FlowNodeLogicalSwitch = ({ data }: FlowNodeLogicalSwitchProps) => {
     [expressions, deleteExpression, node.graph_id]
   );
 
+  const handleMoveUp = useCallback(
+    (index: number) => {
+      const expr = expressions[index];
+      if (expr) {
+        moveExpressionUp.mutate({ expressionId: expr.id, graphId: node.graph_id });
+      }
+    },
+    [expressions, moveExpressionUp, node.graph_id]
+  );
+
+  const handleMoveDown = useCallback(
+    (index: number) => {
+      const expr = expressions[index];
+      if (expr) {
+        moveExpressionDown.mutate({ expressionId: expr.id, graphId: node.graph_id });
+      }
+    },
+    [expressions, moveExpressionDown, node.graph_id]
+  );
+
+  const handleRemoveConnectedNode = useCallback(
+    (expressionId: string) => {
+      const edge = allEdges?.find(e => e.from_expression_id === expressionId);
+      if (edge) {
+        deleteNode.mutate({ nodeId: edge.to_node_id });
+      }
+    },
+    [allEdges, deleteNode]
+  );
+
   return (
     <>
       <Flex direction="column" gap="2" style={{ marginTop: 38, width: 'fit-content', minWidth: '100%' }}>
-        {branches.length > 0 && (
+        {expressions.length > 0 && (
           <Flex direction="column" gap="2" style={{ width: '100%' }}>
-            {branches.map((branch, i) => (
-              <BranchInput
-                key={expressions[i].id}
-                value={branch}
-                onChange={(newValue) => handleUpdateItem(i, newValue)}
-                onDelete={() => handleDeleteItem(i)}
-                enableValidation={true}
-              />
-            ))}
+            {expressions.map((expr, i) => {
+              const connectedEdge = allEdges?.find(e => e.from_expression_id === expr.id);
+              return (
+                <BranchInput
+                  key={expr.id}
+                  value={expr.raw_string}
+                  onChange={(newValue) => handleUpdateItem(i, newValue)}
+                  onDelete={() => handleDeleteItem(i)}
+                  onMoveUp={() => handleMoveUp(i)}
+                  onMoveDown={() => handleMoveDown(i)}
+                  canMoveUp={i > 0}
+                  canMoveDown={i < expressions.length - 1}
+                  hasConnectedNode={!!connectedEdge}
+                  onRemoveConnectedNode={() => handleRemoveConnectedNode(expr.id)}
+                  onAddConnectedNode={() => {}}
+                />
+              );
+            })}
           </Flex>
         )}
 

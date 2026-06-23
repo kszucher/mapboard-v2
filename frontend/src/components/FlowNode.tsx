@@ -17,14 +17,15 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   const updateNodeInternals = useUpdateNodeInternals();
 
   const { data: allExpressions } = useExpressions(data.node.graph_id);
-  const myExpressionsCount = useMemo(() =>
-    allExpressions?.filter(e => e.node_id === id).length ?? 0,
-    [allExpressions, id]
-  );
+  const myExpressionsHash = useMemo(() => {
+    const mine = allExpressions?.filter(e => e.node_id === id) ?? [];
+    const sorted = [...mine].sort((a, b) => a.idx - b.idx);
+    return sorted.map(e => `${e.id}:${e.idx}`).join(',');
+  }, [allExpressions, id]);
 
   useEffect(() => {
     updateNodeInternals(id);
-  }, [myExpressionsCount, data.node.node_type, id, updateNodeInternals]);
+  }, [myExpressionsHash, data.node.node_type, id, updateNodeInternals]);
 
   const handleDelete = useCallback(() => {
     deleteNodeMutation.mutate({ nodeId: data.node.id });
