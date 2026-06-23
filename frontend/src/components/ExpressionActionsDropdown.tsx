@@ -49,7 +49,7 @@ export const ExpressionActionsDropdown = ({
   );
 
   return (
-    <DropdownMenu.Root>
+    <DropdownMenu.Root modal={false}>
       <DropdownMenu.Trigger>
         <IconButton
           size="1"

@@ -1,5 +1,5 @@
 import { Flex } from '@radix-ui/themes'
-import { CodeMirrorEditor } from './CodeMirrorEditor'
+import { PlainEditor } from './PlainEditor'
 import { ExpressionActionsDropdown } from './ExpressionActionsDropdown'
 
 interface BranchInputProps {
@@ -25,17 +25,16 @@ export const BranchInput = ({
   canMoveUp = false,
   canMoveDown = false,
 }: BranchInputProps) => {
-  // Direct pass-through since CodeMirrorEditor handles local state debouncing
+  // Direct pass-through since PlainEditor handles local state
   const localValue = value;
 
   return (
     <Flex gap="2" align="center" style={{ width: '100%' }}>
-      <div className="nodrag" style={{ flexGrow: 1, display: 'flex' }}>
-        <CodeMirrorEditor
+      <div className="nodrag" style={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
+        <PlainEditor
           initialValue={localValue}
           onSave={onChange}
           singleLine={true}
-          minHeight={32}
           minWidth={100}
         />
       </div>

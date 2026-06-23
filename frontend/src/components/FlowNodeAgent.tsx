@@ -3,7 +3,7 @@ import { Handle, Position } from '@xyflow/react'
 import { useCallback, useMemo } from 'react'
 import { useUpdateExpression } from '../api/mutations'
 import { useExpressions } from '../api/queries'
-import { CodeMirrorEditor } from './CodeMirrorEditor'
+import { PlainEditor } from './PlainEditor'
 import { ExpressionActionsDropdown } from './ExpressionActionsDropdown'
 import type { AppFlowNode } from './types.ts'
 
@@ -41,9 +41,9 @@ export const FlowNodeAgent = ({ data }: FlowNodeAgentProps) => {
 
   return (
     <>
-      <Flex gap="2" align="start" style={{ marginTop: 34, width: '100%' }}>
-        <div className="nodrag" style={{ flexGrow: 1, display: 'flex' }}>
-          <CodeMirrorEditor
+      <Flex gap="2" align="center" style={{ marginTop: 34, width: '100%' }}>
+        <div className="nodrag" style={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
+          <PlainEditor
             initialValue={agentInput}
             onSave={handleEditorSave}
             minWidth={240}
@@ -55,7 +55,6 @@ export const FlowNodeAgent = ({ data }: FlowNodeAgentProps) => {
           <ExpressionActionsDropdown
             expressionId={expression.id}
             graphId={node.graph_id}
-            triggerStyle={{ marginTop: 4 }}
           />
         )}
       </Flex>

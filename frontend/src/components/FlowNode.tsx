@@ -72,7 +72,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
       </Box>
 
       <Box position="absolute" top="8px" right="8px">
-        <DropdownMenu.Root>
+        <DropdownMenu.Root modal={false}>
           <DropdownMenu.Trigger>
             <IconButton variant="soft" size="1" color="gray" style={{ pointerEvents: 'auto', background: 'none' }}>
               <DotsHorizontalIcon />
