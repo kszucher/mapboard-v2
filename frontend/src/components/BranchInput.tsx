@@ -11,7 +11,7 @@ interface BranchInputProps {
   canMoveUp?: boolean;
   canMoveDown?: boolean;
   hasConnectedNode?: boolean;
-  onAddConnectedNode?: () => void;
+  onAddConnectedNode?: (nodeType: 'LOGIC' | 'AGENT' | 'LOGICAL_SWITCH' | 'AGENTIC_SWITCH') => void;
   onRemoveConnectedNode?: () => void;
 }
 
@@ -69,9 +69,17 @@ export const BranchInput = ({
               <MinusIcon style={{ marginRight: 8 }} /> Remove Connected Node
             </DropdownMenu.Item>
           ) : (
-            <DropdownMenu.Item onClick={onAddConnectedNode} color="green">
-              <PlusIcon style={{ marginRight: 8 }} /> Add Connected Node
-            </DropdownMenu.Item>
+            <DropdownMenu.Sub>
+              <DropdownMenu.SubTrigger>
+                <PlusIcon style={{ marginRight: 8 }} /> Add Connected Node
+              </DropdownMenu.SubTrigger>
+              <DropdownMenu.SubContent>
+                <DropdownMenu.Item onClick={() => onAddConnectedNode?.('LOGIC')}>{'Logic'}</DropdownMenu.Item>
+                <DropdownMenu.Item onClick={() => onAddConnectedNode?.('AGENT')}>{'Agent'}</DropdownMenu.Item>
+                <DropdownMenu.Item onClick={() => onAddConnectedNode?.('LOGICAL_SWITCH')}>{'Logical Switch'}</DropdownMenu.Item>
+                <DropdownMenu.Item onClick={() => onAddConnectedNode?.('AGENTIC_SWITCH')}>{'Agentic Switch'}</DropdownMenu.Item>
+              </DropdownMenu.SubContent>
+            </DropdownMenu.Sub>
           )}
           
           <DropdownMenu.Separator />

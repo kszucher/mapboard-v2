@@ -207,3 +207,30 @@ export const useUpdateNodesPositions = () => {
   });
 };
 
+export const useAddConnectedNode = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (variables: {
+      expressionId: string;
+      nodeType: 'LOGIC' | 'AGENT' | 'LOGICAL_SWITCH' | 'AGENTIC_SWITCH';
+      graphId: string;
+    }) => {
+      const res = await apiClient.POST('/nodes/from-expression/{expression_id}', {
+        params: {
+          path: { expression_id: variables.expressionId },
+          query: { node_type: variables.nodeType },
+        },
+        headers: { 'X-Client-Id': getClientId() },
+      })
+      if ('error' in res) throw res.error
+      return res.data
+    },
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.edges.byGraph(variables.graphId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.expressions.byGraph(variables.graphId) })
+    },
+  })
+}
+

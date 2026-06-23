@@ -9,6 +9,7 @@ import {
   useMoveExpressionUp,
   useMoveExpressionDown,
   useDeleteNode,
+  useAddConnectedNode,
 } from '../api/mutations'
 import { useExpressions, useEdges } from '../api/queries'
 import { BranchInput } from './BranchInput.tsx'
@@ -25,6 +26,7 @@ export const FlowNodeAgenticSwitch = ({ data }: FlowNodeAgenticSwitchProps) => {
   const moveExpressionUp = useMoveExpressionUp();
   const moveExpressionDown = useMoveExpressionDown();
   const deleteNode = useDeleteNode();
+  const addConnectedNode = useAddConnectedNode();
 
   const { node } = data;
   const { data: allExpressions } = useExpressions(node.graph_id);
@@ -98,6 +100,13 @@ export const FlowNodeAgenticSwitch = ({ data }: FlowNodeAgenticSwitchProps) => {
     [allEdges, deleteNode]
   );
 
+  const handleAddConnectedNode = useCallback(
+    (expressionId: string, nodeType: 'LOGIC' | 'AGENT' | 'LOGICAL_SWITCH' | 'AGENTIC_SWITCH') => {
+      addConnectedNode.mutate({ expressionId, nodeType, graphId: node.graph_id });
+    },
+    [addConnectedNode, node.graph_id]
+  );
+
   return (
     <>
       <Flex direction="column" gap="2" style={{ marginTop: 38, width: 'fit-content', minWidth: '100%' }}>
@@ -117,7 +126,7 @@ export const FlowNodeAgenticSwitch = ({ data }: FlowNodeAgenticSwitchProps) => {
                   canMoveDown={i < expressions.length - 1}
                   hasConnectedNode={!!connectedEdge}
                   onRemoveConnectedNode={() => handleRemoveConnectedNode(expr.id)}
-                  onAddConnectedNode={() => {}}
+                  onAddConnectedNode={(nodeType) => handleAddConnectedNode(expr.id, nodeType)}
                 />
               );
             })}
