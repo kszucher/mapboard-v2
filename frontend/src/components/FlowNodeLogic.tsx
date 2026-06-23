@@ -4,6 +4,7 @@ import { useCallback, useMemo } from 'react'
 import { useUpdateExpression } from '../api/mutations'
 import { useExpressions } from '../api/queries'
 import { CodeMirrorEditor } from './CodeMirrorEditor'
+import { ExpressionActionsDropdown } from './ExpressionActionsDropdown'
 import type { AppFlowNode } from './types.ts'
 
 interface FlowNodeLogicProps {
@@ -12,6 +13,7 @@ interface FlowNodeLogicProps {
 
 export const FlowNodeLogic = ({ data }: FlowNodeLogicProps) => {
   const updateExpressionMutation = useUpdateExpression();
+
   const { node } = data;
   const { data: allExpressions } = useExpressions(node.graph_id);
 
@@ -39,14 +41,24 @@ export const FlowNodeLogic = ({ data }: FlowNodeLogicProps) => {
 
   return (
     <>
-      <Flex direction="column" gap="3" style={{ marginTop: 38 }}>
-        <CodeMirrorEditor
-          initialValue={raw}
-          onSave={handleEditorSave}
-          singleLine={false}
-          minHeight={64}
-          minWidth={240}
-        />
+      <Flex gap="2" align="start" style={{ marginTop: 38, width: '100%' }}>
+        <div className="nodrag" style={{ flexGrow: 1, display: 'flex' }}>
+          <CodeMirrorEditor
+            initialValue={raw}
+            onSave={handleEditorSave}
+            singleLine={false}
+            minHeight={64}
+            minWidth={240}
+          />
+        </div>
+
+        {expression && (
+          <ExpressionActionsDropdown
+            expressionId={expression.id}
+            graphId={node.graph_id}
+            triggerStyle={{ marginTop: 4 }}
+          />
+        )}
       </Flex>
 
       <Handle type="target" position={Position.Left} />

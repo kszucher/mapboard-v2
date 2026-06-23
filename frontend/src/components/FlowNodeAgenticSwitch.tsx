@@ -8,10 +8,8 @@ import {
   useUpdateExpression,
   useMoveExpressionUp,
   useMoveExpressionDown,
-  useDeleteNode,
-  useAddConnectedNode,
 } from '../api/mutations'
-import { useExpressions, useEdges } from '../api/queries'
+import { useExpressions } from '../api/queries'
 import { BranchInput } from './BranchInput.tsx'
 import type { AppFlowNode } from './types.ts'
 
@@ -25,12 +23,9 @@ export const FlowNodeAgenticSwitch = ({ data }: FlowNodeAgenticSwitchProps) => {
   const updateExpression = useUpdateExpression();
   const moveExpressionUp = useMoveExpressionUp();
   const moveExpressionDown = useMoveExpressionDown();
-  const deleteNode = useDeleteNode();
-  const addConnectedNode = useAddConnectedNode();
 
   const { node } = data;
   const { data: allExpressions } = useExpressions(node.graph_id);
-  const { data: allEdges } = useEdges(node.graph_id);
 
   const expressions = useMemo(() => {
     const filtered = allExpressions?.filter(e => e.node_id === node.id) ?? [];
@@ -90,33 +85,17 @@ export const FlowNodeAgenticSwitch = ({ data }: FlowNodeAgenticSwitchProps) => {
     [expressions, moveExpressionDown, node.graph_id]
   );
 
-  const handleRemoveConnectedNode = useCallback(
-    (expressionId: string) => {
-      const edge = allEdges?.find(e => e.from_expression_id === expressionId);
-      if (edge) {
-        deleteNode.mutate({ nodeId: edge.to_node_id });
-      }
-    },
-    [allEdges, deleteNode]
-  );
-
-  const handleAddConnectedNode = useCallback(
-    (expressionId: string, nodeType: 'LOGIC' | 'AGENT' | 'LOGICAL_SWITCH' | 'AGENTIC_SWITCH') => {
-      addConnectedNode.mutate({ expressionId, nodeType, graphId: node.graph_id });
-    },
-    [addConnectedNode, node.graph_id]
-  );
-
   return (
     <>
       <Flex direction="column" gap="2" style={{ marginTop: 38, width: 'fit-content', minWidth: '100%' }}>
         {expressions.length > 0 && (
           <Flex direction="column" gap="2" style={{ width: '100%' }}>
             {expressions.map((expr, i) => {
-              const connectedEdge = allEdges?.find(e => e.from_expression_id === expr.id);
               return (
                 <BranchInput
                   key={expr.id}
+                  expressionId={expr.id}
+                  graphId={node.graph_id}
                   value={expr.raw_string}
                   onChange={(newValue) => handleUpdateItem(i, newValue)}
                   onDelete={() => handleDeleteItem(i)}
@@ -124,9 +103,6 @@ export const FlowNodeAgenticSwitch = ({ data }: FlowNodeAgenticSwitchProps) => {
                   onMoveDown={() => handleMoveDown(i)}
                   canMoveUp={i > 0}
                   canMoveDown={i < expressions.length - 1}
-                  hasConnectedNode={!!connectedEdge}
-                  onRemoveConnectedNode={() => handleRemoveConnectedNode(expr.id)}
-                  onAddConnectedNode={(nodeType) => handleAddConnectedNode(expr.id, nodeType)}
                 />
               );
             })}
