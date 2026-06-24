@@ -16,15 +16,15 @@ interface ExpressionActionsDropdownProps {
 }
 
 export const ExpressionActionsDropdown = ({
-                                            expressionId,
-                                            graphId,
-                                            triggerStyle,
-                                            onMoveUp,
-                                            onMoveDown,
-                                            onDelete,
-                                            canMoveUp = false,
-                                            canMoveDown = false,
-                                          }: ExpressionActionsDropdownProps) => {
+  expressionId,
+  graphId,
+  triggerStyle,
+  onMoveUp,
+  onMoveDown,
+  onDelete,
+  canMoveUp = false,
+  canMoveDown = false,
+}: ExpressionActionsDropdownProps) => {
   const deleteNode = useDeleteNode();
   const addConnectedNode = useAddConnectedNode();
   const { data: allEdges } = useEdges(graphId);
