@@ -82,6 +82,10 @@ const FlowContent = ({
         return true;
       })
       .map(edge => {
+        const sourceNode = nodes.find(n => n.id === edge.from_node_id);
+        const targetNode = nodes.find(n => n.id === edge.to_node_id);
+        const isBack = sourceNode?.data?.layer !== undefined && targetNode?.data?.layer !== undefined && sourceNode.data.layer >= targetNode.data.layer;
+
         return {
           id: edge.id,
           source: edge.from_node_id,
@@ -90,12 +94,14 @@ const FlowContent = ({
           type: 'custom' as const,
           animated: true,
           style: { stroke: '#fff', strokeWidth: 2 },
+          deletable: isBack,
+          reconnectable: isBack,
           data: {
             sections: layoutData.sections[edge.id],
           },
         };
       });
-  }, [edgesData, nodesData, expressionsData, layoutData.sections]);
+  }, [edgesData, nodesData, expressionsData, nodes, layoutData.sections]);
 
   // Render canvas when layout has run or when the graph is empty
   const isLayoutVisible = (nodesData && nodesData.length === 0) || (nodes.length > 0 && nodes.some(n => n.data?.layer !== undefined));
@@ -138,6 +144,20 @@ const FlowContent = ({
 
   const onEdgesChange = useCallback(() => {
   }, []);
+
+  const isValidConnection = useCallback(
+    (connection: Connection | AppFlowEdge) => {
+      if (!connection.source || !connection.target) return false;
+      const sourceNode = nodes.find(n => n.id === connection.source);
+      const targetNode = nodes.find(n => n.id === connection.target);
+      if (!sourceNode || !targetNode) return false;
+
+      const sourceLayer = sourceNode.data?.layer;
+      const targetLayer = targetNode.data?.layer;
+      return sourceLayer !== undefined && targetLayer !== undefined && sourceLayer >= targetLayer;
+    },
+    [nodes],
+  );
 
   const handleConnect = useCallback(
     (params: Connection) => {
@@ -299,6 +319,7 @@ const FlowContent = ({
         onReconnect={handleReconnect}
         onReconnectStart={handleReconnectStart}
         onReconnectEnd={handleReconnectEnd}
+        isValidConnection={isValidConnection}
         nodesDraggable={false}
         onDoubleClick={handleDoubleClick}
         colorMode="dark"
