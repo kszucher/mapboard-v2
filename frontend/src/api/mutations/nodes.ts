@@ -34,10 +34,6 @@ export const useCreateNode = () => {
         body: {
           graph_id: graphId,
           iid: 1,
-          width: 200,
-          height: 120,
-          offset_x: 0,
-          offset_y: 50,
           color: NODE_COLORS[nodeType],
           label: NODE_LABELS[nodeType],
           node_type: nodeType,
@@ -54,30 +50,6 @@ export const useCreateNode = () => {
 };
 
 
-// Hook for updating node dimensions
-export const useUpdateNodeDimensions = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ nodeId, width, height }: {
-      nodeId: string;
-      width: number;
-      height: number;
-      graphId: string
-    }) => {
-      const res = await apiClient.PATCH('/nodes/{node_id}/dimensions', {
-        params: { path: { node_id: nodeId } },
-        headers: { 'X-Client-Id': getClientId() },
-        body: { width, height },
-      });
-      if ('error' in res) throw res.error;
-    },
-    onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) });
-    },
-  });
-};
-
 export const useDeleteNode = () => {
   const queryClient = useQueryClient();
 
@@ -92,122 +64,6 @@ export const useDeleteNode = () => {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.all });
       void queryClient.invalidateQueries({ queryKey: queryKeys.edges.all });
-    },
-  });
-};
-
-// Hook for updating node offset (position)
-export const useUpdateNodePosition = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ nodeId, x, y }: { nodeId: string; x: number; y: number; graphId?: string }) => {
-      const res = await apiClient.PATCH('/nodes/{node_id}/offset', {
-        params: { path: { node_id: nodeId } },
-        headers: { 'X-Client-Id': getClientId() },
-        body: {
-          offset_x: Math.round(x),
-          offset_y: Math.round(y),
-        },
-      });
-      if ('error' in res) throw res.error;
-    },
-    onMutate: async ({ nodeId, x, y, graphId }) => {
-      if (!graphId) return;
-
-      // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
-      await queryClient.cancelQueries({ queryKey: queryKeys.nodes.byGraph(graphId) });
-
-      // Snapshot the previous value
-      const previousNodes = queryClient.getQueryData<NodeRead[]>(queryKeys.nodes.byGraph(graphId));
-
-      // Optimistically update to the new value
-      if (previousNodes) {
-        queryClient.setQueryData<NodeRead[]>(
-          queryKeys.nodes.byGraph(graphId),
-          previousNodes.map(node =>
-            node.id === nodeId
-              ? { ...node, offset_x: Math.round(x), offset_y: Math.round(y) }
-              : node
-          )
-        );
-      }
-
-      // Return a context object with the snapshotted value
-      return { previousNodes, graphId };
-    },
-    onError: (_err, _variables, context) => {
-      // Rollback to the previous value if mutation fails
-      if (context?.previousNodes && context.graphId) {
-        queryClient.setQueryData(
-          queryKeys.nodes.byGraph(context.graphId),
-          context.previousNodes
-        );
-      }
-    },
-    onSettled: (_data, _error, variables) => {
-      // Always refetch after error or success to make sure we're in sync with the server
-      if (variables.graphId) {
-        void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) });
-      }
-    },
-  });
-};
-
-
-export const useUpdateNodesPositions = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({
-                         offsets,
-                       }: {
-      offsets: { id: string; offset_x: number; offset_y: number }[];
-      graphId: string;
-    }) => {
-      const res = await apiClient.PATCH('/nodes/bulk-offset', {
-        headers: { 'X-Client-Id': getClientId() },
-        body: { offsets },
-      });
-      if ('error' in res) throw res.error;
-    },
-    onMutate: async ({ offsets, graphId }) => {
-      if (!graphId) return;
-
-      // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: queryKeys.nodes.byGraph(graphId) });
-
-      // Snapshot the previous value
-      const previousNodes = queryClient.getQueryData<NodeRead[]>(queryKeys.nodes.byGraph(graphId));
-
-      // Optimistically update
-      if (previousNodes) {
-        const offsetMap = new Map(offsets.map((o) => [o.id, o]));
-        queryClient.setQueryData<NodeRead[]>(
-          queryKeys.nodes.byGraph(graphId),
-          previousNodes.map((node) => {
-            const update = offsetMap.get(node.id);
-            return update
-              ? { ...node, offset_x: Math.round(update.offset_x), offset_y: Math.round(update.offset_y) }
-              : node;
-          })
-        );
-      }
-
-      return { previousNodes, graphId };
-    },
-    onError: (_err, _variables, context) => {
-      if (context?.previousNodes && context.graphId) {
-        queryClient.setQueryData(
-          queryKeys.nodes.byGraph(context.graphId),
-          context.previousNodes
-        );
-      }
-    },
-    onSettled: (_data, _error, variables) => {
-      if (variables?.graphId) {
-        void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) });
-      }
     },
   });
 };
@@ -238,4 +94,3 @@ export const useAddConnectedNode = () => {
     },
   });
 };
-

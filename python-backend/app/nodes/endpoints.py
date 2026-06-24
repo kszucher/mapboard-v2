@@ -9,7 +9,6 @@ from fastapi import HTTPException
 from app.constants import NodeType
 from app.db import get_uow
 from app.exceptions import GraphboardError
-from app.nodes import schemas
 from app.nodes import service as node_service
 from app.nodes.schemas import NodeCreate, NodeRead
 
@@ -30,35 +29,6 @@ async def create_node(
     node_id = await node_service.create_node(uow, payload)
     await uow.commit()
     return node_id
-
-
-@router.patch("/bulk-offset", status_code=status.HTTP_204_NO_CONTENT)
-async def update_nodes_offsets(
-        payload: schemas.BulkUpdateNodeOffsets,
-        uow: Any = Depends(get_uow)
-) -> None:
-    await node_service.update_nodes_offsets(uow, payload.offsets)
-    await uow.commit()
-
-
-@router.patch("/{node_id}/offset", status_code=status.HTTP_204_NO_CONTENT)
-async def update_node_offset(
-        node_id: uuid.UUID,
-        payload: schemas.UpdateNodeOffset,
-        uow: Any = Depends(get_uow)
-) -> None:
-    await node_service.update_node_offset(uow, node_id, payload.offset_x, payload.offset_y)
-    await uow.commit()
-
-
-@router.patch("/{node_id}/dimensions", status_code=status.HTTP_204_NO_CONTENT)
-async def update_node_dimensions(
-        node_id: uuid.UUID,
-        payload: schemas.UpdateNodeDimensions,
-        uow: Any = Depends(get_uow)
-) -> None:
-    await node_service.update_node_dimensions(uow, node_id, payload.width, payload.height)
-    await uow.commit()
 
 
 @router.delete("/{node_id}", status_code=status.HTTP_204_NO_CONTENT)

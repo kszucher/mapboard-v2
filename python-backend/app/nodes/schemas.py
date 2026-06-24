@@ -1,23 +1,15 @@
 from __future__ import annotations
 
 import uuid
-from typing import Any
 
 from pydantic import BaseModel
 
 from app.schemas import Color, NodeType, OrmModel
 
 
-from app.expressions.schemas import ExpressionRead, ExpressionCreate
-
-
 class NodeBase(BaseModel):
     graph_id: uuid.UUID
     iid: int
-    width: int
-    height: int
-    offset_x: int
-    offset_y: int
     color: Color
     label: str
     is_processing: bool
@@ -26,26 +18,6 @@ class NodeBase(BaseModel):
 
 class NodeCreate(NodeBase):
     pass
-
-
-class UpdateNodeOffset(BaseModel):
-    offset_x: int
-    offset_y: int
-
-
-class UpdateNodeDimensions(BaseModel):
-    width: int
-    height: int
-
-
-class NodeOffsetUpdate(BaseModel):
-    id: uuid.UUID
-    offset_x: int
-    offset_y: int
-
-
-class BulkUpdateNodeOffsets(BaseModel):
-    offsets: list[NodeOffsetUpdate]
 
 
 class NodeRead(NodeBase, OrmModel):

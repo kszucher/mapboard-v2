@@ -23,10 +23,6 @@ async def create_graph(
             node_type=NodeType.START,
             color="gray",
             iid=1,
-            width=200,
-            height=200,
-            offset_x=100,
-            offset_y=100,
             label="Start",
             is_processing=False,
         )

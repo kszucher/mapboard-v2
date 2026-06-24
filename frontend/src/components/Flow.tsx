@@ -11,7 +11,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
-import { useCreateEdge, useDeleteEdge, useUpdateNodePosition, useUpdateNodesPositions } from '../api/mutations';
+import { useCreateEdge, useDeleteEdge } from '../api/mutations';
 import { useEdges, useExpressions, useNodes } from '../api/queries';
 import FlowEdge from './FlowEdge.tsx';
 import { CustomNode } from './FlowNode.tsx';
@@ -39,8 +39,6 @@ const FlowContent = ({
   useGraphWebSocket(selectedGraphId);
 
   // mutations
-  const updateNodePositionMutation = useUpdateNodePosition();
-  const updateNodesPositionsMutation = useUpdateNodesPositions();
   const createEdgeMutation = useCreateEdge();
   const deleteEdgeMutation = useDeleteEdge();
 
@@ -114,9 +112,7 @@ const FlowContent = ({
       const nodeMap = new Map(prevNodes.map(n => [n.id, n]));
       return nodesData.map(n => {
         const prevNode = nodeMap.get(n.id);
-        const position = prevNode?.dragging
-          ? prevNode.position
-          : { x: n.offset_x, y: n.offset_y };
+        const position = prevNode?.position ?? { x: 0, y: 0 };
 
         return {
           id: n.id,
@@ -220,18 +216,6 @@ const FlowContent = ({
     [deleteEdgeMutation, setEdges],
   );
 
-  const handleNodeDragStop = useCallback(
-    (_event: MouseEvent | TouchEvent, node: AppFlowNode) => {
-      updateNodePositionMutation.mutate({
-        nodeId: node.id as string,
-        x: Math.round(node.position.x),
-        y: Math.round(node.position.y),
-        graphId: selectedGraphId,
-      });
-    },
-    [selectedGraphId, updateNodePositionMutation],
-  );
-
   const handleDoubleClick = useCallback(
     (event: React.MouseEvent) => {
       event.preventDefault();
@@ -259,25 +243,25 @@ const FlowContent = ({
       setNodes(layoutedNodes);
       setEdges(layoutedEdges);
 
-      // Prepare bulk update payload
-      const offsets = layoutedNodes.map((node) => ({
-        id: node.id,
-        offset_x: Math.round(node.position.x),
-        offset_y: Math.round(node.position.y),
-      }));
-
-      // Persist to database
-      await updateNodesPositionsMutation.mutateAsync({
-        offsets,
-        graphId: selectedGraphId,
-      });
-
       // Fit view nicely after layout
       void fitView({ padding: 0.1, duration: 300 });
     } catch (error) {
       console.error('Failed to auto-layout nodes:', error);
     }
-  }, [nodes, edges, expressionsData, selectedGraphId, setNodes, setEdges, updateNodesPositionsMutation, fitView]);
+  }, [nodes, edges, expressionsData, setNodes, setEdges, fitView]);
+
+  // Run layout when nodes are fully initialized/measured and graph structure changes
+  const lastLayoutedKey = useRef<string>('');
+  useEffect(() => {
+    if (!nodesInitialized || nodes.length === 0) return;
+
+    const currentKey = `${nodes.map(n => n.id).sort().join(',')}|${edges.map(e => e.id).sort().join(',')}|${expressionsData?.length ?? 0}`;
+
+    if (currentKey !== lastLayoutedKey.current) {
+      lastLayoutedKey.current = currentKey;
+      void performLayout();
+    }
+  }, [nodesInitialized, nodes.length, edges.length, expressionsData?.length, performLayout]);
 
   useImperativeHandle(flowRef, () => ({
     triggerLayout: performLayout,
@@ -298,7 +282,7 @@ const FlowContent = ({
       onReconnect={handleReconnect}
       onReconnectStart={handleReconnectStart}
       onReconnectEnd={handleReconnectEnd}
-      onNodeDragStop={handleNodeDragStop}
+      nodesDraggable={false}
       onDoubleClick={handleDoubleClick}
       colorMode="dark"
       zoomOnScroll={true}

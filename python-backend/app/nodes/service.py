@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-import uuid
 import logging
+import uuid
 from typing import TYPE_CHECKING
 
 from app import models
-from app.expressions import service as expression_service
-from app.nodes.schemas import NodeCreate, NodeOffsetUpdate
-from app.edges.schemas import EdgeCreate
 from app.constants import EventName, NodeType
+from app.edges.schemas import EdgeCreate
 from app.exceptions import ValidationError, NotFoundError
+from app.expressions import service as expression_service
+from app.nodes.schemas import NodeCreate
 from app.schemas import Color
 
 if TYPE_CHECKING:
@@ -25,7 +25,7 @@ async def list_nodes(uow: UnitOfWork, graph_id: uuid.UUID) -> list[models.Node]:
 async def create_node(uow: UnitOfWork, data: NodeCreate) -> uuid.UUID:
     # Repository now handles the simplified node creation
     node = await uow.nodes.create(data)
-    
+
     # Isolate expression creation to its own service logic
     await expression_service.create_default_expressions_for_node(uow, node)
 
@@ -35,62 +35,6 @@ async def create_node(uow: UnitOfWork, data: NodeCreate) -> uuid.UUID:
         payload={"nodeId": node.id},
     )
     return node.id
-
-
-async def update_node_offset(
-    uow: UnitOfWork,
-    node_id: uuid.UUID,
-    offset_x: int,
-    offset_y: int,
-) -> None:
-    node = await uow.nodes.get(node_id)
-    if node is None:
-        return
-    
-    node.offset_x = offset_x
-    node.offset_y = offset_y
-    
-    uow.emit(
-        event=EventName.NODE_UPDATED,
-        graph_id=node.graph_id,
-        payload={"nodeId": node_id, "patch": {"offset_x": offset_x, "offset_y": offset_y}},
-    )
-
-
-async def update_nodes_offsets(
-    uow: UnitOfWork,
-    offsets: list[NodeOffsetUpdate],
-) -> None:
-    for update in offsets:
-        node = await uow.nodes.get(update.id)
-        if node is not None:
-            node.offset_x = update.offset_x
-            node.offset_y = update.offset_y
-            uow.emit(
-                event=EventName.NODE_UPDATED,
-                graph_id=node.graph_id,
-                payload={"nodeId": update.id, "patch": {"offset_x": update.offset_x, "offset_y": update.offset_y}},
-            )
-
-
-async def update_node_dimensions(
-    uow: UnitOfWork,
-    node_id: uuid.UUID,
-    width: int,
-    height: int,
-) -> None:
-    node = await uow.nodes.get(node_id)
-    if node is None:
-        return
-    
-    node.width = width
-    node.height = height
-    
-    uow.emit(
-        event=EventName.NODE_UPDATED,
-        graph_id=node.graph_id,
-        payload={"nodeId": node_id, "patch": {"width": width, "height": height}},
-    )
 
 
 async def delete_node(uow: UnitOfWork, node_id: uuid.UUID) -> None:
@@ -116,10 +60,11 @@ async def delete_node(uow: UnitOfWork, node_id: uuid.UUID) -> None:
             payload={"edgeId": edge.id},
         )
 
+
 async def create_connected_node(
-    uow: UnitOfWork,
-    expression_id: uuid.UUID,
-    node_type: NodeType,
+        uow: UnitOfWork,
+        expression_id: uuid.UUID,
+        node_type: NodeType,
 ) -> uuid.UUID:
     if node_type == NodeType.START:
         raise ValidationError("Cannot connect a new START node.")
@@ -158,10 +103,6 @@ async def create_connected_node(
         NodeCreate(
             graph_id=parent_node.graph_id,
             iid=next_iid,
-            width=200,
-            height=120,
-            offset_x=parent_node.offset_x + parent_node.width + 100,
-            offset_y=parent_node.offset_y,
             color=NODE_COLORS[node_type],
             label=NODE_LABELS[node_type],
             is_processing=False,
