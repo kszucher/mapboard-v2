@@ -15,22 +15,22 @@ interface BranchInputProps {
 }
 
 export const BranchInput = ({
-                              expressionId,
-                              graphId,
-                              value,
-                              onChange,
-                              onDelete,
-                              onMoveUp,
-                              onMoveDown,
-                              canMoveUp = false,
-                              canMoveDown = false,
-                            }: BranchInputProps) => {
+  expressionId,
+  graphId,
+  value,
+  onChange,
+  onDelete,
+  onMoveUp,
+  onMoveDown,
+  canMoveUp = false,
+  canMoveDown = false,
+}: BranchInputProps) => {
   // Direct pass-through since PlainEditor handles local state
   const localValue = value;
 
   return (
     <Flex gap="2" align="center" style={{ width: '100%' }}>
-      <div className="nodrag" style={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
+      <div className="nodrag nopan" style={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
         <PlainEditor
           initialValue={localValue}
           onSave={onChange}

@@ -106,7 +106,7 @@ export const PlainEditor = ({
 
   return (
     <Box
-      className="nodrag"
+      className="nodrag nopan"
       onDoubleClick={(e) => e.stopPropagation()}
       style={{
         display: 'flex',
