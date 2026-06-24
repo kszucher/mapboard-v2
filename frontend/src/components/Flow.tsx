@@ -1,4 +1,11 @@
-import { type Connection, Controls, type NodeChange, ReactFlow, useReactFlow, } from '@xyflow/react';
+import {
+  type Connection,
+  Controls,
+  type NodeChange,
+  ReactFlow,
+  useNodesInitialized,
+  useReactFlow,
+} from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useCreateEdge, useDeleteEdge } from '../api/mutations';
@@ -30,6 +37,7 @@ const FlowContent = ({
 
   // react-flow / external hooks
   const { fitView } = useReactFlow();
+  const nodesInitialized = useNodesInitialized();
 
   // local layout & overrides state
   const [nodeState, setNodeState] = useState<Record<string, Partial<AppFlowNode>>>({});
@@ -39,7 +47,8 @@ const FlowContent = ({
     layers: Record<string, number>;
   }>({ positions: {}, sections: {}, layers: {} });
 
-  const isFirstLayoutForGraph = useRef(true);
+  const [isReady, setIsReady] = useState(false);
+  const lastFittedGraphId = useRef<string>('');
   const edgeReconnectSuccessful = useRef(true);
 
   // derived nodes
@@ -85,6 +94,7 @@ const FlowContent = ({
         const sourceNode = nodes.find(n => n.id === edge.from_node_id);
         const targetNode = nodes.find(n => n.id === edge.to_node_id);
         const isBack = sourceNode?.data?.layer !== undefined && targetNode?.data?.layer !== undefined && sourceNode.data.layer >= targetNode.data.layer;
+        const isLayoutReady = sourceNode?.data?.layer !== undefined && targetNode?.data?.layer !== undefined;
 
         return {
           id: edge.id,
@@ -93,7 +103,12 @@ const FlowContent = ({
           sourceHandle: edge.from_expression_id ?? String(edge.handle_index),
           type: 'custom' as const,
           animated: true,
-          style: { stroke: '#fff', strokeWidth: 2 },
+          style: {
+            stroke: '#fff',
+            strokeWidth: 2,
+            opacity: isLayoutReady ? 1 : 0,
+            transition: 'opacity 0.2s ease-in-out',
+          },
           deletable: isBack,
           reconnectable: isBack,
           data: {
@@ -103,8 +118,39 @@ const FlowContent = ({
       });
   }, [edgesData, nodesData, expressionsData, nodes, layoutData.sections]);
 
-  // Render canvas when layout has run or when the graph is empty
-  const isLayoutVisible = (nodesData && nodesData.length === 0) || (nodes.length > 0 && nodes.some(n => n.data?.layer !== undefined));
+  // Reset ready state synchronously on graph change
+  const [prevGraphId, setPrevGraphId] = useState(selectedGraphId);
+  if (selectedGraphId !== prevGraphId) {
+    setPrevGraphId(selectedGraphId);
+    setIsReady(false);
+  }
+
+  // Reset fitted flag on graph switch
+  useEffect(() => {
+    lastFittedGraphId.current = '';
+  }, [selectedGraphId]);
+
+  // Fit view once when layouted nodes are fully loaded and initialized
+  useEffect(() => {
+    if (selectedGraphId === lastFittedGraphId.current) {
+      if (!isReady) {
+        window.requestAnimationFrame(() => setIsReady(true));
+      }
+      return;
+    }
+
+    const hasLayout = nodes.length > 0 && nodes.every(n => layoutData.positions[n.id] !== undefined);
+    if (hasLayout && nodesInitialized) {
+      const runFit = async () => {
+        const success = await fitView({ padding: 0.1, duration: 0 });
+        if (success) {
+          lastFittedGraphId.current = selectedGraphId;
+          setIsReady(true);
+        }
+      };
+      void runFit();
+    }
+  }, [layoutData.positions, nodes, selectedGraphId, fitView, isReady, nodesInitialized]);
 
   // memoized values
   const nodeTypes = useMemo(
@@ -143,6 +189,11 @@ const FlowContent = ({
   }, []);
 
   const onEdgesChange = useCallback(() => {
+  }, []);
+
+  const onError = useCallback((id: string, message: string) => {
+    if (id === '008') return;
+    console.warn(message);
   }, []);
 
   const isValidConnection = useCallback(
@@ -283,11 +334,6 @@ const FlowContent = ({
             layers: nextLayers,
           });
 
-          // Fit view nicely if it is the first layout of a newly loaded graph
-          if (isFirstLayoutForGraph.current) {
-            isFirstLayoutForGraph.current = false;
-            void fitView({ padding: 0.1, duration: 0 });
-          }
         } catch (error) {
           console.error('Failed to auto-layout nodes:', error);
         }
@@ -304,7 +350,7 @@ const FlowContent = ({
       style={{
         width: '100%',
         height: '100%',
-        opacity: isLayoutVisible ? 1 : 0,
+        opacity: isReady ? 1 : 0,
         transition: 'opacity 0.2s ease-in-out'
       }}>
       <ReactFlow<AppFlowNode, AppFlowEdge>
@@ -314,6 +360,7 @@ const FlowContent = ({
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onError={onError}
         onConnect={handleConnect}
         onEdgesDelete={handleEdgesDelete}
         onReconnect={handleReconnect}
