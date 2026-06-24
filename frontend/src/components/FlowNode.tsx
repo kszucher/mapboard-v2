@@ -52,6 +52,8 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
 
   const isStart = data.node.node_type === 'START';
 
+  const isLayoutReady = data.layer !== undefined;
+
   return (
     <div
       style={{
@@ -60,6 +62,8 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
         padding: 12,
         minWidth: 200,
         minHeight: isStart ? 80 : undefined,
+        opacity: isLayoutReady ? 1 : 0,
+        transition: 'opacity 0.2s ease-in-out',
       }}
     >
       <Box position="absolute" top="8px" left="8px">

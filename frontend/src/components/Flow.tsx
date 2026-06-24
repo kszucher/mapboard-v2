@@ -1,14 +1,4 @@
-import {
-  addEdge,
-  type Connection,
-  Controls,
-  ReactFlow,
-  reconnectEdge,
-  useEdgesState,
-  useNodesInitialized,
-  useNodesState,
-  useReactFlow,
-} from '@xyflow/react';
+import { type Connection, Controls, type EdgeChange, type NodeChange, ReactFlow, useReactFlow, } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useCreateEdge, useDeleteEdge } from '../api/mutations';
@@ -17,7 +7,7 @@ import FlowEdge from './FlowEdge.tsx';
 import { CustomNode } from './FlowNode.tsx';
 import { useGraphWebSocket } from './hooks/useGraphWebSocket.ts';
 import { getLayoutedElements } from './layout.ts';
-import type { AppFlowEdge, AppFlowNode } from './types.ts';
+import type { AppFlowEdge, AppFlowNode, ElkEdgeSection } from './types.ts';
 
 const FlowContent = ({
   selectedGraphId,
@@ -40,33 +30,81 @@ const FlowContent = ({
 
   // react-flow / external hooks
   const { fitView } = useReactFlow();
-  const nodesInitialized = useNodesInitialized();
 
-  // local state
-  const [nodes, setNodes, onNodesChange] =
-    useNodesState<AppFlowNode>([]);
-  const [edges, setEdges, onEdgesChange] =
-    useEdgesState<AppFlowEdge>([]);
-  const [isLayoutReady, setIsLayoutReady] = useState(false);
+  // local layout & overrides state
+  const [nodeState, setNodeState] = useState<Record<string, Partial<AppFlowNode>>>({});
+  const [edgeState, setEdgeState] = useState<Record<string, Partial<AppFlowEdge>>>({});
+  const [layoutData, setLayoutData] = useState<{
+    positions: Record<string, { x: number; y: number }>;
+    sections: Record<string, ElkEdgeSection[]>;
+    layers: Record<string, number>;
+  }>({ positions: {}, sections: {}, layers: {} });
 
-  // refs
   const isFirstLayoutForGraph = useRef(true);
   const edgeReconnectSuccessful = useRef(true);
-  const edgeSectionsRef = useRef<Record<string, any[]>>({});
 
-  // Reset graph flags and clear edge layout sections when changing graphs
-  useEffect(() => {
-    isFirstLayoutForGraph.current = true;
-    setIsLayoutReady(false);
-    edgeSectionsRef.current = {};
-  }, [selectedGraphId]);
+  // derived nodes
+  const nodes = useMemo<AppFlowNode[]>(() => {
+    if (!nodesData) return [];
+    return nodesData.map(n => {
+      const state = nodeState[n.id] || {};
+      const position = layoutData.positions[n.id];
 
-  // If graph is empty, mark layout ready immediately
-  useEffect(() => {
-    if (nodesData && nodesData.length === 0) {
-      setIsLayoutReady(true);
-    }
-  }, [nodesData]);
+      let tempPosition = position;
+      if (!tempPosition) {
+        const incomingEdge = edgesData?.find(e => e.to_node_id === n.id);
+        const parentNodePosition = incomingEdge ? layoutData.positions[incomingEdge.from_node_id] : null;
+        tempPosition = parentNodePosition ? { x: parentNodePosition.x + 300, y: parentNodePosition.y } : { x: 0, y: 0 };
+      }
+
+      return {
+        id: n.id,
+        type: 'custom' as const,
+        position: tempPosition,
+        data: {
+          node: n,
+          layer: layoutData.layers[n.id],
+        },
+        selected: state.selected,
+        measured: state.measured,
+        width: state.width,
+        height: state.height,
+      };
+    });
+  }, [nodesData, edgesData, layoutData, nodeState]);
+
+  // derived edges
+  const edges = useMemo<AppFlowEdge[]>(() => {
+    if (!edgesData || !nodesData || !expressionsData) return [];
+    const nodeIds = new Set(nodesData.map(n => n.id));
+    const expressionIds = new Set(expressionsData.map(e => e.id));
+
+    return edgesData
+      .filter(edge => {
+        if (!nodeIds.has(edge.from_node_id) || !nodeIds.has(edge.to_node_id)) return false;
+        if (edge.from_expression_id && !expressionIds.has(edge.from_expression_id)) return false;
+        return true;
+      })
+      .map(edge => {
+        const state = edgeState[edge.id] || {};
+        return {
+          id: edge.id,
+          source: edge.from_node_id,
+          target: edge.to_node_id,
+          sourceHandle: edge.from_expression_id ?? String(edge.handle_index),
+          type: 'custom' as const,
+          animated: true,
+          style: { stroke: '#fff', strokeWidth: 2 },
+          selected: state.selected,
+          data: {
+            sections: layoutData.sections[edge.id],
+          },
+        };
+      });
+  }, [edgesData, nodesData, expressionsData, layoutData.sections, edgeState]);
+
+  // Render canvas when layout has run or when the graph is empty
+  const isLayoutVisible = (nodesData && nodesData.length === 0) || (nodes.length > 0 && nodes.some(n => n.data?.layer !== undefined));
 
   // memoized values
   const nodeTypes = useMemo(
@@ -78,80 +116,54 @@ const FlowContent = ({
     [],
   );
 
-  const mappedEdges = useMemo<AppFlowEdge[]>(() => {
-    if (!edgesData || !nodesData || !expressionsData) return [];
-
-    const nodeIds = new Set(nodesData.map(n => n.id));
-    const expressionIds = new Set(expressionsData.map(e => e.id));
-
-    return edgesData
-      .filter(edge => {
-        // Ensure source and target nodes exist
-        if (!nodeIds.has(edge.from_node_id) || !nodeIds.has(edge.to_node_id)) {
-          return false;
+  const onNodesChange = useCallback((changes: NodeChange[]) => {
+    setNodeState(prev => {
+      const next = { ...prev };
+      changes.forEach(change => {
+        if ('id' in change) {
+          const id = change.id;
+          const current = next[id] || {};
+          if (change.type === 'dimensions') {
+            next[id] = {
+              ...current,
+              measured: change.dimensions,
+              width: change.dimensions?.width,
+              height: change.dimensions?.height,
+            };
+          } else if (change.type === 'select') {
+            next[id] = {
+              ...current,
+              selected: change.selected,
+            };
+          }
         }
-        // Ensure source expression exists if it's a hard link
-        if (edge.from_expression_id && !expressionIds.has(edge.from_expression_id)) {
-          return false;
-        }
-        return true;
-      })
-      .map(edge => ({
-        id: edge.id,
-        source: edge.from_node_id,
-        target: edge.to_node_id,
-        sourceHandle: edge.from_expression_id ?? String(edge.handle_index),
-        type: 'custom' as const,
-        animated: true,
-        style: { stroke: '#fff', strokeWidth: 2 },
-        data: {
-          sections: edgeSectionsRef.current[edge.id],
-        },
-      }));
-  }, [edgesData, nodesData, expressionsData]);
-
-  // Sync nodes from query data to state, preserving local state (measured dimensions, etc.)
-  useEffect(() => {
-    if (!nodesData || isSyncBlocked) return;
-
-    setNodes(prevNodes => {
-      const nodeMap = new Map(prevNodes.map(n => [n.id, n]));
-      return nodesData.map(n => {
-        const prevNode = nodeMap.get(n.id);
-        let position = prevNode?.position;
-        if (!position) {
-          const incomingEdge = edgesData?.find(e => e.to_node_id === n.id);
-          const parentNode = incomingEdge ? nodeMap.get(incomingEdge.from_node_id) : null;
-          position = parentNode ? { x: parentNode.position.x + 300, y: parentNode.position.y } : { x: 0, y: 0 };
-        }
-
-        return {
-          id: n.id,
-          type: 'custom' as const,
-          position,
-          data: { node: n },
-          // Preserve measured dimensions and other localized state
-          measured: prevNode?.measured,
-          width: prevNode?.width,
-          height: prevNode?.height,
-          dragging: prevNode?.dragging,
-        };
       });
+      return next;
     });
-  }, [nodesData, edgesData, isSyncBlocked, setNodes]);
+  }, []);
 
-  // Sync edges from query data to state
-  useEffect(() => {
-    if (!mappedEdges || isSyncBlocked) return;
-    setEdges(mappedEdges);
-  }, [mappedEdges, isSyncBlocked, setEdges]);
-
+  const onEdgesChange = useCallback((changes: EdgeChange[]) => {
+    setEdgeState(prev => {
+      const next = { ...prev };
+      changes.forEach(change => {
+        if ('id' in change) {
+          const id = change.id;
+          const current = next[id] || {};
+          if (change.type === 'select') {
+            next[id] = {
+              ...current,
+              selected: change.selected,
+            };
+          }
+        }
+      });
+      return next;
+    });
+  }, []);
 
   const handleConnect = useCallback(
     (params: Connection) => {
       if (!params.source || !params.target) return;
-
-      setEdges(edges => addEdge(params, edges));
 
       const sourceHandle = params.sourceHandle;
       const isExpressionId = !!sourceHandle && sourceHandle.length > 5;
@@ -164,7 +176,7 @@ const FlowContent = ({
         fromExpressionId: isExpressionId ? (sourceHandle as string) : undefined,
       });
     },
-    [selectedGraphId, createEdgeMutation, setEdges],
+    [selectedGraphId, createEdgeMutation],
   );
 
   const handleEdgesDelete = useCallback(
@@ -184,8 +196,6 @@ const FlowContent = ({
     (oldEdge: AppFlowEdge, newConnection: Connection) => {
       edgeReconnectSuccessful.current = true;
 
-      setEdges(edges => reconnectEdge(oldEdge, newConnection, edges));
-
       deleteEdgeMutation.mutate({ edgeId: oldEdge.id as string });
 
       if (newConnection.source && newConnection.target) {
@@ -201,19 +211,17 @@ const FlowContent = ({
         });
       }
     },
-    [selectedGraphId, createEdgeMutation, deleteEdgeMutation, setEdges],
+    [selectedGraphId, createEdgeMutation, deleteEdgeMutation],
   );
 
   const handleReconnectEnd = useCallback(
     (_event: MouseEvent | TouchEvent, edge: AppFlowEdge) => {
       if (!edgeReconnectSuccessful.current) {
-        setEdges(edges => edges.filter(e => e.id !== edge.id));
         deleteEdgeMutation.mutate({ edgeId: edge.id as string });
       }
-
       edgeReconnectSuccessful.current = true;
     },
-    [deleteEdgeMutation, setEdges],
+    [deleteEdgeMutation],
   );
 
   const handleDoubleClick = useCallback(
@@ -224,55 +232,78 @@ const FlowContent = ({
     [fitView],
   );
 
-  const performLayout = useCallback(async (shouldFitView = false) => {
-    if (nodes.length === 0) return;
-
-    try {
-      const { nodes: layoutedNodes, edges: layoutedEdges } = await getLayoutedElements(nodes, edges, expressionsData);
-
-      // Store the layouted edge sections in ref so they are preserved on sync
-      const sectionsMap: Record<string, any[]> = {};
-      layoutedEdges.forEach(e => {
-        if (e.data?.sections) {
-          sectionsMap[e.id] = e.data.sections;
-        }
-      });
-      edgeSectionsRef.current = sectionsMap;
-
-      // Update local nodes and edges state immediately for visual response
-      setNodes(layoutedNodes);
-      setEdges(layoutedEdges);
-
-      // Fit view nicely if requested, or if it is the first layout of a newly loaded graph
-      if (shouldFitView || isFirstLayoutForGraph.current) {
-        const duration = isFirstLayoutForGraph.current ? 0 : 300;
-        isFirstLayoutForGraph.current = false;
-        void fitView({ padding: 0.1, duration });
-      }
-      setIsLayoutReady(true);
-    } catch (error) {
-      console.error('Failed to auto-layout nodes:', error);
-    }
-  }, [nodes, edges, expressionsData, setNodes, setEdges, fitView]);
-
   // Run layout when nodes are fully initialized/measured and graph structure changes
   const lastLayoutedKey = useRef<string>('');
   useEffect(() => {
-    if (!nodesInitialized || nodes.length === 0) return;
+    if (isSyncBlocked || !nodesData || nodes.length === 0) return;
 
-    const currentKey = `${nodes.map(n => n.id).sort().join(',')}|${edges.map(e => e.id).sort().join(',')}|${expressionsData?.length ?? 0}`;
+    // Check if we have dimensions for all nodes that are currently in nodesData
+    const allNodesMeasured = nodes.every(n => n.measured !== undefined);
+    if (!allNodesMeasured) return;
+
+    const expressionsKey = expressionsData
+      ? [...expressionsData]
+        .sort((a, b) => a.id.localeCompare(b.id))
+        .map(e => `${e.id}:${e.idx}`)
+        .join(',')
+      : '';
+
+    const currentKey = `${nodes.map(n => n.id).sort().join(',')}|${edges.map(e => e.id).sort().join(',')}|${expressionsKey}`;
 
     if (currentKey !== lastLayoutedKey.current) {
       lastLayoutedKey.current = currentKey;
-      void performLayout(false);
+
+      const runLayout = async () => {
+        try {
+          const {
+            nodes: layoutedNodes,
+            edges: layoutedEdges
+          } = await getLayoutedElements(nodes, edges, expressionsData);
+
+          const nextPositions: Record<string, { x: number; y: number }> = {};
+          const nextLayers: Record<string, number> = {};
+          layoutedNodes.forEach(n => {
+            nextPositions[n.id] = n.position;
+            nextLayers[n.id] = n.data?.layer ?? 0;
+          });
+
+          const nextSections: Record<string, ElkEdgeSection[]> = {};
+          layoutedEdges.forEach(e => {
+            if (e.data?.sections) {
+              nextSections[e.id] = e.data.sections;
+            }
+          });
+
+          setLayoutData({
+            positions: nextPositions,
+            sections: nextSections,
+            layers: nextLayers,
+          });
+
+          // Fit view nicely if it is the first layout of a newly loaded graph
+          if (isFirstLayoutForGraph.current) {
+            isFirstLayoutForGraph.current = false;
+            void fitView({ padding: 0.1, duration: 0 });
+          }
+        } catch (error) {
+          console.error('Failed to auto-layout nodes:', error);
+        }
+      };
+
+      void runLayout();
     }
-  }, [nodesInitialized, nodes.length, edges.length, expressionsData?.length, performLayout]);
+  }, [nodes, edges, expressionsData, isSyncBlocked, nodesData, fitView]);
 
   if (!nodesData || !edgesData || !expressionsData) return null;
 
   return (
     <div
-      style={{ width: '100%', height: '100%', opacity: isLayoutReady ? 1 : 0, transition: 'opacity 0.2s ease-in-out' }}>
+      style={{
+        width: '100%',
+        height: '100%',
+        opacity: isLayoutVisible ? 1 : 0,
+        transition: 'opacity 0.2s ease-in-out'
+      }}>
       <ReactFlow<AppFlowNode, AppFlowEdge>
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
@@ -300,6 +331,6 @@ const FlowContent = ({
 
 export const Flow = ({ selectedGraphId }: { selectedGraphId: string }) => {
   return (
-    <FlowContent selectedGraphId={selectedGraphId}/>
+    <FlowContent key={selectedGraphId} selectedGraphId={selectedGraphId}/>
   );
 };

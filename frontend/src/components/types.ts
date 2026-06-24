@@ -18,6 +18,19 @@ export interface EdgeRoutingData {
   };
 }
 
+export interface ElkPoint {
+  x: number;
+  y: number;
+}
+
+export interface ElkEdgeSection {
+  id: string;
+  startPoint: ElkPoint;
+  endPoint: ElkPoint;
+  bendPoints?: ElkPoint[];
+}
+
 export type AppFlowNode = Node<{ node: ApiNode; layer?: number }, 'custom'>;
-export type AppFlowEdge = Edge<{ edge?: ApiEdge; sections?: any[]; routing?: EdgeRoutingData }, 'custom'>;
+export type AppFlowEdge = Edge<{ edge?: ApiEdge; sections?: ElkEdgeSection[]; routing?: EdgeRoutingData }, 'custom'>;
+
 
