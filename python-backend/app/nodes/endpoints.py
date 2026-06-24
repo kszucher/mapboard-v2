@@ -56,3 +56,20 @@ async def create_connected_node(
     except Exception as e:
         await uow.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{node_id}/shortcircuit", status_code=status.HTTP_204_NO_CONTENT)
+async def shortcircuit_node(
+        node_id: uuid.UUID,
+        uow: Any = Depends(get_uow)
+) -> None:
+    try:
+        await node_service.shortcircuit_node(uow, node_id)
+        await uow.commit()
+    except GraphboardError:
+        await uow.rollback()
+        raise
+    except Exception as e:
+        await uow.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+

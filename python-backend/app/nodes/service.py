@@ -139,3 +139,66 @@ async def create_connected_node(
     )
 
     return new_node.id
+
+
+async def shortcircuit_node(uow: UnitOfWork, node_id: uuid.UUID) -> None:
+    node = await uow.nodes.get(node_id)
+    if not node:
+        return
+
+    if node.node_type in (NodeType.START, NodeType.LOGICAL_SWITCH, NodeType.AGENTIC_SWITCH):
+        raise ValidationError("Cannot shortcircuit START or SWITCH nodes.")
+
+    # 1. Get all edges connected to the node
+    all_edges = await uow.edges.list_by_node(node_id)
+    incoming = [e for e in all_edges if e.to_node_id == node_id]
+    outgoing = [e for e in all_edges if e.from_node_id == node_id]
+
+    deleted_edge_ids = []
+    updated = False
+
+    if outgoing and incoming:
+        # Sort outgoing edges by handle_index
+        outgoing.sort(key=lambda e: e.handle_index)
+        primary_target_node_id = outgoing[0].to_node_id
+
+        # Retarget all incoming edges' to_node_id to the primary target
+        for in_edge in incoming:
+            in_edge.to_node_id = primary_target_node_id
+            updated = True
+
+        # All outgoing edges will be deleted because their source node is deleted (cascade delete).
+        # We collect their IDs to emit EDGE_DELETED events.
+        for out_edge in outgoing:
+            deleted_edge_ids.append(out_edge.id)
+    else:
+        # If there are no outgoing targets or no incoming edges,
+        # all connected edges will just be deleted.
+        for edge in all_edges:
+            deleted_edge_ids.append(edge.id)
+
+    # 2. Delete the node
+    await uow.nodes.delete(node_id)
+    await uow.session.flush()
+
+    # 3. Emit events
+    uow.emit(
+        event=EventName.NODE_DELETED,
+        graph_id=node.graph_id,
+        payload={"nodeId": node_id},
+    )
+
+    for edge_id in deleted_edge_ids:
+        uow.emit(
+            event=EventName.EDGE_DELETED,
+            graph_id=node.graph_id,
+            payload={"edgeId": edge_id},
+        )
+
+    if updated:
+        uow.emit(
+            event=EventName.EDGES_UPDATED,
+            graph_id=node.graph_id,
+            payload={},
+        )
+

@@ -7,6 +7,7 @@ import {
   useCreateExpression,
   useDeleteExpression,
   useDeleteNode,
+  useShortcircuitNode,
   useMoveExpressionDown,
   useMoveExpressionUp,
   useUpdateExpression,
@@ -20,6 +21,7 @@ import type { AppFlowNode } from './types.ts';
 
 const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   const deleteNodeMutation = useDeleteNode();
+  const shortcircuitNodeMutation = useShortcircuitNode();
   const updateNodeInternals = useUpdateNodeInternals();
 
   const createExpression = useCreateExpression();
@@ -43,6 +45,10 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   const handleDelete = useCallback(() => {
     deleteNodeMutation.mutate({ nodeId: data.node.id });
   }, [data.node.id, deleteNodeMutation]);
+
+  const handleShortcircuit = useCallback(() => {
+    shortcircuitNodeMutation.mutate({ nodeId: data.node.id, graphId: data.node.graph_id });
+  }, [data.node.id, data.node.graph_id, shortcircuitNodeMutation]);
 
   const { node } = data;
   const isStart = node.node_type === 'START';
@@ -258,6 +264,11 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
                 <DropdownMenu.Item key={1}></DropdownMenu.Item>
               </DropdownMenu.SubContent>
             </DropdownMenu.Sub>
+            {!isStart && !isSwitch && (
+              <DropdownMenu.Item onClick={handleShortcircuit}>
+                {'Shortcircuit'}
+              </DropdownMenu.Item>
+            )}
             <DropdownMenu.Item onClick={handleDelete}>
               {'Delete'}
             </DropdownMenu.Item>

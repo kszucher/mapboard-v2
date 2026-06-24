@@ -68,6 +68,25 @@ export const useDeleteNode = () => {
   });
 };
 
+export const useShortcircuitNode = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ nodeId }: { nodeId: string; graphId: string }) => {
+      const res = await apiClient.POST('/nodes/{node_id}/shortcircuit', {
+        params: { path: { node_id: nodeId } },
+        headers: { 'X-Client-Id': getClientId() },
+      });
+      if ('error' in res) throw res.error;
+    },
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.edges.byGraph(variables.graphId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.expressions.byGraph(variables.graphId) });
+    },
+  });
+};
+
 export const useAddConnectedNode = () => {
   const queryClient = useQueryClient();
 
