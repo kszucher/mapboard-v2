@@ -41,9 +41,6 @@ export const FlowNodeSwitch = ({ data }: FlowNodeSwitchProps) => {
     return expressions.filter(e => e.type === 'SUB');
   }, [expressions]);
 
-  const SPACING = 32;
-  const BASE_OFFSET = 62;
-  const LEFT_HANDLE_OFFSET = BASE_OFFSET;
 
   const handleAddItem = useCallback(() => {
     createExpression.mutate({ nodeId: node.id, raw_string: '', graphId: node.graph_id, type: 'SUB' });
@@ -110,34 +107,44 @@ export const FlowNodeSwitch = ({ data }: FlowNodeSwitchProps) => {
     <>
       <Flex direction="column" gap="2" style={{ marginTop: 38, width: 'fit-content', minWidth: '100%' }}>
         {baseExpression && (
-          <Flex gap="2" align="center" style={{ width: '100%', height: 24 }}>
-            <div className="nodrag nopan" style={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
-              <PlainEditor
-                initialValue={baseExpression.raw_string}
-                onSave={handleUpdateBase}
-                singleLine={true}
-                minWidth={100}
-              />
-            </div>
-          </Flex>
+          <div style={{ position: 'relative', width: '100%' }}>
+            <Flex gap="2" align="center" style={{ width: '100%' }}>
+              <div className="nodrag nopan" style={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
+                <PlainEditor
+                  initialValue={baseExpression.raw_string}
+                  onSave={handleUpdateBase}
+                  minWidth={240}
+                  maxWidth={600}
+                />
+              </div>
+            </Flex>
+            <Handle type="target" position={Position.Left} style={{ left: -12 }}/>
+          </div>
         )}
 
         {subExpressions.length > 0 && (
           <Flex direction="column" gap="2" style={{ width: '100%' }}>
             {subExpressions.map((expr, i) => {
               return (
-                <BranchInput
-                  key={expr.id}
-                  expressionId={expr.id}
-                  graphId={node.graph_id}
-                  value={expr.raw_string}
-                  onChange={(newValue) => handleUpdateItem(i, newValue)}
-                  onDelete={() => handleDeleteItem(i)}
-                  onMoveUp={() => handleMoveUp(i)}
-                  onMoveDown={() => handleMoveDown(i)}
-                  canMoveUp={i > 0}
-                  canMoveDown={i < subExpressions.length - 1}
-                />
+                <div key={expr.id} style={{ position: 'relative', width: '100%' }}>
+                  <BranchInput
+                    expressionId={expr.id}
+                    graphId={node.graph_id}
+                    value={expr.raw_string}
+                    onChange={(newValue) => handleUpdateItem(i, newValue)}
+                    onDelete={() => handleDeleteItem(i)}
+                    onMoveUp={() => handleMoveUp(i)}
+                    onMoveDown={() => handleMoveDown(i)}
+                    canMoveUp={i > 0}
+                    canMoveDown={i < subExpressions.length - 1}
+                  />
+                  <Handle
+                    id={expr.id}
+                    type="source"
+                    position={Position.Right}
+                    style={{ right: -12 }}
+                  />
+                </div>
               );
             })}
           </Flex>
@@ -149,20 +156,6 @@ export const FlowNodeSwitch = ({ data }: FlowNodeSwitchProps) => {
           </IconButton>
         </Flex>
       </Flex>
-
-      <Handle type="target" position={Position.Left} style={{ top: LEFT_HANDLE_OFFSET }}/>
-
-      {subExpressions.map((expr, i) => (
-        <Handle
-          key={expr.id}
-          id={expr.id}
-          type="source"
-          position={Position.Right}
-          style={{
-            top: BASE_OFFSET + (i + 1) * SPACING,
-          }}
-        />
-      ))}
     </>
   );
 };
