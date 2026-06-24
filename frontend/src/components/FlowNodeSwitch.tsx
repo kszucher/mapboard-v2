@@ -14,11 +14,11 @@ import { BranchInput } from './BranchInput.tsx';
 import { PlainEditor } from './PlainEditor';
 import type { AppFlowNode } from './types.ts';
 
-interface FlowNodeAgenticSwitchProps {
+interface FlowNodeSwitchProps {
   data: AppFlowNode['data'];
 }
 
-export const FlowNodeAgenticSwitch = ({ data }: FlowNodeAgenticSwitchProps) => {
+export const FlowNodeSwitch = ({ data }: FlowNodeSwitchProps) => {
   const createExpression = useCreateExpression();
   const deleteExpression = useDeleteExpression();
   const updateExpression = useUpdateExpression();
@@ -118,9 +118,6 @@ export const FlowNodeAgenticSwitch = ({ data }: FlowNodeAgenticSwitchProps) => {
                 singleLine={true}
                 minWidth={100}
               />
-            </div>
-            <div style={{ fontSize: '10px', color: '#ffc53d', fontWeight: 'bold', paddingRight: '8px', minWidth: '40px', textAlign: 'right' }}>
-              SWITCH
             </div>
           </Flex>
         )}

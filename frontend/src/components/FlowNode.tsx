@@ -6,9 +6,8 @@ import { memo, useCallback, useEffect, useMemo } from 'react';
 import { useDeleteNode } from '../api/mutations';
 import { useExpressions } from '../api/queries';
 import { FlowNodeAgent } from './FlowNodeAgent.tsx';
-import { FlowNodeAgenticSwitch } from './FlowNodeAgenticSwitch.tsx';
 import { FlowNodeLogic } from './FlowNodeLogic.tsx';
-import { FlowNodeLogicalSwitch } from './FlowNodeLogicalSwitch.tsx';
+import { FlowNodeSwitch } from './FlowNodeSwitch.tsx';
 import { FlowNodeStart } from './FlowNodeStart.tsx';
 import type { AppFlowNode } from './types.ts';
 
@@ -40,9 +39,8 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
       case 'AGENT':
         return <FlowNodeAgent data={data}/>;
       case 'LOGICAL_SWITCH':
-        return <FlowNodeLogicalSwitch data={data}/>;
       case 'AGENTIC_SWITCH':
-        return <FlowNodeAgenticSwitch data={data}/>;
+        return <FlowNodeSwitch data={data}/>;
       default:
         return <div>Unknown Node Type</div>;
     }
