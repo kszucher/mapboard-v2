@@ -7,12 +7,11 @@ import {
   useCreateExpression,
   useDeleteExpression,
   useDeleteNode,
-  useShortcircuitNode,
   useMoveExpressionDown,
   useMoveExpressionUp,
+  useShortcircuitNode,
   useUpdateExpression,
 } from '../api/mutations';
-import { useExpressions } from '../api/queries';
 
 import { BranchInput } from './BranchInput.tsx';
 import { ExpressionActionsDropdown } from './ExpressionActionsDropdown';
@@ -30,13 +29,12 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   const moveExpressionUp = useMoveExpressionUp();
   const moveExpressionDown = useMoveExpressionDown();
 
-  const { data: allExpressions } = useExpressions(data.node.graph_id);
+  const myExpressions = useMemo(() => data.expressions ?? [], [data.expressions]);
 
   const myExpressionsHash = useMemo(() => {
-    const mine = allExpressions?.filter(e => e.node_id === id) ?? [];
-    const sorted = [...mine].sort((a, b) => a.idx - b.idx);
+    const sorted = [...myExpressions].sort((a, b) => a.idx - b.idx);
     return sorted.map(e => `${e.id}:${e.idx}`).join(',');
-  }, [allExpressions, id]);
+  }, [myExpressions]);
 
   useEffect(() => {
     updateNodeInternals(id);
@@ -56,18 +54,16 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
 
   const baseExpression = useMemo(() => {
     if (isStart) return null;
-    const mine = allExpressions?.filter(e => e.node_id === id) ?? [];
     if (isSwitch) {
-      return mine.find(e => e.type === 'BASE');
+      return myExpressions.find(e => e.type === 'BASE');
     }
-    return mine[0];
-  }, [allExpressions, id, isSwitch, isStart]);
+    return myExpressions[0];
+  }, [myExpressions, isSwitch, isStart]);
 
   const subExpressions = useMemo(() => {
     if (!isSwitch) return [];
-    const mine = allExpressions?.filter(e => e.node_id === id) ?? [];
-    return mine.filter(e => e.type === 'SUB').sort((a, b) => a.idx - b.idx);
-  }, [allExpressions, id, isSwitch]);
+    return myExpressions.filter(e => e.type === 'SUB').sort((a, b) => a.idx - b.idx);
+  }, [myExpressions, isSwitch]);
 
   const handleAddItem = useCallback(() => {
     createExpression.mutate({ nodeId: node.id, raw_string: '', graphId: node.graph_id, type: 'SUB' });

@@ -14,6 +14,7 @@ export const queryKeys = {
   graphs: {
     all: ['graphs'] as const,
     byUser: (userId: string | null) => [...queryKeys.graphs.all, userId] as const,
+    flow: (graphId: string | null) => [...queryKeys.graphs.all, graphId, 'flow'] as const,
   },
 
   // Node queries

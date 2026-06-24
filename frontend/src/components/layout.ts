@@ -115,7 +115,7 @@ const buildElkNodes = (
     // 2. Source ports (output) on the right (EAST)
     let sourcePorts = Array.from(new Set(edges.filter((e) => e.source === node.id).map((e) => e.sourceHandle).filter(Boolean) as string[]))
       .sort((a, b) => nodeExpressions.findIndex((expr) => expr.id === a) - nodeExpressions.findIndex((expr) => expr.id === b));
-    
+
     if (isSwitch) {
       const baseExprId = nodeExpressions.find(e => e.type === 'BASE')?.id;
       sourcePorts = sourcePorts.filter(handleId => handleId !== baseExprId);

@@ -9,7 +9,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useCreateEdge, useDeleteEdge } from '../api/mutations';
-import { useEdges, useExpressions, useNodes } from '../api/queries';
+import { useGraphFlow } from '../api/queries';
 import FlowEdge from './FlowEdge.tsx';
 import { CustomNode } from './FlowNode.tsx';
 import { useGraphWebSocket } from './hooks/useGraphWebSocket.ts';
@@ -22,11 +22,7 @@ const FlowContent = ({
   selectedGraphId: string;
 }) => {
   // data fetching
-  const { data: nodesData, isFetching: isNodesFetching } = useNodes(selectedGraphId);
-  const { data: edgesData, isFetching: isEdgesFetching } = useEdges(selectedGraphId);
-  const { data: expressionsData, isFetching: isExpressionsFetching } = useExpressions(selectedGraphId);
-
-  const isSyncBlocked = isNodesFetching || isEdgesFetching || isExpressionsFetching;
+  const { data: flowData, isFetching } = useGraphFlow(selectedGraphId);
 
   // subscriptions / side effects
   useGraphWebSocket(selectedGraphId);
@@ -53,17 +49,19 @@ const FlowContent = ({
 
   // derived nodes
   const nodes = useMemo<AppFlowNode[]>(() => {
-    if (!nodesData) return [];
-    return nodesData.map(n => {
+    if (!flowData) return [];
+    return flowData.nodes.map(n => {
       const state = nodeState[n.id] || {};
       const position = layoutData.positions[n.id];
 
       let tempPosition = position;
       if (!tempPosition) {
-        const incomingEdge = edgesData?.find(e => e.to_node_id === n.id);
+        const incomingEdge = flowData.edges?.find(e => e.to_node_id === n.id);
         const parentNodePosition = incomingEdge ? layoutData.positions[incomingEdge.from_node_id] : null;
         tempPosition = parentNodePosition ? { x: parentNodePosition.x + 300, y: parentNodePosition.y } : { x: 0, y: 0 };
       }
+
+      const nodeExpressions = flowData.expressions.filter(e => e.node_id === n.id);
 
       return {
         id: n.id,
@@ -72,19 +70,20 @@ const FlowContent = ({
         data: {
           node: n,
           layer: layoutData.layers[n.id],
+          expressions: nodeExpressions,
         },
         measured: state.measured,
       };
     });
-  }, [nodesData, edgesData, layoutData, nodeState]);
+  }, [flowData, layoutData, nodeState]);
 
   // derived edges
   const edges = useMemo<AppFlowEdge[]>(() => {
-    if (!edgesData || !nodesData || !expressionsData) return [];
-    const nodeIds = new Set(nodesData.map(n => n.id));
-    const expressionIds = new Set(expressionsData.map(e => e.id));
+    if (!flowData) return [];
+    const nodeIds = new Set(flowData.nodes.map(n => n.id));
+    const expressionIds = new Set(flowData.expressions.map(e => e.id));
 
-    return edgesData
+    return flowData.edges
       .filter(edge => {
         if (!nodeIds.has(edge.from_node_id) || !nodeIds.has(edge.to_node_id)) return false;
         if (edge.from_expression_id && !expressionIds.has(edge.from_expression_id)) return false;
@@ -116,7 +115,7 @@ const FlowContent = ({
           },
         };
       });
-  }, [edgesData, nodesData, expressionsData, nodes, layoutData.sections]);
+  }, [flowData, nodes, layoutData.sections]);
 
   // Reset ready state synchronously on graph change
   const [prevGraphId, setPrevGraphId] = useState(selectedGraphId);
@@ -284,14 +283,14 @@ const FlowContent = ({
   // Run layout when nodes are fully initialized/measured and graph structure changes
   const lastLayoutedKey = useRef<string>('');
   useEffect(() => {
-    if (isSyncBlocked || !nodesData || nodes.length === 0) return;
+    if (isFetching || !flowData || nodes.length === 0) return;
 
-    // Check if we have dimensions for all nodes that are currently in nodesData
+    // Check if we have dimensions for all nodes that are currently in flowData
     const allNodesMeasured = nodes.every(n => n.measured !== undefined);
     if (!allNodesMeasured) return;
 
-    const expressionsKey = expressionsData
-      ? [...expressionsData]
+    const expressionsKey = flowData.expressions
+      ? [...flowData.expressions]
         .sort((a, b) => a.id.localeCompare(b.id))
         .map(e => `${e.id}:${e.idx}`)
         .join(',')
@@ -312,7 +311,7 @@ const FlowContent = ({
           const {
             nodes: layoutedNodes,
             edges: layoutedEdges
-          } = await getLayoutedElements(nodes, edges, expressionsData);
+          } = await getLayoutedElements(nodes, edges, flowData.expressions);
 
           const nextPositions: Record<string, { x: number; y: number }> = {};
           const nextLayers: Record<string, number> = {};
@@ -341,9 +340,9 @@ const FlowContent = ({
 
       void runLayout();
     }
-  }, [nodes, edges, expressionsData, isSyncBlocked, nodesData, fitView]);
+  }, [nodes, edges, flowData, isFetching, fitView]);
 
-  if (!nodesData || !edgesData || !expressionsData) return null;
+  if (!flowData) return null;
 
   return (
     <div

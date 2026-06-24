@@ -44,7 +44,7 @@ export const useCreateNode = () => {
       return res.data as string;
     },
     onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.graphs.flow(variables.graphId) });
     },
   });
 };
@@ -62,8 +62,7 @@ export const useDeleteNode = () => {
       if ('error' in res) throw res.error;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.all });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.edges.all });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.graphs.all });
     },
   });
 };
@@ -80,9 +79,7 @@ export const useShortcircuitNode = () => {
       if ('error' in res) throw res.error;
     },
     onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.edges.byGraph(variables.graphId) });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.expressions.byGraph(variables.graphId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.graphs.flow(variables.graphId) });
     },
   });
 };
@@ -107,9 +104,7 @@ export const useAddConnectedNode = () => {
       return res.data;
     },
     onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.edges.byGraph(variables.graphId) });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.expressions.byGraph(variables.graphId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.graphs.flow(variables.graphId) });
     },
   });
 };
@@ -134,9 +129,7 @@ export const useInsertNode = () => {
       return res.data;
     },
     onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.edges.byGraph(variables.graphId) });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.expressions.byGraph(variables.graphId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.graphs.flow(variables.graphId) });
     },
   });
 };

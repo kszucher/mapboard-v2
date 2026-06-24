@@ -7,12 +7,12 @@ export const useCreateEdge = () => {
 
   return useMutation({
     mutationFn: async ({
-                         graphId,
-                         fromNodeId,
-                         toNodeId,
-                         handleIndex,
-                         fromExpressionId,
-                       }: {
+      graphId,
+      fromNodeId,
+      toNodeId,
+      handleIndex,
+      fromExpressionId,
+    }: {
       graphId: string;
       fromNodeId: string;
       toNodeId: string;
@@ -33,7 +33,7 @@ export const useCreateEdge = () => {
       return res.data;
     },
     onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.edges.byGraph(variables.graphId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.graphs.flow(variables.graphId) });
     },
   });
 };
@@ -50,7 +50,7 @@ export const useDeleteEdge = () => {
       if ('error' in res) throw res.error;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.edges.all });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.graphs.all });
     },
   });
 };

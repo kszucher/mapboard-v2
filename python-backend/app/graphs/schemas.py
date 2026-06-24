@@ -5,6 +5,9 @@ import uuid
 from pydantic import BaseModel, Field
 
 from app.schemas import OrmModel
+from app.nodes.schemas import NodeRead
+from app.edges.schemas import EdgeRead
+from app.expressions.schemas import ExpressionRead
 
 
 class GraphCreate(BaseModel):
@@ -16,3 +19,9 @@ class GraphRead(OrmModel):
     id: uuid.UUID
     name: str
     user_id: uuid.UUID
+
+
+class GraphFlowRead(BaseModel):
+    nodes: list[NodeRead]
+    edges: list[EdgeRead]
+    expressions: list[ExpressionRead]

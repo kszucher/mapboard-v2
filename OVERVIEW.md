@@ -65,6 +65,8 @@ The backend utilizes the **Unit of Work (UoW)** pattern (`app/context.py`) to ma
 - **Type-Safe Constants**: Replaced all "magic strings" for node types and event names with centralized Enums (`app/constants.py`).
 - **Migration to Atomic Expressions**: Transitioned from bulk-updating node expressions to individual CRUD endpoints for Expressions.
 - **UUID-based Handles**: Handles on switch nodes now use Expression UUIDs instead of numeric indices.
+- **Consolidated Flow Endpoint (CQRS/BFF)**: Created a unified `GET /graphs/{graph_id}/flow` read-endpoint to fetch nodes, edges, and expressions atomically. This eliminates staggered API fetches, reduces network calls by 66%, and prevents duplicate visual rendering passes during node insertions or updates.
+- **Deterministic, Timeout-Free Viewport Fitting**: Eliminated arbitrary `setTimeout` timers on initial render. The viewport is fitted immediately and deterministically when React Flow's native `useNodesInitialized` hook resolves, using synchronous state transitions to prevent layout jumps or flickering on graph switches.
 
 
 ---

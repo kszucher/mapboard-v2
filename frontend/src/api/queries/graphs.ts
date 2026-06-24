@@ -14,8 +14,23 @@ export const graphQueries = {
     },
     enabled: Boolean(userId),
   }),
+  flow: (graphId: string | null) => queryOptions({
+    queryKey: queryKeys.graphs.flow(graphId),
+    queryFn: async () => {
+      const res = await apiClient.GET('/graphs/{graph_id}/flow', {
+        params: { path: { graph_id: graphId ?? '' } },
+      });
+      if ('error' in res) throw res.error;
+      return res.data;
+    },
+    enabled: Boolean(graphId),
+  }),
 };
 
 export const useUserGraphs = (userId: string | null) => {
   return useQuery(graphQueries.byUser(userId));
+};
+
+export const useGraphFlow = (graphId: string | null) => {
+  return useQuery(graphQueries.flow(graphId));
 };

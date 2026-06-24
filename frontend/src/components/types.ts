@@ -30,7 +30,7 @@ export interface ElkEdgeSection {
   bendPoints?: ElkPoint[];
 }
 
-export type AppFlowNode = Node<{ node: ApiNode; layer?: number }, 'custom'>;
+export type AppFlowNode = Node<{ node: ApiNode; layer?: number; expressions?: ApiExpression[] }, 'custom'>;
 export type AppFlowEdge = Edge<{ edge?: ApiEdge; sections?: ElkEdgeSection[]; routing?: EdgeRoutingData }, 'custom'>;
 
 
