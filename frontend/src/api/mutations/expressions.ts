@@ -25,8 +25,6 @@ export const useCreateExpression = () => {
       return res.data;
     },
     onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.edges.byGraph(variables.graphId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.expressions.byGraph(variables.graphId) });
     },
   });
@@ -49,7 +47,6 @@ export const useUpdateExpression = () => {
       if ('error' in res) throw res.error;
     },
     onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.expressions.byGraph(variables.graphId) });
     },
   });
@@ -67,7 +64,6 @@ export const useDeleteExpression = () => {
       if ('error' in res) throw res.error;
     },
     onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.edges.byGraph(variables.graphId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.expressions.byGraph(variables.graphId) });
     },
@@ -87,7 +83,6 @@ export const useMoveExpressionUp = () => {
       return res.data;
     },
     onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.expressions.byGraph(variables.graphId) });
     },
   });
@@ -106,7 +101,6 @@ export const useMoveExpressionDown = () => {
       return res.data;
     },
     onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.expressions.byGraph(variables.graphId) });
     },
   });
