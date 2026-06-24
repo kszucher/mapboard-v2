@@ -73,3 +73,22 @@ async def shortcircuit_node(
         await uow.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@router.post("/insert-between/{expression_id}", response_model=uuid.UUID, status_code=201)
+async def insert_node_between(
+        expression_id: uuid.UUID,
+        node_type: NodeType,
+        uow: Any = Depends(get_uow)
+) -> uuid.UUID:
+    try:
+        new_node_id = await node_service.insert_node_between(uow, expression_id, node_type)
+        await uow.commit()
+        return new_node_id
+    except GraphboardError:
+        await uow.rollback()
+        raise
+    except Exception as e:
+        await uow.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+

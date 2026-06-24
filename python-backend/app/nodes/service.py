@@ -202,3 +202,100 @@ async def shortcircuit_node(uow: UnitOfWork, node_id: uuid.UUID) -> None:
             payload={},
         )
 
+
+async def insert_node_between(
+        uow: UnitOfWork,
+        expression_id: uuid.UUID,
+        node_type: NodeType,
+) -> uuid.UUID:
+    if node_type not in (NodeType.LOGIC, NodeType.AGENT):
+        raise ValidationError("Can only insert LOGIC or AGENT nodes.")
+
+    expr = await uow.expressions.get(expression_id)
+    if not expr:
+        raise NotFoundError(f"Expression {expression_id} not found")
+
+    existing_edges = await uow.edges.list_by_expression(expression_id)
+    if not existing_edges:
+        raise ValidationError("Expression is not connected to any node.")
+
+    existing_edge = existing_edges[0]
+    old_to_node_id = existing_edge.to_node_id
+
+    parent_node = await uow.nodes.get(expr.node_id)
+    if not parent_node:
+        raise NotFoundError("Parent node not found")
+
+    # Calculate next iid
+    all_nodes = await uow.nodes.list_by_graph(parent_node.graph_id)
+    next_iid = max([n.iid for n in all_nodes], default=0) + 1
+
+    NODE_COLORS: dict[NodeType, Color] = {
+        NodeType.LOGIC: "purple",
+        NodeType.AGENT: "blue",
+    }
+    NODE_LABELS = {
+        NodeType.LOGIC: "Logic",
+        NodeType.AGENT: "Agent",
+    }
+
+    # 1. Create the new node using repository directly
+    new_node = await uow.nodes.create(
+        NodeCreate(
+            graph_id=parent_node.graph_id,
+            iid=next_iid,
+            color=NODE_COLORS[node_type],
+            label=NODE_LABELS[node_type],
+            is_processing=False,
+            node_type=node_type,
+        )
+    )
+
+    # 2. Initialize default expressions for the new node
+    await expression_service.create_default_expressions_for_node(uow, new_node)
+
+    # 3. Retrieve the created BASE expression of the new node
+    new_expressions = await uow.expressions.list_by_node(new_node.id)
+    new_base_expr = next((e for e in new_expressions if e.type == "BASE"), None)
+    if not new_base_expr:
+        raise ValidationError("Base expression not created for the new node.")
+
+    # 4. Reassign original edge to point to the newly created node
+    existing_edge.to_node_id = new_node.id
+    await uow.session.flush()
+
+    # 5. Emit Node Created event
+    uow.emit(
+        event=EventName.NODE_CREATED,
+        graph_id=new_node.graph_id,
+        payload={"nodeId": new_node.id},
+    )
+
+    # 6. Emit Edges Updated event
+    uow.emit(
+        event=EventName.EDGES_UPDATED,
+        graph_id=new_node.graph_id,
+        payload={},
+    )
+
+    # 7. Create the new connecting edge from new node to the old target node
+    new_edge = await uow.edges.create(
+        EdgeCreate(
+            graph_id=parent_node.graph_id,
+            from_node_id=new_node.id,
+            to_node_id=old_to_node_id,
+            from_expression_id=new_base_expr.id,
+            handle_index=0,
+        )
+    )
+
+    # 8. Emit Edge Created event
+    uow.emit(
+        event=EventName.EDGE_CREATED,
+        graph_id=new_edge.graph_id,
+        payload={"edgeId": new_edge.id},
+    )
+
+    return new_node.id
+
+

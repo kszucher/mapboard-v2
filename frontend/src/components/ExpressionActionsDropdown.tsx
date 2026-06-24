@@ -1,7 +1,7 @@
-import { ArrowDownIcon, ArrowUpIcon, DotsHorizontalIcon, MinusIcon, PlusIcon, TrashIcon } from '@radix-ui/react-icons';
+import { ArrowDownIcon, ArrowUpIcon, DotsHorizontalIcon, PlusIcon, TrashIcon } from '@radix-ui/react-icons';
 import { DropdownMenu, IconButton } from '@radix-ui/themes';
 import { useCallback, useMemo } from 'react';
-import { useAddConnectedNode, useDeleteNode } from '../api/mutations';
+import { useAddConnectedNode, useInsertNode } from '../api/mutations';
 import { useEdges } from '../api/queries';
 
 interface ExpressionActionsDropdownProps {
@@ -25,8 +25,8 @@ export const ExpressionActionsDropdown = ({
   canMoveUp = false,
   canMoveDown = false,
 }: ExpressionActionsDropdownProps) => {
-  const deleteNode = useDeleteNode();
   const addConnectedNode = useAddConnectedNode();
+  const insertNode = useInsertNode();
   const { data: allEdges } = useEdges(graphId);
 
   const connectedEdge = useMemo(() => {
@@ -35,17 +35,18 @@ export const ExpressionActionsDropdown = ({
 
   const hasConnectedNode = !!connectedEdge;
 
-  const handleRemoveConnectedNode = useCallback(() => {
-    if (connectedEdge) {
-      deleteNode.mutate({ nodeId: connectedEdge.to_node_id });
-    }
-  }, [connectedEdge, deleteNode]);
-
   const handleAddConnectedNode = useCallback(
     (nodeType: 'LOGIC' | 'AGENT' | 'LOGICAL_SWITCH' | 'AGENTIC_SWITCH') => {
       addConnectedNode.mutate({ expressionId, nodeType, graphId });
     },
     [addConnectedNode, expressionId, graphId]
+  );
+
+  const handleInsertNode = useCallback(
+    (nodeType: 'LOGIC' | 'AGENT') => {
+      insertNode.mutate({ expressionId, nodeType, graphId });
+    },
+    [insertNode, expressionId, graphId]
   );
 
   return (
@@ -75,13 +76,19 @@ export const ExpressionActionsDropdown = ({
         )}
 
         {hasConnectedNode ? (
-          <DropdownMenu.Item onClick={handleRemoveConnectedNode} color="orange">
-            <MinusIcon style={{ marginRight: 8 }}/> Remove Connected Node
-          </DropdownMenu.Item>
+          <DropdownMenu.Sub>
+            <DropdownMenu.SubTrigger>
+              <PlusIcon style={{ marginRight: 8 }}/> Insert Node
+            </DropdownMenu.SubTrigger>
+            <DropdownMenu.SubContent>
+              <DropdownMenu.Item onClick={() => handleInsertNode('LOGIC')}>{'Logic'}</DropdownMenu.Item>
+              <DropdownMenu.Item onClick={() => handleInsertNode('AGENT')}>{'Agent'}</DropdownMenu.Item>
+            </DropdownMenu.SubContent>
+          </DropdownMenu.Sub>
         ) : (
           <DropdownMenu.Sub>
             <DropdownMenu.SubTrigger>
-              <PlusIcon style={{ marginRight: 8 }}/> Add Connected Node
+              <PlusIcon style={{ marginRight: 8 }}/> Append Node
             </DropdownMenu.SubTrigger>
             <DropdownMenu.SubContent>
               <DropdownMenu.Item onClick={() => handleAddConnectedNode('LOGIC')}>{'Logic'}</DropdownMenu.Item>

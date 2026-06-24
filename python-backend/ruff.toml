@@ -3,5 +3,3 @@ target-version = "py311"
 select = ["E", "F", "I", "B", "UP", "ASYNC", "BLE"]
 ignore = ["E501"]
 
-[lint.isort]
-profile = "black"

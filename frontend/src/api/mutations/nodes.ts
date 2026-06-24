@@ -113,3 +113,31 @@ export const useAddConnectedNode = () => {
     },
   });
 };
+
+export const useInsertNode = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (variables: {
+      expressionId: string;
+      nodeType: 'LOGIC' | 'AGENT';
+      graphId: string;
+    }) => {
+      const res = await apiClient.POST('/nodes/insert-between/{expression_id}', {
+        params: {
+          path: { expression_id: variables.expressionId },
+          query: { node_type: variables.nodeType },
+        },
+        headers: { 'X-Client-Id': getClientId() },
+      });
+      if ('error' in res) throw res.error;
+      return res.data;
+    },
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.nodes.byGraph(variables.graphId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.edges.byGraph(variables.graphId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.expressions.byGraph(variables.graphId) });
+    },
+  });
+};
+

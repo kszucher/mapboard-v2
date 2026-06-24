@@ -191,6 +191,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/nodes/insert-between/{expression_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Insert Node Between */
+        post: operations["insert_node_between_nodes_insert_between__expression_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/edges/graph/{graph_id}": {
         parameters: {
             query?: never;
@@ -900,6 +917,41 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    insert_node_between_nodes_insert_between__expression_id__post: {
+        parameters: {
+            query: {
+                node_type: components["schemas"]["NodeType"];
+            };
+            header?: {
+                "x-client-id"?: string | null;
+            };
+            path: {
+                expression_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
             };
             /** @description Validation Error */
             422: {
