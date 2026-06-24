@@ -10,7 +10,7 @@ import {
   useReactFlow,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useCreateEdge, useDeleteEdge } from '../api/mutations';
 import { useEdges, useExpressions, useNodes } from '../api/queries';
 import FlowEdge from './FlowEdge.tsx';
@@ -19,21 +19,17 @@ import { useGraphWebSocket } from './hooks/useGraphWebSocket.ts';
 import { getLayoutedElements } from './layout.ts';
 import type { AppFlowEdge, AppFlowNode } from './types.ts';
 
-export interface FlowRef {
-  triggerLayout: () => Promise<void>;
-}
-
 const FlowContent = ({
-                       selectedGraphId,
-                       flowRef,
-                     }: {
+  selectedGraphId,
+}: {
   selectedGraphId: string;
-  flowRef: React.RefObject<FlowRef | null>;
 }) => {
   // data fetching
-  const { data: nodesData } = useNodes(selectedGraphId);
-  const { data: edgesData } = useEdges(selectedGraphId);
-  const { data: expressionsData } = useExpressions(selectedGraphId);
+  const { data: nodesData, isFetching: isNodesFetching } = useNodes(selectedGraphId);
+  const { data: edgesData, isFetching: isEdgesFetching } = useEdges(selectedGraphId);
+  const { data: expressionsData, isFetching: isExpressionsFetching } = useExpressions(selectedGraphId);
+
+  const isSyncBlocked = isNodesFetching || isEdgesFetching || isExpressionsFetching;
 
   // subscriptions / side effects
   useGraphWebSocket(selectedGraphId);
@@ -51,16 +47,26 @@ const FlowContent = ({
     useNodesState<AppFlowNode>([]);
   const [edges, setEdges, onEdgesChange] =
     useEdgesState<AppFlowEdge>([]);
+  const [isLayoutReady, setIsLayoutReady] = useState(false);
 
   // refs
-  const prevGraphId = useRef<string | null>(null);
+  const isFirstLayoutForGraph = useRef(true);
   const edgeReconnectSuccessful = useRef(true);
   const edgeSectionsRef = useRef<Record<string, any[]>>({});
 
-  // Clear edge layout sections when changing graphs
+  // Reset graph flags and clear edge layout sections when changing graphs
   useEffect(() => {
+    isFirstLayoutForGraph.current = true;
+    setIsLayoutReady(false);
     edgeSectionsRef.current = {};
   }, [selectedGraphId]);
+
+  // If graph is empty, mark layout ready immediately
+  useEffect(() => {
+    if (nodesData && nodesData.length === 0) {
+      setIsLayoutReady(true);
+    }
+  }, [nodesData]);
 
   // memoized values
   const nodeTypes = useMemo(
@@ -106,13 +112,18 @@ const FlowContent = ({
 
   // Sync nodes from query data to state, preserving local state (measured dimensions, etc.)
   useEffect(() => {
-    if (!nodesData) return;
+    if (!nodesData || isSyncBlocked) return;
 
     setNodes(prevNodes => {
       const nodeMap = new Map(prevNodes.map(n => [n.id, n]));
       return nodesData.map(n => {
         const prevNode = nodeMap.get(n.id);
-        const position = prevNode?.position ?? { x: 0, y: 0 };
+        let position = prevNode?.position;
+        if (!position) {
+          const incomingEdge = edgesData?.find(e => e.to_node_id === n.id);
+          const parentNode = incomingEdge ? nodeMap.get(incomingEdge.from_node_id) : null;
+          position = parentNode ? { x: parentNode.position.x + 300, y: parentNode.position.y } : { x: 0, y: 0 };
+        }
 
         return {
           id: n.id,
@@ -127,25 +138,14 @@ const FlowContent = ({
         };
       });
     });
-  }, [nodesData, setNodes]);
+  }, [nodesData, edgesData, isSyncBlocked, setNodes]);
 
   // Sync edges from query data to state
   useEffect(() => {
+    if (!mappedEdges || isSyncBlocked) return;
     setEdges(mappedEdges);
-  }, [mappedEdges, setEdges]);
+  }, [mappedEdges, isSyncBlocked, setEdges]);
 
-  // Fit view when graph changes (minimized useEffect)
-  useEffect(() => {
-    if (
-      nodesInitialized &&
-      nodes.length > 0 &&
-      nodes[0].data.node.graph_id === selectedGraphId &&
-      prevGraphId.current !== selectedGraphId
-    ) {
-      prevGraphId.current = selectedGraphId;
-      void fitView({ padding: 0.1, maxZoom: 1, duration: 0 });
-    }
-  }, [nodesInitialized, nodes, fitView, selectedGraphId]);
 
   const handleConnect = useCallback(
     (params: Connection) => {
@@ -224,7 +224,7 @@ const FlowContent = ({
     [fitView],
   );
 
-  const performLayout = useCallback(async () => {
+  const performLayout = useCallback(async (shouldFitView = false) => {
     if (nodes.length === 0) return;
 
     try {
@@ -243,8 +243,13 @@ const FlowContent = ({
       setNodes(layoutedNodes);
       setEdges(layoutedEdges);
 
-      // Fit view nicely after layout
-      void fitView({ padding: 0.1, duration: 300 });
+      // Fit view nicely if requested, or if it is the first layout of a newly loaded graph
+      if (shouldFitView || isFirstLayoutForGraph.current) {
+        const duration = isFirstLayoutForGraph.current ? 0 : 300;
+        isFirstLayoutForGraph.current = false;
+        void fitView({ padding: 0.1, duration });
+      }
+      setIsLayoutReady(true);
     } catch (error) {
       console.error('Failed to auto-layout nodes:', error);
     }
@@ -259,53 +264,42 @@ const FlowContent = ({
 
     if (currentKey !== lastLayoutedKey.current) {
       lastLayoutedKey.current = currentKey;
-      void performLayout();
+      void performLayout(false);
     }
   }, [nodesInitialized, nodes.length, edges.length, expressionsData?.length, performLayout]);
-
-  useImperativeHandle(flowRef, () => ({
-    triggerLayout: performLayout,
-  }));
 
   if (!nodesData || !edgesData || !expressionsData) return null;
 
   return (
-    <ReactFlow<AppFlowNode, AppFlowEdge>
-      nodeTypes={nodeTypes}
-      edgeTypes={edgeTypes}
-      nodes={nodes}
-      edges={edges}
-      onNodesChange={onNodesChange}
-      onEdgesChange={onEdgesChange}
-      onConnect={handleConnect}
-      onEdgesDelete={handleEdgesDelete}
-      onReconnect={handleReconnect}
-      onReconnectStart={handleReconnectStart}
-      onReconnectEnd={handleReconnectEnd}
-      nodesDraggable={false}
-      onDoubleClick={handleDoubleClick}
-      colorMode="dark"
-      zoomOnScroll={true}
-      zoomOnDoubleClick={false}
-      panOnScroll={false}
-    >
-      <Controls/>
-    </ReactFlow>
+    <div
+      style={{ width: '100%', height: '100%', opacity: isLayoutReady ? 1 : 0, transition: 'opacity 0.2s ease-in-out' }}>
+      <ReactFlow<AppFlowNode, AppFlowEdge>
+        nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={handleConnect}
+        onEdgesDelete={handleEdgesDelete}
+        onReconnect={handleReconnect}
+        onReconnectStart={handleReconnectStart}
+        onReconnectEnd={handleReconnectEnd}
+        nodesDraggable={false}
+        onDoubleClick={handleDoubleClick}
+        colorMode="dark"
+        zoomOnScroll={true}
+        zoomOnDoubleClick={false}
+        panOnScroll={false}
+      >
+        <Controls/>
+      </ReactFlow>
+    </div>
   );
 };
 
-export const Flow = forwardRef<FlowRef, { selectedGraphId: string }>(
-  ({ selectedGraphId }, ref) => {
-    const flowContentRef = useRef<FlowRef | null>(null);
-
-    useImperativeHandle(ref, () => ({
-      triggerLayout: async () => {
-        await flowContentRef.current?.triggerLayout();
-      },
-    }));
-
-    return (
-      <FlowContent selectedGraphId={selectedGraphId} flowRef={flowContentRef}/>
-    );
-  }
-);
+export const Flow = ({ selectedGraphId }: { selectedGraphId: string }) => {
+  return (
+    <FlowContent selectedGraphId={selectedGraphId}/>
+  );
+};

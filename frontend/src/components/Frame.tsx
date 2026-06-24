@@ -1,11 +1,11 @@
-import { CaretDownIcon, CheckIcon, MagicWandIcon, MixIcon, PlayIcon } from '@radix-ui/react-icons';
+import { CaretDownIcon, CheckIcon, MixIcon, PlayIcon } from '@radix-ui/react-icons';
 import { Box, Button, DropdownMenu, Flex, IconButton, Text } from '@radix-ui/themes';
 import { ReactFlowProvider } from '@xyflow/react';
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { components } from '../api/generated/schema';
 import { useCreateGraph, useCreateNode, useSetActiveGraph } from '../api/mutations';
 import { useActiveGraphId, useUserGraphs, useUserId } from '../api/queries';
-import { Flow, type FlowRef } from './Flow.tsx';
+import { Flow } from './Flow.tsx';
 
 type NodeType = components['schemas']['NodeRead']['node_type'];
 const NODE_TYPES: NodeType[] = ['START', 'LOGIC', 'AGENT', 'LOGICAL_SWITCH', 'AGENTIC_SWITCH'];
@@ -15,17 +15,9 @@ export const Frame = () => {
   const { data: selectedGraphId } = useActiveGraphId(userId ?? null);
   const { data: graphs } = useUserGraphs(userId ?? null);
 
-  const flowRef = useRef<FlowRef>(null);
-
   const createNodeMutation = useCreateNode();
   const createGraphMutation = useCreateGraph();
   const setActiveGraphMutation = useSetActiveGraph();
-
-  const handleAutoLayout = useCallback(async () => {
-    if (flowRef.current) {
-      await flowRef.current.triggerLayout();
-    }
-  }, []);
 
   const handleCreateNode = useCallback(
     (graphId: string, nodeType: NodeType) => {
@@ -130,17 +122,6 @@ export const Frame = () => {
               )}
             </DropdownMenu.Root>
 
-            <IconButton
-              variant="solid"
-              color="gray"
-              radius="full"
-              disabled={!isGraphSelected}
-              onClick={handleAutoLayout}
-              title="Auto Layout"
-            >
-              <MagicWandIcon width="20" height="20"/>
-            </IconButton>
-
             <IconButton variant="solid" color="gray" radius="full" onClick={() => console.log('play...')}>
               <PlayIcon width="20" height="20"/>
             </IconButton>
@@ -152,7 +133,7 @@ export const Frame = () => {
       {isGraphSelected && (
         <div style={{ width: '100vw', height: '100vh' }}>
           <ReactFlowProvider>
-            <Flow ref={flowRef} selectedGraphId={selectedGraphId}/>
+            <Flow selectedGraphId={selectedGraphId}/>
           </ReactFlowProvider>
         </div>
       )}
