@@ -19,3 +19,8 @@ class NodeType(str, Enum):
     AGENT = "AGENT"
     LOGICAL_SWITCH = "LOGICAL_SWITCH"
     AGENTIC_SWITCH = "AGENTIC_SWITCH"
+
+class ExpressionType(str, Enum):
+    BASE = "BASE"
+    SUB = "SUB"
+

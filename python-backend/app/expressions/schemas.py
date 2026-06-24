@@ -3,9 +3,11 @@ from __future__ import annotations
 import uuid
 from pydantic import BaseModel
 from app.schemas import OrmModel
+from app.constants import ExpressionType
 
 class ExpressionBase(BaseModel):
     raw_string: str
+    type: ExpressionType = ExpressionType.SUB
 
 class ExpressionCreate(ExpressionBase):
     node_id: uuid.UUID

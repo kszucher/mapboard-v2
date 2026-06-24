@@ -390,6 +390,8 @@ export interface components {
         ExpressionCreate: {
             /** Raw String */
             raw_string: string;
+            /** @default SUB */
+            type: components["schemas"]["ExpressionType"];
             /**
              * Node Id
              * Format: uuid
@@ -402,6 +404,8 @@ export interface components {
         ExpressionRead: {
             /** Raw String */
             raw_string: string;
+            /** @default SUB */
+            type: components["schemas"]["ExpressionType"];
             /**
              * Id
              * Format: uuid
@@ -415,6 +419,11 @@ export interface components {
             /** Idx */
             idx: number;
         };
+        /**
+         * ExpressionType
+         * @enum {string}
+         */
+        ExpressionType: "BASE" | "SUB";
         /** ExpressionUpdate */
         ExpressionUpdate: {
             /** Raw String */

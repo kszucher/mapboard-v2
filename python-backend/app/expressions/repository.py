@@ -15,7 +15,7 @@ class ExpressionRepository(BaseRepository[models.Expression, ExpressionCreate, E
         result = await self.session.execute(
             select(models.Expression)
             .where(models.Expression.node_id == node_id)
-            .order_by(models.Expression.idx)
+            .order_by(models.Expression.type, models.Expression.idx)
         )
         return list(result.scalars().all())
 
@@ -29,6 +29,7 @@ class ExpressionRepository(BaseRepository[models.Expression, ExpressionCreate, E
         stmt = (
             update(models.Expression)
             .where(models.Expression.node_id == node_id)
+            .where(models.Expression.type == "SUB")
             .where(models.Expression.idx > deleted_idx)
             .values(idx=models.Expression.idx - 1)
             .returning(models.Expression)
@@ -42,6 +43,6 @@ class ExpressionRepository(BaseRepository[models.Expression, ExpressionCreate, E
             select(models.Expression)
             .join(models.Node)
             .where(models.Node.graph_id == graph_id)
-            .order_by(models.Expression.idx)
+            .order_by(models.Expression.type, models.Expression.idx)
         )
         return list(result.scalars().all())

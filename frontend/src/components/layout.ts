@@ -100,7 +100,7 @@ const buildElkNodes = (
     if (nodeType !== 'START') {
       const targetPorts = Array.from(new Set(edges.filter((e) => e.target === node.id).map((e) => e.targetHandle ?? 'target')));
       targetPorts.forEach((handleId) => {
-        const targetY = isSwitch ? (66 + ((Math.max(1, nodeExpressions.length) - 1) * 40) / 2) : (nodeHeight / 2);
+        const targetY = isSwitch ? 66 : (nodeHeight / 2);
         ports.push({
           id: handleId,
           x: 0,
@@ -113,10 +113,16 @@ const buildElkNodes = (
     }
 
     // 2. Source ports (output) on the right (EAST)
-    const sourcePorts = Array.from(new Set(edges.filter((e) => e.source === node.id).map((e) => e.sourceHandle).filter(Boolean) as string[]))
+    let sourcePorts = Array.from(new Set(edges.filter((e) => e.source === node.id).map((e) => e.sourceHandle).filter(Boolean) as string[]))
       .sort((a, b) => nodeExpressions.findIndex((expr) => expr.id === a) - nodeExpressions.findIndex((expr) => expr.id === b));
-    if (sourcePorts.length === 0) {
-      sourcePorts.push(nodeType === 'START' ? '0' : (nodeExpressions[0]?.id ?? '0'));
+    
+    if (isSwitch) {
+      const baseExprId = nodeExpressions.find(e => e.type === 'BASE')?.id;
+      sourcePorts = sourcePorts.filter(handleId => handleId !== baseExprId);
+    } else {
+      if (sourcePorts.length === 0) {
+        sourcePorts.push(nodeType === 'START' ? '0' : (nodeExpressions[0]?.id ?? '0'));
+      }
     }
 
     sourcePorts.forEach((handleId) => {

@@ -7,11 +7,12 @@ export const useCreateExpression = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ nodeId, idx, raw_string }: {
+    mutationFn: async ({ nodeId, idx, raw_string, type = 'SUB' }: {
       nodeId: string;
       idx?: number;
       raw_string: string;
-      graphId: string
+      graphId: string;
+      type?: 'BASE' | 'SUB';
     }) => {
       const res = await apiClient.POST('/expressions', {
         headers: { 'X-Client-Id': getClientId() },
@@ -19,6 +20,7 @@ export const useCreateExpression = () => {
           node_id: nodeId,
           idx,
           raw_string,
+          type,
         },
       });
       if ('error' in res) throw res.error;
