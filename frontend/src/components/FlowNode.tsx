@@ -142,35 +142,37 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
 
     return (
       <Flex direction="column" gap="2" style={{ marginTop: 38, width: 'fit-content', minWidth: '100%' }}>
-        {baseExpression && (
-          <div style={{ position: 'relative', width: '100%' }}>
-            <Flex gap="2" align="center" style={{ width: '100%' }}>
-              <div className="nodrag nopan" style={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
-                <PlainEditor
-                  initialValue={baseExpression.raw_string}
-                  onSave={handleUpdateBase}
-                  minWidth={240}
-                  maxWidth={600}
-                />
-              </div>
+        <div style={{ position: 'relative', width: '100%' }}>
+          <Handle type="target" position={Position.Left} style={{ left: -12 }}/>
+          {baseExpression && (
+            <>
+              <Flex gap="2" align="center" style={{ width: '100%' }}>
+                <div className="nodrag nopan" style={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
+                  <PlainEditor
+                    initialValue={baseExpression.raw_string}
+                    onSave={handleUpdateBase}
+                    minWidth={240}
+                    maxWidth={600}
+                  />
+                </div>
+                {!isSwitch && (
+                  <ExpressionActionsDropdown
+                    expressionId={baseExpression.id}
+                    graphId={node.graph_id}
+                  />
+                )}
+              </Flex>
               {!isSwitch && (
-                <ExpressionActionsDropdown
-                  expressionId={baseExpression.id}
-                  graphId={node.graph_id}
+                <Handle
+                  id={baseExpression.id}
+                  type="source"
+                  position={Position.Right}
+                  style={{ right: -12 }}
                 />
               )}
-            </Flex>
-            <Handle type="target" position={Position.Left} style={{ left: -12 }}/>
-            {!isSwitch && (
-              <Handle
-                id={baseExpression.id}
-                type="source"
-                position={Position.Right}
-                style={{ right: -12 }}
-              />
-            )}
-          </div>
-        )}
+            </>
+          )}
+        </div>
 
         {isSwitch && subExpressions.length > 0 && (
           <Flex direction="column" gap="2" style={{ width: '100%', marginTop: 8 }}>
