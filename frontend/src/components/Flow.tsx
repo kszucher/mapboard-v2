@@ -65,8 +65,6 @@ const FlowContent = ({
           layer: layoutData.layers[n.id],
         },
         measured: state.measured,
-        width: state.width,
-        height: state.height,
       };
     });
   }, [nodesData, edgesData, layoutData, nodeState]);
@@ -228,7 +226,12 @@ const FlowContent = ({
         .join(',')
       : '';
 
-    const currentKey = `${nodes.map(n => n.id).sort().join(',')}|${edges.map(e => e.id).sort().join(',')}|${expressionsKey}`;
+    const dimensionsKey = nodes
+      .map(n => `${n.id}:${Math.round(n.measured?.width ?? 0)}x${Math.round(n.measured?.height ?? 0)}`)
+      .sort()
+      .join(',');
+
+    const currentKey = `${nodes.map(n => n.id).sort().join(',')}|${edges.map(e => e.id).sort().join(',')}|${expressionsKey}|${dimensionsKey}`;
 
     if (currentKey !== lastLayoutedKey.current) {
       lastLayoutedKey.current = currentKey;
