@@ -7,11 +7,11 @@ import { ExpressionActionsDropdown } from './ExpressionActionsDropdown';
 import { PlainEditor } from './PlainEditor';
 import type { AppFlowNode } from './types.ts';
 
-interface FlowNodeAgentProps {
+interface FlowNodeStatementProps {
   data: AppFlowNode['data'];
 }
 
-export const FlowNodeAgent = ({ data }: FlowNodeAgentProps) => {
+export const FlowNodeStatement = ({ data }: FlowNodeStatementProps) => {
   const updateExpressionMutation = useUpdateExpression();
 
   const { node } = data;
@@ -22,7 +22,7 @@ export const FlowNodeAgent = ({ data }: FlowNodeAgentProps) => {
     [allExpressions, node.id]
   );
 
-  const agentInput = expression?.raw_string ?? '';
+  const raw = expression?.raw_string ?? '';
 
   const handleEditorSave = useCallback(
     (value: string) => {
@@ -36,7 +36,7 @@ export const FlowNodeAgent = ({ data }: FlowNodeAgentProps) => {
         },
       });
     },
-    [expression, node.graph_id, updateExpressionMutation],
+    [expression, node.graph_id, updateExpressionMutation]
   );
 
   return (
@@ -45,7 +45,7 @@ export const FlowNodeAgent = ({ data }: FlowNodeAgentProps) => {
         <Flex gap="2" align="center" style={{ width: '100%' }}>
           <div className="nodrag nopan" style={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
             <PlainEditor
-              initialValue={agentInput}
+              initialValue={raw}
               onSave={handleEditorSave}
               minWidth={240}
               maxWidth={600}

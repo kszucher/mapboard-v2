@@ -5,9 +5,8 @@ import { type NodeProps, useUpdateNodeInternals } from '@xyflow/react';
 import { memo, useCallback, useEffect, useMemo } from 'react';
 import { useDeleteNode } from '../api/mutations';
 import { useExpressions } from '../api/queries';
-import { FlowNodeAgent } from './FlowNodeAgent.tsx';
-import { FlowNodeLogic } from './FlowNodeLogic.tsx';
 import { FlowNodeSwitch } from './FlowNodeSwitch.tsx';
+import { FlowNodeStatement } from './FlowNodeStatement.tsx';
 import { FlowNodeStart } from './FlowNodeStart.tsx';
 import type { AppFlowNode } from './types.ts';
 
@@ -35,9 +34,8 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
       case 'START':
         return <FlowNodeStart/>;
       case 'LOGIC':
-        return <FlowNodeLogic data={data}/>;
       case 'AGENT':
-        return <FlowNodeAgent data={data}/>;
+        return <FlowNodeStatement data={data}/>;
       case 'LOGICAL_SWITCH':
       case 'AGENTIC_SWITCH':
         return <FlowNodeSwitch data={data}/>;
