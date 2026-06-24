@@ -11,13 +11,13 @@ interface PlainEditorProps {
 }
 
 export const PlainEditor = ({
-                              initialValue,
-                              onSave,
-                              minWidth = 240,
-                              maxWidth = 600,
-                              minHeight = 24, // Matches the size="1" Radix button height (24px)
-                              singleLine = false,
-                            }: PlainEditorProps) => {
+  initialValue,
+  onSave,
+  minWidth = 240,
+  maxWidth = 600,
+  minHeight = 24, // Matches the size="1" Radix button height (24px)
+  singleLine = false,
+}: PlainEditorProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -139,7 +139,7 @@ export const PlainEditor = ({
           onKeyDown={handleKeyDown}
           onFocus={handleFocus}
           onBlur={handleBlur}
-          color="iris"
+          color="gray"
           variant="soft"
           size="1"
           style={{
@@ -155,18 +155,18 @@ export const PlainEditor = ({
           onChange={handleChange}
           onFocus={handleFocus}
           onBlur={handleBlur}
-          color="iris"
+          color="gray"
           variant="soft"
           size="1"
           wrap="off"
           style={{
             ...commonStyles,
-            width: '100%',
+            // width: '100%',
             minHeight: `${minHeight}px`,
-            height: 'auto',
-            resize: 'none',
-            overflow: 'hidden',
-            whiteSpace: 'pre',
+            // height: 'auto',
+            // resize: 'none',
+            // overflow: 'hidden',
+            // whiteSpace: 'pre',
           }}
         />
       )}

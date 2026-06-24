@@ -8,18 +8,18 @@ import type { AppFlowEdge, AppFlowNode } from './types';
  * Renders forward edges as bezier curves and backward edges (feedback loops) as perimeter detour lanes.
  */
 function FlowEdge({
-                    id,
-                    source,
-                    target,
-                    sourceX,
-                    sourceY,
-                    targetX,
-                    targetY,
-                    sourcePosition,
-                    targetPosition,
-                    style = {},
-                    markerEnd,
-                  }: EdgeProps<AppFlowEdge>) {
+  id,
+  source,
+  target,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  sourcePosition,
+  targetPosition,
+  style = {},
+  markerEnd,
+}: EdgeProps<AppFlowEdge>) {
   const allNodes = useNodes();
   const allEdges = useEdges();
 
