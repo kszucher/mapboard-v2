@@ -1,4 +1,4 @@
-import { type Connection, Controls, type EdgeChange, type NodeChange, ReactFlow, useReactFlow, } from '@xyflow/react';
+import { type Connection, Controls, type NodeChange, ReactFlow, useReactFlow, } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useCreateEdge, useDeleteEdge } from '../api/mutations';
@@ -33,7 +33,6 @@ const FlowContent = ({
 
   // local layout & overrides state
   const [nodeState, setNodeState] = useState<Record<string, Partial<AppFlowNode>>>({});
-  const [edgeState, setEdgeState] = useState<Record<string, Partial<AppFlowEdge>>>({});
   const [layoutData, setLayoutData] = useState<{
     positions: Record<string, { x: number; y: number }>;
     sections: Record<string, ElkEdgeSection[]>;
@@ -65,7 +64,6 @@ const FlowContent = ({
           node: n,
           layer: layoutData.layers[n.id],
         },
-        selected: state.selected,
         measured: state.measured,
         width: state.width,
         height: state.height,
@@ -86,7 +84,6 @@ const FlowContent = ({
         return true;
       })
       .map(edge => {
-        const state = edgeState[edge.id] || {};
         return {
           id: edge.id,
           source: edge.from_node_id,
@@ -95,13 +92,12 @@ const FlowContent = ({
           type: 'custom' as const,
           animated: true,
           style: { stroke: '#fff', strokeWidth: 2 },
-          selected: state.selected,
           data: {
             sections: layoutData.sections[edge.id],
           },
         };
       });
-  }, [edgesData, nodesData, expressionsData, layoutData.sections, edgeState]);
+  }, [edgesData, nodesData, expressionsData, layoutData.sections]);
 
   // Render canvas when layout has run or when the graph is empty
   const isLayoutVisible = (nodesData && nodesData.length === 0) || (nodes.length > 0 && nodes.some(n => n.data?.layer !== undefined));
@@ -118,47 +114,31 @@ const FlowContent = ({
 
   const onNodesChange = useCallback((changes: NodeChange[]) => {
     setNodeState(prev => {
+      let hasChanges = false;
       const next = { ...prev };
       changes.forEach(change => {
-        if ('id' in change) {
+        if (change.type === 'dimensions' && 'id' in change) {
           const id = change.id;
           const current = next[id] || {};
-          if (change.type === 'dimensions') {
+          if (
+            current.measured?.width !== change.dimensions?.width ||
+            current.measured?.height !== change.dimensions?.height
+          ) {
+            hasChanges = true;
             next[id] = {
               ...current,
               measured: change.dimensions,
               width: change.dimensions?.width,
               height: change.dimensions?.height,
             };
-          } else if (change.type === 'select') {
-            next[id] = {
-              ...current,
-              selected: change.selected,
-            };
           }
         }
       });
-      return next;
+      return hasChanges ? next : prev;
     });
   }, []);
 
-  const onEdgesChange = useCallback((changes: EdgeChange[]) => {
-    setEdgeState(prev => {
-      const next = { ...prev };
-      changes.forEach(change => {
-        if ('id' in change) {
-          const id = change.id;
-          const current = next[id] || {};
-          if (change.type === 'select') {
-            next[id] = {
-              ...current,
-              selected: change.selected,
-            };
-          }
-        }
-      });
-      return next;
-    });
+  const onEdgesChange = useCallback(() => {
   }, []);
 
   const handleConnect = useCallback(
