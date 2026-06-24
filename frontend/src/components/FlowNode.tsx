@@ -1,20 +1,35 @@
-import { DotsHorizontalIcon } from '@radix-ui/react-icons';
+import { DotsHorizontalIcon, PlusIcon } from '@radix-ui/react-icons';
 import type { BadgeProps } from '@radix-ui/themes';
 import { Badge, Box, DropdownMenu, Flex, IconButton } from '@radix-ui/themes';
-import { type NodeProps, useUpdateNodeInternals } from '@xyflow/react';
+import { Handle, type NodeProps, Position, useUpdateNodeInternals } from '@xyflow/react';
 import { memo, useCallback, useEffect, useMemo } from 'react';
-import { useDeleteNode } from '../api/mutations';
+import {
+  useCreateExpression,
+  useDeleteExpression,
+  useDeleteNode,
+  useMoveExpressionDown,
+  useMoveExpressionUp,
+  useUpdateExpression,
+} from '../api/mutations';
 import { useExpressions } from '../api/queries';
-import { FlowNodeSwitch } from './FlowNodeSwitch.tsx';
-import { FlowNodeStatement } from './FlowNodeStatement.tsx';
-import { FlowNodeStart } from './FlowNodeStart.tsx';
+
+import { BranchInput } from './BranchInput.tsx';
+import { ExpressionActionsDropdown } from './ExpressionActionsDropdown';
+import { PlainEditor } from './PlainEditor';
 import type { AppFlowNode } from './types.ts';
 
 const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   const deleteNodeMutation = useDeleteNode();
   const updateNodeInternals = useUpdateNodeInternals();
 
+  const createExpression = useCreateExpression();
+  const deleteExpression = useDeleteExpression();
+  const updateExpression = useUpdateExpression();
+  const moveExpressionUp = useMoveExpressionUp();
+  const moveExpressionDown = useMoveExpressionDown();
+
   const { data: allExpressions } = useExpressions(data.node.graph_id);
+
   const myExpressionsHash = useMemo(() => {
     const mine = allExpressions?.filter(e => e.node_id === id) ?? [];
     const sorted = [...mine].sort((a, b) => a.idx - b.idx);
@@ -29,24 +44,180 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
     deleteNodeMutation.mutate({ nodeId: data.node.id });
   }, [data.node.id, deleteNodeMutation]);
 
-  const renderBody = useMemo(() => {
-    switch (data.node.node_type) {
-      case 'START':
-        return <FlowNodeStart/>;
-      case 'LOGIC':
-      case 'AGENT':
-        return <FlowNodeStatement data={data}/>;
-      case 'LOGICAL_SWITCH':
-      case 'AGENTIC_SWITCH':
-        return <FlowNodeSwitch data={data}/>;
-      default:
-        return <div>Unknown Node Type</div>;
+  const { node } = data;
+  const isStart = node.node_type === 'START';
+  const isSwitch = node.node_type === 'LOGICAL_SWITCH' || node.node_type === 'AGENTIC_SWITCH';
+
+  const baseExpression = useMemo(() => {
+    if (isStart) return null;
+    const mine = allExpressions?.filter(e => e.node_id === id) ?? [];
+    if (isSwitch) {
+      return mine.find(e => e.type === 'BASE');
     }
-  }, [data]);
+    return mine[0];
+  }, [allExpressions, id, isSwitch, isStart]);
+
+  const subExpressions = useMemo(() => {
+    if (!isSwitch) return [];
+    const mine = allExpressions?.filter(e => e.node_id === id) ?? [];
+    return mine.filter(e => e.type === 'SUB').sort((a, b) => a.idx - b.idx);
+  }, [allExpressions, id, isSwitch]);
+
+  const handleAddItem = useCallback(() => {
+    createExpression.mutate({ nodeId: node.id, raw_string: '', graphId: node.graph_id, type: 'SUB' });
+  }, [createExpression, node.id, node.graph_id]);
+
+  const handleUpdateBase = useCallback(
+    (newValue: string) => {
+      if (baseExpression) {
+        updateExpression.mutate({
+          expressionId: baseExpression.id,
+          patch: { raw_string: newValue },
+          graphId: node.graph_id,
+        });
+      }
+    },
+    [baseExpression, updateExpression, node.graph_id]
+  );
+
+  const handleUpdateItem = useCallback(
+    (index: number, newValue: string) => {
+      const expr = subExpressions[index];
+      if (expr) {
+        updateExpression.mutate({
+          expressionId: expr.id,
+          patch: { raw_string: newValue },
+          graphId: node.graph_id,
+        });
+      }
+    },
+    [subExpressions, updateExpression, node.graph_id]
+  );
+
+  const handleDeleteItem = useCallback(
+    (index: number) => {
+      const expr = subExpressions[index];
+      if (expr) {
+        deleteExpression.mutate({ expressionId: expr.id, graphId: node.graph_id });
+      }
+    },
+    [subExpressions, deleteExpression, node.graph_id]
+  );
+
+  const handleMoveUp = useCallback(
+    (index: number) => {
+      const expr = subExpressions[index];
+      if (expr) {
+        moveExpressionUp.mutate({ expressionId: expr.id, graphId: node.graph_id });
+      }
+    },
+    [subExpressions, moveExpressionUp, node.graph_id]
+  );
+
+  const handleMoveDown = useCallback(
+    (index: number) => {
+      const expr = subExpressions[index];
+      if (expr) {
+        moveExpressionDown.mutate({ expressionId: expr.id, graphId: node.graph_id });
+      }
+    },
+    [subExpressions, moveExpressionDown, node.graph_id]
+  );
+
+  const renderBody = useMemo(() => {
+    if (isStart) {
+      return (
+        <>
+          <Flex direction="column" gap="3" style={{ marginTop: 38 }}/>
+          <Handle id="0" type="source" position={Position.Right}/>
+        </>
+      );
+    }
+
+    return (
+      <Flex direction="column" gap="2" style={{ marginTop: 38, width: 'fit-content', minWidth: '100%' }}>
+        {baseExpression && (
+          <div style={{ position: 'relative', width: '100%' }}>
+            <Flex gap="2" align="center" style={{ width: '100%' }}>
+              <div className="nodrag nopan" style={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
+                <PlainEditor
+                  initialValue={baseExpression.raw_string}
+                  onSave={handleUpdateBase}
+                  minWidth={240}
+                  maxWidth={600}
+                />
+              </div>
+              {!isSwitch && (
+                <ExpressionActionsDropdown
+                  expressionId={baseExpression.id}
+                  graphId={node.graph_id}
+                />
+              )}
+            </Flex>
+            <Handle type="target" position={Position.Left} style={{ left: -12 }}/>
+            {!isSwitch && (
+              <Handle
+                id={baseExpression.id}
+                type="source"
+                position={Position.Right}
+                style={{ right: -12 }}
+              />
+            )}
+          </div>
+        )}
+
+        {isSwitch && subExpressions.length > 0 && (
+          <Flex direction="column" gap="2" style={{ width: '100%', marginTop: 8 }}>
+            {subExpressions.map((expr, i) => {
+              return (
+                <div key={expr.id} style={{ position: 'relative', width: '100%' }}>
+                  <BranchInput
+                    expressionId={expr.id}
+                    graphId={node.graph_id}
+                    value={expr.raw_string}
+                    onChange={(newValue) => handleUpdateItem(i, newValue)}
+                    onDelete={() => handleDeleteItem(i)}
+                    onMoveUp={() => handleMoveUp(i)}
+                    onMoveDown={() => handleMoveDown(i)}
+                    canMoveUp={i > 0}
+                    canMoveDown={i < subExpressions.length - 1}
+                  />
+                  <Handle
+                    id={expr.id}
+                    type="source"
+                    position={Position.Right}
+                    style={{ right: -12 }}
+                  />
+                </div>
+              );
+            })}
+          </Flex>
+        )}
+
+        {isSwitch && (
+          <Flex gap="2" align="center" style={{ height: 32, marginTop: 8 }}>
+            <IconButton onClick={handleAddItem} size="1" variant="ghost" color="gray">
+              <PlusIcon/>
+            </IconButton>
+          </Flex>
+        )}
+      </Flex>
+    );
+  }, [
+    isStart,
+    isSwitch,
+    baseExpression,
+    subExpressions,
+    node,
+    handleUpdateBase,
+    handleUpdateItem,
+    handleDeleteItem,
+    handleMoveUp,
+    handleMoveDown,
+    handleAddItem,
+  ]);
 
   if (!data) return null;
-
-  const isStart = data.node.node_type === 'START';
 
   const isLayoutReady = data.layer !== undefined;
 
