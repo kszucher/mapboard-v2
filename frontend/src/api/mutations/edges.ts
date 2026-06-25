@@ -12,16 +12,19 @@ export const useCreateEdge = () => {
       toNodeId,
       handleIndex,
       fromExpressionId,
+      edgeId,
     }: {
       graphId: string;
       fromNodeId: string;
       toNodeId: string;
       handleIndex: number;
       fromExpressionId?: string;
+      edgeId?: string;
     }) => {
       const res = await apiClient.POST('/edges/', {
         headers: { 'X-Client-Id': getClientId() },
         body: {
+          id: edgeId,
           graph_id: graphId,
           from_node_id: fromNodeId,
           to_node_id: toNodeId,

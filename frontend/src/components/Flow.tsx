@@ -215,8 +215,10 @@ const FlowContent = ({
 
       const sourceHandle = params.sourceHandle;
       const isExpressionId = !!sourceHandle && sourceHandle.length > 5;
+      const newEdgeId = crypto.randomUUID();
 
       createEdgeMutation.mutate({
+        edgeId: newEdgeId,
         graphId: selectedGraphId,
         fromNodeId: params.source as string,
         toNodeId: params.target as string,
@@ -249,8 +251,10 @@ const FlowContent = ({
       if (newConnection.source && newConnection.target) {
         const sourceHandle = newConnection.sourceHandle;
         const isExpressionId = !!sourceHandle && sourceHandle.length > 5;
+        const newEdgeId = crypto.randomUUID();
 
         createEdgeMutation.mutate({
+          edgeId: newEdgeId,
           graphId: selectedGraphId,
           fromNodeId: newConnection.source as string,
           toNodeId: newConnection.target as string,

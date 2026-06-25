@@ -1,4 +1,4 @@
-import { CaretDownIcon, CheckIcon, MixIcon, PlayIcon } from '@radix-ui/react-icons';
+import { CaretDownIcon, CheckIcon, MixIcon, PlayIcon, ResetIcon } from '@radix-ui/react-icons';
 import { Box, Button, DropdownMenu, Flex, IconButton, Text } from '@radix-ui/themes';
 import { ReactFlowProvider } from '@xyflow/react';
 import { useCallback, useMemo } from 'react';
@@ -6,6 +6,7 @@ import type { components } from '../api/generated/schema';
 import { useCreateGraph, useCreateNode, useSetActiveGraph } from '../api/mutations';
 import { useActiveGraphId, useUserGraphs, useUserId } from '../api/queries';
 import { Flow } from './Flow.tsx';
+import { useGraphHistory } from './hooks/useGraphHistory';
 
 type NodeType = components['schemas']['NodeRead']['node_type'];
 const NODE_TYPES: NodeType[] = ['START', 'LOGIC', 'AGENT', 'LOGICAL_SWITCH', 'AGENTIC_SWITCH'];
@@ -14,6 +15,8 @@ export const Frame = () => {
   const { data: userId } = useUserId();
   const { data: selectedGraphId } = useActiveGraphId(userId ?? null);
   const { data: graphs } = useUserGraphs(userId ?? null);
+
+  const { undo, redo, canUndo, canRedo } = useGraphHistory(selectedGraphId ?? null);
 
   const createNodeMutation = useCreateNode();
   const createGraphMutation = useCreateGraph();
@@ -105,6 +108,26 @@ export const Frame = () => {
 
           {/* Right */}
           <Flex align="center" gap="2">
+            <IconButton
+              variant="solid"
+              color="gray"
+              radius="full"
+              disabled={!isGraphSelected || !canUndo}
+              onClick={undo}
+            >
+              <ResetIcon width="20" height="20"/>
+            </IconButton>
+
+            <IconButton
+              variant="solid"
+              color="gray"
+              radius="full"
+              disabled={!isGraphSelected || !canRedo}
+              onClick={redo}
+            >
+              <ResetIcon width="20" height="20" style={{ transform: 'scaleX(-1)' }}/>
+            </IconButton>
+
             <DropdownMenu.Root>
               <DropdownMenu.Trigger>
                 <IconButton variant="solid" color="gray" radius="full" disabled={!isGraphSelected}>

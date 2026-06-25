@@ -4,7 +4,7 @@ import uuid
 from typing import Any
 from fastapi import APIRouter, Depends, status
 from app.db import get_uow
-from app.graphs.schemas import GraphCreate, GraphRead, GraphFlowRead
+from app.graphs.schemas import GraphCreate, GraphRead, GraphFlowRead, GraphSyncPayload
 from app.graphs import service as graph_service
 from app.nodes import service as node_service
 from app.edges import service as edge_service
@@ -47,3 +47,13 @@ async def get_graph_flow(
         edges=[EdgeRead.model_validate(e) for e in edges],
         expressions=[ExpressionRead.model_validate(expr) for expr in expressions]
     )
+
+
+@router.put("/{graph_id}/sync", status_code=status.HTTP_204_NO_CONTENT)
+async def sync_graph_flow_endpoint(
+    graph_id: uuid.UUID,
+    payload: GraphSyncPayload,
+    uow: Any = Depends(get_uow)
+) -> None:
+    await graph_service.sync_graph_flow(uow, graph_id, payload)
+    await uow.commit()

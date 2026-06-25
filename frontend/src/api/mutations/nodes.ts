@@ -28,10 +28,11 @@ export const useCreateNode = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ graphId, nodeType }: { graphId: string; nodeType: NodeType }) => {
+    mutationFn: async ({ graphId, nodeType, nodeId }: { graphId: string; nodeType: NodeType; nodeId?: string }) => {
       const res = await apiClient.POST('/nodes/', {
         headers: { 'X-Client-Id': getClientId() },
         body: {
+          id: nodeId,
           graph_id: graphId,
           iid: 1,
           color: NODE_COLORS[nodeType],

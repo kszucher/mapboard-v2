@@ -8,6 +8,7 @@ from app.schemas import OrmModel
 
 
 class EdgeCreate(BaseModel):
+    id: uuid.UUID | None = None
     graph_id: uuid.UUID
     from_node_id: uuid.UUID
     to_node_id: uuid.UUID

@@ -10,6 +10,7 @@ class ExpressionBase(BaseModel):
     type: ExpressionType = ExpressionType.SUB
 
 class ExpressionCreate(ExpressionBase):
+    id: uuid.UUID | None = None
     node_id: uuid.UUID
     idx: int | None = None
 

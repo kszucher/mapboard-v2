@@ -25,3 +25,9 @@ class GraphFlowRead(BaseModel):
     nodes: list[NodeRead]
     edges: list[EdgeRead]
     expressions: list[ExpressionRead]
+
+
+class GraphSyncPayload(BaseModel):
+    nodes: list[NodeRead]
+    edges: list[EdgeRead]
+    expressions: list[ExpressionRead]

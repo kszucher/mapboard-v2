@@ -39,13 +39,9 @@ async def create_expression(uow: UnitOfWork, data: ExpressionCreate) -> models.E
     expr = await uow.expressions.create(data)
     
     uow.emit(
-        event=EventName.EXPRESSION_CREATED,
+        event=EventName.GRAPH_UPDATED,
         graph_id=node.graph_id,
-        payload={
-            "expressionId": expr.id,
-            "nodeId": node.id,
-            "expression": {"id": expr.id, "idx": expr.idx, "type": expr.type, "raw_string": expr.raw_string},
-        }
+        payload={},
     )
     return expr
 
@@ -57,9 +53,9 @@ async def update_expression(uow: UnitOfWork, expression_id: uuid.UUID, data: Exp
     node = await uow.nodes.get(expr.node_id)
     if node:
         uow.emit(
-            event=EventName.EXPRESSION_UPDATED,
+            event=EventName.GRAPH_UPDATED,
             graph_id=node.graph_id,
-            payload={"expressionId": expr.id, "patch": data.model_dump(exclude_unset=True)},
+            payload={},
         )
     return expr
 
@@ -86,28 +82,11 @@ async def delete_expression(uow: UnitOfWork, expression_id: uuid.UUID) -> None:
     # Shift subsequent expressions natively in DB
     expression_updates = await uow.expressions.shift_indices_after_deletion(expr.node_id, deleted_idx)
 
-    # Broadcast deletion
     uow.emit(
-        event=EventName.EXPRESSION_DELETED,
+        event=EventName.GRAPH_UPDATED,
         graph_id=node.graph_id,
-        payload={"expressionId": expression_id, "nodeId": node.id},
+        payload={},
     )
-
-    # Broadcast updates for edges that were deleted via cascade
-    for edge in edges:
-        uow.emit(
-            event=EventName.EDGE_DELETED,
-            graph_id=node.graph_id,
-            payload={"edgeId": edge.id},
-        )
-
-    # Broadcast updates for shifted indices
-    for updated_expr in expression_updates:
-        uow.emit(
-            event=EventName.EXPRESSION_UPDATED,
-            graph_id=node.graph_id,
-            payload={"expressionId": updated_expr.id, "patch": {"idx": updated_expr.idx}},
-        )
 
 async def create_default_expressions_for_node(uow: UnitOfWork, node: models.Node) -> None:
     if node.node_type != NodeType.START:
@@ -150,14 +129,9 @@ async def swap_expression_indices(uow: UnitOfWork, expression_id: uuid.UUID, dir
     await uow.expressions.swap_indices(expr, other)
     
     uow.emit(
-        event=EventName.EXPRESSION_UPDATED,
+        event=EventName.GRAPH_UPDATED,
         graph_id=node.graph_id,
-        payload={"expressionId": expr.id, "patch": {"idx": expr.idx}},
-    )
-    uow.emit(
-        event=EventName.EXPRESSION_UPDATED,
-        graph_id=node.graph_id,
-        payload={"expressionId": other.id, "patch": {"idx": other.idx}},
+        payload={},
     )
     return True
 

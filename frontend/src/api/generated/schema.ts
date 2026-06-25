@@ -123,6 +123,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/graphs/{graph_id}/sync": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Sync Graph Flow Endpoint */
+    put: operations["sync_graph_flow_endpoint_graphs__graph_id__sync_put"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/nodes/graph/{graph_id}": {
     parameters: {
       query?: never;
@@ -392,6 +409,8 @@ export interface components {
     };
     /** EdgeCreate */
     EdgeCreate: {
+      /** Id */
+      id?: string | null;
       /**
        * Graph Id
        * Format: uuid
@@ -415,6 +434,11 @@ export interface components {
     /** EdgeRead */
     EdgeRead: {
       /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
        * Graph Id
        * Format: uuid
        */
@@ -433,11 +457,6 @@ export interface components {
       handle_index: number;
       /** From Expression Id */
       from_expression_id?: string | null;
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
     };
     /** ExpressionCreate */
     ExpressionCreate: {
@@ -445,6 +464,8 @@ export interface components {
       raw_string: string;
       /** @default SUB */
       type: components["schemas"]["ExpressionType"];
+      /** Id */
+      id?: string | null;
       /**
        * Node Id
        * Format: uuid
@@ -518,6 +539,15 @@ export interface components {
        */
       user_id: string;
     };
+    /** GraphSyncPayload */
+    GraphSyncPayload: {
+      /** Nodes */
+      nodes: components["schemas"]["NodeRead"][];
+      /** Edges */
+      edges: components["schemas"]["EdgeRead"][];
+      /** Expressions */
+      expressions: components["schemas"]["ExpressionRead"][];
+    };
     /** HTTPValidationError */
     HTTPValidationError: {
       /** Detail */
@@ -542,6 +572,8 @@ export interface components {
       /** Is Processing */
       is_processing: boolean;
       node_type: components["schemas"]["NodeType"];
+      /** Id */
+      id?: string | null;
     };
     /** NodeRead */
     NodeRead: {
@@ -815,6 +847,41 @@ export interface operations {
         content: {
           "application/json": components["schemas"]["GraphFlowRead"];
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  sync_graph_flow_endpoint_graphs__graph_id__sync_put: {
+    parameters: {
+      query?: never;
+      header?: {
+        "x-client-id"?: string | null;
+      };
+      path: {
+        graph_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["GraphSyncPayload"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Validation Error */
       422: {

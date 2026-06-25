@@ -66,7 +66,14 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   }, [myExpressions, isSwitch]);
 
   const handleAddItem = useCallback(() => {
-    createExpression.mutate({ nodeId: node.id, raw_string: '', graphId: node.graph_id, type: 'SUB' });
+    const newExpressionId = crypto.randomUUID();
+    createExpression.mutate({
+      nodeId: node.id,
+      raw_string: '',
+      graphId: node.graph_id,
+      type: 'SUB',
+      expressionId: newExpressionId,
+    });
   }, [createExpression, node.id, node.graph_id]);
 
   const handleUpdateBase = useCallback(

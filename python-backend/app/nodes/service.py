@@ -30,9 +30,9 @@ async def create_node(uow: UnitOfWork, data: NodeCreate) -> uuid.UUID:
     await expression_service.create_default_expressions_for_node(uow, node)
 
     uow.emit(
-        event=EventName.NODE_CREATED,
+        event=EventName.GRAPH_UPDATED,
         graph_id=node.graph_id,
-        payload={"nodeId": node.id},
+        payload={},
     )
     return node.id
 
@@ -47,18 +47,10 @@ async def delete_node(uow: UnitOfWork, node_id: uuid.UUID) -> None:
     await uow.nodes.delete(node_id)
 
     uow.emit(
-        event=EventName.NODE_DELETED,
+        event=EventName.GRAPH_UPDATED,
         graph_id=node.graph_id,
-        payload={"nodeId": node_id},
+        payload={},
     )
-
-    # Broadcast edge deletions
-    for edge in edges:
-        uow.emit(
-            event=EventName.EDGE_DELETED,
-            graph_id=node.graph_id,
-            payload={"edgeId": edge.id},
-        )
 
 
 async def create_connected_node(
@@ -113,13 +105,6 @@ async def create_connected_node(
     # 2. Initialize default expressions for the new node
     await expression_service.create_default_expressions_for_node(uow, new_node)
 
-    # 3. Emit Node Created event
-    uow.emit(
-        event=EventName.NODE_CREATED,
-        graph_id=new_node.graph_id,
-        payload={"nodeId": new_node.id},
-    )
-
     # 4. Create the connecting edge using repository directly
     new_edge = await uow.edges.create(
         EdgeCreate(
@@ -131,11 +116,10 @@ async def create_connected_node(
         )
     )
 
-    # 5. Emit Edge Created event
     uow.emit(
-        event=EventName.EDGE_CREATED,
-        graph_id=new_edge.graph_id,
-        payload={"edgeId": new_edge.id},
+        event=EventName.GRAPH_UPDATED,
+        graph_id=new_node.graph_id,
+        payload={},
     )
 
     return new_node.id
@@ -181,26 +165,11 @@ async def shortcircuit_node(uow: UnitOfWork, node_id: uuid.UUID) -> None:
     await uow.nodes.delete(node_id)
     await uow.session.flush()
 
-    # 3. Emit events
     uow.emit(
-        event=EventName.NODE_DELETED,
+        event=EventName.GRAPH_UPDATED,
         graph_id=node.graph_id,
-        payload={"nodeId": node_id},
+        payload={},
     )
-
-    for edge_id in deleted_edge_ids:
-        uow.emit(
-            event=EventName.EDGE_DELETED,
-            graph_id=node.graph_id,
-            payload={"edgeId": edge_id},
-        )
-
-    if updated:
-        uow.emit(
-            event=EventName.EDGES_UPDATED,
-            graph_id=node.graph_id,
-            payload={},
-        )
 
 
 async def insert_node_between(
@@ -264,20 +233,6 @@ async def insert_node_between(
     existing_edge.to_node_id = new_node.id
     await uow.session.flush()
 
-    # 5. Emit Node Created event
-    uow.emit(
-        event=EventName.NODE_CREATED,
-        graph_id=new_node.graph_id,
-        payload={"nodeId": new_node.id},
-    )
-
-    # 6. Emit Edges Updated event
-    uow.emit(
-        event=EventName.EDGES_UPDATED,
-        graph_id=new_node.graph_id,
-        payload={},
-    )
-
     # 7. Create the new connecting edge from new node to the old target node
     new_edge = await uow.edges.create(
         EdgeCreate(
@@ -289,11 +244,10 @@ async def insert_node_between(
         )
     )
 
-    # 8. Emit Edge Created event
     uow.emit(
-        event=EventName.EDGE_CREATED,
-        graph_id=new_edge.graph_id,
-        payload={"edgeId": new_edge.id},
+        event=EventName.GRAPH_UPDATED,
+        graph_id=new_node.graph_id,
+        payload={},
     )
 
     return new_node.id

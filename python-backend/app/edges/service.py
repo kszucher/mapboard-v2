@@ -18,9 +18,9 @@ async def list_edges(uow: UnitOfWork, graph_id: uuid.UUID) -> list[models.Edge]:
 async def create_edge(uow: UnitOfWork, data: EdgeCreate) -> uuid.UUID:
     edge = await uow.edges.create(data)
     uow.emit(
-        event=EventName.EDGE_CREATED,
+        event=EventName.GRAPH_UPDATED,
         graph_id=edge.graph_id,
-        payload={"edgeId": edge.id},
+        payload={},
     )
     return edge.id
 
@@ -32,7 +32,7 @@ async def delete_edge(uow: UnitOfWork, edge_id: uuid.UUID) -> None:
     graph_id = edge.graph_id if edge else None
     if graph_id:
         uow.emit(
-            event=EventName.EDGE_DELETED,
+            event=EventName.GRAPH_UPDATED,
             graph_id=graph_id,
-            payload={"edgeId": edge_id},
+            payload={},
         )

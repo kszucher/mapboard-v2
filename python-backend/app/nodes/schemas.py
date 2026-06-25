@@ -17,7 +17,7 @@ class NodeBase(BaseModel):
 
 
 class NodeCreate(NodeBase):
-    pass
+    id: uuid.UUID | None = None
 
 
 class NodeRead(NodeBase, OrmModel):
