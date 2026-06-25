@@ -1,20 +1,9 @@
-import type { ElkExtendedEdge, ElkNode, LayoutOptions } from 'elkjs';
+import type { ElkExtendedEdge, ElkNode, ElkPort, LayoutOptions } from 'elkjs';
 import ELK from 'elkjs/lib/elk.bundled.js';
 import { checkIsBackEdge, getDynamicLayers, sortNodesByIdAndIid } from './shared/edgeUtils';
 import type { ApiExpression, AppFlowEdge, AppFlowNode } from './types';
 
 const elk = new ELK();
-
-interface ElkPort {
-  id: string;
-  x: number;
-  y: number;
-  width?: number;
-  height?: number;
-  properties?: {
-    'port.side'?: 'WEST' | 'EAST' | 'NORTH' | 'SOUTH';
-  };
-}
 
 const ELK_LAYOUT_OPTIONS: LayoutOptions = {
   'elk.algorithm': 'layered',
@@ -107,7 +96,6 @@ const buildElkNodes = (
           y: targetY,
           width: 10,
           height: 10,
-          properties: { 'port.side': 'WEST' },
         });
       });
     }
@@ -134,7 +122,6 @@ const buildElkNodes = (
         y: sourceY,
         width: 10,
         height: 10,
-        properties: { 'port.side': 'EAST' },
       });
     });
 
