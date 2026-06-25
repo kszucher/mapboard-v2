@@ -7,6 +7,7 @@ import {
   useReactFlow,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import type { ElkEdgeSection } from "elkjs";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useCreateEdge, useDeleteEdge } from '../api/mutations';
 import { useGraphFlow } from '../api/queries';
@@ -14,7 +15,7 @@ import FlowEdge from './FlowEdge.tsx';
 import { CustomNode } from './FlowNode.tsx';
 import { useGraphWebSocket } from './hooks/useGraphWebSocket.ts';
 import { getLayoutedElements } from './layout.ts';
-import type { AppFlowEdge, AppFlowNode, ElkEdgeSection } from './types.ts';
+import type { AppFlowEdge, AppFlowNode } from './types.ts';
 
 /** UUID v4 regex — distinguishes expression handle IDs (UUIDs) from numeric handle indices */
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
