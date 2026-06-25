@@ -16,6 +16,14 @@ import { useGraphWebSocket } from './hooks/useGraphWebSocket.ts';
 import { getLayoutedElements } from './layout.ts';
 import type { AppFlowEdge, AppFlowNode, ElkEdgeSection } from './types.ts';
 
+/** UUID v4 regex — distinguishes expression handle IDs (UUIDs) from numeric handle indices */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isExpressionHandle = (handle: string | null | undefined): handle is string =>
+  handle != null && UUID_RE.test(handle);
+
+/** React Flow error 008: source/target node not found — expected during mid-layout renders */
+const RF_ERROR_NODE_NOT_FOUND = '008';
+
 const FlowContent = ({
   selectedGraphId,
 }: {
@@ -27,9 +35,12 @@ const FlowContent = ({
   // subscriptions / side effects
   useGraphWebSocket(selectedGraphId);
 
-  // mutations
+  // mutations — extract stable .mutate refs to avoid recreating callbacks every render
+  // (useMutation returns a new object reference each render in TanStack Query v5)
   const createEdgeMutation = useCreateEdge();
   const deleteEdgeMutation = useDeleteEdge();
+  const createEdge = createEdgeMutation.mutate;
+  const deleteEdge = deleteEdgeMutation.mutate;
 
   // react-flow / external hooks
   const { fitView } = useReactFlow();
@@ -77,7 +88,7 @@ const FlowContent = ({
     });
   }, [flowData, layoutData, nodeState]);
 
-  // derived edges
+  // derived edges — uses layoutData.layers directly (O(1) lookup) to avoid depending on the nodes array
   const edges = useMemo<AppFlowEdge[]>(() => {
     if (!flowData) return [];
     const nodeIds = new Set(flowData.nodes.map(n => n.id));
@@ -90,10 +101,10 @@ const FlowContent = ({
         return true;
       })
       .map(edge => {
-        const sourceNode = nodes.find(n => n.id === edge.from_node_id);
-        const targetNode = nodes.find(n => n.id === edge.to_node_id);
-        const isBack = sourceNode?.data?.layer !== undefined && targetNode?.data?.layer !== undefined && sourceNode.data.layer >= targetNode.data.layer;
-        const isLayoutReady = sourceNode?.data?.layer !== undefined && targetNode?.data?.layer !== undefined;
+        const sourceLayer = layoutData.layers[edge.from_node_id];
+        const targetLayer = layoutData.layers[edge.to_node_id];
+        const isBack = sourceLayer !== undefined && targetLayer !== undefined && sourceLayer >= targetLayer;
+        const isLayoutReady = sourceLayer !== undefined && targetLayer !== undefined;
 
         return {
           id: edge.id,
@@ -115,7 +126,7 @@ const FlowContent = ({
           },
         };
       });
-  }, [flowData, nodes, layoutData.sections]);
+  }, [flowData, layoutData.layers, layoutData.sections]);
 
   // Reset ready state synchronously on graph change
   const [prevGraphId, setPrevGraphId] = useState(selectedGraphId);
@@ -187,55 +198,55 @@ const FlowContent = ({
     });
   }, []);
 
-  const onEdgesChange = useCallback(() => {
-  }, []);
+  // Intentionally suppressed — edge state is server-authoritative; all
+  // deletions go through onEdgesDelete → deleteEdge mutation.
+  const onEdgesChange = useCallback(() => {}, []);
 
   const onError = useCallback((id: string, message: string) => {
-    if (id === '008') return;
+    if (id === RF_ERROR_NODE_NOT_FOUND) return;
     console.warn(message);
   }, []);
 
+  // Uses layoutData.layers directly (O(1) lookup) instead of scanning the nodes array
   const isValidConnection = useCallback(
     (connection: Connection | AppFlowEdge) => {
       if (!connection.source || !connection.target) return false;
-      const sourceNode = nodes.find(n => n.id === connection.source);
-      const targetNode = nodes.find(n => n.id === connection.target);
-      if (!sourceNode || !targetNode) return false;
-
-      const sourceLayer = sourceNode.data?.layer;
-      const targetLayer = targetNode.data?.layer;
+      const sourceLayer = layoutData.layers[connection.source];
+      const targetLayer = layoutData.layers[connection.target];
       return sourceLayer !== undefined && targetLayer !== undefined && sourceLayer >= targetLayer;
     },
-    [nodes],
+    [layoutData.layers],
+  );
+
+  // Shared helper — handles both new connections and reconnects
+  const createEdgeFromConnection = useCallback(
+    (connection: Pick<Connection, 'source' | 'target' | 'sourceHandle'>) => {
+      if (!connection.source || !connection.target) return;
+      const { sourceHandle } = connection;
+      createEdge({
+        edgeId: crypto.randomUUID(),
+        graphId: selectedGraphId,
+        fromNodeId: connection.source,
+        toNodeId: connection.target,
+        handleIndex: isExpressionHandle(sourceHandle) ? 0 : (Number(sourceHandle) || 0),
+        fromExpressionId: isExpressionHandle(sourceHandle) ? sourceHandle : undefined,
+      });
+    },
+    [selectedGraphId, createEdge],
   );
 
   const handleConnect = useCallback(
-    (params: Connection) => {
-      if (!params.source || !params.target) return;
-
-      const sourceHandle = params.sourceHandle;
-      const isExpressionId = !!sourceHandle && sourceHandle.length > 5;
-      const newEdgeId = crypto.randomUUID();
-
-      createEdgeMutation.mutate({
-        edgeId: newEdgeId,
-        graphId: selectedGraphId,
-        fromNodeId: params.source as string,
-        toNodeId: params.target as string,
-        handleIndex: isExpressionId ? 0 : (Number(sourceHandle) || 0),
-        fromExpressionId: isExpressionId ? (sourceHandle as string) : undefined,
-      });
-    },
-    [selectedGraphId, createEdgeMutation],
+    (params: Connection) => createEdgeFromConnection(params),
+    [createEdgeFromConnection],
   );
 
   const handleEdgesDelete = useCallback(
     (edgesToDelete: AppFlowEdge[]) => {
       edgesToDelete.forEach(edge => {
-        deleteEdgeMutation.mutate({ edgeId: edge.id as string });
+        deleteEdge({ edgeId: edge.id, graphId: selectedGraphId });
       });
     },
-    [deleteEdgeMutation],
+    [deleteEdge, selectedGraphId],
   );
 
   const handleReconnectStart = useCallback(() => {
@@ -245,35 +256,20 @@ const FlowContent = ({
   const handleReconnect = useCallback(
     (oldEdge: AppFlowEdge, newConnection: Connection) => {
       edgeReconnectSuccessful.current = true;
-
-      deleteEdgeMutation.mutate({ edgeId: oldEdge.id as string });
-
-      if (newConnection.source && newConnection.target) {
-        const sourceHandle = newConnection.sourceHandle;
-        const isExpressionId = !!sourceHandle && sourceHandle.length > 5;
-        const newEdgeId = crypto.randomUUID();
-
-        createEdgeMutation.mutate({
-          edgeId: newEdgeId,
-          graphId: selectedGraphId,
-          fromNodeId: newConnection.source as string,
-          toNodeId: newConnection.target as string,
-          handleIndex: isExpressionId ? 0 : (Number(sourceHandle) || 0),
-          fromExpressionId: isExpressionId ? (sourceHandle as string) : undefined,
-        });
-      }
+      deleteEdge({ edgeId: oldEdge.id, graphId: selectedGraphId });
+      createEdgeFromConnection(newConnection);
     },
-    [selectedGraphId, createEdgeMutation, deleteEdgeMutation],
+    [createEdgeFromConnection, deleteEdge, selectedGraphId],
   );
 
   const handleReconnectEnd = useCallback(
     (_event: MouseEvent | TouchEvent, edge: AppFlowEdge) => {
       if (!edgeReconnectSuccessful.current) {
-        deleteEdgeMutation.mutate({ edgeId: edge.id as string });
+        deleteEdge({ edgeId: edge.id, graphId: selectedGraphId });
       }
       edgeReconnectSuccessful.current = true;
     },
-    [deleteEdgeMutation],
+    [deleteEdge, selectedGraphId],
   );
 
   const handleDoubleClick = useCallback(
@@ -287,6 +283,8 @@ const FlowContent = ({
   // Run layout when nodes are fully initialized/measured and graph structure changes
   const lastLayoutedKey = useRef<string>('');
   useEffect(() => {
+    let cancelled = false;
+
     if (isFetching || !flowData || nodes.length === 0) return;
 
     // Check if we have dimensions for all nodes that are currently in flowData
@@ -316,6 +314,7 @@ const FlowContent = ({
             nodes: layoutedNodes,
             edges: layoutedEdges
           } = await getLayoutedElements(nodes, edges, flowData.expressions);
+          if (cancelled) return;
 
           const nextPositions: Record<string, { x: number; y: number }> = {};
           const nextLayers: Record<string, number> = {};
@@ -338,24 +337,28 @@ const FlowContent = ({
           });
 
         } catch (error) {
+          if (cancelled) return;
           console.error('Failed to auto-layout nodes:', error);
         }
       };
 
       void runLayout();
     }
-  }, [nodes, edges, flowData, isFetching, fitView]);
+
+    return () => { cancelled = true; };
+  }, [nodes, edges, flowData, isFetching]);
+
+  const containerStyle = useMemo(() => ({
+    width: '100%' as const,
+    height: '100%' as const,
+    opacity: isReady ? 1 : 0,
+    transition: 'opacity 0.2s ease-in-out',
+  }), [isReady]);
 
   if (!flowData) return null;
 
   return (
-    <div
-      style={{
-        width: '100%',
-        height: '100%',
-        opacity: isReady ? 1 : 0,
-        transition: 'opacity 0.2s ease-in-out'
-      }}>
+    <div style={containerStyle}>
       <ReactFlow<AppFlowNode, AppFlowEdge>
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}

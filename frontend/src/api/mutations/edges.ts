@@ -45,15 +45,15 @@ export const useDeleteEdge = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ edgeId }: { edgeId: string }) => {
+    mutationFn: async ({ edgeId }: { edgeId: string; graphId: string }) => {
       const res = await apiClient.DELETE('/edges/{edge_id}', {
         params: { path: { edge_id: edgeId } },
         headers: { 'X-Client-Id': getClientId() },
       });
       if ('error' in res) throw res.error;
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.graphs.all });
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.graphs.flow(variables.graphId) });
     },
   });
 };
