@@ -7,7 +7,7 @@ import {
   useReactFlow,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useCreateEdge, useDeleteEdge } from '../api/mutations';
 import { useGraphFlow } from '../api/queries';
 import FlowEdge from './FlowEdge.tsx';
@@ -56,6 +56,8 @@ const FlowContent = ({
 
   const [isReady, setIsReady] = useState(false);
   const edgeReconnectSuccessful = useRef(true);
+  // Always reflects the latest rendered nodes/edges without putting them in effect deps
+  const layoutInputRef = useRef({ nodes: [] as AppFlowNode[], edges: [] as AppFlowEdge[] });
 
   // derived nodes
   const nodes = useMemo<AppFlowNode[]>(() => {
@@ -126,6 +128,11 @@ const FlowContent = ({
         };
       });
   }, [flowData, layoutData.layers, layoutData.sections]);
+
+  // Keep ref current before any effects fire so the layout effect always reads the latest values
+  useLayoutEffect(() => {
+    layoutInputRef.current = { nodes, edges };
+  });
 
   // Fit view once on initial load — isReady resets to false on remount (key={selectedGraphId})
   useEffect(() => {
@@ -255,73 +262,32 @@ const FlowContent = ({
     [fitView],
   );
 
-  // Run layout when nodes are fully initialized/measured and graph structure changes
-  const lastLayoutedKey = useRef<string>('');
+  // Run layout when nodes are fully initialized/measured and graph structure changes.
+  // Deps are [flowData, nodeState, isFetching] — not [nodes, edges] — so setLayoutData
+  // never re-triggers this effect, eliminating the need for a dedup key.
   useEffect(() => {
+    if (isFetching || !flowData) return;
+    const { nodes: currentNodes, edges: currentEdges } = layoutInputRef.current;
+    if (currentNodes.length === 0 || !currentNodes.every(n => n.measured !== undefined)) return;
+
     let cancelled = false;
-
-    if (isFetching || !flowData || nodes.length === 0) return;
-
-    // Check if we have dimensions for all nodes that are currently in flowData
-    const allNodesMeasured = nodes.every(n => n.measured !== undefined);
-    if (!allNodesMeasured) return;
-
-    const expressionsKey = flowData.expressions
-      ? [...flowData.expressions]
-        .sort((a, b) => a.id.localeCompare(b.id))
-        .map(e => `${e.id}:${e.idx}`)
-        .join(',')
-      : '';
-
-    const dimensionsKey = nodes
-      .map(n => `${n.id}:${Math.round(n.measured?.width ?? 0)}x${Math.round(n.measured?.height ?? 0)}`)
-      .sort()
-      .join(',');
-
-    const currentKey = `${nodes.map(n => n.id).sort().join(',')}|${edges.map(e => e.id).sort().join(',')}|${expressionsKey}|${dimensionsKey}`;
-
-    if (currentKey !== lastLayoutedKey.current) {
-      lastLayoutedKey.current = currentKey;
-
-      const runLayout = async () => {
-        try {
-          const {
-            nodes: layoutedNodes,
-            edges: layoutedEdges
-          } = await getLayoutedElements(nodes, edges, flowData.expressions);
-          if (cancelled) return;
-
-          const nextPositions: Record<string, { x: number; y: number }> = {};
-          const nextLayers: Record<string, number> = {};
-          layoutedNodes.forEach(n => {
-            nextPositions[n.id] = n.position;
-            nextLayers[n.id] = n.data?.layer ?? 0;
-          });
-
-          const nextSections: Record<string, ElkEdgeSection[]> = {};
-          layoutedEdges.forEach(e => {
-            if (e.data?.sections) {
-              nextSections[e.id] = e.data.sections;
-            }
-          });
-
-          setLayoutData({
-            positions: nextPositions,
-            sections: nextSections,
-            layers: nextLayers,
-          });
-
-        } catch (error) {
-          if (cancelled) return;
-          console.error('Failed to auto-layout nodes:', error);
-        }
-      };
-
-      void runLayout();
-    }
+    void getLayoutedElements(currentNodes, currentEdges, flowData.expressions)
+      .then(({ nodes: ln, edges: le }) => {
+        if (cancelled) return;
+        const nextPositions: Record<string, { x: number; y: number }> = {};
+        const nextLayers: Record<string, number> = {};
+        ln.forEach(n => {
+          nextPositions[n.id] = n.position;
+          nextLayers[n.id] = n.data?.layer ?? 0;
+        });
+        const nextSections: Record<string, ElkEdgeSection[]> = {};
+        le.forEach(e => { if (e.data?.sections) nextSections[e.id] = e.data.sections; });
+        setLayoutData({ positions: nextPositions, sections: nextSections, layers: nextLayers });
+      })
+      .catch(err => { if (!cancelled) console.error('Failed to auto-layout nodes:', err); });
 
     return () => { cancelled = true; };
-  }, [nodes, edges, flowData, isFetching]);
+  }, [flowData, nodeState, isFetching]);
 
   const containerStyle = useMemo(() => ({
     width: '100%' as const,
