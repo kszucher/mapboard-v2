@@ -4,7 +4,8 @@ import uuid
 
 from pydantic import BaseModel
 
-from app.schemas import Color, NodeType, OrmModel
+from app.constants import NodeType
+from app.schemas import Color, OrmModel
 
 
 class NodeBase(BaseModel):
