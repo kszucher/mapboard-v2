@@ -55,7 +55,6 @@ const FlowContent = ({
   }>({ positions: {}, sections: {}, layers: {} });
 
   const [isReady, setIsReady] = useState(false);
-  const lastFittedGraphId = useRef<string>('');
   const edgeReconnectSuccessful = useRef(true);
 
   // derived nodes
@@ -128,39 +127,15 @@ const FlowContent = ({
       });
   }, [flowData, layoutData.layers, layoutData.sections]);
 
-  // Reset ready state synchronously on graph change
-  const [prevGraphId, setPrevGraphId] = useState(selectedGraphId);
-  if (selectedGraphId !== prevGraphId) {
-    setPrevGraphId(selectedGraphId);
-    setIsReady(false);
-  }
-
-  // Reset fitted flag on graph switch
+  // Fit view once on initial load — isReady resets to false on remount (key={selectedGraphId})
   useEffect(() => {
-    lastFittedGraphId.current = '';
-  }, [selectedGraphId]);
-
-  // Fit view once when layouted nodes are fully loaded and initialized
-  useEffect(() => {
-    if (selectedGraphId === lastFittedGraphId.current) {
-      if (!isReady) {
-        window.requestAnimationFrame(() => setIsReady(true));
-      }
-      return;
-    }
-
+    if (isReady) return;
     const hasLayout = nodes.length > 0 && nodes.every(n => layoutData.positions[n.id] !== undefined);
-    if (hasLayout && nodesInitialized) {
-      const runFit = async () => {
-        const success = await fitView({ padding: 0.1, duration: 0 });
-        if (success) {
-          lastFittedGraphId.current = selectedGraphId;
-          setIsReady(true);
-        }
-      };
-      void runFit();
-    }
-  }, [layoutData.positions, nodes, selectedGraphId, fitView, isReady, nodesInitialized]);
+    if (!hasLayout || !nodesInitialized) return;
+    void fitView({ padding: 0.1, duration: 0 }).then(success => {
+      if (success) setIsReady(true);
+    });
+  }, [layoutData.positions, nodes, isReady, nodesInitialized, fitView]);
 
   // memoized values
   const nodeTypes = useMemo(
