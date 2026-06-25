@@ -27,7 +27,7 @@ const FlowContent = ({
   selectedGraphId: string;
 }) => {
   // data fetching
-  const { data: flowData, isFetching } = useGraphFlow(selectedGraphId);
+  const { data: graphData, isFetching } = useGraphFlow(selectedGraphId);
 
   // subscriptions / side effects
   useGraphWebSocket(selectedGraphId);
@@ -57,19 +57,19 @@ const FlowContent = ({
 
   // derived nodes
   const nodes = useMemo<AppFlowNode[]>(() => {
-    if (!flowData) return [];
-    return flowData.nodes.map(n => {
+    if (!graphData) return [];
+    return graphData.nodes.map(n => {
       const state = nodeState[n.id] || {};
       const position = layoutData.positions[n.id];
 
       let tempPosition = position;
       if (!tempPosition) {
-        const incomingEdge = flowData.edges?.find(e => e.to_node_id === n.id);
+        const incomingEdge = graphData.edges?.find(e => e.to_node_id === n.id);
         const parentNodePosition = incomingEdge ? layoutData.positions[incomingEdge.from_node_id] : null;
         tempPosition = parentNodePosition ? { x: parentNodePosition.x + 300, y: parentNodePosition.y } : { x: 0, y: 0 };
       }
 
-      const nodeExpressions = flowData.expressions.filter(e => e.node_id === n.id);
+      const nodeExpressions = graphData.expressions.filter(e => e.node_id === n.id);
 
       return {
         id: n.id,
@@ -83,15 +83,15 @@ const FlowContent = ({
         measured: state.measured,
       };
     });
-  }, [flowData, layoutData, nodeState]);
+  }, [graphData, layoutData, nodeState]);
 
   // derived edges — uses layoutData.layers directly (O(1) lookup) to avoid depending on the nodes array
   const edges = useMemo<AppFlowEdge[]>(() => {
-    if (!flowData) return [];
-    const nodeIds = new Set(flowData.nodes.map(n => n.id));
-    const expressionIds = new Set(flowData.expressions.map(e => e.id));
+    if (!graphData) return [];
+    const nodeIds = new Set(graphData.nodes.map(n => n.id));
+    const expressionIds = new Set(graphData.expressions.map(e => e.id));
 
-    return flowData.edges
+    return graphData.edges
       .filter(edge => {
         if (!nodeIds.has(edge.from_node_id) || !nodeIds.has(edge.to_node_id)) return false;
         if (edge.from_expression_id && !expressionIds.has(edge.from_expression_id)) return false;
@@ -120,7 +120,7 @@ const FlowContent = ({
           reconnectable: isBack,
         };
       });
-  }, [flowData, layoutData.layers]);
+  }, [graphData, layoutData.layers]);
 
   // Keep ref current before any effects fire so the layout effect always reads the latest values
   useLayoutEffect(() => {
@@ -247,15 +247,15 @@ const FlowContent = ({
   );
 
   // Run layout when nodes are fully initialized/measured and graph structure changes.
-  // Deps are [flowData, nodeState, isFetching] — not [nodes, edges] — so setLayoutData
+  // Deps are [graphData, nodeState, isFetching] — not [nodes, edges] — so setLayoutData
   // never re-triggers this effect, eliminating the need for a dedup key.
   useEffect(() => {
-    if (isFetching || !flowData) return;
+    if (isFetching || !graphData) return;
     const { nodes: currentNodes, edges: currentEdges } = layoutInputRef.current;
     if (currentNodes.length === 0 || !currentNodes.every(n => n.measured !== undefined)) return;
 
     let cancelled = false;
-    void getLayoutedElements(currentNodes, currentEdges, flowData.expressions)
+    void getLayoutedElements(currentNodes, currentEdges, graphData.expressions)
       .then(({ nodes: ln }) => {
         if (cancelled) return;
         const nextPositions: Record<string, { x: number; y: number }> = {};
@@ -273,7 +273,7 @@ const FlowContent = ({
     return () => {
       cancelled = true;
     };
-  }, [flowData, nodeState, isFetching]);
+  }, [graphData, nodeState, isFetching]);
 
   const containerStyle = useMemo(() => ({
     width: '100%' as const,
@@ -282,7 +282,7 @@ const FlowContent = ({
     transition: 'opacity 0.2s ease-in-out',
   }), [isReady]);
 
-  if (!flowData) return null;
+  if (!graphData) return null;
 
   return (
     <div style={containerStyle}>

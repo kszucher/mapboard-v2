@@ -9,7 +9,7 @@ type GraphFlowRead = components['schemas']['GraphFlowRead'];
 
 export const useGraphHistory = (graphId: string | null) => {
   const queryClient = useQueryClient();
-  const { data: flowData } = useGraphFlow(graphId);
+  const { data: graphData } = useGraphFlow(graphId);
   const syncMutation = useSyncGraphFlow();
 
   const [past, setPast] = useState<GraphFlowRead[]>([]);
@@ -19,7 +19,7 @@ export const useGraphHistory = (graphId: string | null) => {
   // Keep track of the serialized state we last pushed or loaded
   const lastStateRef = useRef<GraphFlowRead | null>(null);
 
-  // Flag to check if the incoming flowData is from an undo/redo trigger
+  // Flag to check if the incoming graphData is from an undo/redo trigger
   const isHistoryTransitionRef = useRef(false);
 
   // Reset history stacks during render if the active graph ID changes
@@ -37,7 +37,7 @@ export const useGraphHistory = (graphId: string | null) => {
 
   // Track incoming query updates
   useEffect(() => {
-    if (!flowData) {
+    if (!graphData) {
       return;
     }
 
@@ -59,11 +59,11 @@ export const useGraphHistory = (graphId: string | null) => {
 
     if (isHistoryTransitionRef.current) {
       isHistoryTransitionRef.current = false;
-      lastStateRef.current = JSON.parse(JSON.stringify(flowData));
+      lastStateRef.current = JSON.parse(JSON.stringify(graphData));
       return;
     }
 
-    if (isSameState(lastStateRef.current, flowData)) {
+    if (isSameState(lastStateRef.current, graphData)) {
       return;
     }
 
@@ -72,8 +72,8 @@ export const useGraphHistory = (graphId: string | null) => {
       setPast(prev => [...prev, cloned]);
       setFuture([]); // Clear redo stack on new edit
     }
-    lastStateRef.current = JSON.parse(JSON.stringify(flowData));
-  }, [flowData]);
+    lastStateRef.current = JSON.parse(JSON.stringify(graphData));
+  }, [graphData]);
 
   const undo = () => {
     if (past.length === 0 || !graphId || !lastStateRef.current) return;
