@@ -173,7 +173,7 @@ export const getLayoutedElements = async (
   nodes: AppFlowNode[],
   edges: AppFlowEdge[],
   expressions: ApiExpression[] = []
-): Promise<{ nodes: AppFlowNode[]; edges: AppFlowEdge[] }> => {
+): Promise<{ nodes: AppFlowNode[] }> => {
   const nodesMap = new Map(nodes.map((node) => [node.id, node]));
 
   const orderedNodes = getDeterministicBFSOrder(nodes, edges, expressions, nodesMap);
@@ -206,14 +206,5 @@ export const getLayoutedElements = async (
     };
   });
 
-  const layoutedEdges = edges.map((edge) => {
-    return {
-      ...edge,
-      data: {
-        ...edge.data,
-      },
-    };
-  });
-
-  return { nodes: layoutedNodes, edges: layoutedEdges };
+  return { nodes: layoutedNodes };
 };
