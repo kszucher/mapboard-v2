@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import uuid
 from collections import defaultdict
-from typing import DefaultDict, Optional
+from typing import Any
 
 from fastapi import WebSocket
 
@@ -12,10 +12,10 @@ from app.schemas import GraphEvent
 
 class GraphEventBroker:
     def __init__(self) -> None:
-        self._subscribers: DefaultDict[uuid.UUID, dict[WebSocket, Optional[str]]] = defaultdict(dict)
+        self._subscribers: defaultdict[uuid.UUID, dict[WebSocket, str | None]] = defaultdict(dict)
         self._lock = asyncio.Lock()
 
-    async def subscribe(self, graph_id: uuid.UUID, websocket: WebSocket, client_id: Optional[str]) -> None:
+    async def subscribe(self, graph_id: uuid.UUID, websocket: WebSocket, client_id: str | None) -> None:
         async with self._lock:
             self._subscribers[graph_id][websocket] = client_id
 
@@ -58,7 +58,7 @@ class GraphEventBroker:
         event: str,
         graph_id: uuid.UUID,
         payload: dict[str, Any],
-        sender_client_id: Optional[str] = None,
+        sender_client_id: str | None = None,
     ) -> None:
         """Convenience method to broadcast an event without manual GraphEvent instantiation."""
         await self.broadcast(
@@ -69,6 +69,7 @@ class GraphEventBroker:
                 sender_client_id=sender_client_id,
             )
         )
+
 
 broker = GraphEventBroker()
 

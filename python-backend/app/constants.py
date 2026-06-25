@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class EventName(str, Enum):
     GRAPH_CREATED = "graph_created"
     GRAPH_UPDATED = "graph_updated"
@@ -13,6 +14,7 @@ class EventName(str, Enum):
     EXPRESSION_UPDATED = "expression_updated"
     EXPRESSION_DELETED = "expression_deleted"
 
+
 class NodeType(str, Enum):
     START = "START"
     LOGIC = "LOGIC"
@@ -20,7 +22,7 @@ class NodeType(str, Enum):
     LOGICAL_SWITCH = "LOGICAL_SWITCH"
     AGENTIC_SWITCH = "AGENTIC_SWITCH"
 
+
 class ExpressionType(str, Enum):
     BASE = "BASE"
     SUB = "SUB"
-

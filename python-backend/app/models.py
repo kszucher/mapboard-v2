@@ -19,7 +19,7 @@ class User(Base):
     color_mode: Mapped[str] = mapped_column(String(16), nullable=False, default="DARK")
     selected_graph_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
 
-    graphs: Mapped[list["Graph"]] = relationship("Graph", back_populates="user", cascade="all, delete-orphan")
+    graphs: Mapped[list[Graph]] = relationship("Graph", back_populates="user", cascade="all, delete-orphan")
 
 
 class Graph(Base):
@@ -27,20 +27,22 @@ class Graph(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"),
-                                               nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
 
     user: Mapped[User] = relationship("User", back_populates="graphs")
-    nodes: Mapped[list["Node"]] = relationship("Node", back_populates="graph", cascade="all, delete-orphan")
-    edges: Mapped[list["Edge"]] = relationship("Edge", back_populates="graph", cascade="all, delete-orphan")
+    nodes: Mapped[list[Node]] = relationship("Node", back_populates="graph", cascade="all, delete-orphan")
+    edges: Mapped[list[Edge]] = relationship("Edge", back_populates="graph", cascade="all, delete-orphan")
 
 
 class Node(Base):
     __tablename__ = "nodes"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    graph_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("graphs.id", ondelete="CASCADE"),
-                                                nullable=False)
+    graph_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("graphs.id", ondelete="CASCADE"), nullable=False
+    )
 
     iid: Mapped[int] = mapped_column(Integer, nullable=False)
     color: Mapped[str] = mapped_column(String(32), nullable=False)
@@ -49,20 +51,20 @@ class Node(Base):
     node_type: Mapped[str] = mapped_column(String(32), nullable=False)
 
     graph: Mapped[Graph] = relationship("Graph", back_populates="nodes")
-    outgoing_edges: Mapped[list["Edge"]] = relationship(
+    outgoing_edges: Mapped[list[Edge]] = relationship(
         "Edge",
         back_populates="from_node",
         foreign_keys="Edge.from_node_id",
         cascade="all, delete-orphan",
     )
-    incoming_edges: Mapped[list["Edge"]] = relationship(
+    incoming_edges: Mapped[list[Edge]] = relationship(
         "Edge",
         back_populates="to_node",
         foreign_keys="Edge.to_node_id",
         cascade="all, delete-orphan",
     )
 
-    expressions: Mapped[list["Expression"]] = relationship(
+    expressions: Mapped[list[Expression]] = relationship(
         "Expression",
         back_populates="node",
         cascade="all, delete-orphan",
@@ -74,22 +76,24 @@ class Expression(Base):
     __tablename__ = "expressions"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    node_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("nodes.id", ondelete="CASCADE"),
-                                               nullable=False)
+    node_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("nodes.id", ondelete="CASCADE"), nullable=False
+    )
     idx: Mapped[int] = mapped_column(Integer, nullable=False)
     type: Mapped[str] = mapped_column(String(32), nullable=False, default="SUB")
     raw_string: Mapped[str] = mapped_column(Text, nullable=False)
 
     node: Mapped[Node] = relationship("Node", back_populates="expressions")
-    edges: Mapped[list["Edge"]] = relationship("Edge", back_populates="from_expression")
+    edges: Mapped[list[Edge]] = relationship("Edge", back_populates="from_expression")
 
 
 class Edge(Base):
     __tablename__ = "edges"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    graph_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("graphs.id", ondelete="CASCADE"),
-                                                nullable=False)
+    graph_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("graphs.id", ondelete="CASCADE"), nullable=False
+    )
     from_node_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("nodes.id", ondelete="CASCADE"), nullable=False
     )

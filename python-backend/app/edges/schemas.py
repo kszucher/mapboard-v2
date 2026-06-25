@@ -22,6 +22,3 @@ class EdgeRead(EdgeCreate, OrmModel):
 
 class DeleteEdge(BaseModel):
     edge_id: uuid.UUID
-
-
-

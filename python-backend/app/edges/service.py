@@ -4,8 +4,8 @@ import uuid
 from typing import TYPE_CHECKING
 
 from app import models
-from app.edges.schemas import EdgeCreate
 from app.constants import EventName
+from app.edges.schemas import EdgeCreate
 
 if TYPE_CHECKING:
     from app.context import UnitOfWork
@@ -28,7 +28,7 @@ async def create_edge(uow: UnitOfWork, data: EdgeCreate) -> uuid.UUID:
 async def delete_edge(uow: UnitOfWork, edge_id: uuid.UUID) -> None:
     edge = await uow.session.get(models.Edge, edge_id)
     await uow.edges.delete(edge_id)
-    
+
     graph_id = edge.graph_id if edge else None
     if graph_id:
         uow.emit(

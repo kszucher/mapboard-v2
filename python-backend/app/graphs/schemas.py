@@ -4,10 +4,10 @@ import uuid
 
 from pydantic import BaseModel, Field
 
-from app.schemas import OrmModel
-from app.nodes.schemas import NodeRead
 from app.edges.schemas import EdgeRead
 from app.expressions.schemas import ExpressionRead
+from app.nodes.schemas import NodeRead
+from app.schemas import OrmModel
 
 
 class GraphCreate(BaseModel):

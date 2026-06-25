@@ -1,16 +1,19 @@
 from __future__ import annotations
 
 import uuid
+
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models
 from app.repository import BaseRepository
-from pydantic import BaseModel
+
 
 class GraphCreate(BaseModel):
     user_id: uuid.UUID
     name: str
+
 
 class GraphRepository(BaseRepository[models.Graph, GraphCreate, GraphCreate]):
     def __init__(self, session: AsyncSession):

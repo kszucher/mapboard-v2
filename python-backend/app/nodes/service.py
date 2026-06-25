@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from app import models
 from app.constants import EventName, NodeType
 from app.edges.schemas import EdgeCreate
-from app.exceptions import ValidationError, NotFoundError
+from app.exceptions import NotFoundError, ValidationError
 from app.expressions import service as expression_service
 from app.nodes.schemas import NodeCreate
 from app.schemas import Color
@@ -42,7 +42,6 @@ async def delete_node(uow: UnitOfWork, node_id: uuid.UUID) -> None:
     if not node:
         return
 
-    edges = await uow.edges.list_by_node(node_id)
     await uow.edges.delete_by_node(node_id)
     await uow.nodes.delete(node_id)
 
@@ -54,9 +53,9 @@ async def delete_node(uow: UnitOfWork, node_id: uuid.UUID) -> None:
 
 
 async def create_connected_node(
-        uow: UnitOfWork,
-        expression_id: uuid.UUID,
-        node_type: NodeType,
+    uow: UnitOfWork,
+    expression_id: uuid.UUID,
+    node_type: NodeType,
 ) -> uuid.UUID:
     if node_type == NodeType.START:
         raise ValidationError("Cannot connect a new START node.")
@@ -106,7 +105,7 @@ async def create_connected_node(
     await expression_service.create_default_expressions_for_node(uow, new_node)
 
     # 4. Create the connecting edge using repository directly
-    new_edge = await uow.edges.create(
+    await uow.edges.create(
         EdgeCreate(
             graph_id=parent_node.graph_id,
             from_node_id=parent_node.id,
@@ -139,7 +138,6 @@ async def shortcircuit_node(uow: UnitOfWork, node_id: uuid.UUID) -> None:
     outgoing = [e for e in all_edges if e.from_node_id == node_id]
 
     deleted_edge_ids = []
-    updated = False
 
     if outgoing and incoming:
         # Sort outgoing edges by handle_index
@@ -149,7 +147,6 @@ async def shortcircuit_node(uow: UnitOfWork, node_id: uuid.UUID) -> None:
         # Retarget all incoming edges' to_node_id to the primary target
         for in_edge in incoming:
             in_edge.to_node_id = primary_target_node_id
-            updated = True
 
         # All outgoing edges will be deleted because their source node is deleted (cascade delete).
         # We collect their IDs to emit EDGE_DELETED events.
@@ -173,9 +170,9 @@ async def shortcircuit_node(uow: UnitOfWork, node_id: uuid.UUID) -> None:
 
 
 async def insert_node_between(
-        uow: UnitOfWork,
-        expression_id: uuid.UUID,
-        node_type: NodeType,
+    uow: UnitOfWork,
+    expression_id: uuid.UUID,
+    node_type: NodeType,
 ) -> uuid.UUID:
     if node_type not in (NodeType.LOGIC, NodeType.AGENT):
         raise ValidationError("Can only insert LOGIC or AGENT nodes.")
@@ -234,7 +231,7 @@ async def insert_node_between(
     await uow.session.flush()
 
     # 7. Create the new connecting edge from new node to the old target node
-    new_edge = await uow.edges.create(
+    await uow.edges.create(
         EdgeCreate(
             graph_id=parent_node.graph_id,
             from_node_id=new_node.id,
@@ -251,5 +248,3 @@ async def insert_node_between(
     )
 
     return new_node.id
-
-

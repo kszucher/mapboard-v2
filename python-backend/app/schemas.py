@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import uuid
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
-from app.constants import EventName, NodeType
+
+from app.constants import EventName
 
 # Shared type definitions
 ColorMode = Literal["DARK", "LIGHT"]
@@ -38,7 +39,6 @@ Color = Literal[
 ]
 
 
-
 # Base classes
 class OrmModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -49,4 +49,4 @@ class GraphEvent(BaseModel):
     event: EventName
     graph_id: uuid.UUID
     payload: dict[str, Any]
-    sender_client_id: Optional[str] = None
+    sender_client_id: str | None = None

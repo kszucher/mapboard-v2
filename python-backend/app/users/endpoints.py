@@ -6,8 +6,8 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_session
-from app.users.schemas import ActiveGraphResponse, SetActiveGraph, UserCreate
 from app.users import service as user_service
+from app.users.schemas import ActiveGraphResponse, SetActiveGraph, UserCreate
 
 router = APIRouter(prefix="/users", tags=["users"])
 

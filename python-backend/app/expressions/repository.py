@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import uuid
-from sqlalchemy import select, update, join
+
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app import models
 from app.expressions.schemas import ExpressionCreate, ExpressionUpdate
 from app.repository import BaseRepository
+
 
 class ExpressionRepository(BaseRepository[models.Expression, ExpressionCreate, ExpressionUpdate]):
     def __init__(self, session: AsyncSession):

@@ -3,11 +3,11 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
-from app.nodes.schemas import NodeCreate
+from app.constants import EventName, NodeType
 from app.edges.schemas import EdgeCreate
 from app.expressions.schemas import ExpressionCreate
 from app.graphs.schemas import GraphSyncPayload
-from app.constants import EventName, NodeType
+from app.nodes.schemas import NodeCreate
 
 if TYPE_CHECKING:
     from app.context import UnitOfWork
@@ -103,7 +103,7 @@ async def sync_graph_flow(
                     color=node_payload.color,
                     label=node_payload.label,
                     is_processing=node_payload.is_processing,
-                    node_type=node_payload.node_type
+                    node_type=node_payload.node_type,
                 )
             )
 
@@ -125,7 +125,7 @@ async def sync_graph_flow(
                     node_id=expr_payload.node_id,
                     idx=expr_payload.idx,
                     type=expr_payload.type,
-                    raw_string=expr_payload.raw_string
+                    raw_string=expr_payload.raw_string,
                 )
             )
 
@@ -149,7 +149,7 @@ async def sync_graph_flow(
                     from_node_id=edge_payload.from_node_id,
                     to_node_id=edge_payload.to_node_id,
                     handle_index=edge_payload.handle_index,
-                    from_expression_id=edge_payload.from_expression_id
+                    from_expression_id=edge_payload.from_expression_id,
                 )
             )
 
@@ -161,4 +161,3 @@ async def sync_graph_flow(
         graph_id=graph_id,
         payload={},
     )
-

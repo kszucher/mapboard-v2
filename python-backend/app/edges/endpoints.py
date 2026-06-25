@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import uuid
 from typing import Any
+
 from fastapi import APIRouter, Depends, status
+
 from app.db import get_uow
-from app.edges.schemas import EdgeCreate, EdgeRead
 from app.edges import service as edge_service
+from app.edges.schemas import EdgeCreate, EdgeRead
 
 router = APIRouter(prefix="/edges", tags=["edges"])
 
@@ -17,19 +19,13 @@ async def get_edges(graph_id: uuid.UUID, uow: Any = Depends(get_uow)) -> list[Ed
 
 
 @router.post("/", response_model=uuid.UUID, status_code=status.HTTP_201_CREATED)
-async def create_edge(
-    payload: EdgeCreate,
-    uow: Any = Depends(get_uow)
-) -> uuid.UUID:
+async def create_edge(payload: EdgeCreate, uow: Any = Depends(get_uow)) -> uuid.UUID:
     edge_id = await edge_service.create_edge(uow, payload)
     await uow.commit()
     return edge_id
 
 
 @router.delete("/{edge_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_edge(
-    edge_id: uuid.UUID,
-    uow: Any = Depends(get_uow)
-) -> None:
+async def delete_edge(edge_id: uuid.UUID, uow: Any = Depends(get_uow)) -> None:
     await edge_service.delete_edge(uow, edge_id)
     await uow.commit()
