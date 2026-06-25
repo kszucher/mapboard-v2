@@ -7,7 +7,6 @@ import {
   useReactFlow,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import type { ElkEdgeSection } from "elkjs";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useCreateEdge, useDeleteEdge } from '../api/mutations';
 import { useGraphFlow } from '../api/queries';
@@ -21,9 +20,6 @@ import type { AppFlowEdge, AppFlowNode } from './types.ts';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const isExpressionHandle = (handle: string | null | undefined): handle is string =>
   handle != null && UUID_RE.test(handle);
-
-/** React Flow error 008: source/target node not found — expected during mid-layout renders */
-const RF_ERROR_NODE_NOT_FOUND = '008';
 
 const FlowContent = ({
   selectedGraphId,
@@ -51,9 +47,8 @@ const FlowContent = ({
   const [nodeState, setNodeState] = useState<Record<string, Partial<AppFlowNode>>>({});
   const [layoutData, setLayoutData] = useState<{
     positions: Record<string, { x: number; y: number }>;
-    sections: Record<string, ElkEdgeSection[]>;
     layers: Record<string, number>;
-  }>({ positions: {}, sections: {}, layers: {} });
+  }>({ positions: {}, layers: {} });
 
   const [isReady, setIsReady] = useState(false);
   const edgeReconnectSuccessful = useRef(true);
@@ -123,12 +118,9 @@ const FlowContent = ({
           },
           deletable: isBack,
           reconnectable: isBack,
-          data: {
-            sections: layoutData.sections[edge.id],
-          },
         };
       });
-  }, [flowData, layoutData.layers, layoutData.sections]);
+  }, [flowData, layoutData.layers]);
 
   // Keep ref current before any effects fire so the layout effect always reads the latest values
   useLayoutEffect(() => {
@@ -179,15 +171,6 @@ const FlowContent = ({
       });
       return hasChanges ? next : prev;
     });
-  }, []);
-
-  // Intentionally suppressed — edge state is server-authoritative; all
-  // deletions go through onEdgesDelete → deleteEdge mutation.
-  const onEdgesChange = useCallback(() => {}, []);
-
-  const onError = useCallback((id: string, message: string) => {
-    if (id === RF_ERROR_NODE_NOT_FOUND) return;
-    console.warn(message);
   }, []);
 
   // Uses layoutData.layers directly (O(1) lookup) instead of scanning the nodes array
@@ -273,7 +256,7 @@ const FlowContent = ({
 
     let cancelled = false;
     void getLayoutedElements(currentNodes, currentEdges, flowData.expressions)
-      .then(({ nodes: ln, edges: le }) => {
+      .then(({ nodes: ln }) => {
         if (cancelled) return;
         const nextPositions: Record<string, { x: number; y: number }> = {};
         const nextLayers: Record<string, number> = {};
@@ -281,13 +264,15 @@ const FlowContent = ({
           nextPositions[n.id] = n.position;
           nextLayers[n.id] = n.data?.layer ?? 0;
         });
-        const nextSections: Record<string, ElkEdgeSection[]> = {};
-        le.forEach(e => { if (e.data?.sections) nextSections[e.id] = e.data.sections; });
-        setLayoutData({ positions: nextPositions, sections: nextSections, layers: nextLayers });
+        setLayoutData({ positions: nextPositions, layers: nextLayers });
       })
-      .catch(err => { if (!cancelled) console.error('Failed to auto-layout nodes:', err); });
+      .catch(err => {
+        if (!cancelled) console.error('Failed to auto-layout nodes:', err);
+      });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [flowData, nodeState, isFetching]);
 
   const containerStyle = useMemo(() => ({
@@ -307,8 +292,6 @@ const FlowContent = ({
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onError={onError}
         onConnect={handleConnect}
         onEdgesDelete={handleEdgesDelete}
         onReconnect={handleReconnect}

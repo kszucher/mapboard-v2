@@ -1,26 +1,15 @@
-import type { ElkExtendedEdge, ElkNode, ElkPort, LayoutOptions } from 'elkjs';
+import type { ElkExtendedEdge, ElkNode, ElkPort } from 'elkjs';
 import ELK from 'elkjs/lib/elk.bundled.js';
 import { checkIsBackEdge, getDynamicLayers, sortNodesByIdAndIid } from './shared/edgeUtils';
 import type { ApiExpression, AppFlowEdge, AppFlowNode } from './types';
 
 const elk = new ELK();
 
-const ELK_LAYOUT_OPTIONS: LayoutOptions = {
+const ELK_LAYOUT_OPTIONS = {
   'elk.algorithm': 'layered',
   'elk.direction': 'RIGHT',
-  'elk.edgeRouting': 'ORTHOGONAL',
-  'elk.spacing.nodeNode': '20',
-  'elk.layered.spacing.nodeNodeBetweenLayers': '40',
-  'elk.spacing.edgeEdge': '15',
-  'elk.spacing.edgeNode': '20',
-  'elk.layered.spacing.edgeEdgeBetweenLayers': '15',
-  'elk.layered.spacing.edgeNodeBetweenLayers': '20',
-  'elk.layered.cycleBreaking.strategy': 'MODEL_ORDER',
-  'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
-  'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
-  'elk.layered.crossingMinimization.forceNodeModelOrder': 'true',
-  'elk.layered.crossingMinimization.semiInteractive': 'false',
-  'elk.randomSeed': '42',
+  'elk.spacing.nodeNode': '40',
+  'elk.layered.spacing.nodeNodeBetweenLayers': '60',
 };
 
 // Generates deterministic BFS traversal node list
@@ -218,12 +207,10 @@ export const getLayoutedElements = async (
   });
 
   const layoutedEdges = edges.map((edge) => {
-    const elkEdge = layoutedGraph.edges?.find((e) => e.id === edge.id);
     return {
       ...edge,
       data: {
         ...edge.data,
-        sections: elkEdge?.sections || [],
       },
     };
   });
