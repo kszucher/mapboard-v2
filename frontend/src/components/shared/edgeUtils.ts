@@ -73,29 +73,6 @@ export const getDynamicLayers = (
   return layerMap;
 };
 
-/**
- * Determines whether an edge is a backward edge.
- * Supports passing handle X coordinates directly (for runtime rendering offsets) or node positions (for layout).
- */
-export const checkIsBackEdge = (
-  sourceNode: AppFlowNode | undefined,
-  targetNode: AppFlowNode | undefined,
-  layerMap: Map<string, number>,
-  sourceX?: number,
-  targetX?: number,
-  ignoreCoordinates = false
-): boolean => {
-  if (!sourceNode || !targetNode) return false;
-
-  const sourceLayer = layerMap.get(sourceNode.id);
-  const targetLayer = layerMap.get(targetNode.id);
-
-  if (sourceLayer !== undefined && targetLayer !== undefined && sourceLayer >= targetLayer) {
-    return true;
-  }
-
-  return !ignoreCoordinates && (sourceX ?? (sourceNode.position.x + (sourceNode.measured?.width ?? sourceNode.width ?? 200))) >= (targetX ?? targetNode.position.x);
-};
 
 /**
  * Assigns a unique track index to each backedge using an Interval Coloring (greedy channel routing) algorithm.

@@ -1,6 +1,6 @@
 import type { ElkExtendedEdge, ElkNode, ElkPort } from 'elkjs';
 import ELK from 'elkjs/lib/elk.bundled.js';
-import { checkIsBackEdge, getDynamicLayers, sortNodesByIdAndIid } from './shared/edgeUtils';
+import { getDynamicLayers, sortNodesByIdAndIid } from './shared/edgeUtils';
 import type { ApiExpression, AppFlowEdge, AppFlowNode } from './types';
 
 const elk = new ELK();
@@ -131,17 +131,12 @@ const buildElkNodes = (
 // Filters and sorts edges deterministically for ELK
 const buildElkEdges = (
   edges: AppFlowEdge[],
-  nodesMap: Map<string, AppFlowNode>,
   layerMap: Map<string, number>,
   orderedNodes: AppFlowNode[],
   expressions: ApiExpression[]
 ): ElkExtendedEdge[] => {
   return edges
-    .filter((edge) => {
-      const sNode = nodesMap.get(edge.source);
-      const tNode = nodesMap.get(edge.target);
-      return !checkIsBackEdge(sNode, tNode, layerMap, undefined, undefined, true);
-    })
+    .filter((edge) => (layerMap.get(edge.source) ?? 0) < (layerMap.get(edge.target) ?? 0))
     .sort((a, b) => {
       const idxSourceA = orderedNodes.findIndex((n) => n.id === a.source);
       const idxSourceB = orderedNodes.findIndex((n) => n.id === b.source);
@@ -180,7 +175,7 @@ export const getLayoutedElements = async (
   const elkNodes = buildElkNodes(orderedNodes, edges, expressions);
 
   const layerMap = getDynamicLayers(nodes, edges);
-  const elkEdges = buildElkEdges(edges, nodesMap, layerMap, orderedNodes, expressions);
+  const elkEdges = buildElkEdges(edges, layerMap, orderedNodes, expressions);
 
   const graph: ElkNode = {
     id: 'root',
