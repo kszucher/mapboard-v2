@@ -47,13 +47,18 @@ const FlowContent = ({
   const [nodeState, setNodeState] = useState<Record<string, Partial<AppFlowNode>>>({});
   const [layoutData, setLayoutData] = useState<{
     positions: Record<string, { x: number; y: number }>;
-    layers: Record<string, number>;
-  }>({ positions: {}, layers: {} });
+  }>({ positions: {} });
 
   const [isReady, setIsReady] = useState(false);
   const edgeReconnectSuccessful = useRef(true);
   // Always reflects the latest rendered nodes/edges without putting them in effect deps
   const layoutInputRef = useRef({ nodes: [] as AppFlowNode[], edges: [] as AppFlowEdge[] });
+
+  // Derived layer lookup from graphData — available immediately after fetch, no need to wait for ELK
+  const layersByNodeId = useMemo<Record<string, number>>(() => {
+    if (!graphData) return {};
+    return Object.fromEntries(graphData.nodes.map((n) => [n.id, n.layer]));
+  }, [graphData]);
 
   // derived nodes
   const nodes = useMemo<AppFlowNode[]>(() => {
@@ -77,15 +82,15 @@ const FlowContent = ({
         position: tempPosition,
         data: {
           node: n,
-          layer: layoutData.layers[n.id],
+          layer: n.layer,
           expressions: nodeExpressions,
         },
         measured: state.measured,
       };
     });
-  }, [graphData, layoutData, nodeState]);
+  }, [graphData, layoutData.positions, nodeState]);
 
-  // derived edges — uses layoutData.layers directly (O(1) lookup) to avoid depending on the nodes array
+  // derived edges — isBack comes from graphData (pre-computed in query select)
   const edges = useMemo<AppFlowEdge[]>(() => {
     if (!graphData) return [];
     const nodeIds = new Set(graphData.nodes.map(n => n.id));
@@ -98,10 +103,8 @@ const FlowContent = ({
         return true;
       })
       .map(edge => {
-        const sourceLayer = layoutData.layers[edge.from_node_id];
-        const targetLayer = layoutData.layers[edge.to_node_id];
-        const isBack = sourceLayer !== undefined && targetLayer !== undefined && sourceLayer >= targetLayer;
-        const isLayoutReady = sourceLayer !== undefined && targetLayer !== undefined;
+        const isBack = edge.isBack ?? false;
+        const isLayoutReady = !!layoutData.positions[edge.from_node_id] && !!layoutData.positions[edge.to_node_id];
 
         return {
           id: edge.id,
@@ -121,7 +124,7 @@ const FlowContent = ({
           reconnectable: isBack,
         };
       });
-  }, [graphData, layoutData.layers]);
+  }, [graphData, layoutData.positions]);
 
   // Keep ref current before any effects fire so the layout effect always reads the latest values
   useLayoutEffect(() => {
@@ -174,15 +177,15 @@ const FlowContent = ({
     });
   }, []);
 
-  // Uses layoutData.layers directly (O(1) lookup) instead of scanning the nodes array
+  // Uses layersByNodeId (from graphData) for O(1) lookup
   const isValidConnection = useCallback(
     (connection: Connection | AppFlowEdge) => {
       if (!connection.source || !connection.target) return false;
-      const sourceLayer = layoutData.layers[connection.source];
-      const targetLayer = layoutData.layers[connection.target];
+      const sourceLayer = layersByNodeId[connection.source];
+      const targetLayer = layersByNodeId[connection.target];
       return sourceLayer !== undefined && targetLayer !== undefined && sourceLayer >= targetLayer;
     },
-    [layoutData.layers],
+    [layersByNodeId],
   );
 
   // Shared helper — handles both new connections and reconnects
@@ -260,12 +263,10 @@ const FlowContent = ({
       .then(({ nodes: ln }) => {
         if (cancelled) return;
         const nextPositions: Record<string, { x: number; y: number }> = {};
-        const nextLayers: Record<string, number> = {};
         ln.forEach(n => {
           nextPositions[n.id] = n.position;
-          nextLayers[n.id] = n.data?.layer ?? 0;
         });
-        setLayoutData({ positions: nextPositions, layers: nextLayers });
+        setLayoutData({ positions: nextPositions });
       })
       .catch(err => {
         if (!cancelled) console.error('Failed to auto-layout nodes:', err);

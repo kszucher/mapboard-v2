@@ -1,6 +1,6 @@
 import type { ElkExtendedEdge, ElkNode, ElkPort } from 'elkjs';
 import ELK from 'elkjs/lib/elk.bundled.js';
-import { getDynamicLayers, sortNodesByIdAndIid } from './shared/edgeUtils';
+
 import type { ApiExpression, AppFlowEdge, AppFlowNode } from './types';
 
 const elk = new ELK();
@@ -40,7 +40,9 @@ const getDeterministicBFSOrder = (
 
       const nodeA = nodesMap.get(a.target);
       const nodeB = nodesMap.get(b.target);
-      return nodeA && nodeB ? sortNodesByIdAndIid(nodeA, nodeB) : a.target.localeCompare(b.target);
+      return nodeA && nodeB
+        ? (nodeA.data?.node?.iid ?? 0) - (nodeB.data?.node?.iid ?? 0) || nodeA.id.localeCompare(nodeB.id)
+        : a.target.localeCompare(b.target);
     });
 
     for (const edge of outgoingEdges) {
@@ -128,15 +130,15 @@ const buildElkNodes = (
   });
 };
 
-// Filters and sorts edges deterministically for ELK
+// Filters forward edges and maps them to ELK-compatible edge structures.
+// Back-edges (edge.data.isBack) are excluded so ELK's layered algorithm doesn't see cycles.
 const buildElkEdges = (
   edges: AppFlowEdge[],
-  layerMap: Map<string, number>,
   orderedNodes: AppFlowNode[],
   expressions: ApiExpression[]
 ): ElkExtendedEdge[] => {
   return edges
-    .filter((edge) => (layerMap.get(edge.source) ?? 0) < (layerMap.get(edge.target) ?? 0))
+    .filter((edge) => !edge.data?.isBack)
     .sort((a, b) => {
       const idxSourceA = orderedNodes.findIndex((n) => n.id === a.source);
       const idxSourceB = orderedNodes.findIndex((n) => n.id === b.source);
@@ -174,8 +176,7 @@ export const getLayoutedElements = async (
   const orderedNodes = getDeterministicBFSOrder(nodes, edges, expressions, nodesMap);
   const elkNodes = buildElkNodes(orderedNodes, edges, expressions);
 
-  const layerMap = getDynamicLayers(nodes, edges);
-  const elkEdges = buildElkEdges(edges, layerMap, orderedNodes, expressions);
+  const elkEdges = buildElkEdges(edges, orderedNodes, expressions);
 
   const graph: ElkNode = {
     id: 'root',
@@ -193,10 +194,6 @@ export const getLayoutedElements = async (
       position: {
         x: elkNode?.x ?? node.position.x,
         y: elkNode?.y ?? node.position.y,
-      },
-      data: {
-        ...node.data,
-        layer: layerMap.get(node.id) ?? 0,
       },
     };
   });

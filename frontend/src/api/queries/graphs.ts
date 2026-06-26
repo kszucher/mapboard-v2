@@ -1,4 +1,5 @@
 import { queryOptions, useQuery } from '@tanstack/react-query';
+import { getDynamicLayers } from '../../components/shared/edgeUtils';
 import { apiClient } from '../client';
 import { queryKeys } from '../queryKeys';
 
@@ -24,6 +25,19 @@ export const graphQueries = {
       return res.data;
     },
     enabled: Boolean(graphId),
+    select: (data) => {
+      if (!data) return data;
+      // ApiNode and ApiEdge satisfy LayerNode/LayerEdge directly — no mapping needed
+      const layerMap = getDynamicLayers(data.nodes, data.edges);
+      return {
+        ...data,
+        nodes: data.nodes.map((n) => ({ ...n, layer: layerMap.get(n.id) ?? 0 })),
+        edges: data.edges.map((e) => ({
+          ...e,
+          isBack: (layerMap.get(e.from_node_id) ?? 0) >= (layerMap.get(e.to_node_id) ?? 0),
+        })),
+      };
+    },
   }),
 };
 

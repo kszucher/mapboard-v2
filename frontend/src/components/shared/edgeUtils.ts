@@ -5,12 +5,12 @@
  * By identifying loop structures based on layers and coordinates, we can isolate them from the
  * main layout calculations and apply specific perimeter routing to improve workflow readability.
  */
-import type { AppFlowEdge, AppFlowNode } from '../types';
+import type { ApiEdge, ApiNode, AppFlowEdge, AppFlowNode } from '../types';
 
 
 // Helper to sort nodes deterministically by iid and id
-export const sortNodesByIdAndIid = (a: AppFlowNode, b: AppFlowNode): number => {
-  return (a.data?.node?.iid ?? 0) - (b.data?.node?.iid ?? 0) || a.id.localeCompare(b.id);
+export const sortNodesByIdAndIid = (a: ApiNode, b: ApiNode): number => {
+  return (a.iid ?? 0) - (b.iid ?? 0) || a.id.localeCompare(b.id);
 };
 
 /**
@@ -18,8 +18,8 @@ export const sortNodesByIdAndIid = (a: AppFlowNode, b: AppFlowNode): number => {
  * that simultaneously breaks cycle back-edges and generates topological finish order.
  */
 export const getDynamicLayers = (
-  nodes: AppFlowNode[],
-  edges: AppFlowEdge[] = []
+  nodes: ApiNode[],
+  edges: ApiEdge[] = []
 ): Map<string, number> => {
   const nodesMap = new Map(nodes.map((n) => [n.id, n]));
   const visited = new Set<string>();
@@ -30,22 +30,22 @@ export const getDynamicLayers = (
   const dfs = (nodeId: string) => {
     visiting.add(nodeId);
 
-    const outgoing = edges.filter((e) => e.source === nodeId);
+    const outgoing = edges.filter((e) => e.from_node_id === nodeId);
     outgoing.sort((a, b) => {
-      const handleA = a.sourceHandle || '';
-      const handleB = b.sourceHandle || '';
+      const handleA = a.from_expression_id ?? String(a.handle_index ?? 0);
+      const handleB = b.from_expression_id ?? String(b.handle_index ?? 0);
       if (handleA !== handleB) return handleA.localeCompare(handleB);
 
-      const targetA = nodesMap.get(a.target);
-      const targetB = nodesMap.get(b.target);
-      return targetA && targetB ? sortNodesByIdAndIid(targetA, targetB) : a.target.localeCompare(b.target);
+      const targetA = nodesMap.get(a.to_node_id);
+      const targetB = nodesMap.get(b.to_node_id);
+      return targetA && targetB ? sortNodesByIdAndIid(targetA, targetB) : a.to_node_id.localeCompare(b.to_node_id);
     });
 
     for (const edge of outgoing) {
-      if (visiting.has(edge.target)) {
+      if (visiting.has(edge.to_node_id)) {
         backEdges.add(edge.id);
-      } else if (!visited.has(edge.target)) {
-        dfs(edge.target);
+      } else if (!visited.has(edge.to_node_id)) {
+        dfs(edge.to_node_id);
       }
     }
 
@@ -54,8 +54,8 @@ export const getDynamicLayers = (
     topoOrder.unshift(nodeId);
   };
 
-  const sortedStart = nodes.filter((n) => n.data?.node?.node_type === 'START').sort(sortNodesByIdAndIid);
-  const sortedOther = nodes.filter((n) => n.data?.node?.node_type !== 'START').sort(sortNodesByIdAndIid);
+  const sortedStart = nodes.filter((n) => n.node_type === 'START').sort(sortNodesByIdAndIid);
+  const sortedOther = nodes.filter((n) => n.node_type !== 'START').sort(sortNodesByIdAndIid);
   [...sortedStart, ...sortedOther].forEach((n) => {
     if (!visited.has(n.id)) dfs(n.id);
   });
@@ -64,9 +64,9 @@ export const getDynamicLayers = (
   const layerMap = new Map(nodes.map((n) => [n.id, 0]));
   for (const nodeId of topoOrder) {
     const currentLayer = layerMap.get(nodeId) || 0;
-    const outgoing = edges.filter((e) => e.source === nodeId && !backEdges.has(e.id));
+    const outgoing = edges.filter((e) => e.from_node_id === nodeId && !backEdges.has(e.id));
     for (const edge of outgoing) {
-      layerMap.set(edge.target, Math.max(layerMap.get(edge.target) || 0, currentLayer + 1));
+      layerMap.set(edge.to_node_id, Math.max(layerMap.get(edge.to_node_id) || 0, currentLayer + 1));
     }
   }
 
