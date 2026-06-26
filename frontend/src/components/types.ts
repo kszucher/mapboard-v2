@@ -6,4 +6,4 @@ export type ApiEdge = components['schemas']['EdgeRead'];
 export type ApiExpression = components['schemas']['ExpressionRead'];
 
 export type AppFlowNode = Node<{ node: ApiNode; layer?: number; expressions?: ApiExpression[] }, 'custom'>;
-export type AppFlowEdge = Edge<{ edge?: ApiEdge }, 'custom'>;
+export type AppFlowEdge = Edge<{ edge?: ApiEdge; isBack?: boolean }, 'custom'>;

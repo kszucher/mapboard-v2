@@ -110,6 +110,7 @@ const FlowContent = ({
           sourceHandle: edge.from_expression_id ?? String(edge.handle_index),
           type: 'custom' as const,
           animated: true,
+          data: { isBack },
           style: {
             stroke: '#fff',
             strokeWidth: 2,
