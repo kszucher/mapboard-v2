@@ -100,33 +100,34 @@ export const assignBackLinkTracks = (
   const nodesMap = new Map(nodes.map((n) => [n.id, n]));
   const getLayer = (nodeId: string) => nodesMap.get(nodeId)?.data?.layer ?? 0;
 
-  // edge.data.isBack is pre-computed in Flow.tsx — no graph traversal needed here
-  const backEdges = edges.filter((e) => e.data?.isBack);
-
-  backEdges.sort((a, b) => {
-    const lenA = getLayer(a.source) - getLayer(a.target);
-    const lenB = getLayer(b.source) - getLayer(b.target);
-    const sA = nodesMap.get(a.source)!, tA = nodesMap.get(a.target)!;
-    const sB = nodesMap.get(b.source)!, tB = nodesMap.get(b.target)!;
-    return lenA - lenB || sB.position.y - sA.position.y || tB.position.y - tA.position.y || a.id.localeCompare(b.id);
-  });
+  const backEdges = edges
+    .filter((e) => e.data?.isBack)
+    .sort((a, b) => {
+      const lenA = getLayer(a.source) - getLayer(a.target);
+      const lenB = getLayer(b.source) - getLayer(b.target);
+      const sA = nodesMap.get(a.source)!, sB = nodesMap.get(b.source)!;
+      const tA = nodesMap.get(a.target)!, tB = nodesMap.get(b.target)!;
+      return lenA - lenB
+        || sB.position.y - sA.position.y
+        || tB.position.y - tA.position.y
+        || a.id.localeCompare(b.id);
+    });
 
   const trackMap = new Map<string, number>();
-  const trackIntervals: AppFlowEdge[][] = [];
+  // Each entry is the set of [target, source] layer intervals occupying that track
+  const tracks: Array<[number, number][]> = [];
 
   for (const edge of backEdges) {
-    const s = getLayer(edge.source);
-    const t = getLayer(edge.target);
-    let assignedTrack = trackIntervals.findIndex((track) =>
-      !track.some((ex) => {
-        const exS = getLayer(ex.source), exT = getLayer(ex.target);
-        return exS === s || exT === t || Math.max(exT, t) < Math.min(exS, s);
-      })
+    const lo = getLayer(edge.target);  // target is the earlier layer (loop goes back)
+    const hi = getLayer(edge.source);
+
+    const freeTrack = tracks.findIndex((intervals) =>
+      intervals.every(([a, b]) => hi < a || lo > b)  // no overlap
     );
 
-    if (assignedTrack === -1) assignedTrack = trackIntervals.push([]) - 1;
-    trackIntervals[assignedTrack].push(edge);
-    trackMap.set(edge.id, assignedTrack);
+    const track = freeTrack !== -1 ? freeTrack : tracks.push([]) - 1;
+    tracks[track].push([lo, hi]);
+    trackMap.set(edge.id, track);
   }
 
   return trackMap;
