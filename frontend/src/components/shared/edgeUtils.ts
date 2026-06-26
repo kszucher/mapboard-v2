@@ -1,10 +1,3 @@
-/**
- * Edge Classification Utilities for Agentic AI Workflow Visualization
- *
- * Separates the classification of forward (pipeline flow) and backward (feedback loop) edges.
- * By identifying loop structures based on layers and coordinates, we can isolate them from the
- * main layout calculations and apply specific perimeter routing to improve workflow readability.
- */
 import type { ApiEdge, ApiNode, AppFlowEdge, AppFlowNode } from '../types';
 
 // Augmented edge type carrying pre-indexed expression order and pre-computed routing fields.
@@ -16,21 +9,11 @@ type LayerNode = ApiNode & { layer?: number; visitOrder?: number };
 /**
  * Assigns topological layer depths, visit order, and back-edge routing tracks in a single pass.
  *
- * 1. Builds an adjacency list sorted by `expressionIdx` — the canonical child ordering defined
- *    by the parent node's expression indices. This fixes the previous bug where UUID string
- *    comparison or `iid` were used as ordering proxies.
- * 2. Runs DFS to produce a topological order and identify back edges (cycles).
- * 3. Propagates layer depths along the topo order.
- * 4. Assigns a `visitOrder` to each node (its index in the final topo order) — used by the
- *    layout engine instead of a separate BFS traversal.
- * 5. Assigns a `track` index to each back edge using greedy interval coloring. The sort
- *    tie-breaker uses `visitOrder` instead of Y coordinates, making this fully computable
- *    before layout runs.
+ * Adjacency lists are sorted by `expressionIdx` — the canonical child ordering defined by the
+ * parent node's expression indices. Back edges (cycles) are detected via DFS and assigned a
+ * `track` index using greedy interval coloring, so routing is fully computable before layout runs.
  *
- * All mutations are in-place on the passed arrays.
- *
- * @param nodes - Graph nodes; START nodes are visited first to anchor the ordering.
- * @param edges - Graph edges with `expressionIdx` pre-indexed from expression `idx` values.
+ * START nodes are visited first to anchor the ordering. All mutations are in-place.
  */
 export const getDynamicLayers = (nodes: LayerNode[], edges: LayerEdge[] = []): void => {
   const nodesMap = new Map(nodes.map((n) => [n.id, Object.assign(n, { layer: 0 })]));
@@ -55,7 +38,7 @@ export const getDynamicLayers = (nodes: LayerNode[], edges: LayerEdge[] = []): v
   let visitCounter = 0;
   const dfs = (nodeId: string) => {
     visiting.add(nodeId);
-    nodesMap.get(nodeId)!.visitOrder = visitCounter++;  // pre-order: assign on entry
+    nodesMap.get(nodeId)!.visitOrder = visitCounter++; // pre-order: assign on entry
     for (const edge of adj.get(nodeId) ?? []) {
       if (visiting.has(edge.to_node_id)) backEdges.add(edge.id);
       else if (!visited.has(edge.to_node_id)) dfs(edge.to_node_id);
@@ -65,7 +48,6 @@ export const getDynamicLayers = (nodes: LayerNode[], edges: LayerEdge[] = []): v
     topoOrder.push(nodeId);
   };
 
-  // START nodes are seeded first; all others follow — both groups sorted by id for stability.
   const sorted = [
     ...nodes.filter((n) => n.node_type === 'START').sort((a, b) => a.id.localeCompare(b.id)),
     ...nodes.filter((n) => n.node_type !== 'START').sort((a, b) => a.id.localeCompare(b.id)),
@@ -85,13 +67,11 @@ export const getDynamicLayers = (nodes: LayerNode[], edges: LayerEdge[] = []): v
     }
   }
 
-
-  // Assign isBack in-place.
   for (const edge of edges) edge.isBack = backEdges.has(edge.id);
 
-  // Assign track index to each back edge using greedy interval coloring.
-  // Sort: shorter spans first; ties broken by source visitOrder descending
-  // (higher visitOrder = lower on screen = processed first for lower track numbers).
+  // Greedy interval coloring for back-edge tracks.
+  // Shorter spans first; ties broken by source visitOrder descending so lower nodes on screen
+  // get lower track numbers.
   const backEdgeList = edges.filter((e) => e.isBack);
   backEdgeList.sort((a, b) => {
     const fromA = nodesMap.get(a.from_node_id)!, fromB = nodesMap.get(b.from_node_id)!;
@@ -106,8 +86,8 @@ export const getDynamicLayers = (nodes: LayerNode[], edges: LayerEdge[] = []): v
 
   const tracks: Array<[number, number][]> = [];
   for (const edge of backEdgeList) {
-    const lo = nodesMap.get(edge.to_node_id)?.layer ?? 0;   // target = earlier layer
-    const hi = nodesMap.get(edge.from_node_id)?.layer ?? 0;  // source = later layer
+    const lo = nodesMap.get(edge.to_node_id)?.layer ?? 0;  // target = earlier layer
+    const hi = nodesMap.get(edge.from_node_id)?.layer ?? 0; // source = later layer
     const freeTrack = tracks.findIndex((intervals) =>
       intervals.every(([a, b]) => hi < a || lo > b)
     );
@@ -117,7 +97,7 @@ export const getDynamicLayers = (nodes: LayerNode[], edges: LayerEdge[] = []): v
   }
 };
 
-// Helper to construct an SVG path string from orthogonal points with rounded corners
+/** Constructs an SVG path string from orthogonal waypoints with rounded corners. */
 export function getRoundedOrthogonalPath(points: { x: number; y: number }[], radius = 20): string {
   if (points.length < 2) return '';
   if (points.length === 2) {
@@ -158,8 +138,12 @@ export function getRoundedOrthogonalPath(points: { x: number; y: number }[], rad
   return path;
 }
 
-// Computes the rounded orthogonal backlink route path.
-// `track` is pre-computed in getDynamicLayers and stored on edge.data — no graph traversal needed.
+/**
+ * Computes the rounded orthogonal path for a back (feedback) edge.
+ *
+ * Routes via the right perimeter of the source layer and below the lowest node in that layer,
+ * using pre-computed `track` and sub-lane indices to avoid overlap between concurrent back edges.
+ */
 export const getBacklinkPath = (
   id: string,
   source: string,
