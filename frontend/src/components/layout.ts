@@ -12,56 +12,6 @@ const ELK_LAYOUT_OPTIONS = {
   'elk.layered.spacing.nodeNodeBetweenLayers': '60',
 };
 
-// Generates deterministic BFS traversal node list
-const getDeterministicBFSOrder = (
-  nodes: AppFlowNode[],
-  edges: AppFlowEdge[],
-  expressions: ApiExpression[],
-  nodesMap: Map<string, AppFlowNode>
-): AppFlowNode[] => {
-  const startNodes = nodes.filter((n) => n.data?.node?.node_type === 'START');
-  const orderedNodes: AppFlowNode[] = [];
-  const visited = new Set<string>();
-  const queue: AppFlowNode[] = startNodes.length > 0 ? [...startNodes] : (nodes[0] ? [nodes[0]] : []);
-
-  while (queue.length > 0) {
-    const current = queue.shift()!;
-    if (visited.has(current.id)) continue;
-    visited.add(current.id);
-    orderedNodes.push(current);
-
-    const outgoingEdges = edges.filter((e) => e.source === current.id);
-    const currentExpressions = expressions.filter((e) => e.node_id === current.id);
-
-    outgoingEdges.sort((a, b) => {
-      const idxA = a.sourceHandle ? currentExpressions.findIndex((expr) => expr.id === a.sourceHandle) : -1;
-      const idxB = b.sourceHandle ? currentExpressions.findIndex((expr) => expr.id === b.sourceHandle) : -1;
-      if (idxA !== idxB) return idxA - idxB;
-
-      const nodeA = nodesMap.get(a.target);
-      const nodeB = nodesMap.get(b.target);
-      return nodeA && nodeB
-        ? (nodeA.data?.node?.iid ?? 0) - (nodeB.data?.node?.iid ?? 0) || nodeA.id.localeCompare(nodeB.id)
-        : a.target.localeCompare(b.target);
-    });
-
-    for (const edge of outgoingEdges) {
-      const childNode = nodesMap.get(edge.target);
-      if (childNode && !visited.has(edge.target)) {
-        queue.push(childNode);
-      }
-    }
-  }
-
-  // Append remaining unvisited nodes deterministically sorted
-  nodes
-    .filter((node) => !visited.has(node.id))
-    .sort((a, b) => (a.data?.node?.label || '').localeCompare(b.data?.node?.label || '') || a.id.localeCompare(b.id))
-    .forEach((node) => orderedNodes.push(node));
-
-  return orderedNodes;
-};
-
 // Maps node models to ELK-compatible node structures
 const buildElkNodes = (
   orderedNodes: AppFlowNode[],
@@ -134,24 +84,25 @@ const buildElkNodes = (
 // Back-edges (edge.data.isBack) are excluded so ELK's layered algorithm doesn't see cycles.
 const buildElkEdges = (
   edges: AppFlowEdge[],
-  orderedNodes: AppFlowNode[],
+  nodesMap: Map<string, AppFlowNode>,
   expressions: ApiExpression[]
 ): ElkExtendedEdge[] => {
   return edges
     .filter((edge) => !edge.data?.isBack)
     .sort((a, b) => {
-      const idxSourceA = orderedNodes.findIndex((n) => n.id === a.source);
-      const idxSourceB = orderedNodes.findIndex((n) => n.id === b.source);
-      if (idxSourceA !== idxSourceB) return idxSourceA - idxSourceB;
+      // Sort by source visitOrder, then expression idx, then target visitOrder — all O(1) lookups.
+      const voA = nodesMap.get(a.source)?.data?.visitOrder ?? 0;
+      const voB = nodesMap.get(b.source)?.data?.visitOrder ?? 0;
+      if (voA !== voB) return voA - voB;
 
       const exprs = expressions.filter((e) => e.node_id === a.source);
       const idxA = a.sourceHandle ? exprs.findIndex((expr) => expr.id === a.sourceHandle) : -1;
       const idxB = b.sourceHandle ? exprs.findIndex((expr) => expr.id === b.sourceHandle) : -1;
       if (idxA !== idxB) return idxA - idxB;
 
-      const idxTargetA = orderedNodes.findIndex((n) => n.id === a.target);
-      const idxTargetB = orderedNodes.findIndex((n) => n.id === b.target);
-      return idxTargetA - idxTargetB;
+      const voTA = nodesMap.get(a.target)?.data?.visitOrder ?? 0;
+      const voTB = nodesMap.get(b.target)?.data?.visitOrder ?? 0;
+      return voTA - voTB;
     })
     .map((edge) => ({
       id: edge.id,
@@ -173,10 +124,12 @@ export const getLayoutedElements = async (
 ): Promise<{ nodes: AppFlowNode[] }> => {
   const nodesMap = new Map(nodes.map((node) => [node.id, node]));
 
-  const orderedNodes = getDeterministicBFSOrder(nodes, edges, expressions, nodesMap);
+  // Order nodes by visitOrder pre-computed in getDynamicLayers — replaces the BFS traversal.
+  const orderedNodes = [...nodes].sort(
+    (a, b) => (a.data?.visitOrder ?? 0) - (b.data?.visitOrder ?? 0)
+  );
   const elkNodes = buildElkNodes(orderedNodes, edges, expressions);
-
-  const elkEdges = buildElkEdges(edges, orderedNodes, expressions);
+  const elkEdges = buildElkEdges(edges, nodesMap, expressions);
 
   const graph: ElkNode = {
     id: 'root',

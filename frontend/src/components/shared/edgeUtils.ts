@@ -7,55 +7,55 @@
  */
 import type { ApiEdge, ApiNode, AppFlowEdge, AppFlowNode } from '../types';
 
+// Augmented edge type carrying pre-indexed expression order and pre-computed routing fields.
+type LayerEdge = ApiEdge & { expressionIdx: number; isBack?: boolean; track?: number };
 
-// Helper to sort nodes deterministically by iid and id
-export const sortNodesByIdAndIid = (a: ApiNode, b: ApiNode): number => {
-  return (a.iid ?? 0) - (b.iid ?? 0) || a.id.localeCompare(b.id);
-};
+// Augmented node type carrying pre-computed layer depth and DFS visit order.
+type LayerNode = ApiNode & { layer?: number; visitOrder?: number };
 
 /**
- * Assigns topological layer depths and detects back edges in a directed graph.
+ * Assigns topological layer depths, visit order, and back-edge routing tracks in a single pass.
  *
- * Runs a DFS to produce a topological ordering and identify back edges (cycles).
- * Then propagates layer depths along the topo order so each node sits one level
- * deeper than its furthest ancestor, ignoring back edges.
+ * 1. Builds an adjacency list sorted by `expressionIdx` — the canonical child ordering defined
+ *    by the parent node's expression indices. This fixes the previous bug where UUID string
+ *    comparison or `iid` were used as ordering proxies.
+ * 2. Runs DFS to produce a topological order and identify back edges (cycles).
+ * 3. Propagates layer depths along the topo order.
+ * 4. Assigns a `visitOrder` to each node (its index in the final topo order) — used by the
+ *    layout engine instead of a separate BFS traversal.
+ * 5. Assigns a `track` index to each back edge using greedy interval coloring. The sort
+ *    tie-breaker uses `visitOrder` instead of Y coordinates, making this fully computable
+ *    before layout runs.
  *
- * Mutates nodes in-place (`layer`) and edges in-place (`isBack`).
+ * All mutations are in-place on the passed arrays.
  *
  * @param nodes - Graph nodes; START nodes are visited first to anchor the ordering.
- * @param edges - Graph edges; back edges (forming cycles) are flagged with `isBack: true`.
+ * @param edges - Graph edges with `expressionIdx` pre-indexed from expression `idx` values.
  */
-export const getDynamicLayers = (
-  nodes: (ApiNode & { layer?: number })[],
-  edges: (ApiEdge & { isBack?: boolean })[] = []
-): void => {
+export const getDynamicLayers = (nodes: LayerNode[], edges: LayerEdge[] = []): void => {
   const nodesMap = new Map(nodes.map((n) => [n.id, Object.assign(n, { layer: 0 })]));
 
-  const adj = new Map<string, ApiEdge[]>();
+  // Build adjacency list sorted by expressionIdx — the correct child ordering key.
+  const adj = new Map<string, LayerEdge[]>();
   for (const edge of edges) {
     const list = adj.get(edge.from_node_id) ?? [];
     if (!adj.has(edge.from_node_id)) adj.set(edge.from_node_id, list);
     list.push(edge);
   }
   for (const [, list] of adj) {
-    list.sort((a, b) => {
-      const hA = a.from_expression_id ?? String(a.handle_index ?? 0);
-      const hB = b.from_expression_id ?? String(b.handle_index ?? 0);
-      if (hA !== hB) return hA.localeCompare(hB);
-      const tA = nodesMap.get(a.to_node_id);
-      const tB = nodesMap.get(b.to_node_id);
-      return tA && tB ? sortNodesByIdAndIid(tA, tB) : a.to_node_id.localeCompare(b.to_node_id);
-    });
+    list.sort((a, b) => a.expressionIdx - b.expressionIdx || a.id.localeCompare(b.id));
   }
 
-  // DFS only for back-edge detection + topo order
+  // DFS for back-edge detection + topo order.
   const visited = new Set<string>();
   const visiting = new Set<string>();
   const backEdges = new Set<string>();
   const topoOrder: string[] = [];
 
+  let visitCounter = 0;
   const dfs = (nodeId: string) => {
     visiting.add(nodeId);
+    nodesMap.get(nodeId)!.visitOrder = visitCounter++;  // pre-order: assign on entry
     for (const edge of adj.get(nodeId) ?? []) {
       if (visiting.has(edge.to_node_id)) backEdges.add(edge.id);
       else if (!visited.has(edge.to_node_id)) dfs(edge.to_node_id);
@@ -65,16 +65,17 @@ export const getDynamicLayers = (
     topoOrder.push(nodeId);
   };
 
+  // START nodes are seeded first; all others follow — both groups sorted by id for stability.
   const sorted = [
-    ...nodes.filter((n) => n.node_type === "START").sort(sortNodesByIdAndIid),
-    ...nodes.filter((n) => n.node_type !== "START").sort(sortNodesByIdAndIid),
+    ...nodes.filter((n) => n.node_type === 'START').sort((a, b) => a.id.localeCompare(b.id)),
+    ...nodes.filter((n) => n.node_type !== 'START').sort((a, b) => a.id.localeCompare(b.id)),
   ];
   for (const n of sorted) {
     if (!visited.has(n.id)) dfs(n.id);
   }
   topoOrder.reverse();
 
-  // Kahn-style layer propagation (no BFS queue needed — topo order does it)
+  // Kahn-style layer propagation along topo order.
   for (const nodeId of topoOrder) {
     const node = nodesMap.get(nodeId)!;
     for (const edge of adj.get(nodeId) ?? []) {
@@ -84,53 +85,36 @@ export const getDynamicLayers = (
     }
   }
 
+
+  // Assign isBack in-place.
   for (const edge of edges) edge.isBack = backEdges.has(edge.id);
-};
 
-/**
- * Assigns a unique track index to each backedge using an Interval Coloring (greedy channel routing) algorithm.
- * Shorter loops (inner loops) are processed first to receive lower track indexes.
- * Ties are broken using source/target Y positions (descending) to avoid vertical crossing.
- * Reads layer from node.data.layer (pre-computed during layout) — no separate layerMap needed.
- */
-export const assignBackLinkTracks = (
-  edges: AppFlowEdge[],
-  nodes: AppFlowNode[],
-): Map<string, number> => {
-  const nodesMap = new Map(nodes.map((n) => [n.id, n]));
-  const getLayer = (nodeId: string) => nodesMap.get(nodeId)?.data?.layer ?? 0;
+  // Assign track index to each back edge using greedy interval coloring.
+  // Sort: shorter spans first; ties broken by source visitOrder descending
+  // (higher visitOrder = lower on screen = processed first for lower track numbers).
+  const backEdgeList = edges.filter((e) => e.isBack);
+  backEdgeList.sort((a, b) => {
+    const fromA = nodesMap.get(a.from_node_id)!, fromB = nodesMap.get(b.from_node_id)!;
+    const toA = nodesMap.get(a.to_node_id)!, toB = nodesMap.get(b.to_node_id)!;
+    const lenA = (fromA.layer ?? 0) - (toA.layer ?? 0);
+    const lenB = (fromB.layer ?? 0) - (toB.layer ?? 0);
+    return lenA - lenB
+      || (fromB.visitOrder ?? 0) - (fromA.visitOrder ?? 0)
+      || (toB.visitOrder ?? 0) - (toA.visitOrder ?? 0)
+      || a.id.localeCompare(b.id);
+  });
 
-  const backEdges = edges
-    .filter((e) => e.data?.isBack)
-    .sort((a, b) => {
-      const lenA = getLayer(a.source) - getLayer(a.target);
-      const lenB = getLayer(b.source) - getLayer(b.target);
-      const sA = nodesMap.get(a.source)!, sB = nodesMap.get(b.source)!;
-      const tA = nodesMap.get(a.target)!, tB = nodesMap.get(b.target)!;
-      return lenA - lenB
-        || sB.position.y - sA.position.y
-        || tB.position.y - tA.position.y
-        || a.id.localeCompare(b.id);
-    });
-
-  const trackMap = new Map<string, number>();
-  // Each entry is the set of [target, source] layer intervals occupying that track
   const tracks: Array<[number, number][]> = [];
-
-  for (const edge of backEdges) {
-    const lo = getLayer(edge.target);  // target is the earlier layer (loop goes back)
-    const hi = getLayer(edge.source);
-
+  for (const edge of backEdgeList) {
+    const lo = nodesMap.get(edge.to_node_id)?.layer ?? 0;   // target = earlier layer
+    const hi = nodesMap.get(edge.from_node_id)?.layer ?? 0;  // source = later layer
     const freeTrack = tracks.findIndex((intervals) =>
-      intervals.every(([a, b]) => hi < a || lo > b)  // no overlap
+      intervals.every(([a, b]) => hi < a || lo > b)
     );
-
     const track = freeTrack !== -1 ? freeTrack : tracks.push([]) - 1;
     tracks[track].push([lo, hi]);
-    trackMap.set(edge.id, track);
+    edge.track = track;
   }
-
-  return trackMap;
 };
 
 // Helper to construct an SVG path string from orthogonal points with rounded corners
@@ -175,7 +159,7 @@ export function getRoundedOrthogonalPath(points: { x: number; y: number }[], rad
 }
 
 // Computes the rounded orthogonal backlink route path.
-// Reads layer from node.data.layer (pre-computed during layout) — no layerMap parameter needed.
+// `track` is pre-computed in getDynamicLayers and stored on edge.data — no graph traversal needed.
 export const getBacklinkPath = (
   id: string,
   source: string,
@@ -190,8 +174,7 @@ export const getBacklinkPath = (
   const nodesMap = new Map(allNodes.map((n) => [n.id, n]));
   const getLayer = (nodeId: string) => nodesMap.get(nodeId)?.data?.layer ?? 0;
 
-  const trackMap = assignBackLinkTracks(allEdges, allNodes);
-  const track = trackMap.get(id) ?? 0;
+  const track = allEdges.find((e) => e.id === id)?.data?.track ?? 0;
 
   const sLayer = getLayer(source);
   const tLayer = getLayer(target);
@@ -202,7 +185,7 @@ export const getBacklinkPath = (
 
   const getSubLaneIndex = (nodeField: 'source' | 'target', layerTarget: number) => {
     const filtered = allEdges.filter((e) => e.data?.isBack && getLayer(e[nodeField]) === layerTarget);
-    const sorted = [...filtered].sort((a, b) => (trackMap.get(a.id) ?? 0) - (trackMap.get(b.id) ?? 0));
+    const sorted = [...filtered].sort((a, b) => (a.data?.track ?? 0) - (b.data?.track ?? 0));
     return Math.max(0, sorted.findIndex((e) => e.id === id));
   };
 

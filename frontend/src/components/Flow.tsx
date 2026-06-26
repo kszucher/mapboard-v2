@@ -83,6 +83,7 @@ const FlowContent = ({
         data: {
           node: n,
           layer: n.layer,
+          visitOrder: n.visitOrder,
           expressions: nodeExpressions,
         },
         measured: state.measured,
@@ -90,7 +91,7 @@ const FlowContent = ({
     });
   }, [graphData, layoutData.positions, nodeState]);
 
-  // derived edges — isBack comes from graphData (pre-computed in query select)
+  // derived edges — isBack and track come from graphData (pre-computed in query select)
   const edges = useMemo<AppFlowEdge[]>(() => {
     if (!graphData) return [];
     const nodeIds = new Set(graphData.nodes.map(n => n.id));
@@ -104,6 +105,7 @@ const FlowContent = ({
       })
       .map(edge => {
         const isBack = edge.isBack ?? false;
+        const track = edge.track ?? 0;
         const isLayoutReady = !!layoutData.positions[edge.from_node_id] && !!layoutData.positions[edge.to_node_id];
 
         return {
@@ -113,7 +115,7 @@ const FlowContent = ({
           sourceHandle: edge.from_expression_id ?? String(edge.handle_index),
           type: 'custom' as const,
           animated: true,
-          data: { isBack },
+          data: { isBack, track },
           style: {
             stroke: '#fff',
             strokeWidth: 2,

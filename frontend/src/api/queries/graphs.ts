@@ -27,8 +27,16 @@ export const graphQueries = {
     enabled: Boolean(graphId),
     select: (data) => {
       if (!data) return data;
-      const nodes = data.nodes.map((n) => ({ ...n, layer: 0 }));
-      const edges = data.edges.map((e) => ({ ...e, isBack: false }));
+      const exprIdx = new Map(data.expressions.map((e) => [e.id, e.idx]));
+      const nodes = data.nodes.map((n) => ({ ...n, layer: 0, visitOrder: 0 }));
+      const edges = data.edges.map((e) => ({
+        ...e,
+        isBack: false,
+        track: 0,
+        expressionIdx: e.from_expression_id != null
+          ? (exprIdx.get(e.from_expression_id) ?? 0)
+          : (e.handle_index ?? 0),
+      }));
       getDynamicLayers(nodes, edges);
       return {
         ...data,
