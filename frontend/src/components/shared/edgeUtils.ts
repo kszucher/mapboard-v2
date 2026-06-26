@@ -14,14 +14,41 @@ export const sortNodesByIdAndIid = (a: ApiNode, b: ApiNode): number => {
 };
 
 /**
- * Computes topological layers for each node deterministically using a single DFS pass
- * that simultaneously breaks cycle back-edges and generates topological finish order.
+ * Assigns topological layer depths and detects back edges in a directed graph.
+ *
+ * Runs a DFS to produce a topological ordering and identify back edges (cycles).
+ * Then propagates layer depths along the topo order so each node sits one level
+ * deeper than its furthest ancestor, ignoring back edges.
+ *
+ * Mutates nodes in-place (`layer`) and edges in-place (`isBack`).
+ *
+ * @param nodes - Graph nodes; START nodes are visited first to anchor the ordering.
+ * @param edges - Graph edges; back edges (forming cycles) are flagged with `isBack: true`.
  */
 export const getDynamicLayers = (
-  nodes: ApiNode[],
-  edges: ApiEdge[] = []
-): Map<string, number> => {
-  const nodesMap = new Map(nodes.map((n) => [n.id, n]));
+  nodes: (ApiNode & { layer?: number })[],
+  edges: (ApiEdge & { isBack?: boolean })[] = []
+): void => {
+  const nodesMap = new Map(nodes.map((n) => [n.id, Object.assign(n, { layer: 0 })]));
+
+  const adj = new Map<string, ApiEdge[]>();
+  for (const edge of edges) {
+    const list = adj.get(edge.from_node_id) ?? [];
+    if (!adj.has(edge.from_node_id)) adj.set(edge.from_node_id, list);
+    list.push(edge);
+  }
+  for (const [, list] of adj) {
+    list.sort((a, b) => {
+      const hA = a.from_expression_id ?? String(a.handle_index ?? 0);
+      const hB = b.from_expression_id ?? String(b.handle_index ?? 0);
+      if (hA !== hB) return hA.localeCompare(hB);
+      const tA = nodesMap.get(a.to_node_id);
+      const tB = nodesMap.get(b.to_node_id);
+      return tA && tB ? sortNodesByIdAndIid(tA, tB) : a.to_node_id.localeCompare(b.to_node_id);
+    });
+  }
+
+  // DFS only for back-edge detection + topo order
   const visited = new Set<string>();
   const visiting = new Set<string>();
   const backEdges = new Set<string>();
@@ -29,50 +56,36 @@ export const getDynamicLayers = (
 
   const dfs = (nodeId: string) => {
     visiting.add(nodeId);
-
-    const outgoing = edges.filter((e) => e.from_node_id === nodeId);
-    outgoing.sort((a, b) => {
-      const handleA = a.from_expression_id ?? String(a.handle_index ?? 0);
-      const handleB = b.from_expression_id ?? String(b.handle_index ?? 0);
-      if (handleA !== handleB) return handleA.localeCompare(handleB);
-
-      const targetA = nodesMap.get(a.to_node_id);
-      const targetB = nodesMap.get(b.to_node_id);
-      return targetA && targetB ? sortNodesByIdAndIid(targetA, targetB) : a.to_node_id.localeCompare(b.to_node_id);
-    });
-
-    for (const edge of outgoing) {
-      if (visiting.has(edge.to_node_id)) {
-        backEdges.add(edge.id);
-      } else if (!visited.has(edge.to_node_id)) {
-        dfs(edge.to_node_id);
-      }
+    for (const edge of adj.get(nodeId) ?? []) {
+      if (visiting.has(edge.to_node_id)) backEdges.add(edge.id);
+      else if (!visited.has(edge.to_node_id)) dfs(edge.to_node_id);
     }
-
     visiting.delete(nodeId);
     visited.add(nodeId);
-    topoOrder.unshift(nodeId);
+    topoOrder.push(nodeId);
   };
 
-  const sortedStart = nodes.filter((n) => n.node_type === 'START').sort(sortNodesByIdAndIid);
-  const sortedOther = nodes.filter((n) => n.node_type !== 'START').sort(sortNodesByIdAndIid);
-  [...sortedStart, ...sortedOther].forEach((n) => {
+  const sorted = [
+    ...nodes.filter((n) => n.node_type === "START").sort(sortNodesByIdAndIid),
+    ...nodes.filter((n) => n.node_type !== "START").sort(sortNodesByIdAndIid),
+  ];
+  for (const n of sorted) {
     if (!visited.has(n.id)) dfs(n.id);
-  });
+  }
+  topoOrder.reverse();
 
-  // Calculate topological depths along the topological order
-  const layerMap = new Map(nodes.map((n) => [n.id, 0]));
+  // Kahn-style layer propagation (no BFS queue needed — topo order does it)
   for (const nodeId of topoOrder) {
-    const currentLayer = layerMap.get(nodeId) || 0;
-    const outgoing = edges.filter((e) => e.from_node_id === nodeId && !backEdges.has(e.id));
-    for (const edge of outgoing) {
-      layerMap.set(edge.to_node_id, Math.max(layerMap.get(edge.to_node_id) || 0, currentLayer + 1));
+    const node = nodesMap.get(nodeId)!;
+    for (const edge of adj.get(nodeId) ?? []) {
+      if (backEdges.has(edge.id)) continue;
+      const target = nodesMap.get(edge.to_node_id);
+      if (target) target.layer = Math.max(target.layer!, node.layer! + 1);
     }
   }
 
-  return layerMap;
+  for (const edge of edges) edge.isBack = backEdges.has(edge.id);
 };
-
 
 /**
  * Assigns a unique track index to each backedge using an Interval Coloring (greedy channel routing) algorithm.
