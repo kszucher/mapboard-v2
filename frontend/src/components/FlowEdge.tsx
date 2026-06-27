@@ -21,9 +21,9 @@ function FlowEdge({
 
   if (sections && sections.length > 0) {
     path = sections
-      .map((section: any) => {
+      .map((section) => {
         // 1. Extract ELK's global routing corners
-        const bendPoints = (section.bendPoints || []).map((p: any) => ({ x: p.x, y: p.y }));
+        const bendPoints = (section.bendPoints || []).map((p) => ({ x: p.x, y: p.y }));
 
         // 2. ABSORB THE CSS DISCREPANCY
         // Force ELK's first and last horizontal routing lanes to shift up/down
@@ -46,7 +46,7 @@ function FlowEdge({
       .join(' ');
   }
 
-  return <BaseEdge path={path} markerEnd={markerEnd} style={style} />;
+  return <BaseEdge path={path} markerEnd={markerEnd} style={style}/>;
 }
 
 export default memo(FlowEdge);

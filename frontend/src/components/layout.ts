@@ -25,13 +25,26 @@ const ELK_LAYOUT_OPTIONS: LayoutOptions = {
   'org.eclipse.elk.layered.thoroughness': '20',
 };
 
-const findHandleBounds = (list: any[] | undefined, handleId: string | null | undefined, def: string) =>
-  list?.find((h: any) => !handleId || handleId === def ? !h.id || h.id === def : h.id === handleId);
+interface XYHandleBounds {
+  id?: string | null;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+interface NodeHandleBounds {
+  target?: XYHandleBounds[];
+  source?: XYHandleBounds[];
+}
+
+const findHandleBounds = (list: XYHandleBounds[] | undefined, handleId: string | null | undefined, def: string) =>
+  list?.find((h) => (h.id || def) === (handleId || def));
 
 const getOffset = (i: number, len: number) => len > 1 ? (i - (len - 1) / 2) * 10 : 0;
 
 const buildElkNodes = (
-  orderedNodes: (AppFlowNode & { handleBounds?: any })[],
+  orderedNodes: (AppFlowNode & { handleBounds?: NodeHandleBounds })[],
   edges: AppFlowEdge[]
 ): ElkNode[] => {
   const incomingMap: Record<string, AppFlowEdge[]> = {};
@@ -95,15 +108,13 @@ const buildElkNodes = (
       });
     });
 
-    const nodeLayoutOptions: any = { 'elk.portConstraints': 'FIXED_POS' };
+    const nodeLayoutOptions: LayoutOptions = { 'elk.portConstraints': 'FIXED_POS' };
     if (nodeType === 'START') nodeLayoutOptions['org.eclipse.elk.layered.layering.layerConstraint'] = 'FIRST';
 
     return {
       id: node.id,
       width: nodeWidth,
       height: nodeHeight,
-      x: 0,
-      y: 0,
       ports,
       layoutOptions: nodeLayoutOptions,
     };
@@ -127,13 +138,13 @@ const buildElkEdges = (edges: AppFlowEdge[]): ElkExtendedEdge[] => {
  * Computes deterministic node positions and edge layout sections using ELK.
  */
 export const getLayoutedElements = async (
-  nodes: (AppFlowNode & { handleBounds?: any })[],
+  nodes: (AppFlowNode & { handleBounds?: NodeHandleBounds })[],
   edges: AppFlowEdge[]
 ): Promise<{
   positions: Record<string, { x: number; y: number }>;
   edgeSections: Record<string, ElkExtendedEdge>;
 }> => {
-  const orderedNodes = [...nodes].sort((a, b) => 
+  const orderedNodes = [...nodes].sort((a, b) =>
     (b.data?.node?.node_type === 'START' ? 1 : 0) - (a.data?.node?.node_type === 'START' ? 1 : 0)
   );
 

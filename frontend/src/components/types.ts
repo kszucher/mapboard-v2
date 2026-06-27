@@ -1,4 +1,5 @@
 import type { Edge, Node } from '@xyflow/react';
+import type { ElkEdgeSection } from 'elkjs';
 import type { components } from '../api/generated/schema';
 
 export type ApiNode = components['schemas']['NodeRead'];
@@ -17,5 +18,5 @@ export type AppFlowEdge = Edge<{
   edge?: ApiEdge;
   isBack?: boolean;
   track?: number;
-  sections?: any[];
+  sections?: ElkEdgeSection[];
 }, 'custom'>;

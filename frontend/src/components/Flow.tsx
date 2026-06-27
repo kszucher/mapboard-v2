@@ -7,6 +7,7 @@ import {
   useReactFlow,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import type { ElkExtendedEdge } from 'elkjs';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useCreateEdge, useDeleteEdge } from '../api/mutations';
 import { useGraphFlow } from '../api/queries';
@@ -47,7 +48,7 @@ const FlowContent = ({
   const [nodeState, setNodeState] = useState<Record<string, Partial<AppFlowNode>>>({});
   const [layoutData, setLayoutData] = useState<{
     positions: Record<string, { x: number; y: number }>;
-    edgeSections: Record<string, any>;
+    edgeSections: Record<string, ElkExtendedEdge>;
   }>({ positions: {}, edgeSections: {} });
 
   const [isReady, setIsReady] = useState(false);
