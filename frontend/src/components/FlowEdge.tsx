@@ -1,4 +1,4 @@
-import { BaseEdge, type EdgeProps, getSmoothStepPath } from '@xyflow/react';
+import { BaseEdge, type EdgeProps } from '@xyflow/react';
 import { memo } from 'react';
 import { getRoundedOrthogonalPath } from './shared/edgeUtils';
 import type { AppFlowEdge } from './types';
@@ -8,43 +8,26 @@ import type { AppFlowEdge } from './types';
  * Renders edges using ELK's calculated sections/bendpoints, falling back to Bezier paths.
  */
 function FlowEdge({
-  sourceX,
-  sourceY,
-  targetX,
-  targetY,
-  sourcePosition,
-  targetPosition,
   style = {},
   markerEnd,
   data,
 }: EdgeProps<AppFlowEdge>) {
   const sections = data?.sections;
   let path = '';
+
   if (sections && sections.length > 0) {
     path = sections
       .map((section: any) => {
-        const bendPoints = (section.bendPoints || []).map((p: any) => ({ x: p.x, y: p.y }));
-        if (bendPoints.length > 0) {
-          bendPoints[0].y = sourceY;
-          bendPoints[bendPoints.length - 1].y = targetY;
-        }
+        // Use ELK's EXACT mathematically calculated start, bend, and end points
         const points = [
-          { x: sourceX, y: sourceY },
-          ...bendPoints,
-          { x: targetX, y: targetY },
+          { x: section.startPoint.x, y: section.startPoint.y },
+          ...(section.bendPoints || []).map((p: any) => ({ x: p.x, y: p.y })),
+          { x: section.endPoint.x, y: section.endPoint.y },
         ];
+
         return getRoundedOrthogonalPath(points, 30);
       })
       .join(' ');
-  } else {
-    path = getSmoothStepPath({
-      sourceX,
-      sourceY,
-      sourcePosition,
-      targetX,
-      targetY,
-      targetPosition,
-    })[0];
   }
 
   return <BaseEdge path={path} markerEnd={markerEnd} style={style} />;
