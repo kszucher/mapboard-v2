@@ -22,11 +22,9 @@ export const graphQueries = {
         params: { path: { graph_id: graphId ?? '' } },
       });
       if ('error' in res) throw res.error;
-      return res.data;
-    },
-    enabled: Boolean(graphId),
-    select: (data) => {
+      const data = res.data;
       if (!data) return data;
+
       const exprIdx = new Map(data.expressions.map((e) => [e.id, e.idx]));
       const nodes = data.nodes.map((n) => ({ ...n, layer: 0, visitOrder: 0 }));
       const edges = data.edges.map((e) => ({
@@ -38,12 +36,14 @@ export const graphQueries = {
           : (e.handle_index ?? 0),
       }));
       getDynamicLayers(nodes, edges);
+      console.log('Transforming graph flow data once in queryFn:', { ...data, nodes, edges });
       return {
         ...data,
         nodes,
         edges,
       };
     },
+    enabled: Boolean(graphId),
   }),
 };
 
