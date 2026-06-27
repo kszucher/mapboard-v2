@@ -25,8 +25,8 @@ const ELK_LAYOUT_OPTIONS: LayoutOptions = {
   'org.eclipse.elk.layered.thoroughness': '20',
 };
 
-const getSourceHandleId = (edge: AppFlowEdge, node: AppFlowNode | undefined, exprs: ApiExpression[]) =>
-  edge.sourceHandle ?? (node?.data?.node?.node_type === 'START' ? '0' : (exprs.filter((e) => e.node_id === edge.source)[0]?.id ?? '0'));
+const getSourceHandleId = (edge: AppFlowEdge, node: AppFlowNode | undefined, nodeExprs: ApiExpression[]) =>
+  edge.sourceHandle ?? (node?.data?.node?.node_type === 'START' ? '0' : (nodeExprs[0]?.id ?? '0'));
 
 const findHandleBounds = (list: any[] | undefined, handleId: string | null | undefined, def: string) =>
   list?.find((h: any) => !handleId || handleId === def ? !h.id || h.id === def : h.id === handleId);
@@ -35,20 +35,26 @@ const getOffset = (i: number, len: number) => len > 1 ? (i - (len - 1) / 2) * 10
 
 const buildElkNodes = (
   orderedNodes: (AppFlowNode & { handleBounds?: any })[],
-  edges: AppFlowEdge[],
-  expressions: ApiExpression[]
+  edges: AppFlowEdge[]
 ): ElkNode[] => {
+  const incomingMap: Record<string, AppFlowEdge[]> = {};
+  const outgoingMap: Record<string, AppFlowEdge[]> = {};
+  edges.forEach((e) => {
+    (incomingMap[e.target] ??= []).push(e);
+    (outgoingMap[e.source] ??= []).push(e);
+  });
+
   return orderedNodes.map((node) => {
     const nodeWidth = node.measured?.width ?? node.width ?? 200;
     const nodeHeight = node.measured?.height ?? node.height ?? 120;
     const nodeType = node.data?.node?.node_type;
     const isSwitch = nodeType === 'LOGICAL_SWITCH' || nodeType === 'AGENTIC_SWITCH';
-    const nodeExpressions = expressions.filter((e) => e.node_id === node.id);
+    const nodeExpressions = node.data?.expressions || [];
     const ports: ElkPort[] = [];
 
     // WEST ports (targets)
     if (nodeType !== 'START') {
-      const incoming = edges.filter((e) => e.target === node.id);
+      const incoming = incomingMap[node.id] || [];
       const handles = Array.from(new Set(incoming.map((e) => e.targetHandle ?? 'target')));
       
       handles.forEach((handleId) => {
@@ -71,7 +77,7 @@ const buildElkNodes = (
     }
 
     // EAST ports (sources)
-    const outgoing = edges.filter((e) => e.source === node.id);
+    const outgoing = outgoingMap[node.id] || [];
     let sourceHandles = Array.from(new Set(outgoing.map((e) => e.sourceHandle).filter(Boolean) as string[]))
       .sort((a, b) => nodeExpressions.findIndex((e) => e.id === a) - nodeExpressions.findIndex((e) => e.id === b));
 
@@ -87,7 +93,7 @@ const buildElkNodes = (
       const x = bounds && bounds.width > 0 ? bounds.x + bounds.width / 2 : nodeWidth;
       const y = bounds && bounds.height > 0 ? bounds.y + bounds.height / 2 : (isSwitch && exprIdx !== -1 ? 66 + exprIdx * 40 : nodeHeight / 2);
 
-      const group = outgoing.filter((e) => getSourceHandleId(e, node, expressions) === handleId);
+      const group = outgoing.filter((e) => getSourceHandleId(e, node, nodeExpressions) === handleId);
 
       if (group.length === 0) {
         ports.push({
@@ -129,12 +135,12 @@ const buildElkNodes = (
 
 const buildElkEdges = (
   edges: AppFlowEdge[],
-  nodes: AppFlowNode[],
-  expressions: ApiExpression[]
+  nodes: AppFlowNode[]
 ): ElkExtendedEdge[] => {
   return edges.map((edge) => {
     const sourceNode = nodes.find((n) => n.id === edge.source);
-    const sourceHandleId = getSourceHandleId(edge, sourceNode, expressions);
+    const nodeExpressions = sourceNode?.data?.expressions || [];
+    const sourceHandleId = getSourceHandleId(edge, sourceNode, nodeExpressions);
     const targetHandleId = edge.targetHandle ?? 'target';
 
     return {
@@ -151,8 +157,7 @@ const buildElkEdges = (
  */
 export const getLayoutedElements = async (
   nodes: (AppFlowNode & { handleBounds?: any })[],
-  edges: AppFlowEdge[],
-  expressions: ApiExpression[] = []
+  edges: AppFlowEdge[]
 ): Promise<{ nodes: AppFlowNode[]; edges: ElkExtendedEdge[] }> => {
   const orderedNodes = [...nodes].sort((a, b) => 
     (b.data?.node?.node_type === 'START' ? 1 : 0) - (a.data?.node?.node_type === 'START' ? 1 : 0)
@@ -161,8 +166,8 @@ export const getLayoutedElements = async (
   const layoutedGraph = await elk.layout({
     id: 'root',
     layoutOptions: ELK_LAYOUT_OPTIONS,
-    children: buildElkNodes(orderedNodes, edges, expressions),
-    edges: buildElkEdges(edges, orderedNodes, expressions),
+    children: buildElkNodes(orderedNodes, edges),
+    edges: buildElkEdges(edges, orderedNodes),
   });
 
   const layoutedNodes = nodes.map((node) => {

@@ -254,7 +254,7 @@ const FlowContent = ({
     if (currentNodes.length === 0 || !currentNodes.every(n => n.measured !== undefined)) return;
 
     let cancelled = false;
-    void getLayoutedElements(currentNodes, currentEdges, graphData.expressions)
+    void getLayoutedElements(currentNodes, currentEdges)
       .then(({ nodes: ln, edges: le }) => {
         if (cancelled) return;
         const nextPositions: Record<string, { x: number; y: number }> = {};
