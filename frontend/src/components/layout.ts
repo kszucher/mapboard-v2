@@ -11,6 +11,9 @@ const ELK_LAYOUT_OPTIONS: LayoutOptions = {
   'elk.edgeRouting': 'ORTHOGONAL',
   'elk.randomSeed': '42',
 
+  // --- GLOBAL PORT CONFIGS ---
+  'elk.portConstraints': 'FIXED_POS',
+
   // Increase spacing to give edges and nodes more breathing room to avoid crossings
   'elk.spacing.nodeNode': '45',
   'elk.layered.spacing.nodeNodeBetweenLayers': '70',
@@ -36,7 +39,7 @@ const ELK_LAYOUT_OPTIONS: LayoutOptions = {
 
 // Maps node models to ELK-compatible node structures
 const buildElkNodes = (
-  orderedNodes: AppFlowNode[],
+  orderedNodes: (AppFlowNode & { handleBounds?: any })[],
   edges: AppFlowEdge[],
   expressions: ApiExpression[]
 ): ElkNode[] => {
@@ -52,13 +55,27 @@ const buildElkNodes = (
     if (nodeType !== 'START') {
       const targetPorts = Array.from(new Set(edges.filter((e) => e.target === node.id).map((e) => e.targetHandle ?? 'target')));
       targetPorts.forEach((handleId) => {
-        const targetY = isSwitch ? 66 : (nodeHeight / 2);
+        let targetY = isSwitch ? 66 : (nodeHeight / 2);
+        let targetX = 0;
+
+        const bounds = node.handleBounds?.target?.find((h: any) => {
+          if (!handleId || handleId === 'target') return h.id === null || h.id === undefined || h.id === 'target';
+          return h.id === handleId;
+        });
+
+        if (bounds && bounds.width > 0 && bounds.height > 0) {
+          targetX = bounds.x + (bounds.width / 2);
+          targetY = bounds.y + (bounds.height / 2);
+        }
+
         ports.push({
-          id: handleId,
-          x: 0,
+          // --- FIX 1: GLOBALLY UNIQUE PORT ID ---
+          id: `${node.id}-target-${handleId}`,
+          x: targetX,
           y: targetY,
-          width: 10,
-          height: 10,
+          width: bounds?.width ?? 10,
+          height: bounds?.height ?? 10,
+          properties: { 'port.side': 'WEST' }
         });
       });
     }
@@ -71,30 +88,37 @@ const buildElkNodes = (
       const baseExprId = nodeExpressions.find(e => e.type === 'BASE')?.id;
       sourcePorts = sourcePorts.filter(handleId => handleId !== baseExprId);
     } else {
-      if (sourcePorts.length === 0) {
-        sourcePorts.push(nodeType === 'START' ? '0' : (nodeExpressions[0]?.id ?? '0'));
-      }
+      if (sourcePorts.length === 0) sourcePorts.push(nodeType === 'START' ? '0' : (nodeExpressions[0]?.id ?? '0'));
     }
 
     sourcePorts.forEach((handleId) => {
       const exprIdx = nodeExpressions.findIndex((expr) => expr.id === handleId);
-      const sourceY = isSwitch && exprIdx !== -1 ? (66 + exprIdx * 40) : (nodeHeight / 2);
+      let sourceY = isSwitch && exprIdx !== -1 ? (66 + exprIdx * 40) : (nodeHeight / 2);
+      let sourceX = nodeWidth;
+
+      const bounds = node.handleBounds?.source?.find((h: any) => {
+        if (!handleId || handleId === '0') return h.id === null || h.id === undefined || h.id === '0' || h.id === handleId;
+        return h.id === handleId;
+      });
+
+      if (bounds && bounds.width > 0 && bounds.height > 0) {
+        sourceX = bounds.x + (bounds.width / 2);
+        sourceY = bounds.y + (bounds.height / 2);
+      }
+
       ports.push({
-        id: handleId,
-        x: nodeWidth,
+        // --- FIX 1: GLOBALLY UNIQUE PORT ID ---
+        id: `${node.id}-source-${handleId}`,
+        x: sourceX,
         y: sourceY,
-        width: 10,
-        height: 10,
+        width: bounds?.width ?? 10,
+        height: bounds?.height ?? 10,
+        properties: { 'port.side': 'EAST' }
       });
     });
 
-    const nodeLayoutOptions: any = {
-      'elk.portConstraints': 'FIXED_POS',
-    };
-
-    if (nodeType === 'START') {
-      nodeLayoutOptions['org.eclipse.elk.layered.layering.layerConstraint'] = 'FIRST';
-    }
+    const nodeLayoutOptions: any = { 'elk.portConstraints': 'FIXED_POS' };
+    if (nodeType === 'START') nodeLayoutOptions['org.eclipse.elk.layered.layering.layerConstraint'] = 'FIRST';
 
     return {
       id: node.id,
@@ -109,22 +133,44 @@ const buildElkNodes = (
 };
 
 // Maps all edges directly to ELK-compatible edge structures
-const buildElkEdges = (edges: AppFlowEdge[]): ElkExtendedEdge[] => {
-  return edges.map((edge) => ({
-    id: edge.id,
-    sources: [edge.source],
-    targets: [edge.target],
-    sourcePort: edge.sourceHandle ?? undefined,
-    targetPort: edge.targetHandle ?? 'target',
-  }));
+const buildElkEdges = (
+  edges: AppFlowEdge[],
+  nodes: AppFlowNode[],
+  expressions: ApiExpression[]
+): ElkExtendedEdge[] => {
+  return edges.map((edge) => {
+    let sourceHandleId = edge.sourceHandle;
+
+    if (!sourceHandleId) {
+      const sourceNode = nodes.find((n) => n.id === edge.source);
+      const nodeType = sourceNode?.data?.node?.node_type;
+      const nodeExpressions = expressions.filter((e) => e.node_id === edge.source);
+      sourceHandleId = nodeType === 'START' ? '0' : (nodeExpressions[0]?.id ?? '0');
+    }
+
+    const targetHandleId = edge.targetHandle ?? 'target';
+
+    // --- FIX 2: POINT ELK TO THE PORT IDS, NOT THE NODE IDS ---
+    const elkSourcePortId = `${edge.source}-source-${sourceHandleId}`;
+    const elkTargetPortId = `${edge.target}-target-${targetHandleId}`;
+
+    return {
+      id: edge.id,
+      sources: [elkSourcePortId], // Bypasses the Node origin (0,0) entirely
+      targets: [elkTargetPortId], // Bypasses the Node origin (0,0) entirely
+    };
+  });
 };
+
+
+
 
 /**
  * Computes deterministic node positions using the ELK layered layout algorithm.
  * Uses ELK's native cycle breaking and feedback edge routing.
  */
 export const getLayoutedElements = async (
-  nodes: AppFlowNode[],
+  nodes: (AppFlowNode & { handleBounds?: any })[],
   edges: AppFlowEdge[],
   expressions: ApiExpression[] = []
 ): Promise<{ nodes: AppFlowNode[]; edges: ElkExtendedEdge[] }> => {
@@ -138,7 +184,7 @@ export const getLayoutedElements = async (
   });
 
   const elkNodes = buildElkNodes(orderedNodes, edges, expressions);
-  const elkEdges = buildElkEdges(edges);
+  const elkEdges = buildElkEdges(edges, orderedNodes, expressions); // Fixed tracking here
 
   const graph: ElkNode = {
     id: 'root',
