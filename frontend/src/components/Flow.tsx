@@ -255,19 +255,8 @@ const FlowContent = ({
 
     let cancelled = false;
     void getLayoutedElements(currentNodes, currentEdges)
-      .then(({ nodes: ln, edges: le }) => {
-        if (cancelled) return;
-        const nextPositions: Record<string, { x: number; y: number }> = {};
-        ln.forEach(n => {
-          nextPositions[n.id] = n.position;
-        });
-        const nextEdgeSections: Record<string, any> = {};
-        le.forEach(e => {
-          if (e.id) {
-            nextEdgeSections[e.id] = e;
-          }
-        });
-        setLayoutData({ positions: nextPositions, edgeSections: nextEdgeSections });
+      .then((layout) => {
+        if (!cancelled) setLayoutData(layout);
       })
       .catch(err => {
         if (!cancelled) console.error('Failed to auto-layout nodes:', err);
