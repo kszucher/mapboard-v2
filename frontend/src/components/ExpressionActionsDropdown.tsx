@@ -2,7 +2,7 @@ import { ArrowDownIcon, ArrowUpIcon, DotsHorizontalIcon, PlusIcon, TrashIcon } f
 import { DropdownMenu, IconButton } from '@radix-ui/themes';
 import { useCallback, useMemo } from 'react';
 import { useAddConnectedNode, useInsertNode } from '../api/mutations';
-import { useEdges } from '../api/queries';
+import { useGraphFlow } from '../api/queries';
 
 interface ExpressionActionsDropdownProps {
   expressionId: string;
@@ -27,11 +27,11 @@ export const ExpressionActionsDropdown = ({
 }: ExpressionActionsDropdownProps) => {
   const addConnectedNode = useAddConnectedNode();
   const insertNode = useInsertNode();
-  const { data: allEdges } = useEdges(graphId);
+  const { data: graphData } = useGraphFlow(graphId);
 
   const connectedEdge = useMemo(() => {
-    return allEdges?.find(e => e.from_expression_id === expressionId);
-  }, [allEdges, expressionId]);
+    return graphData?.edges?.find(e => e.from_expression_id === expressionId);
+  }, [graphData?.edges, expressionId]);
 
   const hasConnectedNode = !!connectedEdge;
 

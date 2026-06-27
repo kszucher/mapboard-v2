@@ -41,8 +41,8 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   }, [myExpressionsHash, data.node.node_type, id, updateNodeInternals]);
 
   const handleDelete = useCallback(() => {
-    deleteNodeMutation.mutate({ nodeId: data.node.id });
-  }, [data.node.id, deleteNodeMutation]);
+    deleteNodeMutation.mutate({ nodeId: data.node.id, graphId: data.node.graph_id });
+  }, [data.node.id, data.node.graph_id, deleteNodeMutation]);
 
   const handleShortcircuit = useCallback(() => {
     shortcircuitNodeMutation.mutate({ nodeId: data.node.id, graphId: data.node.graph_id });

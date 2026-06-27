@@ -122,8 +122,8 @@ const FlowContent = ({
             opacity: isLayoutReady ? 1 : 0,
             transition: 'opacity 0.2s ease-in-out',
           },
-          deletable: isBack,
-          reconnectable: isBack,
+          deletable: true,
+          reconnectable: true,
         };
       });
   }, [graphData, layoutData.positions]);
@@ -181,11 +181,12 @@ const FlowContent = ({
 
   // Uses layersByNodeId (from graphData) for O(1) lookup
   const isValidConnection = useCallback(
-    (connection: Connection | AppFlowEdge) => {
-      if (!connection.source || !connection.target) return false;
-      const sourceLayer = layersByNodeId[connection.source];
-      const targetLayer = layersByNodeId[connection.target];
-      return sourceLayer !== undefined && targetLayer !== undefined && sourceLayer >= targetLayer;
+    (_connection: Connection | AppFlowEdge) => {
+      return true
+      // if (!connection.source || !connection.target) return false;
+      // const sourceLayer = layersByNodeId[connection.source];
+      // const targetLayer = layersByNodeId[connection.target];
+      // return sourceLayer !== undefined && targetLayer !== undefined && sourceLayer >= targetLayer;
     },
     [layersByNodeId],
   );
