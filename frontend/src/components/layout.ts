@@ -53,10 +53,14 @@ const buildElkNodes = (
 
     // 1. Target ports (input) on the left (WEST)
     if (nodeType !== 'START') {
-      const targetPorts = Array.from(new Set(edges.filter((e) => e.target === node.id).map((e) => e.targetHandle ?? 'target')));
-      targetPorts.forEach((handleId) => {
-        let targetY = isSwitch ? 66 : (nodeHeight / 2);
-        let targetX = 0;
+      const incomingEdges = edges.filter((e) => e.target === node.id);
+      const targetHandles = Array.from(new Set(incomingEdges.map((e) => e.targetHandle ?? 'target')));
+      
+      targetHandles.forEach((handleId) => {
+        const edgesForHandle = incomingEdges.filter((e) => (e.targetHandle ?? 'target') === handleId);
+        
+        let baseTargetY = isSwitch ? 66 : (nodeHeight / 2);
+        let baseTargetX = 0;
 
         const bounds = node.handleBounds?.target?.find((h: any) => {
           if (!handleId || handleId === 'target') return h.id === null || h.id === undefined || h.id === 'target';
@@ -64,24 +68,31 @@ const buildElkNodes = (
         });
 
         if (bounds && bounds.width > 0 && bounds.height > 0) {
-          targetX = bounds.x + (bounds.width / 2);
-          targetY = bounds.y + (bounds.height / 2);
+          baseTargetX = bounds.x + (bounds.width / 2);
+          baseTargetY = bounds.y + (bounds.height / 2);
         }
 
-        ports.push({
-          id: `${node.id}-target-${handleId}`,
-          x: targetX,
-          y: targetY,
-          // --- THE FIX: Collapse the port to a singular point ---
-          width: 0,
-          height: 0,
-          properties: { 'port.side': 'WEST' }
+        // Create a unique port for each incoming edge connected to this target handle
+        edgesForHandle.forEach((edge, index) => {
+          const offset = edgesForHandle.length > 1
+            ? (index - (edgesForHandle.length - 1) / 2) * 10
+            : 0;
+
+          ports.push({
+            id: `${node.id}-target-${handleId}-${edge.id}`,
+            x: baseTargetX,
+            y: baseTargetY + offset,
+            width: 0,
+            height: 0,
+            layoutOptions: { 'port.side': 'WEST' }
+          });
         });
       });
     }
 
     // 2. Source ports (output) on the right (EAST)
-    let sourcePorts = Array.from(new Set(edges.filter((e) => e.source === node.id).map((e) => e.sourceHandle).filter(Boolean) as string[]))
+    const outgoingEdges = edges.filter((e) => e.source === node.id);
+    let sourcePorts = Array.from(new Set(outgoingEdges.map((e) => e.sourceHandle).filter(Boolean) as string[]))
       .sort((a, b) => nodeExpressions.findIndex((expr) => expr.id === a) - nodeExpressions.findIndex((expr) => expr.id === b));
 
     if (isSwitch) {
@@ -106,15 +117,40 @@ const buildElkNodes = (
         sourceY = bounds.y + (bounds.height / 2);
       }
 
-      ports.push({
-        id: `${node.id}-source-${handleId}`,
-        x: sourceX,
-        y: sourceY,
-        // --- THE FIX: Collapse the port to a singular point ---
-        width: 0,
-        height: 0,
-        properties: { 'port.side': 'EAST' }
+      const edgesForHandle = outgoingEdges.filter((edge) => {
+        let edgeSourceHandle = edge.sourceHandle;
+        if (!edgeSourceHandle) {
+          edgeSourceHandle = nodeType === 'START' ? '0' : (nodeExpressions[0]?.id ?? '0');
+        }
+        return edgeSourceHandle === handleId;
       });
+
+      if (edgesForHandle.length === 0) {
+        ports.push({
+          id: `${node.id}-source-${handleId}`,
+          x: sourceX,
+          y: sourceY,
+          width: 0,
+          height: 0,
+          layoutOptions: { 'port.side': 'EAST' }
+        });
+      } else {
+        // Create a unique port for each outgoing edge from this source handle
+        edgesForHandle.forEach((edge, index) => {
+          const offset = edgesForHandle.length > 1
+            ? (index - (edgesForHandle.length - 1) / 2) * 10
+            : 0;
+
+          ports.push({
+            id: `${node.id}-source-${handleId}-${edge.id}`,
+            x: sourceX,
+            y: sourceY + offset,
+            width: 0,
+            height: 0,
+            layoutOptions: { 'port.side': 'EAST' }
+          });
+        });
+      }
     });
 
     const nodeLayoutOptions: any = { 'elk.portConstraints': 'FIXED_POS' };
@@ -150,14 +186,13 @@ const buildElkEdges = (
 
     const targetHandleId = edge.targetHandle ?? 'target';
 
-    // --- FIX 2: POINT ELK TO THE PORT IDS, NOT THE NODE IDS ---
-    const elkSourcePortId = `${edge.source}-source-${sourceHandleId}`;
-    const elkTargetPortId = `${edge.target}-target-${targetHandleId}`;
+    const elkSourcePortId = `${edge.source}-source-${sourceHandleId}-${edge.id}`;
+    const elkTargetPortId = `${edge.target}-target-${targetHandleId}-${edge.id}`;
 
     return {
       id: edge.id,
-      sources: [elkSourcePortId], // Bypasses the Node origin (0,0) entirely
-      targets: [elkTargetPortId], // Bypasses the Node origin (0,0) entirely
+      sources: [elkSourcePortId],
+      targets: [elkTargetPortId],
     };
   });
 };
