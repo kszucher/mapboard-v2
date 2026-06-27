@@ -1,6 +1,6 @@
 import { BaseEdge, type EdgeProps } from '@xyflow/react';
 import { memo } from 'react';
-import { getRoundedOrthogonalPath } from './shared/edgeUtils';
+import { getRoundedOrthogonalPath } from './edgeUtils.ts';
 import type { AppFlowEdge } from './types';
 
 /**
