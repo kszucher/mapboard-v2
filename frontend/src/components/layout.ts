@@ -9,18 +9,21 @@ const ELK_LAYOUT_OPTIONS: LayoutOptions = {
   'elk.algorithm': 'layered',
   'elk.direction': 'RIGHT',
   'elk.edgeRouting': 'ORTHOGONAL',
+  'elk.randomSeed': '42',
+
   'elk.spacing.nodeNode': '20',
   'elk.layered.spacing.nodeNodeBetweenLayers': '40',
   'elk.spacing.edgeEdge': '15',
   'elk.spacing.edgeNode': '20',
   'elk.layered.spacing.edgeEdgeBetweenLayers': '15',
   'elk.layered.spacing.edgeNodeBetweenLayers': '20',
-  'elk.layered.cycleBreaking.strategy': 'MODEL_ORDER',
+
+  // THE NATIVE FIX: Enable Partitioning on the parent graph
+  'elk.partitioning.activate': 'true',
+
+  // You can revert these to standard
   'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
-  'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
-  'elk.layered.crossingMinimization.forceNodeModelOrder': 'true',
-  'elk.layered.crossingMinimization.semiInteractive': 'false',
-  'elk.randomSeed': '42',
+  'elk.layered.nodePlacement.favorStraightEdges': 'false',
 };
 
 // Maps node models to ELK-compatible node structures
@@ -86,6 +89,8 @@ const buildElkNodes = (
       ports,
       layoutOptions: {
         'elk.portConstraints': 'FIXED_POS',
+        // THIS FORCES THE NODE INTO THE EXACT COLUMN:
+        'elk.partitioning.partition': String(node.data?.layer ?? 0),
       },
     };
   });
@@ -150,6 +155,15 @@ export const getLayoutedElements = async (
   };
 
   const layoutedGraph = await elk.layout(graph);
+
+  console.log('ELK assigned layers:',
+    layoutedGraph.children?.map(n => ({
+      id: n.id,
+      x: n.x,
+      y: n.y,
+      myLayer: nodes.find(node => node.id === n.id)?.data?.layer
+    }))
+  );
 
   const layoutedNodes = nodes.map((node) => {
     const elkNode = layoutedGraph.children?.find((n) => n.id === node.id);
