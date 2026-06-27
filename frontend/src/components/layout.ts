@@ -8,22 +8,30 @@ const elk = new ELK();
 const ELK_LAYOUT_OPTIONS: LayoutOptions = {
   'elk.algorithm': 'layered',
   'elk.direction': 'RIGHT',
-  'elk.edgeRouting': 'POLYLINE',
+  'elk.edgeRouting': 'ORTHOGONAL',
   'elk.randomSeed': '42',
 
-  'elk.spacing.nodeNode': '20',
-  'elk.layered.spacing.nodeNodeBetweenLayers': '40',
-  'elk.spacing.edgeEdge': '15',
-  'elk.spacing.edgeNode': '20',
-  'elk.layered.spacing.edgeEdgeBetweenLayers': '15',
-  'elk.layered.spacing.edgeNodeBetweenLayers': '20',
+  // Increase spacing to give edges and nodes more breathing room to avoid crossings
+  'elk.spacing.nodeNode': '45',
+  'elk.layered.spacing.nodeNodeBetweenLayers': '70',
+  'elk.spacing.edgeEdge': '20',
+  'elk.spacing.edgeNode': '30',
+  'elk.layered.spacing.edgeEdgeBetweenLayers': '20',
+  'elk.layered.spacing.edgeNodeBetweenLayers': '30',
 
-  'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
+  // Use Brandes & Köpf placement for more balanced horizontal coordinates and fewer crossings
+  'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
+
+  // Disable edge straightening to encourage natural offsets, bends, and parallel routing
+  'org.eclipse.elk.layered.nodePlacement.bk.edgeStraightening': 'NONE',
+  'org.eclipse.elk.layered.nodePlacement.favorStraightEdges': 'false',
 
   // Enable depth-first cycle breaking to respect our starting node
   'org.eclipse.elk.layered.cycleBreaking.strategy': 'DEPTH_FIRST',
   // Enable routing of feedback edges around nodes
   'org.eclipse.elk.layered.feedbackEdges': 'true',
+  // Increase thoroughness to find layout configurations with fewer crossings
+  'org.eclipse.elk.layered.thoroughness': '20',
 };
 
 // Maps node models to ELK-compatible node structures

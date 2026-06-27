@@ -1,4 +1,4 @@
-import { BaseEdge, type EdgeProps, getBezierPath } from '@xyflow/react';
+import { BaseEdge, type EdgeProps, getSmoothStepPath } from '@xyflow/react';
 import { memo } from 'react';
 import { getRoundedOrthogonalPath } from './shared/edgeUtils';
 import type { AppFlowEdge } from './types';
@@ -19,19 +19,8 @@ function FlowEdge({
   data,
 }: EdgeProps<AppFlowEdge>) {
   const sections = data?.sections;
-  const isBack = data?.isBack;
   let path = '';
-
-  if (!isBack) {
-    path = getBezierPath({
-      sourceX,
-      sourceY,
-      sourcePosition,
-      targetX,
-      targetY,
-      targetPosition,
-    })[0];
-  } else if (sections && sections.length > 0) {
+  if (sections && sections.length > 0) {
     path = sections
       .map((section: any) => {
         const bendPoints = (section.bendPoints || []).map((p: any) => ({ x: p.x, y: p.y }));
@@ -44,11 +33,11 @@ function FlowEdge({
           ...bendPoints,
           { x: targetX, y: targetY },
         ];
-        return getRoundedOrthogonalPath(points, 10);
+        return getRoundedOrthogonalPath(points, 30);
       })
       .join(' ');
   } else {
-    path = getBezierPath({
+    path = getSmoothStepPath({
       sourceX,
       sourceY,
       sourcePosition,
