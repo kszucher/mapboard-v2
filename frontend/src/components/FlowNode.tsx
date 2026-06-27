@@ -230,7 +230,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
 
   if (!data) return null;
 
-  const isLayoutReady = data.layer !== undefined;
+  const isLayoutReady = data.isLayoutReady ?? false;
 
   return (
     <div
@@ -252,16 +252,6 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
           <Badge color={data.node.color as BadgeProps['color']} size="2">
             {data.node.label}
           </Badge>
-          {data.visitOrder !== undefined && (
-            <Badge color={'gray'} size="2">
-              {'V' + data.visitOrder}
-            </Badge>
-          )}
-          {data.layer !== undefined && (
-            <Badge color={'gray'} size="2">
-              {'L' + data.layer}
-            </Badge>
-          )}
         </Flex>
       </Box>
 

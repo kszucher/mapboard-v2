@@ -47,18 +47,13 @@ const FlowContent = ({
   const [nodeState, setNodeState] = useState<Record<string, Partial<AppFlowNode>>>({});
   const [layoutData, setLayoutData] = useState<{
     positions: Record<string, { x: number; y: number }>;
-  }>({ positions: {} });
+    edgeSections: Record<string, any>;
+  }>({ positions: {}, edgeSections: {} });
 
   const [isReady, setIsReady] = useState(false);
   const edgeReconnectSuccessful = useRef(true);
   // Always reflects the latest rendered nodes/edges without putting them in effect deps
   const layoutInputRef = useRef({ nodes: [] as AppFlowNode[], edges: [] as AppFlowEdge[] });
-
-  // Derived layer lookup from graphData — available immediately after fetch, no need to wait for ELK
-  const layersByNodeId = useMemo<Record<string, number>>(() => {
-    if (!graphData) return {};
-    return Object.fromEntries(graphData.nodes.map((n) => [n.id, n.layer]));
-  }, [graphData]);
 
   // derived nodes
   const nodes = useMemo<AppFlowNode[]>(() => {
@@ -82,16 +77,15 @@ const FlowContent = ({
         position: tempPosition,
         data: {
           node: n,
-          layer: n.layer,
-          visitOrder: n.visitOrder,
           expressions: nodeExpressions,
+          isLayoutReady: !!layoutData.positions[n.id],
         },
         measured: state.measured,
       };
     });
   }, [graphData, layoutData.positions, nodeState]);
 
-  // derived edges — isBack and track come from graphData (pre-computed in query select)
+  // derived edges — dynamically compute back edges based on node layout positions
   const edges = useMemo<AppFlowEdge[]>(() => {
     if (!graphData) return [];
     const nodeIds = new Set(graphData.nodes.map(n => n.id));
@@ -104,9 +98,13 @@ const FlowContent = ({
         return true;
       })
       .map(edge => {
-        const isBack = edge.isBack ?? false;
-        const track = edge.track ?? 0;
-        const isLayoutReady = !!layoutData.positions[edge.from_node_id] && !!layoutData.positions[edge.to_node_id];
+        const sourcePos = layoutData.positions[edge.from_node_id];
+        const targetPos = layoutData.positions[edge.to_node_id];
+        const isLayoutReady = !!sourcePos && !!targetPos;
+        const isBack = isLayoutReady && (targetPos.x <= sourcePos.x);
+
+        const elkEdge = layoutData.edgeSections[edge.id];
+        const sections = elkEdge?.sections ?? [];
 
         return {
           id: edge.id,
@@ -115,10 +113,13 @@ const FlowContent = ({
           sourceHandle: edge.from_expression_id ?? String(edge.handle_index),
           type: 'custom' as const,
           animated: true,
-          data: { isBack, track },
+          data: {
+            isBack,
+            sections,
+          },
           style: {
-            stroke: '#fff',
-            strokeWidth: 2,
+            stroke: isBack ? '#ff9800' : '#888888',
+            strokeWidth: isBack ? 2.5 : 2,
             opacity: isLayoutReady ? 1 : 0,
             transition: 'opacity 0.2s ease-in-out',
           },
@@ -126,7 +127,7 @@ const FlowContent = ({
           reconnectable: true,
         };
       });
-  }, [graphData, layoutData.positions]);
+  }, [graphData, layoutData.positions, layoutData.edgeSections]);
 
   // Keep ref current before any effects fire so the layout effect always reads the latest values
   useLayoutEffect(() => {
@@ -179,16 +180,9 @@ const FlowContent = ({
     });
   }, []);
 
-  // Uses layersByNodeId (from graphData) for O(1) lookup
   const isValidConnection = useCallback(
-    (_connection: Connection | AppFlowEdge) => {
-      return true
-      // if (!connection.source || !connection.target) return false;
-      // const sourceLayer = layersByNodeId[connection.source];
-      // const targetLayer = layersByNodeId[connection.target];
-      // return sourceLayer !== undefined && targetLayer !== undefined && sourceLayer >= targetLayer;
-    },
-    [layersByNodeId],
+    () => true,
+    [],
   );
 
   // Shared helper — handles both new connections and reconnects
@@ -254,8 +248,6 @@ const FlowContent = ({
   );
 
   // Run layout when nodes are fully initialized/measured and graph structure changes.
-  // Deps are [graphData, nodeState, isFetching] — not [nodes, edges] — so setLayoutData
-  // never re-triggers this effect, eliminating the need for a dedup key.
   useEffect(() => {
     if (isFetching || !graphData) return;
     const { nodes: currentNodes, edges: currentEdges } = layoutInputRef.current;
@@ -263,13 +255,19 @@ const FlowContent = ({
 
     let cancelled = false;
     void getLayoutedElements(currentNodes, currentEdges, graphData.expressions)
-      .then(({ nodes: ln }) => {
+      .then(({ nodes: ln, edges: le }) => {
         if (cancelled) return;
         const nextPositions: Record<string, { x: number; y: number }> = {};
         ln.forEach(n => {
           nextPositions[n.id] = n.position;
         });
-        setLayoutData({ positions: nextPositions });
+        const nextEdgeSections: Record<string, any> = {};
+        le.forEach(e => {
+          if (e.id) {
+            nextEdgeSections[e.id] = e;
+          }
+        });
+        setLayoutData({ positions: nextPositions, edgeSections: nextEdgeSections });
       })
       .catch(err => {
         if (!cancelled) console.error('Failed to auto-layout nodes:', err);

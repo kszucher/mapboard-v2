@@ -1,17 +1,13 @@
-import { BaseEdge, type EdgeProps, getBezierPath, useEdges, useNodes } from '@xyflow/react';
+import { BaseEdge, type EdgeProps, getBezierPath } from '@xyflow/react';
 import { memo } from 'react';
-import { getBacklinkPath } from './shared/edgeUtils';
-import type { AppFlowEdge, AppFlowNode } from './types';
+import { getRoundedOrthogonalPath } from './shared/edgeUtils';
+import type { AppFlowEdge } from './types';
 
 /**
  * Custom FlowEdge component.
- * Renders forward edges as bezier curves and backward edges (feedback loops) as perimeter detour lanes.
- * isBack is pre-computed in Flow.tsx and stored on edge.data to avoid redundant graph traversal here.
+ * Renders edges using ELK's calculated sections/bendpoints, falling back to Bezier paths.
  */
 function FlowEdge({
-  id,
-  source,
-  target,
   sourceX,
   sourceY,
   targetX,
@@ -22,16 +18,37 @@ function FlowEdge({
   markerEnd,
   data,
 }: EdgeProps<AppFlowEdge>) {
-  const allNodes = useNodes();
-  const allEdges = useEdges();
+  const sections = data?.sections;
+  let path = '';
 
-  const isBackEdge = data?.isBack ?? false;
+  if (sections && sections.length > 0) {
+    path = sections
+      .map((section: any) => {
+        const bendPoints = (section.bendPoints || []).map((p: any) => ({ x: p.x, y: p.y }));
+        if (bendPoints.length > 0) {
+          bendPoints[0].y = sourceY;
+          bendPoints[bendPoints.length - 1].y = targetY;
+        }
+        const points = [
+          { x: sourceX, y: sourceY },
+          ...bendPoints,
+          { x: targetX, y: targetY },
+        ];
+        return getRoundedOrthogonalPath(points, 10);
+      })
+      .join(' ');
+  } else {
+    path = getBezierPath({
+      sourceX,
+      sourceY,
+      sourcePosition,
+      targetX,
+      targetY,
+      targetPosition,
+    })[0];
+  }
 
-  const path = isBackEdge
-    ? getBacklinkPath(id, source, target, sourceX, sourceY, targetX, targetY, allNodes as AppFlowNode[], allEdges as AppFlowEdge[])
-    : getBezierPath({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition })[0];
-
-  return <BaseEdge path={path} markerEnd={markerEnd} style={style}/>;
+  return <BaseEdge path={path} markerEnd={markerEnd} style={style} />;
 }
 
 export default memo(FlowEdge);

@@ -5,5 +5,17 @@ export type ApiNode = components['schemas']['NodeRead'];
 export type ApiEdge = components['schemas']['EdgeRead'];
 export type ApiExpression = components['schemas']['ExpressionRead'];
 
-export type AppFlowNode = Node<{ node: ApiNode; layer?: number; visitOrder?: number; expressions?: ApiExpression[] }, 'custom'>;
-export type AppFlowEdge = Edge<{ edge?: ApiEdge; isBack?: boolean; track?: number }, 'custom'>;
+export type AppFlowNode = Node<{
+  node: ApiNode;
+  layer?: number;
+  visitOrder?: number;
+  expressions?: ApiExpression[];
+  isLayoutReady?: boolean;
+}, 'custom'>;
+
+export type AppFlowEdge = Edge<{
+  edge?: ApiEdge;
+  isBack?: boolean;
+  track?: number;
+  sections?: any[];
+}, 'custom'>;

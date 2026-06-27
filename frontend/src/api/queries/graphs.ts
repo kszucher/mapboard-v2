@@ -1,5 +1,4 @@
 import { queryOptions, useQuery } from '@tanstack/react-query';
-import { getDynamicLayers } from '../../components/shared/edgeUtils';
 import { apiClient } from '../client';
 import { queryKeys } from '../queryKeys';
 
@@ -22,26 +21,7 @@ export const graphQueries = {
         params: { path: { graph_id: graphId ?? '' } },
       });
       if ('error' in res) throw res.error;
-      const data = res.data;
-      if (!data) return data;
-
-      const exprIdx = new Map(data.expressions.map((e) => [e.id, e.idx]));
-      const nodes = data.nodes.map((n) => ({ ...n, layer: 0, visitOrder: 0 }));
-      const edges = data.edges.map((e) => ({
-        ...e,
-        isBack: false,
-        track: 0,
-        expressionIdx: e.from_expression_id != null
-          ? (exprIdx.get(e.from_expression_id) ?? 0)
-          : (e.handle_index ?? 0),
-      }));
-      getDynamicLayers(nodes, edges);
-      console.log('Transforming graph flow data once in queryFn:', { ...data, nodes, edges });
-      return {
-        ...data,
-        nodes,
-        edges,
-      };
+      return res.data ?? null;
     },
     enabled: Boolean(graphId),
   }),

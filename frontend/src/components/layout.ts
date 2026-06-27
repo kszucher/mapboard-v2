@@ -18,12 +18,12 @@ const ELK_LAYOUT_OPTIONS: LayoutOptions = {
   'elk.layered.spacing.edgeEdgeBetweenLayers': '15',
   'elk.layered.spacing.edgeNodeBetweenLayers': '20',
 
-  // THE NATIVE FIX: Enable Partitioning on the parent graph
-  // 'elk.partitioning.activate': 'true',
-
-  // You can revert these to standard
   'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
-  // 'elk.layered.nodePlacement.favorStraightEdges': 'false',
+
+  // Enable depth-first cycle breaking to respect our starting node
+  'org.eclipse.elk.layered.cycleBreaking.strategy': 'DEPTH_FIRST',
+  // Enable routing of feedback edges around nodes
+  'org.eclipse.elk.layered.feedbackEdges': 'true',
 };
 
 // Maps node models to ELK-compatible node structures
@@ -80,6 +80,14 @@ const buildElkNodes = (
       });
     });
 
+    const nodeLayoutOptions: any = {
+      'elk.portConstraints': 'FIXED_POS',
+    };
+
+    if (nodeType === 'START') {
+      nodeLayoutOptions['org.eclipse.elk.layered.layering.layerConstraint'] = 'FIRST';
+    }
+
     return {
       id: node.id,
       width: nodeWidth,
@@ -87,65 +95,42 @@ const buildElkNodes = (
       x: 0,
       y: 0,
       ports,
-      layoutOptions: {
-        'elk.portConstraints': 'FIXED_POS',
-        // THIS FORCES THE NODE INTO THE EXACT COLUMN:
-        // 'elk.partitioning.partition': String(node.data?.layer ?? 0),
-      },
+      layoutOptions: nodeLayoutOptions,
     };
   });
 };
 
-// Filters forward edges and maps them to ELK-compatible edge structures.
-// Back-edges (edge.data.isBack) are excluded so ELK's layered algorithm doesn't see cycles.
-const buildElkEdges = (
-  edges: AppFlowEdge[],
-  nodesMap: Map<string, AppFlowNode>,
-  expressions: ApiExpression[]
-): ElkExtendedEdge[] => {
-  return edges
-    .filter((edge) => !edge.data?.isBack)
-    .sort((a, b) => {
-      // Sort by source visitOrder, then expression idx, then target visitOrder — all O(1) lookups.
-      const voA = nodesMap.get(a.source)?.data?.visitOrder ?? 0;
-      const voB = nodesMap.get(b.source)?.data?.visitOrder ?? 0;
-      if (voA !== voB) return voA - voB;
-
-      const exprs = expressions.filter((e) => e.node_id === a.source);
-      const idxA = a.sourceHandle ? exprs.findIndex((expr) => expr.id === a.sourceHandle) : -1;
-      const idxB = b.sourceHandle ? exprs.findIndex((expr) => expr.id === b.sourceHandle) : -1;
-      if (idxA !== idxB) return idxA - idxB;
-
-      const voTA = nodesMap.get(a.target)?.data?.visitOrder ?? 0;
-      const voTB = nodesMap.get(b.target)?.data?.visitOrder ?? 0;
-      return voTA - voTB;
-    })
-    .map((edge) => ({
-      id: edge.id,
-      sources: [edge.source],
-      targets: [edge.target],
-      sourcePort: edge.sourceHandle ?? undefined,
-      targetPort: edge.targetHandle ?? 'target',
-    }));
+// Maps all edges directly to ELK-compatible edge structures
+const buildElkEdges = (edges: AppFlowEdge[]): ElkExtendedEdge[] => {
+  return edges.map((edge) => ({
+    id: edge.id,
+    sources: [edge.source],
+    targets: [edge.target],
+    sourcePort: edge.sourceHandle ?? undefined,
+    targetPort: edge.targetHandle ?? 'target',
+  }));
 };
 
 /**
  * Computes deterministic node positions using the ELK layered layout algorithm.
- * Excludes backward edges from the layout pass to stabilize the forward sequence.
+ * Uses ELK's native cycle breaking and feedback edge routing.
  */
 export const getLayoutedElements = async (
   nodes: AppFlowNode[],
   edges: AppFlowEdge[],
   expressions: ApiExpression[] = []
-): Promise<{ nodes: AppFlowNode[] }> => {
-  const nodesMap = new Map(nodes.map((node) => [node.id, node]));
+): Promise<{ nodes: AppFlowNode[]; edges: ElkExtendedEdge[] }> => {
+  // Ensure START node is first. Rest can stay in their original order.
+  const orderedNodes = [...nodes].sort((a, b) => {
+    const isStartA = a.data?.node?.node_type === 'START';
+    const isStartB = b.data?.node?.node_type === 'START';
+    if (isStartA && !isStartB) return -1;
+    if (!isStartA && isStartB) return 1;
+    return 0;
+  });
 
-  // Order nodes by visitOrder pre-computed in getDynamicLayers — replaces the BFS traversal.
-  const orderedNodes = [...nodes].sort(
-    (a, b) => (a.data?.visitOrder ?? 0) - (b.data?.visitOrder ?? 0)
-  );
   const elkNodes = buildElkNodes(orderedNodes, edges, expressions);
-  const elkEdges = buildElkEdges(edges, nodesMap, expressions);
+  const elkEdges = buildElkEdges(edges);
 
   const graph: ElkNode = {
     id: 'root',
@@ -155,15 +140,6 @@ export const getLayoutedElements = async (
   };
 
   const layoutedGraph = await elk.layout(graph);
-
-  console.log('ELK assigned layers:',
-    layoutedGraph.children?.map(n => ({
-      id: n.id,
-      x: n.x,
-      y: n.y,
-      myLayer: nodes.find(node => node.id === n.id)?.data?.layer
-    }))
-  );
 
   const layoutedNodes = nodes.map((node) => {
     const elkNode = layoutedGraph.children?.find((n) => n.id === node.id);
@@ -176,5 +152,8 @@ export const getLayoutedElements = async (
     };
   });
 
-  return { nodes: layoutedNodes };
+  return {
+    nodes: layoutedNodes,
+    edges: layoutedGraph.edges ?? [],
+  };
 };
