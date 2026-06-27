@@ -69,12 +69,12 @@ const buildElkNodes = (
         }
 
         ports.push({
-          // --- FIX 1: GLOBALLY UNIQUE PORT ID ---
           id: `${node.id}-target-${handleId}`,
           x: targetX,
           y: targetY,
-          width: bounds?.width ?? 10,
-          height: bounds?.height ?? 10,
+          // --- THE FIX: Collapse the port to a singular point ---
+          width: 0,
+          height: 0,
           properties: { 'port.side': 'WEST' }
         });
       });
@@ -107,12 +107,12 @@ const buildElkNodes = (
       }
 
       ports.push({
-        // --- FIX 1: GLOBALLY UNIQUE PORT ID ---
         id: `${node.id}-source-${handleId}`,
         x: sourceX,
         y: sourceY,
-        width: bounds?.width ?? 10,
-        height: bounds?.height ?? 10,
+        // --- THE FIX: Collapse the port to a singular point ---
+        width: 0,
+        height: 0,
         properties: { 'port.side': 'EAST' }
       });
     });

@@ -8,6 +8,10 @@ import type { AppFlowEdge } from './types';
  * Renders edges using ELK's calculated sections/bendpoints, falling back to Bezier paths.
  */
 function FlowEdge({
+  sourceX,
+  sourceY, // <-- React Flow's exact physical DOM coordinate
+  targetX,
+  targetY, // <-- React Flow's exact physical DOM coordinate
   style = {},
   markerEnd,
   data,
@@ -18,13 +22,25 @@ function FlowEdge({
   if (sections && sections.length > 0) {
     path = sections
       .map((section: any) => {
-        // Use ELK's EXACT mathematically calculated start, bend, and end points
+        // 1. Extract ELK's global routing corners
+        const bendPoints = (section.bendPoints || []).map((p: any) => ({ x: p.x, y: p.y }));
+
+        // 2. ABSORB THE CSS DISCREPANCY
+        // Force ELK's first and last horizontal routing lanes to shift up/down
+        // by the 1-2 pixels required to perfectly match the physical DOM handles.
+        if (bendPoints.length > 0) {
+          bendPoints[0].y = sourceY;
+          bendPoints[bendPoints.length - 1].y = targetY;
+        }
+
+        // 3. Sandwich the clamped bend points between the true React Flow anchors
         const points = [
-          { x: section.startPoint.x, y: section.startPoint.y },
-          ...(section.bendPoints || []).map((p: any) => ({ x: p.x, y: p.y })),
-          { x: section.endPoint.x, y: section.endPoint.y },
+          { x: sourceX, y: sourceY },
+          ...bendPoints,
+          { x: targetX, y: targetY },
         ];
 
+        // 4. Send to your custom SVG generator
         return getRoundedOrthogonalPath(points, 30);
       })
       .join(' ');
