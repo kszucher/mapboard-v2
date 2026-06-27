@@ -19,11 +19,11 @@ const ELK_LAYOUT_OPTIONS: LayoutOptions = {
   'elk.layered.spacing.edgeNodeBetweenLayers': '20',
 
   // THE NATIVE FIX: Enable Partitioning on the parent graph
-  'elk.partitioning.activate': 'true',
+  // 'elk.partitioning.activate': 'true',
 
   // You can revert these to standard
   'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
-  'elk.layered.nodePlacement.favorStraightEdges': 'false',
+  // 'elk.layered.nodePlacement.favorStraightEdges': 'false',
 };
 
 // Maps node models to ELK-compatible node structures
@@ -90,7 +90,7 @@ const buildElkNodes = (
       layoutOptions: {
         'elk.portConstraints': 'FIXED_POS',
         // THIS FORCES THE NODE INTO THE EXACT COLUMN:
-        'elk.partitioning.partition': String(node.data?.layer ?? 0),
+        // 'elk.partitioning.partition': String(node.data?.layer ?? 0),
       },
     };
   });
