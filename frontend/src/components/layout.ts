@@ -8,7 +8,7 @@ const elk = new ELK();
 const ELK_LAYOUT_OPTIONS: LayoutOptions = {
   'elk.algorithm': 'layered',
   'elk.direction': 'RIGHT',
-  'elk.edgeRouting': 'ORTHOGONAL',
+  'elk.edgeRouting': 'POLYLINE',
   'elk.randomSeed': '42',
 
   'elk.spacing.nodeNode': '20',

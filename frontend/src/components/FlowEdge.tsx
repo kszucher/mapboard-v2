@@ -19,9 +19,19 @@ function FlowEdge({
   data,
 }: EdgeProps<AppFlowEdge>) {
   const sections = data?.sections;
+  const isBack = data?.isBack;
   let path = '';
 
-  if (sections && sections.length > 0) {
+  if (!isBack) {
+    path = getBezierPath({
+      sourceX,
+      sourceY,
+      sourcePosition,
+      targetX,
+      targetY,
+      targetPosition,
+    })[0];
+  } else if (sections && sections.length > 0) {
     path = sections
       .map((section: any) => {
         const bendPoints = (section.bendPoints || []).map((p: any) => ({ x: p.x, y: p.y }));
