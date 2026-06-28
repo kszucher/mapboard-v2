@@ -40,7 +40,6 @@ export const BranchInput = ({
         <PlainEditor
           initialValue={localValue}
           onSave={onChange}
-          singleLine={true}
           minWidth={100}
         />
       </div>

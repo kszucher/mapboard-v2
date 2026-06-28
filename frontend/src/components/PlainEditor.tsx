@@ -1,4 +1,4 @@
-import { Box, TextArea, TextField } from '@radix-ui/themes';
+import { Box, TextField } from '@radix-ui/themes';
 import { useEffect, useRef, useState } from 'react';
 
 interface PlainEditorProps {
@@ -6,8 +6,6 @@ interface PlainEditorProps {
   onSave: (value: string) => void;
   minWidth?: number;
   maxWidth?: number;
-  minHeight?: number;
-  singleLine?: boolean;
 }
 
 export const PlainEditor = ({
@@ -15,15 +13,11 @@ export const PlainEditor = ({
   onSave,
   minWidth = 240,
   maxWidth = 600,
-  minHeight = 24, // Matches the size="1" Radix button height (24px)
-  singleLine = false,
 }: PlainEditorProps) => {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [value, setValue] = useState(initialValue);
   const internalValueRef = useRef(initialValue);
-
   const isFocusedRef = useRef(false);
 
   const spanRef = useRef<HTMLSpanElement>(null);
@@ -43,48 +37,49 @@ export const PlainEditor = ({
     }
   }, [initialValue]);
 
-  // Adjust width dynamically based on text content length
+  // Adjust width dynamically based on text content length (local and instant)
   useEffect(() => {
     const span = spanRef.current;
     if (!span) return;
-
-    // Read the width of the span
     const textWidth = span.offsetWidth;
-    // Add a small buffer (e.g. 24px) for the cursor and padding
     const buffer = 24;
     const finalWidth = Math.max(minWidth, Math.min(textWidth + buffer, maxWidth));
     setMeasuredWidth(finalWidth);
   }, [value, minWidth, maxWidth]);
 
-  // Adjust height dynamically based on content scroll height (for multiline)
-  useEffect(() => {
-    const textarea = textareaRef.current;
-    if (!textarea || singleLine) return;
-
-    const numLines = value.split('\n').length;
-    if (numLines <= 1) {
-      textarea.style.height = `${minHeight}px`;
-    } else {
-      textarea.style.height = 'auto';
-      // Set actual height based on scrollHeight + border (2px)
-      const targetHeight = textarea.scrollHeight + 2;
-      textarea.style.height = `${Math.max(targetHeight, minHeight)}px`;
-    }
-  }, [value, minHeight, singleLine, measuredWidth]); // Re-run when width changes to ensure proper wrap height
-
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
-    let newValue = e.target.value;
-    if (singleLine) {
-      newValue = newValue.replace(/[\r\n]/g, '');
-    }
+  // Debounced save handler
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value.replace(/[\r\n]/g, '');
     internalValueRef.current = newValue;
     setValue(newValue);
-    onSaveRef.current(newValue);
+
+    // Clear previous save timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Set new timer to save after 500ms of inactivity
+    debounceTimerRef.current = setTimeout(() => {
+      onSaveRef.current(newValue);
+    }, 1000);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement | HTMLInputElement>) => {
-    if (singleLine && e.key === 'Enter') {
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    };
+  }, []);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
       e.preventDefault();
+      // Force immediate save on Enter / commit
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      onSaveRef.current(value);
       inputRef.current?.blur();
     }
   };
@@ -95,6 +90,11 @@ export const PlainEditor = ({
 
   const handleBlur = () => {
     isFocusedRef.current = false;
+    // Force immediate save on blur
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    onSaveRef.current(value);
   };
 
   const commonStyles: React.CSSProperties = {
@@ -116,7 +116,6 @@ export const PlainEditor = ({
         boxSizing: 'border-box',
       }}
     >
-      {/* Hidden span for width measurement */}
       <span
         ref={spanRef}
         style={{
@@ -131,45 +130,22 @@ export const PlainEditor = ({
         {value || ' '}
       </span>
 
-      {singleLine ? (
-        <TextField.Root
-          ref={inputRef}
-          value={value}
-          onChange={handleChange}
-          onKeyDown={handleKeyDown}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          color="gray"
-          variant="soft"
-          size="1"
-          style={{
-            ...commonStyles,
-            width: '100%',
-            height: '24px',
-          }}
-        />
-      ) : (
-        <TextArea
-          ref={textareaRef}
-          value={value}
-          onChange={handleChange}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          color="gray"
-          variant="soft"
-          size="1"
-          wrap="off"
-          style={{
-            ...commonStyles,
-            // width: '100%',
-            minHeight: `${minHeight}px`,
-            // height: 'auto',
-            // resize: 'none',
-            // overflow: 'hidden',
-            // whiteSpace: 'pre',
-          }}
-        />
-      )}
+      <TextField.Root
+        ref={inputRef}
+        value={value}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        color="gray"
+        variant="soft"
+        size="1"
+        style={{
+          ...commonStyles,
+          width: '100%',
+          height: '24px',
+        }}
+      />
     </Box>
   );
 };
