@@ -13,7 +13,6 @@ import {
   useUpdateExpression,
 } from '../api/mutations';
 
-import { BranchInput } from './BranchInput.tsx';
 import { ExpressionActionsDropdown } from './ExpressionActionsDropdown';
 import { PlainEditor } from './PlainEditor';
 import type { AppFlowNode } from './types.ts';
@@ -258,20 +257,27 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
       {/* Sub Expressions */}
       {isSwitch && subExpressions.map((expr, i) => (
         <Flex key={expr.id} align="center" width="100%" height="24px" style={{ position: 'relative' }}>
-          <BranchInput
-            expressionId={expr.id}
-            graphId={node.graph_id}
-            value={expr.raw_string}
-            onChange={(newValue) => handleUpdateItem(i, newValue)}
-            onDelete={() => handleDeleteItem(i)}
-            onMoveUp={() => handleMoveUp(i)}
-            onMoveDown={() => handleMoveDown(i)}
-            canMoveUp={i > 0}
-            canMoveDown={i < subExpressions.length - 1}
-            onAddAbove={() => handleAddAbove(i)}
-            onAddBelow={() => handleAddBelow(i)}
-            canDelete={subExpressions.length > 1}
-          />
+          <Flex gap="2" align="center" width="100%" height="100%">
+            <Flex className="nodrag nopan" flexGrow="1" align="center" height="100%">
+              <PlainEditor
+                initialValue={expr.raw_string}
+                onSave={(newValue) => handleUpdateItem(i, newValue)}
+                minWidth={100}
+              />
+            </Flex>
+            <ExpressionActionsDropdown
+              expressionId={expr.id}
+              graphId={node.graph_id}
+              onMoveUp={() => handleMoveUp(i)}
+              onMoveDown={() => handleMoveDown(i)}
+              onDelete={() => handleDeleteItem(i)}
+              canMoveUp={i > 0}
+              canMoveDown={i < subExpressions.length - 1}
+              onAddAbove={() => handleAddAbove(i)}
+              onAddBelow={() => handleAddBelow(i)}
+              canDelete={subExpressions.length > 1}
+            />
+          </Flex>
           <Handle
             id={expr.id}
             type="source"
