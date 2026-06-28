@@ -227,21 +227,21 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
       {baseExpression && (
         <Flex align="center" width="100%" height="24px" style={{ position: 'relative' }}>
           <Handle type="target" position={Position.Left} style={{ left: -6 }}/>
-          <Flex gap="2" align="center" width="100%" height="100%">
-            <Flex className="nodrag nopan" flexGrow="1" align="center" height="100%">
-              <FlowNodeExpressionEditor
-                initialValue={baseExpression.raw_string}
-                onSave={handleUpdateBase}
-                minWidth={240}
-                maxWidth={600}
-              />
-            </Flex>
-            {!isSwitch && (
-              <FlowNodeExpressionActions
-                expressionId={baseExpression.id}
-                graphId={node.graph_id}
-              />
-            )}
+          <Flex className="nodrag nopan" flexGrow="1" align="center" height="100%">
+            <FlowNodeExpressionEditor
+              initialValue={baseExpression.raw_string}
+              onSave={handleUpdateBase}
+              minWidth={240}
+              maxWidth={600}
+              actions={
+                !isSwitch ? (
+                  <FlowNodeExpressionActions
+                    expressionId={baseExpression.id}
+                    graphId={node.graph_id}
+                  />
+                ) : undefined
+              }
+            />
           </Flex>
           {!isSwitch && (
             <Handle
@@ -257,25 +257,25 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
       {/* Sub Expressions */}
       {isSwitch && subExpressions.map((expr, i) => (
         <Flex key={expr.id} align="center" width="100%" height="24px" style={{ position: 'relative' }}>
-          <Flex gap="2" align="center" width="100%" height="100%">
-            <Flex className="nodrag nopan" flexGrow="1" align="center" height="100%">
-              <FlowNodeExpressionEditor
-                initialValue={expr.raw_string}
-                onSave={(newValue) => handleUpdateItem(i, newValue)}
-                minWidth={100}
-              />
-            </Flex>
-            <FlowNodeExpressionActions
-              expressionId={expr.id}
-              graphId={node.graph_id}
-              onMoveUp={() => handleMoveUp(i)}
-              onMoveDown={() => handleMoveDown(i)}
-              onDelete={() => handleDeleteItem(i)}
-              canMoveUp={i > 0}
-              canMoveDown={i < subExpressions.length - 1}
-              onAddAbove={() => handleAddAbove(i)}
-              onAddBelow={() => handleAddBelow(i)}
-              canDelete={subExpressions.length > 1}
+          <Flex className="nodrag nopan" flexGrow="1" align="center" height="100%">
+            <FlowNodeExpressionEditor
+              initialValue={expr.raw_string}
+              onSave={(newValue) => handleUpdateItem(i, newValue)}
+              minWidth={100}
+              actions={
+                <FlowNodeExpressionActions
+                  expressionId={expr.id}
+                  graphId={node.graph_id}
+                  onMoveUp={() => handleMoveUp(i)}
+                  onMoveDown={() => handleMoveDown(i)}
+                  onDelete={() => handleDeleteItem(i)}
+                  canMoveUp={i > 0}
+                  canMoveDown={i < subExpressions.length - 1}
+                  onAddAbove={() => handleAddAbove(i)}
+                  onAddBelow={() => handleAddBelow(i)}
+                  canDelete={subExpressions.length > 1}
+                />
+              }
             />
           </Flex>
           <Handle

@@ -6,6 +6,7 @@ interface PlainEditorProps {
   onSave: (value: string) => void;
   minWidth?: number;
   maxWidth?: number;
+  actions?: React.ReactNode;
 }
 
 export const FlowNodeExpressionEditor = ({
@@ -13,6 +14,7 @@ export const FlowNodeExpressionEditor = ({
   onSave,
   minWidth = 240,
   maxWidth = 600,
+  actions,
 }: PlainEditorProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -145,7 +147,13 @@ export const FlowNodeExpressionEditor = ({
           width: '100%',
           height: '24px',
         }}
-      />
+      >
+        {actions && (
+          <TextField.Slot side="right" style={{ paddingLeft: 0, paddingRight: 4 }}>
+            {actions}
+          </TextField.Slot>
+        )}
+      </TextField.Root>
     </Box>
   );
 };
