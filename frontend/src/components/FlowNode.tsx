@@ -201,12 +201,6 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
             </IconButton>
           </DropdownMenu.Trigger>
           <DropdownMenu.Content onCloseAutoFocus={e => e.preventDefault()}>
-            <DropdownMenu.Sub>
-              <DropdownMenu.SubTrigger>{'Connect To...'}</DropdownMenu.SubTrigger>
-              <DropdownMenu.SubContent>
-                <DropdownMenu.Item key={1}></DropdownMenu.Item>
-              </DropdownMenu.SubContent>
-            </DropdownMenu.Sub>
             {!isStart && !isSwitch && (
               <DropdownMenu.Item onClick={handleShortcircuit}>
                 {'Shortcircuit'}
