@@ -39,15 +39,17 @@ export const FlowNodeExpressionEditor = ({
     }
   }, [initialValue]);
 
+  const hasActions = !!actions;
+
   // Adjust width dynamically based on text content length (local and instant)
   useEffect(() => {
     const span = spanRef.current;
     if (!span) return;
     const textWidth = span.offsetWidth;
-    const buffer = 24;
+    const buffer = hasActions ? 60 : 24;
     const finalWidth = Math.max(minWidth, Math.min(textWidth + buffer, maxWidth));
     setMeasuredWidth(finalWidth);
-  }, [value, minWidth, maxWidth]);
+  }, [value, minWidth, maxWidth, hasActions]);
 
   // Debounced save handler
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -149,7 +151,7 @@ export const FlowNodeExpressionEditor = ({
         }}
       >
         {actions && (
-          <TextField.Slot side="right" style={{ paddingLeft: 0, paddingRight: 4 }}>
+          <TextField.Slot side="right" pl="3" pr="1">
             {actions}
           </TextField.Slot>
         )}

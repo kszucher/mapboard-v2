@@ -251,7 +251,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
       {/* Sub Expressions */}
       {isSwitch && subExpressions.map((expr, i) => (
         <Flex key={expr.id} align="center" width="100%" height="24px" style={{ position: 'relative' }}>
-          <Flex className="nodrag nopan" flexGrow="1" align="center" height="100%">
+          <Flex className="nodrag nopan" flexGrow="1" align="center" height="100%" pl="5">
             <FlowNodeExpressionEditor
               initialValue={expr.raw_string}
               onSave={(newValue) => handleUpdateItem(i, newValue)}
