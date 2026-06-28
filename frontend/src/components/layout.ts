@@ -57,7 +57,7 @@ const buildElkNodes = (
   return orderedNodes.map((node) => {
     const { measured, width } = node;
     const nodeWidth = measured?.width ?? width ?? 200;
-    
+
     const nodeType = node.data?.node?.node_type;
     const isStart = nodeType === 'START';
     const isSwitch = nodeType === 'LOGICAL_SWITCH' || nodeType === 'AGENTIC_SWITCH';
@@ -102,7 +102,7 @@ const buildElkNodes = (
       const exprIdx = subExpressions.findIndex((e) => e.id === handleId);
       const bounds = findHandleBounds(node.handleBounds?.source, handleId, '0');
       const x = bounds && bounds.width > 0 ? bounds.x + bounds.width / 2 : nodeWidth;
-      
+
       const fallbackRowIdx = isStart ? 0 : (isSwitch && exprIdx !== -1 ? 2 + exprIdx : 1);
       const y = bounds && bounds.height > 0 ? bounds.y + bounds.height / 2 : 30 * fallbackRowIdx + 18;
 
