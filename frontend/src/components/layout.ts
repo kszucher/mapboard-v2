@@ -55,12 +55,20 @@ const buildElkNodes = (
   });
 
   return orderedNodes.map((node) => {
-    const { measured, width, height } = node;
+    const { measured, width } = node;
     const nodeWidth = measured?.width ?? width ?? 200;
-    const nodeHeight = measured?.height ?? height ?? 120;
+    
     const nodeType = node.data?.node?.node_type;
+    const isStart = nodeType === 'START';
     const isSwitch = nodeType === 'LOGICAL_SWITCH' || nodeType === 'AGENTIC_SWITCH';
     const nodeExpressions = node.data?.expressions || [];
+    const subExpressions = nodeExpressions.filter((e) => e.type === 'SUB').sort((a, b) => a.idx - b.idx);
+    const subCount = subExpressions.length;
+
+    // Total rows (M): Start has 1 (Header), Switch has 2 + N, standard has 2 (Header + Base)
+    const rowCount = isStart ? 1 : (isSwitch ? 2 + subCount : 2);
+    const nodeHeight = 30 * rowCount + 6;
+
     const ports: ElkPort[] = [];
 
     // WEST ports (targets)
@@ -71,7 +79,7 @@ const buildElkNodes = (
     Object.entries(targetGroups).forEach(([handleId, group]) => {
       const bounds = findHandleBounds(node.handleBounds?.target, handleId, 'target');
       const x = bounds && bounds.width > 0 ? bounds.x + bounds.width / 2 : 0;
-      const y = bounds && bounds.height > 0 ? bounds.y + bounds.height / 2 : (isSwitch ? 66 : nodeHeight / 2);
+      const y = bounds && bounds.height > 0 ? bounds.y + bounds.height / 2 : 48; // Row 1 center (30 * 1 + 18)
 
       group.forEach((edge, index) => {
         ports.push({
@@ -91,10 +99,12 @@ const buildElkNodes = (
     outgoing.forEach((e) => (sourceGroups[e.sourceHandle ?? '0'] ??= []).push(e));
 
     Object.entries(sourceGroups).forEach(([handleId, group]) => {
-      const exprIdx = nodeExpressions.findIndex((e) => e.id === handleId);
+      const exprIdx = subExpressions.findIndex((e) => e.id === handleId);
       const bounds = findHandleBounds(node.handleBounds?.source, handleId, '0');
       const x = bounds && bounds.width > 0 ? bounds.x + bounds.width / 2 : nodeWidth;
-      const y = bounds && bounds.height > 0 ? bounds.y + bounds.height / 2 : (isSwitch && exprIdx !== -1 ? 66 + exprIdx * 40 : nodeHeight / 2);
+      
+      const fallbackRowIdx = isStart ? 0 : (isSwitch && exprIdx !== -1 ? 2 + exprIdx : 1);
+      const y = bounds && bounds.height > 0 ? bounds.y + bounds.height / 2 : 30 * fallbackRowIdx + 18;
 
       group.forEach((edge, index) => {
         ports.push({

@@ -35,14 +35,14 @@ export const BranchInput = ({
   const localValue = value;
 
   return (
-    <Flex gap="2" align="center" style={{ width: '100%' }}>
-      <div className="nodrag nopan" style={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
+    <Flex gap="2" align="center" width="100%" height="100%">
+      <Flex className="nodrag nopan" flexGrow="1" align="center" height="100%">
         <PlainEditor
           initialValue={localValue}
           onSave={onChange}
           minWidth={100}
         />
-      </div>
+      </Flex>
 
       <ExpressionActionsDropdown
         expressionId={expressionId}

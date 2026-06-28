@@ -1,6 +1,6 @@
 import { DotsHorizontalIcon } from '@radix-ui/react-icons';
 import type { BadgeProps } from '@radix-ui/themes';
-import { Badge, Box, DropdownMenu, Flex, IconButton } from '@radix-ui/themes';
+import { Badge, DropdownMenu, Flex, IconButton } from '@radix-ui/themes';
 import { Handle, type NodeProps, Position, useUpdateNodeInternals } from '@xyflow/react';
 import { memo, useCallback, useEffect, useMemo } from 'react';
 import {
@@ -158,125 +158,43 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
     [subExpressions, moveExpressionDown, node.graph_id]
   );
 
-  const renderBody = useMemo(() => {
-    if (isStart) {
-      return (
-        <>
-          <Flex direction="column" gap="3" style={{ marginTop: 38 }}/>
-          <Handle id="0" type="source" position={Position.Right}/>
-        </>
-      );
-    }
-
-    return (
-      <Flex direction="column" gap="2" style={{ marginTop: 38, width: 'fit-content', minWidth: '100%' }}>
-        <div style={{ position: 'relative', width: '100%' }}>
-          <Handle type="target" position={Position.Left} style={{ left: -12 }}/>
-          {baseExpression && (
-            <>
-              <Flex gap="2" align="center" style={{ width: '100%' }}>
-                <div className="nodrag nopan" style={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
-                  <PlainEditor
-                    initialValue={baseExpression.raw_string}
-                    onSave={handleUpdateBase}
-                    minWidth={240}
-                    maxWidth={600}
-                  />
-                </div>
-                {!isSwitch && (
-                  <ExpressionActionsDropdown
-                    expressionId={baseExpression.id}
-                    graphId={node.graph_id}
-                  />
-                )}
-              </Flex>
-              {!isSwitch && (
-                <Handle
-                  id={baseExpression.id}
-                  type="source"
-                  position={Position.Right}
-                  style={{ right: -12 }}
-                />
-              )}
-            </>
-          )}
-        </div>
-
-        {isSwitch && subExpressions.length > 0 && (
-          <Flex direction="column" gap="2" style={{ width: '100%', marginTop: 8 }}>
-            {subExpressions.map((expr, i) => {
-              return (
-                <div key={expr.id} style={{ position: 'relative', width: '100%' }}>
-                  <BranchInput
-                    expressionId={expr.id}
-                    graphId={node.graph_id}
-                    value={expr.raw_string}
-                    onChange={(newValue) => handleUpdateItem(i, newValue)}
-                    onDelete={() => handleDeleteItem(i)}
-                    onMoveUp={() => handleMoveUp(i)}
-                    onMoveDown={() => handleMoveDown(i)}
-                    canMoveUp={i > 0}
-                    canMoveDown={i < subExpressions.length - 1}
-                    onAddAbove={() => handleAddAbove(i)}
-                    onAddBelow={() => handleAddBelow(i)}
-                    canDelete={subExpressions.length > 1}
-                  />
-                  <Handle
-                    id={expr.id}
-                    type="source"
-                    position={Position.Right}
-                    style={{ right: -12 }}
-                  />
-                </div>
-              );
-            })}
-          </Flex>
-        )}
-      </Flex>
-    );
-  }, [
-    isStart,
-    isSwitch,
-    baseExpression,
-    subExpressions,
-    node,
-    handleUpdateBase,
-    handleUpdateItem,
-    handleDeleteItem,
-    handleMoveUp,
-    handleMoveDown,
-    handleAddAbove,
-    handleAddBelow,
-  ]);
-
   if (!data) return null;
 
   const isLayoutReady = data.isLayoutReady ?? false;
 
   return (
-    <div
+    <Flex
+      direction="column"
       style={{
         background: '#222222',
-        borderRadius: 16,
-        padding: 12,
-        minWidth: 200,
-        minHeight: isStart ? 80 : undefined,
+        borderRadius: 12,
+        padding: '6px',
+        gap: '6px',
+        minWidth: 240,
         opacity: isLayoutReady ? 1 : 0,
         transition: 'opacity 0.2s ease-in-out',
+        boxSizing: 'border-box',
       }}
     >
-      <Box position="absolute" top="8px" left="8px">
-        <Flex direction="row" gap="4px" align="center">
-          <Badge color={'gray'} size="2">
+      {/* Header Row */}
+      <Flex align="center" justify="between" width="100%" height="24px" style={{ position: 'relative' }}>
+        <Flex direction="row" gap="1" align="center">
+          <Badge
+            color="gray"
+            size="1"
+            style={{ height: '24px', display: 'inline-flex', alignItems: 'center' }}
+          >
             {'N' + data.node.iid}
           </Badge>
-          <Badge color={data.node.color as BadgeProps['color']} size="2">
+          <Badge
+            color={data.node.color as BadgeProps['color']}
+            size="1"
+            style={{ height: '24px', display: 'inline-flex', alignItems: 'center' }}
+          >
             {data.node.label}
           </Badge>
         </Flex>
-      </Box>
 
-      <Box position="absolute" top="8px" right="8px">
         <DropdownMenu.Root modal={false}>
           <DropdownMenu.Trigger>
             <IconButton variant="soft" size="1" color="gray" style={{ pointerEvents: 'auto', background: 'none' }}>
@@ -300,10 +218,69 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
             </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Root>
-      </Box>
 
-      {renderBody}
-    </div>
+        {isStart && (
+          <Handle id="0" type="source" position={Position.Right} style={{ right: -6 }}/>
+        )}
+      </Flex>
+
+      {/* Base Expression Row */}
+      {baseExpression && (
+        <Flex align="center" width="100%" height="24px" style={{ position: 'relative' }}>
+          <Handle type="target" position={Position.Left} style={{ left: -6 }}/>
+          <Flex gap="2" align="center" width="100%" height="100%">
+            <Flex className="nodrag nopan" flexGrow="1" align="center" height="100%">
+              <PlainEditor
+                initialValue={baseExpression.raw_string}
+                onSave={handleUpdateBase}
+                minWidth={240}
+                maxWidth={600}
+              />
+            </Flex>
+            {!isSwitch && (
+              <ExpressionActionsDropdown
+                expressionId={baseExpression.id}
+                graphId={node.graph_id}
+              />
+            )}
+          </Flex>
+          {!isSwitch && (
+            <Handle
+              id={baseExpression.id}
+              type="source"
+              position={Position.Right}
+              style={{ right: -6 }}
+            />
+          )}
+        </Flex>
+      )}
+
+      {/* Sub Expressions */}
+      {isSwitch && subExpressions.map((expr, i) => (
+        <Flex key={expr.id} align="center" width="100%" height="24px" style={{ position: 'relative' }}>
+          <BranchInput
+            expressionId={expr.id}
+            graphId={node.graph_id}
+            value={expr.raw_string}
+            onChange={(newValue) => handleUpdateItem(i, newValue)}
+            onDelete={() => handleDeleteItem(i)}
+            onMoveUp={() => handleMoveUp(i)}
+            onMoveDown={() => handleMoveDown(i)}
+            canMoveUp={i > 0}
+            canMoveDown={i < subExpressions.length - 1}
+            onAddAbove={() => handleAddAbove(i)}
+            onAddBelow={() => handleAddBelow(i)}
+            canDelete={subExpressions.length > 1}
+          />
+          <Handle
+            id={expr.id}
+            type="source"
+            position={Position.Right}
+            style={{ right: -6 }}
+          />
+        </Flex>
+      ))}
+    </Flex>
   );
 };
 
