@@ -40,6 +40,8 @@ async def create_expression(uow: UnitOfWork, data: ExpressionCreate) -> models.E
         expressions = await uow.expressions.list_by_node(data.node_id)
         sub_exprs = [e for e in expressions if e.type == "SUB"]
         data.idx = len(sub_exprs)
+    else:
+        await uow.expressions.shift_indices_before_insertion(data.node_id, data.idx)
 
     expr = await uow.expressions.create(data)
 
@@ -80,6 +82,12 @@ async def delete_expression(uow: UnitOfWork, expression_id: uuid.UUID) -> None:
     if not node:
         return
 
+    if node.node_type in {NodeType.LOGICAL_SWITCH, NodeType.AGENTIC_SWITCH}:
+        expressions = await uow.expressions.list_by_node(expr.node_id)
+        sub_exprs = [e for e in expressions if e.type == "SUB"]
+        if len(sub_exprs) <= 1:
+            raise ValidationError("Cannot delete the last remaining expression of a switch node")
+
     deleted_idx = expr.idx
 
     # Delete the expression
@@ -98,6 +106,8 @@ async def delete_expression(uow: UnitOfWork, expression_id: uuid.UUID) -> None:
 async def create_default_expressions_for_node(uow: UnitOfWork, node: models.Node) -> None:
     if node.node_type != NodeType.START:
         await uow.expressions.create(ExpressionCreate(node_id=node.id, idx=0, type="BASE", raw_string=""))
+        if node.node_type in {NodeType.LOGICAL_SWITCH, NodeType.AGENTIC_SWITCH}:
+            await uow.expressions.create(ExpressionCreate(node_id=node.id, idx=0, type="SUB", raw_string=""))
 
 
 async def swap_expression_indices(uow: UnitOfWork, expression_id: uuid.UUID, direction: str) -> bool:

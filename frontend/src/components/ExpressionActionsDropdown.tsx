@@ -13,6 +13,9 @@ interface ExpressionActionsDropdownProps {
   onDelete?: () => void;
   canMoveUp?: boolean;
   canMoveDown?: boolean;
+  onAddAbove?: () => void;
+  onAddBelow?: () => void;
+  canDelete?: boolean;
 }
 
 export const ExpressionActionsDropdown = ({
@@ -24,6 +27,9 @@ export const ExpressionActionsDropdown = ({
   onDelete,
   canMoveUp = false,
   canMoveDown = false,
+  onAddAbove,
+  onAddBelow,
+  canDelete = true,
 }: ExpressionActionsDropdownProps) => {
   const addConnectedNode = useAddConnectedNode();
   const insertNode = useInsertNode();
@@ -63,6 +69,22 @@ export const ExpressionActionsDropdown = ({
         </IconButton>
       </DropdownMenu.Trigger>
       <DropdownMenu.Content onCloseAutoFocus={(e) => e.preventDefault()}>
+        {(onAddAbove || onAddBelow) && (
+          <>
+            {onAddAbove && (
+              <DropdownMenu.Item onClick={onAddAbove}>
+                <PlusIcon style={{ marginRight: 8 }}/> Add Expression Above
+              </DropdownMenu.Item>
+            )}
+            {onAddBelow && (
+              <DropdownMenu.Item onClick={onAddBelow}>
+                <PlusIcon style={{ marginRight: 8 }}/> Add Expression Below
+              </DropdownMenu.Item>
+            )}
+            <DropdownMenu.Separator/>
+          </>
+        )}
+
         {onMoveUp && (
           <>
             <DropdownMenu.Item onClick={onMoveUp} disabled={!canMoveUp}>
@@ -104,7 +126,7 @@ export const ExpressionActionsDropdown = ({
         {onDelete && (
           <>
             <DropdownMenu.Separator/>
-            <DropdownMenu.Item onClick={onDelete} color="red">
+            <DropdownMenu.Item onClick={onDelete} color="red" disabled={!canDelete}>
               <TrashIcon style={{ marginRight: 8 }}/> Delete Expression
             </DropdownMenu.Item>
           </>

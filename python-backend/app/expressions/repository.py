@@ -41,6 +41,19 @@ class ExpressionRepository(BaseRepository[models.Expression, ExpressionCreate, E
         await self.session.flush()
         return list(result.scalars().all())
 
+    async def shift_indices_before_insertion(self, node_id: uuid.UUID, new_idx: int) -> list[models.Expression]:
+        stmt = (
+            update(models.Expression)
+            .where(models.Expression.node_id == node_id)
+            .where(models.Expression.type == "SUB")
+            .where(models.Expression.idx >= new_idx)
+            .values(idx=models.Expression.idx + 1)
+            .returning(models.Expression)
+        )
+        result = await self.session.execute(stmt)
+        await self.session.flush()
+        return list(result.scalars().all())
+
     async def list_by_graph(self, graph_id: uuid.UUID) -> list[models.Expression]:
         result = await self.session.execute(
             select(models.Expression)

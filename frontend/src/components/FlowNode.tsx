@@ -1,4 +1,4 @@
-import { DotsHorizontalIcon, PlusIcon } from '@radix-ui/react-icons';
+import { DotsHorizontalIcon } from '@radix-ui/react-icons';
 import type { BadgeProps } from '@radix-ui/themes';
 import { Badge, Box, DropdownMenu, Flex, IconButton } from '@radix-ui/themes';
 import { Handle, type NodeProps, Position, useUpdateNodeInternals } from '@xyflow/react';
@@ -65,16 +65,41 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
     return myExpressions.filter(e => e.type === 'SUB').sort((a, b) => a.idx - b.idx);
   }, [myExpressions, isSwitch]);
 
-  const handleAddItem = useCallback(() => {
-    const newExpressionId = crypto.randomUUID();
-    createExpression.mutate({
-      nodeId: node.id,
-      raw_string: '',
-      graphId: node.graph_id,
-      type: 'SUB',
-      expressionId: newExpressionId,
-    });
-  }, [createExpression, node.id, node.graph_id]);
+  const handleAddAbove = useCallback(
+    (index: number) => {
+      const expr = subExpressions[index];
+      if (expr) {
+        const newExpressionId = crypto.randomUUID();
+        createExpression.mutate({
+          nodeId: node.id,
+          raw_string: '',
+          graphId: node.graph_id,
+          type: 'SUB',
+          expressionId: newExpressionId,
+          idx: expr.idx,
+        });
+      }
+    },
+    [subExpressions, createExpression, node.id, node.graph_id]
+  );
+
+  const handleAddBelow = useCallback(
+    (index: number) => {
+      const expr = subExpressions[index];
+      if (expr) {
+        const newExpressionId = crypto.randomUUID();
+        createExpression.mutate({
+          nodeId: node.id,
+          raw_string: '',
+          graphId: node.graph_id,
+          type: 'SUB',
+          expressionId: newExpressionId,
+          idx: expr.idx + 1,
+        });
+      }
+    },
+    [subExpressions, createExpression, node.id, node.graph_id]
+  );
 
   const handleUpdateBase = useCallback(
     (newValue: string) => {
@@ -192,6 +217,9 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
                     onMoveDown={() => handleMoveDown(i)}
                     canMoveUp={i > 0}
                     canMoveDown={i < subExpressions.length - 1}
+                    onAddAbove={() => handleAddAbove(i)}
+                    onAddBelow={() => handleAddBelow(i)}
+                    canDelete={subExpressions.length > 1}
                   />
                   <Handle
                     id={expr.id}
@@ -202,14 +230,6 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
                 </div>
               );
             })}
-          </Flex>
-        )}
-
-        {isSwitch && (
-          <Flex gap="2" align="center" style={{ height: 32, marginTop: 8 }}>
-            <IconButton onClick={handleAddItem} size="1" variant="ghost" color="gray">
-              <PlusIcon/>
-            </IconButton>
           </Flex>
         )}
       </Flex>
@@ -225,7 +245,8 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
     handleDeleteItem,
     handleMoveUp,
     handleMoveDown,
-    handleAddItem,
+    handleAddAbove,
+    handleAddBelow,
   ]);
 
   if (!data) return null;

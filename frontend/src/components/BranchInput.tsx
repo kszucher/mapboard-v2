@@ -12,6 +12,9 @@ interface BranchInputProps {
   onMoveDown?: () => void;
   canMoveUp?: boolean;
   canMoveDown?: boolean;
+  onAddAbove?: () => void;
+  onAddBelow?: () => void;
+  canDelete?: boolean;
 }
 
 export const BranchInput = ({
@@ -24,6 +27,9 @@ export const BranchInput = ({
   onMoveDown,
   canMoveUp = false,
   canMoveDown = false,
+  onAddAbove,
+  onAddBelow,
+  canDelete = true,
 }: BranchInputProps) => {
   // Direct pass-through since PlainEditor handles local state
   const localValue = value;
@@ -47,6 +53,9 @@ export const BranchInput = ({
         onDelete={onDelete}
         canMoveUp={canMoveUp}
         canMoveDown={canMoveDown}
+        onAddAbove={onAddAbove}
+        onAddBelow={onAddBelow}
+        canDelete={canDelete}
       />
     </Flex>
   );

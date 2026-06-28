@@ -15,3 +15,4 @@ These guidelines apply to all development tasks in the Graphboard repository.
 - **Always** run typecheck and build validation after modifying frontend source code.
 - Run build verification using:
   - `npm.cmd run build` (on Windows) or `npm run build`
+- **NEVER** try to open up a frontend to validate UI functionality (e.g., using browser agents/tools); the user will always handle visual validation.
