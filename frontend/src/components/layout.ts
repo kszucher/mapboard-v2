@@ -5,6 +5,10 @@ import type { AppFlowEdge, AppFlowNode } from './types';
 
 const elk = new ELK();
 
+const NODE_PADDING = 6;
+const ROW_HEIGHT = 30;
+const HANDLE_SPREAD_PX = 10;
+
 const ELK_LAYOUT_OPTIONS: LayoutOptions = {
   'elk.algorithm': 'layered',
   'elk.direction': 'RIGHT',
@@ -25,26 +29,24 @@ const ELK_LAYOUT_OPTIONS: LayoutOptions = {
   'org.eclipse.elk.layered.thoroughness': '20',
 };
 
-interface XYHandleBounds {
-  id?: string | null;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
+const getOffset = (i: number, len: number) =>
+  len > 1 ? (i - (len - 1) / 2) * HANDLE_SPREAD_PX : 0;
 
-interface NodeHandleBounds {
-  target?: XYHandleBounds[];
-  source?: XYHandleBounds[];
-}
+const groupByHandle = (
+  edges: AppFlowEdge[],
+  key: 'sourceHandle' | 'targetHandle',
+  def: string
+) =>
+  edges.reduce<Record<string, AppFlowEdge[]>>((acc, e) => {
+    const id = e[key] ?? def;
+    (acc[id] ??= []).push(e);
+    return acc;
+  }, {});
 
-const findHandleBounds = (list: XYHandleBounds[] | undefined, handleId: string | null | undefined, def: string) =>
-  list?.find((h) => (h.id || def) === (handleId || def));
-
-const getOffset = (i: number, len: number) => len > 1 ? (i - (len - 1) / 2) * 10 : 0;
+const rowCenter = (rowIndex: number) => ROW_HEIGHT * rowIndex + ROW_HEIGHT / 2;
 
 const buildElkNodes = (
-  orderedNodes: (AppFlowNode & { handleBounds?: NodeHandleBounds })[],
+  orderedNodes: AppFlowNode[],
   edges: AppFlowEdge[]
 ): ElkNode[] => {
   const incomingMap: Record<string, AppFlowEdge[]> = {};
@@ -55,71 +57,55 @@ const buildElkNodes = (
   });
 
   return orderedNodes.map((node) => {
-    const { measured, width } = node;
-    const nodeWidth = measured?.width ?? width ?? 200;
+    const nodeWidth = node.measured?.width ?? node.width ?? 200;
 
     const nodeType = node.data?.node?.node_type;
     const isStart = nodeType === 'START';
     const isSwitch = nodeType === 'LOGICAL_SWITCH' || nodeType === 'AGENTIC_SWITCH';
-    const nodeExpressions = node.data?.expressions || [];
-    const subExpressions = nodeExpressions.filter((e) => e.type === 'SUB').sort((a, b) => a.idx - b.idx);
-    const subCount = subExpressions.length;
+    const subExpressions = (node.data?.expressions || [])
+      .filter((e) => e.type === 'SUB')
+      .sort((a, b) => a.idx - b.idx);
 
-    // Total rows (M): Start has 1 (Header), Switch has 2 + N, standard has 2 (Header + Base)
-    const rowCount = isStart ? 1 : (isSwitch ? 2 + subCount : 2);
-    const nodeHeight = 30 * rowCount + 6;
+    const rowCount = isStart ? 1 : isSwitch ? 2 + subExpressions.length : 2;
+    const nodeHeight = ROW_HEIGHT * rowCount + NODE_PADDING;
 
     const ports: ElkPort[] = [];
 
-    // WEST ports (targets)
-    const incoming = incomingMap[node.id] || [];
-    const targetGroups: Record<string, AppFlowEdge[]> = {};
-    incoming.forEach((e) => (targetGroups[e.targetHandle ?? 'target'] ??= []).push(e));
-
+    // WEST ports (targets) — always on row 1 (base expression row)
+    const targetGroups = groupByHandle(incomingMap[node.id] || [], 'targetHandle', 'target');
     Object.entries(targetGroups).forEach(([handleId, group]) => {
-      const bounds = findHandleBounds(node.handleBounds?.target, handleId, 'target');
-      const x = bounds && bounds.width > 0 ? bounds.x + bounds.width / 2 : 0;
-      const y = bounds && bounds.height > 0 ? bounds.y + bounds.height / 2 : 48; // Row 1 center (30 * 1 + 18)
-
       group.forEach((edge, index) => {
         ports.push({
           id: `${node.id}-target-${handleId}-${edge.id}`,
-          x,
-          y: y + getOffset(index, group.length),
+          x: 0,
+          y: rowCenter(1) + getOffset(index, group.length),
           width: 0,
           height: 0,
-          layoutOptions: { 'port.side': 'WEST' }
+          layoutOptions: { 'port.side': 'WEST' },
         });
       });
     });
 
     // EAST ports (sources)
-    const outgoing = outgoingMap[node.id] || [];
-    const sourceGroups: Record<string, AppFlowEdge[]> = {};
-    outgoing.forEach((e) => (sourceGroups[e.sourceHandle ?? '0'] ??= []).push(e));
-
+    const sourceGroups = groupByHandle(outgoingMap[node.id] || [], 'sourceHandle', '0');
     Object.entries(sourceGroups).forEach(([handleId, group]) => {
       const exprIdx = subExpressions.findIndex((e) => e.id === handleId);
-      const bounds = findHandleBounds(node.handleBounds?.source, handleId, '0');
-      const x = bounds && bounds.width > 0 ? bounds.x + bounds.width / 2 : nodeWidth;
-
-      const fallbackRowIdx = isStart ? 0 : (isSwitch && exprIdx !== -1 ? 2 + exprIdx : 1);
-      const y = bounds && bounds.height > 0 ? bounds.y + bounds.height / 2 : 30 * fallbackRowIdx + 18;
+      const rowIdx = isStart ? 0 : isSwitch && exprIdx !== -1 ? 2 + exprIdx : 1;
 
       group.forEach((edge, index) => {
         ports.push({
           id: `${node.id}-source-${handleId}-${edge.id}`,
-          x,
-          y: y + getOffset(index, group.length),
+          x: nodeWidth,
+          y: rowCenter(rowIdx) + getOffset(index, group.length),
           width: 0,
           height: 0,
-          layoutOptions: { 'port.side': 'EAST' }
+          layoutOptions: { 'port.side': 'EAST' },
         });
       });
     });
 
     const nodeLayoutOptions: LayoutOptions = { 'elk.portConstraints': 'FIXED_POS' };
-    if (nodeType === 'START') nodeLayoutOptions['org.eclipse.elk.layered.layering.layerConstraint'] = 'FIRST';
+    if (isStart) nodeLayoutOptions['org.eclipse.elk.layered.layering.layerConstraint'] = 'FIRST';
 
     return {
       id: node.id,
@@ -131,24 +117,15 @@ const buildElkNodes = (
   });
 };
 
-const buildElkEdges = (edges: AppFlowEdge[]): ElkExtendedEdge[] => {
-  return edges.map((edge) => {
-    const sourceHandleId = edge.sourceHandle ?? '0';
-    const targetHandleId = edge.targetHandle ?? 'target';
+const buildElkEdges = (edges: AppFlowEdge[]): ElkExtendedEdge[] =>
+  edges.map((edge) => ({
+    id: edge.id,
+    sources: [`${edge.source}-source-${edge.sourceHandle ?? '0'}-${edge.id}`],
+    targets: [`${edge.target}-target-${edge.targetHandle ?? 'target'}-${edge.id}`],
+  }));
 
-    return {
-      id: edge.id,
-      sources: [`${edge.source}-source-${sourceHandleId}-${edge.id}`],
-      targets: [`${edge.target}-target-${targetHandleId}-${edge.id}`],
-    };
-  });
-};
-
-/**
- * Computes deterministic node positions and edge layout sections using ELK.
- */
 export const getLayoutedElements = async (
-  nodes: (AppFlowNode & { handleBounds?: NodeHandleBounds })[],
+  nodes: AppFlowNode[],
   edges: AppFlowEdge[]
 ): Promise<{
   positions: Record<string, { x: number; y: number }>;
