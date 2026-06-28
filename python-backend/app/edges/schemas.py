@@ -14,6 +14,7 @@ class EdgeCreate(BaseModel):
     to_node_id: uuid.UUID
     handle_index: int
     from_expression_id: uuid.UUID | None = None
+    to_expression_id: uuid.UUID | None = None
 
 
 class EdgeRead(EdgeCreate, OrmModel):

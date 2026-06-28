@@ -140,6 +140,7 @@ async def sync_graph_flow(
             edge.to_node_id = edge_payload.to_node_id
             edge.handle_index = edge_payload.handle_index
             edge.from_expression_id = edge_payload.from_expression_id
+            edge.to_expression_id = edge_payload.to_expression_id
         else:
             # Insert new edge
             await uow.edges.create(
@@ -150,6 +151,7 @@ async def sync_graph_flow(
                     to_node_id=edge_payload.to_node_id,
                     handle_index=edge_payload.handle_index,
                     from_expression_id=edge_payload.from_expression_id,
+                    to_expression_id=edge_payload.to_expression_id,
                 )
             )
 

@@ -14,6 +14,7 @@ const NODE_COLORS: Record<NodeType, NodeColor> = {
   AGENT: 'blue',
   LOGICAL_SWITCH: 'amber',
   AGENTIC_SWITCH: 'grass',
+  JOIN: 'indigo',
 };
 
 const NODE_LABELS: Record<NodeType, string> = {
@@ -22,6 +23,7 @@ const NODE_LABELS: Record<NodeType, string> = {
   AGENT: 'Agent',
   LOGICAL_SWITCH: 'Logical Switch',
   AGENTIC_SWITCH: 'Agentic Switch',
+  JOIN: 'Join',
 };
 
 export const useCreateNode = () => {
@@ -42,7 +44,7 @@ export const useCreateNode = () => {
         },
       });
       if ('error' in res) throw res.error;
-      return res.data as string;
+      return res.data;
     },
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.graphs.flow(variables.graphId) });
@@ -61,6 +63,7 @@ export const useDeleteNode = () => {
         headers: { 'X-Client-Id': getClientId() },
       });
       if ('error' in res) throw res.error;
+      return res.data;
     },
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.graphs.flow(variables.graphId) });
@@ -91,7 +94,7 @@ export const useAddConnectedNode = () => {
   return useMutation({
     mutationFn: async (variables: {
       expressionId: string;
-      nodeType: 'LOGIC' | 'AGENT' | 'LOGICAL_SWITCH' | 'AGENTIC_SWITCH';
+      nodeType: 'LOGIC' | 'AGENT' | 'LOGICAL_SWITCH' | 'AGENTIC_SWITCH' | 'JOIN';
       graphId: string;
     }) => {
       const res = await apiClient.POST('/nodes/from-expression/{expression_id}', {

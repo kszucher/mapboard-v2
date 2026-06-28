@@ -12,6 +12,7 @@ export const useCreateEdge = () => {
       toNodeId,
       handleIndex,
       fromExpressionId,
+      toExpressionId,
       edgeId,
     }: {
       graphId: string;
@@ -19,6 +20,7 @@ export const useCreateEdge = () => {
       toNodeId: string;
       handleIndex: number;
       fromExpressionId?: string;
+      toExpressionId?: string;
       edgeId?: string;
     }) => {
       const res = await apiClient.POST('/edges/', {
@@ -30,6 +32,7 @@ export const useCreateEdge = () => {
           to_node_id: toNodeId,
           handle_index: handleIndex,
           from_expression_id: fromExpressionId,
+          to_expression_id: toExpressionId,
         },
       });
       if ('error' in res) throw res.error;

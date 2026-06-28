@@ -84,7 +84,12 @@ class Expression(Base):
     raw_string: Mapped[str] = mapped_column(Text, nullable=False)
 
     node: Mapped[Node] = relationship("Node", back_populates="expressions")
-    edges: Mapped[list[Edge]] = relationship("Edge", back_populates="from_expression")
+    edges: Mapped[list[Edge]] = relationship(
+        "Edge", foreign_keys="[Edge.from_expression_id]", back_populates="from_expression"
+    )
+    incoming_edges: Mapped[list[Edge]] = relationship(
+        "Edge", foreign_keys="[Edge.to_expression_id]", back_populates="to_expression"
+    )
 
 
 class Edge(Base):
@@ -103,6 +108,9 @@ class Edge(Base):
     from_expression_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("expressions.id", ondelete="CASCADE"), nullable=True
     )
+    to_expression_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("expressions.id", ondelete="CASCADE"), nullable=True
+    )
     handle_index: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     graph: Mapped[Graph] = relationship("Graph", back_populates="edges")
@@ -112,4 +120,9 @@ class Edge(Base):
     to_node: Mapped[Node] = relationship(
         "Node", foreign_keys=[to_node_id], back_populates="incoming_edges", lazy="joined"
     )
-    from_expression: Mapped[Expression | None] = relationship("Expression", back_populates="edges")
+    from_expression: Mapped[Expression | None] = relationship(
+        "Expression", foreign_keys=[from_expression_id], back_populates="edges"
+    )
+    to_expression: Mapped[Expression | None] = relationship(
+        "Expression", foreign_keys=[to_expression_id], back_populates="incoming_edges"
+    )

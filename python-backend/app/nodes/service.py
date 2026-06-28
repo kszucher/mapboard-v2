@@ -81,12 +81,14 @@ async def create_connected_node(
         NodeType.AGENT: "blue",
         NodeType.LOGICAL_SWITCH: "amber",
         NodeType.AGENTIC_SWITCH: "grass",
+        NodeType.JOIN: "indigo",
     }
     NODE_LABELS = {
         NodeType.LOGIC: "Logic",
         NodeType.AGENT: "Agent",
         NodeType.LOGICAL_SWITCH: "Logical Switch",
         NodeType.AGENTIC_SWITCH: "Agentic Switch",
+        NodeType.JOIN: "Join",
     }
 
     # 1. Create the new node using repository directly
@@ -104,6 +106,14 @@ async def create_connected_node(
     # 2. Initialize default expressions for the new node
     await expression_service.create_default_expressions_for_node(uow, new_node)
 
+    to_expression_id = None
+    if node_type == NodeType.JOIN:
+        new_node_expressions = await uow.expressions.list_by_node(new_node.id)
+        sub_exprs = [e for e in new_node_expressions if e.type == "SUB"]
+        if sub_exprs:
+            sub_exprs.sort(key=lambda x: x.idx)
+            to_expression_id = sub_exprs[0].id
+
     # 4. Create the connecting edge using repository directly
     await uow.edges.create(
         EdgeCreate(
@@ -111,13 +121,14 @@ async def create_connected_node(
             from_node_id=parent_node.id,
             to_node_id=new_node.id,
             from_expression_id=expr.id,
+            to_expression_id=to_expression_id,
             handle_index=0,
         )
     )
 
     uow.emit(
         event=EventName.GRAPH_UPDATED,
-        graph_id=new_node.graph_id,
+        graph_id=parent_node.graph_id,
         payload={},
     )
 
@@ -129,8 +140,8 @@ async def shortcircuit_node(uow: UnitOfWork, node_id: uuid.UUID) -> None:
     if not node:
         return
 
-    if node.node_type in (NodeType.START, NodeType.LOGICAL_SWITCH, NodeType.AGENTIC_SWITCH):
-        raise ValidationError("Cannot shortcircuit START or SWITCH nodes.")
+    if node.node_type in (NodeType.START, NodeType.LOGICAL_SWITCH, NodeType.AGENTIC_SWITCH, NodeType.JOIN):
+        raise ValidationError("Cannot shortcircuit START, SWITCH, or JOIN nodes.")
 
     # 1. Get all edges connected to the node
     all_edges = await uow.edges.list_by_node(node_id)

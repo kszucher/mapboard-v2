@@ -430,6 +430,8 @@ export interface components {
       handle_index: number;
       /** From Expression Id */
       from_expression_id?: string | null;
+      /** To Expression Id */
+      to_expression_id?: string | null;
     };
     /** EdgeRead */
     EdgeRead: {
@@ -457,6 +459,8 @@ export interface components {
       handle_index: number;
       /** From Expression Id */
       from_expression_id?: string | null;
+      /** To Expression Id */
+      to_expression_id?: string | null;
     };
     /** ExpressionCreate */
     ExpressionCreate: {
@@ -604,7 +608,7 @@ export interface components {
      * NodeType
      * @enum {string}
      */
-    NodeType: "START" | "LOGIC" | "AGENT" | "LOGICAL_SWITCH" | "AGENTIC_SWITCH";
+    NodeType: "START" | "LOGIC" | "AGENT" | "LOGICAL_SWITCH" | "AGENTIC_SWITCH" | "JOIN";
     /** SetActiveGraph */
     SetActiveGraph: {
       /**

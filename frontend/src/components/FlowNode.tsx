@@ -52,19 +52,21 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   const { node } = data;
   const isStart = node.node_type === 'START';
   const isSwitch = node.node_type === 'LOGICAL_SWITCH' || node.node_type === 'AGENTIC_SWITCH';
+  const isJoin = node.node_type === 'JOIN';
+  const isSwitchOrJoin = isSwitch || isJoin;
 
   const baseExpression = useMemo(() => {
     if (isStart) return null;
-    if (isSwitch) {
+    if (isSwitchOrJoin) {
       return myExpressions.find(e => e.type === 'BASE');
     }
     return myExpressions[0];
-  }, [myExpressions, isSwitch, isStart]);
+  }, [myExpressions, isSwitchOrJoin, isStart]);
 
   const subExpressions = useMemo(() => {
-    if (!isSwitch) return [];
+    if (!isSwitchOrJoin) return [];
     return myExpressions.filter(e => e.type === 'SUB').sort((a, b) => a.idx - b.idx);
-  }, [myExpressions, isSwitch]);
+  }, [myExpressions, isSwitchOrJoin]);
 
   const handleAddAbove = useCallback(
     (index: number) => {
@@ -191,7 +193,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
             </IconButton>
           </DropdownMenu.Trigger>
           <DropdownMenu.Content onCloseAutoFocus={e => e.preventDefault()}>
-            {!isStart && !isSwitch && (
+            {!isStart && !isSwitchOrJoin && (
               <DropdownMenu.Item onClick={handleShortcircuit}>
                 {'Shortcircuit'}
               </DropdownMenu.Item>
@@ -207,17 +209,51 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
         )}
       </Flex>
 
+      {isJoin && subExpressions.map((expr, i) => (
+        <Flex key={expr.id} align="center" width="100%" height="24px" style={{ position: 'relative' }}>
+          <Handle
+            type="target"
+            id={expr.id}
+            position={Position.Left}
+            style={{ left: -NODE_PADDING }}
+          />
+          <Flex className="nodrag nopan" flexGrow="1" align="center" height="100%">
+            <FlowNodeExpressionEditor
+              initialValue={expr.raw_string}
+              onSave={(newValue) => handleUpdateItem(i, newValue)}
+              minWidth={100}
+              actions={
+                <FlowNodeExpressionActions
+                  expressionId={expr.id}
+                  graphId={node.graph_id}
+                  onMoveUp={() => handleMoveUp(i)}
+                  onMoveDown={() => handleMoveDown(i)}
+                  onDelete={() => handleDeleteItem(i)}
+                  canMoveUp={i > 0}
+                  canMoveDown={i < subExpressions.length - 1}
+                  onAddAbove={() => handleAddAbove(i)}
+                  onAddBelow={() => handleAddBelow(i)}
+                  canDelete={subExpressions.length > 1}
+                />
+              }
+            />
+          </Flex>
+        </Flex>
+      ))}
+
       {baseExpression && (
         <Flex align="center" width="100%" height="24px" style={{ position: 'relative' }}>
-          <Handle type="target" position={Position.Left} style={{ left: -NODE_PADDING }} />
-          <Flex className="nodrag nopan" flexGrow="1" align="center" height="100%">
+          {!isJoin && (
+            <Handle type="target" position={Position.Left} style={{ left: -NODE_PADDING }} />
+          )}
+          <Flex className="nodrag nopan" flexGrow="1" align="center" height="100%" pl={isJoin ? '5' : undefined}>
             <FlowNodeExpressionEditor
               initialValue={baseExpression.raw_string}
               onSave={handleUpdateBase}
               minWidth={240}
               maxWidth={600}
               actions={
-                !isSwitch ? (
+                !isSwitchOrJoin ? (
                   <FlowNodeExpressionActions
                     expressionId={baseExpression.id}
                     graphId={node.graph_id}
@@ -226,7 +262,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
               }
             />
           </Flex>
-          {!isSwitch && (
+          {(!isSwitch || isJoin) && (
             <Handle
               id={baseExpression.id}
               type="source"

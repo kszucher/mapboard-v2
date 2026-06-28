@@ -9,7 +9,7 @@ import { Flow } from './Flow.tsx';
 import { useGraphHistory } from './hooks/useGraphHistory';
 
 type NodeType = components['schemas']['NodeRead']['node_type'];
-const NODE_TYPES: NodeType[] = ['START', 'LOGIC', 'AGENT', 'LOGICAL_SWITCH', 'AGENTIC_SWITCH'];
+const NODE_TYPES: NodeType[] = ['START', 'LOGIC', 'AGENT', 'LOGICAL_SWITCH', 'AGENTIC_SWITCH', 'JOIN'];
 
 export const Frame = () => {
   const { data: userId } = useUserId();

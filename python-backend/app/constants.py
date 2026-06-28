@@ -21,6 +21,7 @@ class NodeType(str, Enum):
     AGENT = "AGENT"
     LOGICAL_SWITCH = "LOGICAL_SWITCH"
     AGENTIC_SWITCH = "AGENTIC_SWITCH"
+    JOIN = "JOIN"
 
 
 class ExpressionType(str, Enum):

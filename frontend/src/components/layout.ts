@@ -62,23 +62,27 @@ const buildElkNodes = (
     const nodeType = node.data?.node?.node_type;
     const isStart = nodeType === 'START';
     const isSwitch = nodeType === 'LOGICAL_SWITCH' || nodeType === 'AGENTIC_SWITCH';
+    const isJoin = nodeType === 'JOIN';
     const subExpressions = (node.data?.expressions || [])
       .filter((e) => e.type === 'SUB')
       .sort((a, b) => a.idx - b.idx);
 
-    const rowCount = isStart ? 1 : isSwitch ? 2 + subExpressions.length : 2;
+    const rowCount = isStart ? 1 : (isSwitch || isJoin) ? 2 + subExpressions.length : 2;
     const nodeHeight = ROW_HEIGHT * rowCount + NODE_PADDING;
 
     const ports: ElkPort[] = [];
 
-    // WEST ports (targets) — always on row 1 (base expression row)
+    // WEST ports (targets)
     const targetGroups = groupByHandle(incomingMap[node.id] || [], 'targetHandle', 'target');
     Object.entries(targetGroups).forEach(([handleId, group]) => {
+      const exprIdx = subExpressions.findIndex((e) => e.id === handleId);
+      const rowIdx = isJoin && exprIdx !== -1 ? 1 + exprIdx : 1;
+
       group.forEach((edge, index) => {
         ports.push({
           id: `${node.id}-target-${handleId}-${edge.id}`,
           x: 0,
-          y: rowCenter(1) + getOffset(index, group.length),
+          y: rowCenter(rowIdx) + getOffset(index, group.length),
           width: 0,
           height: 0,
           layoutOptions: { 'port.side': 'WEST' },
@@ -90,7 +94,14 @@ const buildElkNodes = (
     const sourceGroups = groupByHandle(outgoingMap[node.id] || [], 'sourceHandle', '0');
     Object.entries(sourceGroups).forEach(([handleId, group]) => {
       const exprIdx = subExpressions.findIndex((e) => e.id === handleId);
-      const rowIdx = isStart ? 0 : isSwitch && exprIdx !== -1 ? 2 + exprIdx : 1;
+      let rowIdx = 1;
+      if (isStart) {
+        rowIdx = 0;
+      } else if (isSwitch && exprIdx !== -1) {
+        rowIdx = 2 + exprIdx;
+      } else if (isJoin) {
+        rowIdx = 1 + subExpressions.length;
+      }
 
       group.forEach((edge, index) => {
         ports.push({

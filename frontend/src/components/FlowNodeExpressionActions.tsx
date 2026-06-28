@@ -42,7 +42,7 @@ export const FlowNodeExpressionActions = ({
   const hasConnectedNode = !!connectedEdge;
 
   const handleAddConnectedNode = useCallback(
-    (nodeType: 'LOGIC' | 'AGENT' | 'LOGICAL_SWITCH' | 'AGENTIC_SWITCH') => {
+    (nodeType: 'LOGIC' | 'AGENT' | 'LOGICAL_SWITCH' | 'AGENTIC_SWITCH' | 'JOIN') => {
       addConnectedNode.mutate({ expressionId, nodeType, graphId });
     },
     [addConnectedNode, expressionId, graphId]
@@ -119,6 +119,8 @@ export const FlowNodeExpressionActions = ({
                 onClick={() => handleAddConnectedNode('LOGICAL_SWITCH')}>{'Logical Switch'}</DropdownMenu.Item>
               <DropdownMenu.Item
                 onClick={() => handleAddConnectedNode('AGENTIC_SWITCH')}>{'Agentic Switch'}</DropdownMenu.Item>
+              <DropdownMenu.Item
+                onClick={() => handleAddConnectedNode('JOIN')}>{'Join'}</DropdownMenu.Item>
             </DropdownMenu.SubContent>
           </DropdownMenu.Sub>
         )}

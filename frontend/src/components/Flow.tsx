@@ -112,6 +112,7 @@ const FlowContent = ({
           source: edge.from_node_id,
           target: edge.to_node_id,
           sourceHandle: edge.from_expression_id ?? String(edge.handle_index),
+          targetHandle: edge.to_expression_id ?? undefined,
           type: 'custom' as const,
           animated: true,
           data: {
@@ -188,9 +189,9 @@ const FlowContent = ({
 
   // Shared helper — handles both new connections and reconnects
   const createEdgeFromConnection = useCallback(
-    (connection: Pick<Connection, 'source' | 'target' | 'sourceHandle'>) => {
+    (connection: Pick<Connection, 'source' | 'target' | 'sourceHandle' | 'targetHandle'>) => {
       if (!connection.source || !connection.target) return;
-      const { sourceHandle } = connection;
+      const { sourceHandle, targetHandle } = connection;
       createEdge({
         edgeId: crypto.randomUUID(),
         graphId: selectedGraphId,
@@ -198,6 +199,7 @@ const FlowContent = ({
         toNodeId: connection.target,
         handleIndex: isExpressionHandle(sourceHandle) ? 0 : (Number(sourceHandle) || 0),
         fromExpressionId: isExpressionHandle(sourceHandle) ? sourceHandle : undefined,
+        toExpressionId: isExpressionHandle(targetHandle) ? targetHandle : undefined,
       });
     },
     [selectedGraphId, createEdge],
