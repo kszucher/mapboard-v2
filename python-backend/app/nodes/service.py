@@ -154,10 +154,12 @@ async def shortcircuit_node(uow: UnitOfWork, node_id: uuid.UUID) -> None:
         # Sort outgoing edges by handle_index
         outgoing.sort(key=lambda e: e.handle_index)
         primary_target_node_id = outgoing[0].to_node_id
+        primary_target_expression_id = outgoing[0].to_expression_id
 
-        # Retarget all incoming edges' to_node_id to the primary target
+        # Retarget all incoming edges' to_node_id and to_expression_id to the primary target
         for in_edge in incoming:
             in_edge.to_node_id = primary_target_node_id
+            in_edge.to_expression_id = primary_target_expression_id
 
         # All outgoing edges will be deleted because their source node is deleted (cascade delete).
         # We collect their IDs to emit EDGE_DELETED events.
@@ -238,7 +240,9 @@ async def insert_node_between(
         raise ValidationError("Base expression not created for the new node.")
 
     # 4. Reassign original edge to point to the newly created node
+    old_to_expression_id = existing_edge.to_expression_id
     existing_edge.to_node_id = new_node.id
+    existing_edge.to_expression_id = None
     await uow.session.flush()
 
     # 7. Create the new connecting edge from new node to the old target node
@@ -248,6 +252,7 @@ async def insert_node_between(
             from_node_id=new_node.id,
             to_node_id=old_to_node_id,
             from_expression_id=new_base_expr.id,
+            to_expression_id=old_to_expression_id,
             handle_index=0,
         )
     )
