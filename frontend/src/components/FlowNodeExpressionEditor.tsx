@@ -8,7 +8,7 @@ interface PlainEditorProps {
   maxWidth?: number;
 }
 
-export const PlainEditor = ({
+export const FlowNodeExpressionEditor = ({
   initialValue,
   onSave,
   minWidth = 240,

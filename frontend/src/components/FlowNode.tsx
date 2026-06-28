@@ -13,8 +13,8 @@ import {
   useUpdateExpression,
 } from '../api/mutations';
 
-import { ExpressionActionsDropdown } from './ExpressionActionsDropdown';
-import { PlainEditor } from './PlainEditor';
+import { FlowNodeExpressionActions } from './FlowNodeExpressionActions.tsx';
+import { FlowNodeExpressionEditor } from './FlowNodeExpressionEditor.tsx';
 import type { AppFlowNode } from './types.ts';
 
 const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
@@ -229,7 +229,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
           <Handle type="target" position={Position.Left} style={{ left: -6 }}/>
           <Flex gap="2" align="center" width="100%" height="100%">
             <Flex className="nodrag nopan" flexGrow="1" align="center" height="100%">
-              <PlainEditor
+              <FlowNodeExpressionEditor
                 initialValue={baseExpression.raw_string}
                 onSave={handleUpdateBase}
                 minWidth={240}
@@ -237,7 +237,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
               />
             </Flex>
             {!isSwitch && (
-              <ExpressionActionsDropdown
+              <FlowNodeExpressionActions
                 expressionId={baseExpression.id}
                 graphId={node.graph_id}
               />
@@ -259,13 +259,13 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
         <Flex key={expr.id} align="center" width="100%" height="24px" style={{ position: 'relative' }}>
           <Flex gap="2" align="center" width="100%" height="100%">
             <Flex className="nodrag nopan" flexGrow="1" align="center" height="100%">
-              <PlainEditor
+              <FlowNodeExpressionEditor
                 initialValue={expr.raw_string}
                 onSave={(newValue) => handleUpdateItem(i, newValue)}
                 minWidth={100}
               />
             </Flex>
-            <ExpressionActionsDropdown
+            <FlowNodeExpressionActions
               expressionId={expr.id}
               graphId={node.graph_id}
               onMoveUp={() => handleMoveUp(i)}

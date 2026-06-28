@@ -18,7 +18,7 @@ interface ExpressionActionsDropdownProps {
   canDelete?: boolean;
 }
 
-export const ExpressionActionsDropdown = ({
+export const FlowNodeExpressionActions = ({
   expressionId,
   graphId,
   triggerStyle,
