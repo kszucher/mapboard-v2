@@ -17,6 +17,8 @@ import { FlowNodeExpressionActions } from './FlowNodeExpressionActions.tsx';
 import { FlowNodeExpressionEditor } from './FlowNodeExpressionEditor.tsx';
 import type { AppFlowNode } from './types.ts';
 
+const NODE_PADDING = 6;
+
 const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   const deleteNodeMutation = useDeleteNode();
   const shortcircuitNodeMutation = useShortcircuitNode();
@@ -159,37 +161,25 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
 
   if (!data) return null;
 
-  const isLayoutReady = data.isLayoutReady ?? false;
-
   return (
     <Flex
       direction="column"
+      gap="1"
+      minWidth="240px"
       style={{
-        background: '#222222',
-        borderRadius: 12,
-        padding: '6px',
-        gap: '6px',
-        minWidth: 240,
-        opacity: isLayoutReady ? 1 : 0,
+        background: 'var(--gray-3)',
+        borderRadius: 'var(--radius-3)',
+        padding: NODE_PADDING,
+        gap: NODE_PADDING,
         transition: 'opacity 0.2s ease-in-out',
-        boxSizing: 'border-box',
       }}
     >
-      {/* Header Row */}
       <Flex align="center" justify="between" width="100%" height="24px" style={{ position: 'relative' }}>
         <Flex direction="row" gap="1" align="center">
-          <Badge
-            color="gray"
-            size="1"
-            style={{ height: '24px', display: 'inline-flex', alignItems: 'center' }}
-          >
+          <Badge color="gray" size="1" style={{ height: 'var(--space-5)' }}>
             {'N' + data.node.iid}
           </Badge>
-          <Badge
-            color={data.node.color as BadgeProps['color']}
-            size="1"
-            style={{ height: '24px', display: 'inline-flex', alignItems: 'center' }}
-          >
+          <Badge color={data.node.color as BadgeProps['color']} size="1" style={{ height: 'var(--space-5)' }}>
             {data.node.label}
           </Badge>
         </Flex>
@@ -197,7 +187,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
         <DropdownMenu.Root modal={false}>
           <DropdownMenu.Trigger>
             <IconButton variant="soft" size="1" color="gray" style={{ pointerEvents: 'auto', background: 'none' }}>
-              <DotsHorizontalIcon/>
+              <DotsHorizontalIcon />
             </IconButton>
           </DropdownMenu.Trigger>
           <DropdownMenu.Content onCloseAutoFocus={e => e.preventDefault()}>
@@ -213,14 +203,13 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
         </DropdownMenu.Root>
 
         {isStart && (
-          <Handle id="0" type="source" position={Position.Right} style={{ right: -6 }}/>
+          <Handle id="0" type="source" position={Position.Right} style={{ right: -NODE_PADDING }} />
         )}
       </Flex>
 
-      {/* Base Expression Row */}
       {baseExpression && (
         <Flex align="center" width="100%" height="24px" style={{ position: 'relative' }}>
-          <Handle type="target" position={Position.Left} style={{ left: -6 }}/>
+          <Handle type="target" position={Position.Left} style={{ left: -NODE_PADDING }} />
           <Flex className="nodrag nopan" flexGrow="1" align="center" height="100%">
             <FlowNodeExpressionEditor
               initialValue={baseExpression.raw_string}
@@ -242,13 +231,12 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
               id={baseExpression.id}
               type="source"
               position={Position.Right}
-              style={{ right: -6 }}
+              style={{ right: -NODE_PADDING }}
             />
           )}
         </Flex>
       )}
 
-      {/* Sub Expressions */}
       {isSwitch && subExpressions.map((expr, i) => (
         <Flex key={expr.id} align="center" width="100%" height="24px" style={{ position: 'relative' }}>
           <Flex className="nodrag nopan" flexGrow="1" align="center" height="100%" pl="5">
@@ -276,7 +264,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
             id={expr.id}
             type="source"
             position={Position.Right}
-            style={{ right: -6 }}
+            style={{ right: -NODE_PADDING }}
           />
         </Flex>
       ))}

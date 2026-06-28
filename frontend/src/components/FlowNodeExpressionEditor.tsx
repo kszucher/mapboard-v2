@@ -1,4 +1,4 @@
-import { Box, TextField } from '@radix-ui/themes';
+import { Flex, TextField } from '@radix-ui/themes';
 import { useEffect, useRef, useState } from 'react';
 
 interface PlainEditorProps {
@@ -30,7 +30,6 @@ export const FlowNodeExpressionEditor = ({
     onSaveRef.current = onSave;
   }, [onSave]);
 
-  // Sync initialValue if it changes from outside and editor is not focused
   useEffect(() => {
     if (isFocusedRef.current) return;
     if (initialValue !== internalValueRef.current) {
@@ -41,7 +40,6 @@ export const FlowNodeExpressionEditor = ({
 
   const hasActions = !!actions;
 
-  // Adjust width dynamically based on text content length (local and instant)
   useEffect(() => {
     const span = spanRef.current;
     if (!span) return;
@@ -51,25 +49,21 @@ export const FlowNodeExpressionEditor = ({
     setMeasuredWidth(finalWidth);
   }, [value, minWidth, maxWidth, hasActions]);
 
-  // Debounced save handler
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value.replace(/[\r\n]/g, '');
     internalValueRef.current = newValue;
     setValue(newValue);
 
-    // Clear previous save timer
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
 
-    // Set new timer to save after 500ms of inactivity
     debounceTimerRef.current = setTimeout(() => {
       onSaveRef.current(newValue);
     }, 1000);
   };
 
-  // Clean up timer on unmount
   useEffect(() => {
     return () => {
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
@@ -79,7 +73,6 @@ export const FlowNodeExpressionEditor = ({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      // Force immediate save on Enter / commit
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
       }
@@ -94,31 +87,19 @@ export const FlowNodeExpressionEditor = ({
 
   const handleBlur = () => {
     isFocusedRef.current = false;
-    // Force immediate save on blur
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
     onSaveRef.current(value);
   };
 
-  const commonStyles: React.CSSProperties = {
-    fontFamily: 'var(--font-mono)',
-    fontSize: '13px',
-    lineHeight: '1.3',
-    boxSizing: 'border-box',
-  };
-
   return (
-    <Box
+    <Flex
+      direction="column"
       className="nodrag nopan"
       onDoubleClick={(e) => e.stopPropagation()}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        width: '100%',
-        minWidth: `${measuredWidth}px`,
-        boxSizing: 'border-box',
-      }}
+      width="100%"
+      minWidth={`${measuredWidth}px`}
     >
       <span
         ref={spanRef}
@@ -128,7 +109,6 @@ export const FlowNodeExpressionEditor = ({
           whiteSpace: 'pre',
           fontFamily: 'var(--font-mono)',
           fontSize: '13px',
-          letterSpacing: 'normal',
         }}
       >
         {value || ' '}
@@ -144,11 +124,7 @@ export const FlowNodeExpressionEditor = ({
         color="gray"
         variant="soft"
         size="1"
-        style={{
-          ...commonStyles,
-          width: '100%',
-          height: '24px',
-        }}
+        style={{ fontFamily: 'var(--font-mono)', fontSize: '13px' }}
       >
         {actions && (
           <TextField.Slot side="right" pl="3" pr="1">
@@ -156,6 +132,6 @@ export const FlowNodeExpressionEditor = ({
           </TextField.Slot>
         )}
       </TextField.Root>
-    </Box>
+    </Flex>
   );
 };

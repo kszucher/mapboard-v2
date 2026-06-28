@@ -154,11 +154,11 @@ export const Frame = () => {
 
       {/* Flow */}
       {isGraphSelected && (
-        <div style={{ width: '100vw', height: '100vh' }}>
+        <Box width="100vw" height="100vh">
           <ReactFlowProvider>
             <Flow selectedGraphId={selectedGraphId}/>
           </ReactFlowProvider>
-        </div>
+        </Box>
       )}
     </>
   );
