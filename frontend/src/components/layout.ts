@@ -40,7 +40,7 @@ const getUniqueHandles = (
   );
 };
 
-const buildElkNodes = (orderedNodes: AppFlowNode[], edges: AppFlowEdge[]): ElkNode[] => {
+const buildElkNodes = (nodes: AppFlowNode[], edges: AppFlowEdge[]): ElkNode[] => {
   const incomingMap: Record<string, AppFlowEdge[]> = {};
   const outgoingMap: Record<string, AppFlowEdge[]> = {};
   edges.forEach((e) => {
@@ -48,7 +48,7 @@ const buildElkNodes = (orderedNodes: AppFlowNode[], edges: AppFlowEdge[]): ElkNo
     (outgoingMap[e.source] ??= []).push(e);
   });
 
-  return orderedNodes.map((node) => {
+  return nodes.map((node) => {
     const nodeWidth = node.measured?.width ?? node.width ?? 200;
     const nodeType = node.data?.node?.node_type;
     const isStart = nodeType === 'START';
@@ -117,15 +117,10 @@ export const getLayoutedElements = async (
   positions: Record<string, { x: number; y: number }>;
   edgeSections: Record<string, ElkExtendedEdge>;
 }> => {
-  const orderedNodes = [...nodes].sort((a, b) =>
-    (b.data?.node?.node_type === 'START' ? 1 : 0) -
-    (a.data?.node?.node_type === 'START' ? 1 : 0)
-  );
-
   const layoutedGraph = await elk.layout({
     id: 'root',
     layoutOptions: ELK_LAYOUT_OPTIONS,
-    children: buildElkNodes(orderedNodes, edges),
+    children: buildElkNodes(nodes, edges),
     edges: buildElkEdges(edges),
   });
 
