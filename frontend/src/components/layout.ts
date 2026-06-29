@@ -7,7 +7,6 @@ const elk = new ELK();
 
 const NODE_PADDING = 6;
 const ROW_HEIGHT = 30;
-const HANDLE_SPREAD_PX = 10;
 
 const ELK_LAYOUT_OPTIONS: LayoutOptions = {
   'elk.algorithm': 'layered',
@@ -29,9 +28,6 @@ const ELK_LAYOUT_OPTIONS: LayoutOptions = {
   'org.eclipse.elk.layered.thoroughness': '20',
 };
 
-const getOffset = (i: number, len: number) =>
-  len > 1 ? (i - (len - 1) / 2) * HANDLE_SPREAD_PX : 0;
-
 const groupByHandle = (
   edges: AppFlowEdge[],
   key: 'sourceHandle' | 'targetHandle',
@@ -43,7 +39,7 @@ const groupByHandle = (
     return acc;
   }, {});
 
-const rowCenter = (rowIndex: number) => ROW_HEIGHT * rowIndex + ROW_HEIGHT / 2;
+const rowCenter = (rowIndex: number) => NODE_PADDING / 2 + ROW_HEIGHT * rowIndex + ROW_HEIGHT / 2;
 
 const buildElkNodes = (
   orderedNodes: AppFlowNode[],
@@ -74,44 +70,36 @@ const buildElkNodes = (
 
     // WEST ports (targets)
     const targetGroups = groupByHandle(incomingMap[node.id] || [], 'targetHandle', 'target');
-    Object.entries(targetGroups).forEach(([handleId, group]) => {
+    Object.entries(targetGroups).forEach(([handleId]) => {
       const exprIdx = subExpressions.findIndex((e) => e.id === handleId);
       const rowIdx = isJoin && exprIdx !== -1 ? 1 + exprIdx : 1;
 
-      group.forEach((edge, index) => {
-        ports.push({
-          id: `${node.id}-target-${handleId}-${edge.id}`,
-          x: 0,
-          y: rowCenter(rowIdx) + getOffset(index, group.length),
-          width: 0,
-          height: 0,
-          layoutOptions: { 'port.side': 'WEST' },
-        });
+      ports.push({
+        id: `${node.id}-target-${handleId}`,
+        x: -NODE_PADDING,
+        y: rowCenter(rowIdx),
+        width: 0,
+        height: 0,
+        layoutOptions: { 'port.side': 'WEST' },
       });
     });
 
     // EAST ports (sources)
     const sourceGroups = groupByHandle(outgoingMap[node.id] || [], 'sourceHandle', '0');
-    Object.entries(sourceGroups).forEach(([handleId, group]) => {
+    Object.entries(sourceGroups).forEach(([handleId]) => {
       const exprIdx = subExpressions.findIndex((e) => e.id === handleId);
       let rowIdx = 1;
-      if (isStart) {
-        rowIdx = 0;
-      } else if (isSwitch && exprIdx !== -1) {
-        rowIdx = 2 + exprIdx;
-      } else if (isJoin) {
-        rowIdx = 1 + subExpressions.length;
-      }
+      if (isStart) rowIdx = 0;
+      else if (isSwitch && exprIdx !== -1) rowIdx = 2 + exprIdx;
+      else if (isJoin) rowIdx = 1 + subExpressions.length;
 
-      group.forEach((edge, index) => {
-        ports.push({
-          id: `${node.id}-source-${handleId}-${edge.id}`,
-          x: nodeWidth,
-          y: rowCenter(rowIdx) + getOffset(index, group.length),
-          width: 0,
-          height: 0,
-          layoutOptions: { 'port.side': 'EAST' },
-        });
+      ports.push({
+        id: `${node.id}-source-${handleId}`,
+        x: nodeWidth + NODE_PADDING,
+        y: rowCenter(rowIdx),
+        width: 0,
+        height: 0,
+        layoutOptions: { 'port.side': 'EAST' },
       });
     });
 
@@ -131,8 +119,8 @@ const buildElkNodes = (
 const buildElkEdges = (edges: AppFlowEdge[]): ElkExtendedEdge[] =>
   edges.map((edge) => ({
     id: edge.id,
-    sources: [`${edge.source}-source-${edge.sourceHandle ?? '0'}-${edge.id}`],
-    targets: [`${edge.target}-target-${edge.targetHandle ?? 'target'}-${edge.id}`],
+    sources: [`${edge.source}-source-${edge.sourceHandle ?? '0'}`],
+    targets: [`${edge.target}-target-${edge.targetHandle ?? 'target'}`],
   }));
 
 export const getLayoutedElements = async (
