@@ -19,8 +19,8 @@ def validate_expressions_for_node_type(
     sub_exprs = [e for e in expressions if e.type == "SUB"]
 
     if node_type == NodeType.START:
-        if len(expressions) != 0:
-            raise ValidationError("START nodes must have 0 expressions")
+        if len(base_exprs) != 1 or len(sub_exprs) != 0:
+            raise ValidationError("START nodes must have exactly 1 BASE expression and 0 SUB expressions")
     elif node_type in {NodeType.LOGIC, NodeType.AGENT}:
         if len(base_exprs) != 1 or len(sub_exprs) != 0:
             raise ValidationError(f"{node_type} nodes must have exactly 1 BASE expression and 0 SUB expressions")
@@ -104,10 +104,9 @@ async def delete_expression(uow: UnitOfWork, expression_id: uuid.UUID) -> None:
 
 
 async def create_default_expressions_for_node(uow: UnitOfWork, node: models.Node) -> None:
-    if node.node_type != NodeType.START:
-        await uow.expressions.create(ExpressionCreate(node_id=node.id, idx=0, type="BASE", raw_string=""))
-        if node.node_type in {NodeType.LOGICAL_SWITCH, NodeType.AGENTIC_SWITCH, NodeType.JOIN}:
-            await uow.expressions.create(ExpressionCreate(node_id=node.id, idx=0, type="SUB", raw_string=""))
+    await uow.expressions.create(ExpressionCreate(node_id=node.id, idx=0, type="BASE", raw_string=""))
+    if node.node_type in {NodeType.LOGICAL_SWITCH, NodeType.AGENTIC_SWITCH, NodeType.JOIN}:
+        await uow.expressions.create(ExpressionCreate(node_id=node.id, idx=0, type="SUB", raw_string=""))
 
 
 async def swap_expression_indices(uow: UnitOfWork, expression_id: uuid.UUID, direction: str) -> bool:

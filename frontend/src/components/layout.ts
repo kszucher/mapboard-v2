@@ -7,8 +7,6 @@ const elk = new ELK();
 
 const NODE_PADDING = 6;
 const ROW_HEIGHT = 30;
-const DEFAULT_SOURCE_HANDLE = 'source';
-const DEFAULT_TARGET_HANDLE = 'target';
 
 const ELK_LAYOUT_OPTIONS: LayoutOptions = {
   'elk.algorithm': 'layered',
@@ -35,12 +33,13 @@ const rowCenter = (rowIndex: number) =>
 
 const groupByHandle = (
   edges: AppFlowEdge[],
-  key: 'sourceHandle' | 'targetHandle',
-  fallback: string
+  key: 'sourceHandle' | 'targetHandle'
 ): Record<string, AppFlowEdge[]> =>
   edges.reduce<Record<string, AppFlowEdge[]>>((acc, e) => {
-    const id = e[key] ?? fallback;
-    (acc[id] ??= []).push(e);
+    const id = e[key];
+    if (id) {
+      (acc[id] ??= []).push(e);
+    }
     return acc;
   }, {});
 
@@ -63,13 +62,13 @@ const buildElkNodes = (orderedNodes: AppFlowNode[], edges: AppFlowEdge[]): ElkNo
       .filter((e) => e.type === 'SUB')
       .sort((a, b) => a.idx - b.idx);
 
-    const rowCount = isStart ? 1 : isSwitch || isJoin ? 2 + subExpressions.length : 2;
+    const rowCount = isSwitch || isJoin ? 2 + subExpressions.length : 2;
     const nodeHeight = ROW_HEIGHT * rowCount + NODE_PADDING;
 
     const ports: ElkPort[] = [];
 
     // WEST ports (incoming)
-    Object.entries(groupByHandle(incomingMap[node.id] ?? [], 'targetHandle', DEFAULT_TARGET_HANDLE))
+    Object.entries(groupByHandle(incomingMap[node.id] ?? [], 'targetHandle'))
       .forEach(([handleId]) => {
         const exprIdx = subExpressions.findIndex((e) => e.id === handleId);
         const rowIdx = isJoin && exprIdx !== -1 ? 1 + exprIdx : 1;
@@ -84,12 +83,11 @@ const buildElkNodes = (orderedNodes: AppFlowNode[], edges: AppFlowEdge[]): ElkNo
       });
 
     // EAST ports (outgoing)
-    Object.entries(groupByHandle(outgoingMap[node.id] ?? [], 'sourceHandle', DEFAULT_SOURCE_HANDLE))
+    Object.entries(groupByHandle(outgoingMap[node.id] ?? [], 'sourceHandle'))
       .forEach(([handleId]) => {
         const exprIdx = subExpressions.findIndex((e) => e.id === handleId);
         let rowIdx = 1;
-        if (isStart) rowIdx = 0;
-        else if (isSwitch && exprIdx !== -1) rowIdx = 2 + exprIdx;
+        if (isSwitch && exprIdx !== -1) rowIdx = 2 + exprIdx;
         else if (isJoin) rowIdx = 1 + subExpressions.length;
         ports.push({
           id: `${node.id}-source-${handleId}`,
@@ -111,8 +109,8 @@ const buildElkNodes = (orderedNodes: AppFlowNode[], edges: AppFlowEdge[]): ElkNo
 const buildElkEdges = (edges: AppFlowEdge[]): ElkExtendedEdge[] =>
   edges.map((edge) => ({
     id: edge.id,
-    sources: [`${edge.source}-source-${edge.sourceHandle ?? DEFAULT_SOURCE_HANDLE}`],
-    targets: [`${edge.target}-target-${edge.targetHandle ?? DEFAULT_TARGET_HANDLE}`],
+    sources: [`${edge.source}-source-${edge.sourceHandle}`],
+    targets: [`${edge.target}-target-${edge.targetHandle}`],
   }));
 
 export const getLayoutedElements = async (

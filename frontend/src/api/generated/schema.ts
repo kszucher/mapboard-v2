@@ -417,21 +417,15 @@ export interface components {
        */
       graph_id: string;
       /**
-       * From Node Id
+       * From Expression Id
        * Format: uuid
        */
-      from_node_id: string;
+      from_expression_id: string;
       /**
-       * To Node Id
+       * To Expression Id
        * Format: uuid
        */
-      to_node_id: string;
-      /** Handle Index */
-      handle_index: number;
-      /** From Expression Id */
-      from_expression_id?: string | null;
-      /** To Expression Id */
-      to_expression_id?: string | null;
+      to_expression_id: string;
     };
     /** EdgeRead */
     EdgeRead: {
@@ -446,6 +440,16 @@ export interface components {
        */
       graph_id: string;
       /**
+       * From Expression Id
+       * Format: uuid
+       */
+      from_expression_id: string;
+      /**
+       * To Expression Id
+       * Format: uuid
+       */
+      to_expression_id: string;
+      /**
        * From Node Id
        * Format: uuid
        */
@@ -455,12 +459,6 @@ export interface components {
        * Format: uuid
        */
       to_node_id: string;
-      /** Handle Index */
-      handle_index: number;
-      /** From Expression Id */
-      from_expression_id?: string | null;
-      /** To Expression Id */
-      to_expression_id?: string | null;
     };
     /** ExpressionCreate */
     ExpressionCreate: {

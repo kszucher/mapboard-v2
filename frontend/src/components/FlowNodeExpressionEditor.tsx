@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 interface PlainEditorProps {
   initialValue: string;
   onSave: (value: string) => void;
+  disabled?: boolean;
   minWidth?: number;
   maxWidth?: number;
   actions?: React.ReactNode;
@@ -12,6 +13,7 @@ interface PlainEditorProps {
 export const FlowNodeExpressionEditor = ({
   initialValue,
   onSave,
+  disabled = false,
   minWidth = 240,
   maxWidth = 600,
   actions,
@@ -121,6 +123,7 @@ export const FlowNodeExpressionEditor = ({
         onKeyDown={handleKeyDown}
         onFocus={handleFocus}
         onBlur={handleBlur}
+        disabled={disabled}
         color="gray"
         variant="soft"
         size="1"

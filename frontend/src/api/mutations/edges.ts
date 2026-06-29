@@ -8,19 +8,13 @@ export const useCreateEdge = () => {
   return useMutation({
     mutationFn: async ({
       graphId,
-      fromNodeId,
-      toNodeId,
-      handleIndex,
       fromExpressionId,
       toExpressionId,
       edgeId,
     }: {
       graphId: string;
-      fromNodeId: string;
-      toNodeId: string;
-      handleIndex: number;
-      fromExpressionId?: string;
-      toExpressionId?: string;
+      fromExpressionId: string;
+      toExpressionId: string;
       edgeId?: string;
     }) => {
       const res = await apiClient.POST('/edges/', {
@@ -28,9 +22,6 @@ export const useCreateEdge = () => {
         body: {
           id: edgeId,
           graph_id: graphId,
-          from_node_id: fromNodeId,
-          to_node_id: toNodeId,
-          handle_index: handleIndex,
           from_expression_id: fromExpressionId,
           to_expression_id: toExpressionId,
         },

@@ -51,19 +51,6 @@ class Node(Base):
     node_type: Mapped[str] = mapped_column(String(32), nullable=False)
 
     graph: Mapped[Graph] = relationship("Graph", back_populates="nodes")
-    outgoing_edges: Mapped[list[Edge]] = relationship(
-        "Edge",
-        back_populates="from_node",
-        foreign_keys="Edge.from_node_id",
-        cascade="all, delete-orphan",
-    )
-    incoming_edges: Mapped[list[Edge]] = relationship(
-        "Edge",
-        back_populates="to_node",
-        foreign_keys="Edge.to_node_id",
-        cascade="all, delete-orphan",
-    )
-
     expressions: Mapped[list[Expression]] = relationship(
         "Expression",
         back_populates="node",
@@ -99,30 +86,25 @@ class Edge(Base):
     graph_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("graphs.id", ondelete="CASCADE"), nullable=False
     )
-    from_node_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("nodes.id", ondelete="CASCADE"), nullable=False
+    from_expression_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("expressions.id", ondelete="CASCADE"), nullable=False
     )
-    to_node_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("nodes.id", ondelete="CASCADE"), nullable=False
+    to_expression_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("expressions.id", ondelete="CASCADE"), nullable=False
     )
-    from_expression_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("expressions.id", ondelete="CASCADE"), nullable=True
-    )
-    to_expression_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("expressions.id", ondelete="CASCADE"), nullable=True
-    )
-    handle_index: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     graph: Mapped[Graph] = relationship("Graph", back_populates="edges")
-    from_node: Mapped[Node] = relationship(
-        "Node", foreign_keys=[from_node_id], back_populates="outgoing_edges", lazy="joined"
+    from_expression: Mapped[Expression] = relationship(
+        "Expression", foreign_keys=[from_expression_id], back_populates="edges", lazy="joined"
     )
-    to_node: Mapped[Node] = relationship(
-        "Node", foreign_keys=[to_node_id], back_populates="incoming_edges", lazy="joined"
+    to_expression: Mapped[Expression] = relationship(
+        "Expression", foreign_keys=[to_expression_id], back_populates="incoming_edges", lazy="joined"
     )
-    from_expression: Mapped[Expression | None] = relationship(
-        "Expression", foreign_keys=[from_expression_id], back_populates="edges"
-    )
-    to_expression: Mapped[Expression | None] = relationship(
-        "Expression", foreign_keys=[to_expression_id], back_populates="incoming_edges"
-    )
+
+    @property
+    def from_node_id(self) -> uuid.UUID:
+        return self.from_expression.node_id
+
+    @property
+    def to_node_id(self) -> uuid.UUID:
+        return self.to_expression.node_id

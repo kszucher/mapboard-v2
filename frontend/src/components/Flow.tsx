@@ -17,11 +17,6 @@ import { useGraphWebSocket } from './hooks/useGraphWebSocket.ts';
 import { getLayoutedElements } from './layout.ts';
 import type { AppFlowEdge, AppFlowNode } from './types.ts';
 
-/** UUID v4 regex — distinguishes expression handle IDs (UUIDs) from numeric handle indices */
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const isExpressionHandle = (handle: string | null | undefined): handle is string =>
-  handle != null && UUID_RE.test(handle);
-
 const FlowContent = ({
   selectedGraphId,
 }: {
@@ -111,8 +106,8 @@ const FlowContent = ({
           id: edge.id,
           source: edge.from_node_id,
           target: edge.to_node_id,
-          sourceHandle: edge.from_expression_id ?? String(edge.handle_index),
-          targetHandle: edge.to_expression_id ?? undefined,
+          sourceHandle: edge.from_expression_id,
+          targetHandle: edge.to_expression_id,
           type: 'custom' as const,
           animated: true,
           data: {
@@ -192,14 +187,12 @@ const FlowContent = ({
     (connection: Pick<Connection, 'source' | 'target' | 'sourceHandle' | 'targetHandle'>) => {
       if (!connection.source || !connection.target) return;
       const { sourceHandle, targetHandle } = connection;
+      if (!sourceHandle || !targetHandle) return;
       createEdge({
         edgeId: crypto.randomUUID(),
         graphId: selectedGraphId,
-        fromNodeId: connection.source,
-        toNodeId: connection.target,
-        handleIndex: isExpressionHandle(sourceHandle) ? 0 : (Number(sourceHandle) || 0),
-        fromExpressionId: isExpressionHandle(sourceHandle) ? sourceHandle : undefined,
-        toExpressionId: isExpressionHandle(targetHandle) ? targetHandle : undefined,
+        fromExpressionId: sourceHandle,
+        toExpressionId: targetHandle,
       });
     },
     [selectedGraphId, createEdge],

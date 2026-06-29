@@ -56,12 +56,11 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   const isSwitchOrJoin = isSwitch || isJoin;
 
   const baseExpression = useMemo(() => {
-    if (isStart) return null;
     if (isSwitchOrJoin) {
       return myExpressions.find(e => e.type === 'BASE');
     }
     return myExpressions[0];
-  }, [myExpressions, isSwitchOrJoin, isStart]);
+  }, [myExpressions, isSwitchOrJoin]);
 
   const subExpressions = useMemo(() => {
     if (!isSwitchOrJoin) return [];
@@ -204,9 +203,6 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
           </DropdownMenu.Content>
         </DropdownMenu.Root>
 
-        {isStart && (
-          <Handle id="0" type="source" position={Position.Right} style={{ right: -NODE_PADDING }} />
-        )}
       </Flex>
 
       {isJoin && subExpressions.map((expr, i) => (
@@ -243,13 +239,19 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
 
       {baseExpression && (
         <Flex align="center" width="100%" height="24px" style={{ position: 'relative' }}>
-          {!isJoin && (
-            <Handle type="target" position={Position.Left} style={{ left: -NODE_PADDING }} />
+          {!isJoin && !isStart && (
+            <Handle
+              id={baseExpression.id}
+              type="target"
+              position={Position.Left}
+              style={{ left: -NODE_PADDING }}
+            />
           )}
           <Flex className="nodrag nopan" flexGrow="1" align="center" height="100%" pl={isJoin ? '5' : undefined}>
             <FlowNodeExpressionEditor
-              initialValue={baseExpression.raw_string}
+              initialValue={isStart ? 'Start Node (Output)' : baseExpression.raw_string}
               onSave={handleUpdateBase}
+              disabled={isStart}
               minWidth={240}
               maxWidth={600}
               actions={

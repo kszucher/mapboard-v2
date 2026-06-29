@@ -136,9 +136,6 @@ async def sync_graph_flow(
         if edge_payload.id in db_edges_map:
             # Update existing edge
             edge = db_edges_map[edge_payload.id]
-            edge.from_node_id = edge_payload.from_node_id
-            edge.to_node_id = edge_payload.to_node_id
-            edge.handle_index = edge_payload.handle_index
             edge.from_expression_id = edge_payload.from_expression_id
             edge.to_expression_id = edge_payload.to_expression_id
         else:
@@ -147,9 +144,6 @@ async def sync_graph_flow(
                 EdgeCreate(
                     id=edge_payload.id,
                     graph_id=edge_payload.graph_id,
-                    from_node_id=edge_payload.from_node_id,
-                    to_node_id=edge_payload.to_node_id,
-                    handle_index=edge_payload.handle_index,
                     from_expression_id=edge_payload.from_expression_id,
                     to_expression_id=edge_payload.to_expression_id,
                 )
