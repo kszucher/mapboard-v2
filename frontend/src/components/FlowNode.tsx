@@ -20,8 +20,6 @@ import type { AppFlowNode } from './types.ts';
 const NODE_PADDING = 6;
 
 const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
-  console.log('Rendering node:', id);
-
   const deleteNodeMutation = useDeleteNode();
   const shortcircuitNodeMutation = useShortcircuitNode();
   const updateNodeInternals = useUpdateNodeInternals();
@@ -192,7 +190,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
         <DropdownMenu.Root modal={false}>
           <DropdownMenu.Trigger>
             <IconButton variant="soft" size="1" color="gray" style={{ pointerEvents: 'auto', background: 'none' }}>
-              <DotsHorizontalIcon />
+              <DotsHorizontalIcon/>
             </IconButton>
           </DropdownMenu.Trigger>
           <DropdownMenu.Content onCloseAutoFocus={e => e.preventDefault()}>

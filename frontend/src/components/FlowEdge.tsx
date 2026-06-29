@@ -4,7 +4,6 @@ import { getRoundedOrthogonalPath } from './edgeUtils.ts';
 import type { AppFlowEdge } from './types';
 
 function FlowEdge({
-  id,
   sourceX,
   sourceY,
   targetX,
@@ -13,7 +12,6 @@ function FlowEdge({
   markerEnd,
   data,
 }: EdgeProps<AppFlowEdge>) {
-  console.log('Rendering edge:', id);
   const sections = data?.sections;
   let path;
 
