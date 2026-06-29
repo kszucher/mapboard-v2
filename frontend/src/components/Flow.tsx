@@ -57,14 +57,7 @@ const FlowContent = ({
     return graphData.nodes.map(n => {
       const state = nodeState[n.id] || {};
       const position = layoutData.positions[n.id];
-
-      let tempPosition = position;
-      if (!tempPosition) {
-        const incomingEdge = graphData.edges?.find(e => e.to_node_id === n.id);
-        const parentNodePosition = incomingEdge ? layoutData.positions[incomingEdge.from_node_id] : null;
-        tempPosition = parentNodePosition ? { x: parentNodePosition.x + 300, y: parentNodePosition.y } : { x: 0, y: 0 };
-      }
-
+      const tempPosition = position || { x: 0, y: 0 };
       const nodeExpressions = graphData.expressions.filter(e => e.node_id === n.id);
 
       return {
