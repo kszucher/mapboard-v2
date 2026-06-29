@@ -67,7 +67,6 @@ const FlowContent = ({
         data: {
           node: n,
           expressions: nodeExpressions,
-          isLayoutReady: !!layoutData.positions[n.id],
         },
         measured: state.measured,
       };
@@ -109,7 +108,6 @@ const FlowContent = ({
           style: {
             stroke: isBack ? '#ff9800' : '#888888',
             strokeWidth: isBack ? 2.5 : 2,
-            opacity: isLayoutReady ? 1 : 0,
             transition: 'opacity 0.2s ease-in-out',
           },
           deletable: true,
