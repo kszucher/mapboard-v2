@@ -7,6 +7,7 @@ type NodeRead = components['schemas']['NodeRead'];
 type NodeType = NodeRead['node_type'];
 type NodeColor = components['schemas']['NodeCreate']['color'];
 
+export type InsertableNodeType = Exclude<NodeType, 'START' | 'END'>;
 
 const NODE_COLORS: Record<NodeType, NodeColor> = {
   START: 'gray',
@@ -96,7 +97,7 @@ export const useAddConnectedNode = () => {
   return useMutation({
     mutationFn: async (variables: {
       expressionId: string;
-      nodeType: 'LOGIC' | 'AGENT' | 'LOGICAL_SWITCH' | 'AGENTIC_SWITCH' | 'JOIN';
+      nodeType: InsertableNodeType;
       graphId: string;
     }) => {
       const res = await apiClient.POST('/nodes/from-expression/{expression_id}', {
@@ -121,7 +122,7 @@ export const useInsertNode = () => {
   return useMutation({
     mutationFn: async (variables: {
       expressionId: string;
-      nodeType: 'LOGIC' | 'AGENT' | 'LOGICAL_SWITCH' | 'AGENTIC_SWITCH' | 'JOIN';
+      nodeType: InsertableNodeType;
       graphId: string;
     }) => {
       const res = await apiClient.POST('/nodes/insert-between/{expression_id}', {

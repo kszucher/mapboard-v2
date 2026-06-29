@@ -3,6 +3,8 @@ import { DropdownMenu, IconButton } from '@radix-ui/themes';
 import { useCallback, useMemo } from 'react';
 import { useAddConnectedNode, useInsertNode } from '../api/mutations';
 import { useGraphFlow } from '../api/queries';
+import type { InsertableNodeType } from './types';
+
 
 interface ExpressionActionsDropdownProps {
   expressionId: string;
@@ -42,14 +44,14 @@ export const FlowNodeExpressionActions = ({
   const hasConnectedNode = !!connectedEdge;
 
   const handleAddConnectedNode = useCallback(
-    (nodeType: 'LOGIC' | 'AGENT' | 'LOGICAL_SWITCH' | 'AGENTIC_SWITCH' | 'JOIN') => {
+    (nodeType: InsertableNodeType) => {
       addConnectedNode.mutate({ expressionId, nodeType, graphId });
     },
     [addConnectedNode, expressionId, graphId]
   );
 
   const handleInsertNode = useCallback(
-    (nodeType: 'LOGIC' | 'AGENT' | 'LOGICAL_SWITCH' | 'AGENTIC_SWITCH' | 'JOIN') => {
+    (nodeType: InsertableNodeType) => {
       insertNode.mutate({ expressionId, nodeType, graphId });
     },
     [insertNode, expressionId, graphId]
@@ -105,8 +107,10 @@ export const FlowNodeExpressionActions = ({
             <DropdownMenu.SubContent>
               <DropdownMenu.Item onClick={() => handleInsertNode('LOGIC')}>{'Logic'}</DropdownMenu.Item>
               <DropdownMenu.Item onClick={() => handleInsertNode('AGENT')}>{'Agent'}</DropdownMenu.Item>
-              <DropdownMenu.Item onClick={() => handleInsertNode('LOGICAL_SWITCH')}>{'Logical Switch'}</DropdownMenu.Item>
-              <DropdownMenu.Item onClick={() => handleInsertNode('AGENTIC_SWITCH')}>{'Agentic Switch'}</DropdownMenu.Item>
+              <DropdownMenu.Item
+                onClick={() => handleInsertNode('LOGICAL_SWITCH')}>{'Logical Switch'}</DropdownMenu.Item>
+              <DropdownMenu.Item
+                onClick={() => handleInsertNode('AGENTIC_SWITCH')}>{'Agentic Switch'}</DropdownMenu.Item>
               <DropdownMenu.Item onClick={() => handleInsertNode('JOIN')}>{'Join'}</DropdownMenu.Item>
             </DropdownMenu.SubContent>
           </DropdownMenu.Sub>

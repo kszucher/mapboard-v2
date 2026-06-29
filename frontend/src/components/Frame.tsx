@@ -2,13 +2,12 @@ import { CaretDownIcon, CheckIcon, MixIcon, PlayIcon, ResetIcon } from '@radix-u
 import { Box, Button, DropdownMenu, Flex, IconButton, Text } from '@radix-ui/themes';
 import { ReactFlowProvider } from '@xyflow/react';
 import { useCallback, useMemo } from 'react';
-import type { components } from '../api/generated/schema';
 import { useCreateGraph, useCreateNode, useSetActiveGraph } from '../api/mutations';
 import { useActiveGraphId, useUserGraphs, useUserId } from '../api/queries';
 import { Flow } from './Flow.tsx';
 import { useGraphHistory } from './hooks/useGraphHistory';
+import type { NodeType } from './types';
 
-type NodeType = components['schemas']['NodeRead']['node_type'];
 const NODE_TYPES: NodeType[] = ['START', 'END', 'LOGIC', 'AGENT', 'LOGICAL_SWITCH', 'AGENTIC_SWITCH', 'JOIN'];
 
 export const Frame = () => {
