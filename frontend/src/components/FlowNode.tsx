@@ -231,6 +231,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
                   onAddAbove={() => handleAddAbove(i)}
                   onAddBelow={() => handleAddBelow(i)}
                   canDelete={subExpressions.length > 1}
+                  hideAddNode={true}
                 />
               }
             />
@@ -256,7 +257,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
               minWidth={240}
               maxWidth={600}
               actions={
-                !isSwitchOrJoin && !isEnd ? (
+                !isSwitch && !isEnd ? (
                   <FlowNodeExpressionActions
                     expressionId={baseExpression.id}
                     graphId={node.graph_id}

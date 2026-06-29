@@ -18,6 +18,7 @@ interface ExpressionActionsDropdownProps {
   onAddAbove?: () => void;
   onAddBelow?: () => void;
   canDelete?: boolean;
+  hideAddNode?: boolean;
 }
 
 export const FlowNodeExpressionActions = ({
@@ -32,6 +33,7 @@ export const FlowNodeExpressionActions = ({
   onAddAbove,
   onAddBelow,
   canDelete = true,
+  hideAddNode = false,
 }: ExpressionActionsDropdownProps) => {
   const addConnectedNode = useAddConnectedNode();
   const insertNode = useInsertNode();
@@ -99,37 +101,39 @@ export const FlowNodeExpressionActions = ({
           </>
         )}
 
-        {hasConnectedNode ? (
-          <DropdownMenu.Sub>
-            <DropdownMenu.SubTrigger>
-              <PlusIcon style={{ marginRight: 8 }}/> Add Interim Node
-            </DropdownMenu.SubTrigger>
-            <DropdownMenu.SubContent>
-              <DropdownMenu.Item onClick={() => handleInsertNode('LOGIC')}>{'Logic'}</DropdownMenu.Item>
-              <DropdownMenu.Item onClick={() => handleInsertNode('AGENT')}>{'Agent'}</DropdownMenu.Item>
-              <DropdownMenu.Item
-                onClick={() => handleInsertNode('LOGICAL_SWITCH')}>{'Logical Switch'}</DropdownMenu.Item>
-              <DropdownMenu.Item
-                onClick={() => handleInsertNode('AGENTIC_SWITCH')}>{'Agentic Switch'}</DropdownMenu.Item>
-              <DropdownMenu.Item onClick={() => handleInsertNode('JOIN')}>{'Join'}</DropdownMenu.Item>
-            </DropdownMenu.SubContent>
-          </DropdownMenu.Sub>
-        ) : (
-          <DropdownMenu.Sub>
-            <DropdownMenu.SubTrigger>
-              <PlusIcon style={{ marginRight: 8 }}/> Add Node
-            </DropdownMenu.SubTrigger>
-            <DropdownMenu.SubContent>
-              <DropdownMenu.Item onClick={() => handleAddConnectedNode('LOGIC')}>{'Logic'}</DropdownMenu.Item>
-              <DropdownMenu.Item onClick={() => handleAddConnectedNode('AGENT')}>{'Agent'}</DropdownMenu.Item>
-              <DropdownMenu.Item
-                onClick={() => handleAddConnectedNode('LOGICAL_SWITCH')}>{'Logical Switch'}</DropdownMenu.Item>
-              <DropdownMenu.Item
-                onClick={() => handleAddConnectedNode('AGENTIC_SWITCH')}>{'Agentic Switch'}</DropdownMenu.Item>
-              <DropdownMenu.Item
-                onClick={() => handleAddConnectedNode('JOIN')}>{'Join'}</DropdownMenu.Item>
-            </DropdownMenu.SubContent>
-          </DropdownMenu.Sub>
+        {!hideAddNode && (
+          hasConnectedNode ? (
+            <DropdownMenu.Sub>
+              <DropdownMenu.SubTrigger>
+                <PlusIcon style={{ marginRight: 8 }}/> Add Interim Node
+              </DropdownMenu.SubTrigger>
+              <DropdownMenu.SubContent>
+                <DropdownMenu.Item onClick={() => handleInsertNode('LOGIC')}>{'Logic'}</DropdownMenu.Item>
+                <DropdownMenu.Item onClick={() => handleInsertNode('AGENT')}>{'Agent'}</DropdownMenu.Item>
+                <DropdownMenu.Item
+                  onClick={() => handleInsertNode('LOGICAL_SWITCH')}>{'Logical Switch'}</DropdownMenu.Item>
+                <DropdownMenu.Item
+                  onClick={() => handleInsertNode('AGENTIC_SWITCH')}>{'Agentic Switch'}</DropdownMenu.Item>
+                <DropdownMenu.Item onClick={() => handleInsertNode('JOIN')}>{'Join'}</DropdownMenu.Item>
+              </DropdownMenu.SubContent>
+            </DropdownMenu.Sub>
+          ) : (
+            <DropdownMenu.Sub>
+              <DropdownMenu.SubTrigger>
+                <PlusIcon style={{ marginRight: 8 }}/> Add Node
+              </DropdownMenu.SubTrigger>
+              <DropdownMenu.SubContent>
+                <DropdownMenu.Item onClick={() => handleAddConnectedNode('LOGIC')}>{'Logic'}</DropdownMenu.Item>
+                <DropdownMenu.Item onClick={() => handleAddConnectedNode('AGENT')}>{'Agent'}</DropdownMenu.Item>
+                <DropdownMenu.Item
+                  onClick={() => handleAddConnectedNode('LOGICAL_SWITCH')}>{'Logical Switch'}</DropdownMenu.Item>
+                <DropdownMenu.Item
+                  onClick={() => handleAddConnectedNode('AGENTIC_SWITCH')}>{'Agentic Switch'}</DropdownMenu.Item>
+                <DropdownMenu.Item
+                  onClick={() => handleAddConnectedNode('JOIN')}>{'Join'}</DropdownMenu.Item>
+              </DropdownMenu.SubContent>
+            </DropdownMenu.Sub>
+          )
         )}
 
         {onDelete && (
