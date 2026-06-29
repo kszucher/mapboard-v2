@@ -20,6 +20,8 @@ import type { AppFlowNode } from './types.ts';
 const NODE_PADDING = 6;
 
 const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
+  console.log('Rendering node:', id);
+
   const deleteNodeMutation = useDeleteNode();
   const shortcircuitNodeMutation = useShortcircuitNode();
   const updateNodeInternals = useUpdateNodeInternals();
@@ -173,6 +175,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
         borderRadius: 'var(--radius-3)',
         padding: NODE_PADDING,
         gap: NODE_PADDING,
+        opacity: data.isPositioned ?? true ? 1 : 0,
         transition: 'opacity 0.2s ease-in-out',
       }}
     >
@@ -189,7 +192,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
         <DropdownMenu.Root modal={false}>
           <DropdownMenu.Trigger>
             <IconButton variant="soft" size="1" color="gray" style={{ pointerEvents: 'auto', background: 'none' }}>
-              <DotsHorizontalIcon/>
+              <DotsHorizontalIcon />
             </IconButton>
           </DropdownMenu.Trigger>
           <DropdownMenu.Content onCloseAutoFocus={e => e.preventDefault()}>
@@ -312,4 +315,37 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   );
 };
 
-export const CustomNode = memo(CustomNodeComponent);
+export const CustomNode = memo(CustomNodeComponent, (prevProps, nextProps) => {
+  if (prevProps.id !== nextProps.id) return false;
+  if (prevProps.selected !== nextProps.selected) return false;
+  if (prevProps.dragging !== nextProps.dragging) return false;
+
+  const prevData = prevProps.data;
+  const nextData = nextProps.data;
+
+  if (prevData.isPositioned !== nextData.isPositioned) return false;
+  if (prevData.node.id !== nextData.node.id) return false;
+  if (prevData.node.label !== nextData.node.label) return false;
+  if (prevData.node.color !== nextData.node.color) return false;
+  if (prevData.node.iid !== nextData.node.iid) return false;
+  if (prevData.node.node_type !== nextData.node.node_type) return false;
+  if (prevData.node.is_processing !== nextData.node.is_processing) return false;
+
+  const prevExprs = prevData.expressions || [];
+  const nextExprs = nextData.expressions || [];
+  if (prevExprs.length !== nextExprs.length) return false;
+  for (let i = 0; i < prevExprs.length; i++) {
+    const pExpr = prevExprs[i];
+    const nExpr = nextExprs[i];
+    if (
+      pExpr.id !== nExpr.id ||
+      pExpr.idx !== nExpr.idx ||
+      pExpr.raw_string !== nExpr.raw_string ||
+      pExpr.type !== nExpr.type
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+});

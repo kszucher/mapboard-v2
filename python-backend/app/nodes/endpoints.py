@@ -9,7 +9,7 @@ from app.constants import NodeType
 from app.db import get_uow
 from app.exceptions import GraphboardError
 from app.nodes import service as node_service
-from app.nodes.schemas import NodeCreate, NodeRead
+from app.nodes.schemas import ConnectedNodeCreate, NodeCreate, NodeRead
 
 router = APIRouter(prefix="/nodes", tags=["nodes"])
 
@@ -35,10 +35,18 @@ async def delete_node(node_id: uuid.UUID, uow: Any = Depends(get_uow)) -> None:
 
 @router.post("/from-expression/{expression_id}", response_model=uuid.UUID, status_code=201)
 async def create_connected_node(
-    expression_id: uuid.UUID, node_type: NodeType, uow: Any = Depends(get_uow)
+    expression_id: uuid.UUID, payload: ConnectedNodeCreate, uow: Any = Depends(get_uow)
 ) -> uuid.UUID:
     try:
-        new_node_id = await node_service.create_connected_node(uow, expression_id, node_type)
+        new_node_id = await node_service.create_connected_node(
+            uow,
+            expression_id,
+            payload.node_type,
+            node_id=payload.node_id,
+            base_expression_id=payload.base_expression_id,
+            sub_expression_id=payload.sub_expression_id,
+            edge_id=payload.edge_id,
+        )
         await uow.commit()
         return new_node_id
     except GraphboardError:

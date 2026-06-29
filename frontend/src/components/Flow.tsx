@@ -23,7 +23,7 @@ const FlowContent = ({
   selectedGraphId: string;
 }) => {
   // data fetching
-  const { data: graphData, isFetching } = useGraphFlow(selectedGraphId);
+  const { data: graphData } = useGraphFlow(selectedGraphId);
 
   // subscriptions / side effects
   useGraphWebSocket(selectedGraphId);
@@ -67,6 +67,7 @@ const FlowContent = ({
         data: {
           node: n,
           expressions: nodeExpressions,
+          isPositioned: layoutData.positions[n.id] !== undefined,
         },
         measured: state.measured,
       };
@@ -74,7 +75,7 @@ const FlowContent = ({
   }, [graphData, layoutData.positions, nodeState]);
 
   // derived edges — dynamically compute back edges based on node layout positions
-  const edges = useMemo<AppFlowEdge[]>(() => {
+  const allEdges = useMemo<AppFlowEdge[]>(() => {
     if (!graphData) return [];
     const nodeIds = new Set(graphData.nodes.map(n => n.id));
     const expressionIds = new Set(graphData.expressions.map(e => e.id));
@@ -88,11 +89,12 @@ const FlowContent = ({
       .map(edge => {
         const sourcePos = layoutData.positions[edge.from_node_id];
         const targetPos = layoutData.positions[edge.to_node_id];
-        const isLayoutReady = !!sourcePos && !!targetPos;
-        const isBack = isLayoutReady && (targetPos.x <= sourcePos.x);
 
         const elkEdge = layoutData.edgeSections[edge.id];
         const sections = elkEdge?.sections ?? [];
+
+        const isLayoutReady = !!sourcePos && !!targetPos && sections.length > 0;
+        const isBack = isLayoutReady && (targetPos.x <= sourcePos.x);
 
         return {
           id: edge.id,
@@ -108,6 +110,7 @@ const FlowContent = ({
           style: {
             stroke: isBack ? '#ff9800' : '#888888',
             strokeWidth: isBack ? 2.5 : 2,
+            opacity: isLayoutReady ? 1 : 0,
             transition: 'opacity 0.2s ease-in-out',
           },
           deletable: true,
@@ -116,9 +119,16 @@ const FlowContent = ({
       });
   }, [graphData, layoutData.positions, layoutData.edgeSections]);
 
+  const edges = useMemo(() => {
+    return allEdges.filter(edge => {
+      const sections = edge.data?.sections || [];
+      return sections.length > 0;
+    });
+  }, [allEdges]);
+
   // Keep ref current before any effects fire so the layout effect always reads the latest values
   useLayoutEffect(() => {
-    layoutInputRef.current = { nodes, edges };
+    layoutInputRef.current = { nodes, edges: allEdges };
   });
 
   // Fit view once on initial load — isReady resets to false on remount (key={selectedGraphId})
@@ -235,7 +245,7 @@ const FlowContent = ({
 
   // Run layout when nodes are fully initialized/measured and graph structure changes.
   useEffect(() => {
-    if (isFetching || !graphData) return;
+    if (!graphData) return;
     const { nodes: currentNodes, edges: currentEdges } = layoutInputRef.current;
     if (currentNodes.length === 0 || !currentNodes.every(n => n.measured !== undefined)) return;
 
@@ -251,7 +261,7 @@ const FlowContent = ({
     return () => {
       cancelled = true;
     };
-  }, [graphData, nodeState, isFetching]);
+  }, [graphData, nodeState]);
 
   const containerStyle = useMemo(() => ({
     width: '100%' as const,

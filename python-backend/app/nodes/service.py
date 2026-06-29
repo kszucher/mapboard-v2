@@ -61,6 +61,10 @@ async def create_connected_node(
     uow: UnitOfWork,
     expression_id: uuid.UUID,
     node_type: NodeType,
+    node_id: uuid.UUID | None = None,
+    base_expression_id: uuid.UUID | None = None,
+    sub_expression_id: uuid.UUID | None = None,
+    edge_id: uuid.UUID | None = None,
 ) -> uuid.UUID:
     if node_type == NodeType.START:
         raise ValidationError("Cannot connect a new START node.")
@@ -102,6 +106,7 @@ async def create_connected_node(
     # 1. Create the new node using repository directly
     new_node = await uow.nodes.create(
         NodeCreate(
+            id=node_id,
             graph_id=parent_node.graph_id,
             iid=next_iid,
             color=NODE_COLORS[node_type],
@@ -112,7 +117,7 @@ async def create_connected_node(
     )
 
     # 2. Initialize default expressions for the new node
-    await expression_service.create_default_expressions_for_node(uow, new_node)
+    await expression_service.create_default_expressions_for_node(uow, new_node, base_expression_id, sub_expression_id)
 
     new_node_expressions = await uow.expressions.list_by_node(new_node.id)
     to_expression_id = None
@@ -132,6 +137,7 @@ async def create_connected_node(
     # 4. Create the connecting edge using repository directly
     await uow.edges.create(
         EdgeCreate(
+            id=edge_id,
             graph_id=parent_node.graph_id,
             from_expression_id=expr.id,
             to_expression_id=to_expression_id,

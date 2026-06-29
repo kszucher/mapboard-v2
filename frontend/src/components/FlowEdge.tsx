@@ -4,6 +4,7 @@ import { getRoundedOrthogonalPath } from './edgeUtils.ts';
 import type { AppFlowEdge } from './types';
 
 function FlowEdge({
+  id,
   sourceX,
   sourceY,
   targetX,
@@ -12,6 +13,7 @@ function FlowEdge({
   markerEnd,
   data,
 }: EdgeProps<AppFlowEdge>) {
+  console.log('Rendering edge:', id);
   const sections = data?.sections;
   let path;
 
@@ -39,4 +41,39 @@ function FlowEdge({
   return <BaseEdge path={path} markerEnd={markerEnd} style={style}/>;
 }
 
-export default memo(FlowEdge);
+export default memo(FlowEdge, (prevProps, nextProps) => {
+  if (prevProps.id !== nextProps.id) return false;
+  if (prevProps.sourceX !== nextProps.sourceX) return false;
+  if (prevProps.sourceY !== nextProps.sourceY) return false;
+  if (prevProps.targetX !== nextProps.targetX) return false;
+  if (prevProps.targetY !== nextProps.targetY) return false;
+  if (prevProps.markerEnd !== nextProps.markerEnd) return false;
+
+  const prevStyle = prevProps.style || {};
+  const nextStyle = nextProps.style || {};
+  if (
+    prevStyle.stroke !== nextStyle.stroke ||
+    prevStyle.strokeWidth !== nextStyle.strokeWidth ||
+    prevStyle.opacity !== nextStyle.opacity
+  ) {
+    return false;
+  }
+
+  const prevSections = prevProps.data?.sections || [];
+  const nextSections = nextProps.data?.sections || [];
+  if (prevSections.length !== nextSections.length) return false;
+  for (let i = 0; i < prevSections.length; i++) {
+    const pSec = prevSections[i];
+    const nSec = nextSections[i];
+    if (
+      pSec.startPoint.x !== nSec.startPoint.x ||
+      pSec.startPoint.y !== nSec.startPoint.y ||
+      pSec.endPoint.x !== nSec.endPoint.x ||
+      pSec.endPoint.y !== nSec.endPoint.y
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+});

@@ -105,10 +105,19 @@ async def delete_expression(uow: UnitOfWork, expression_id: uuid.UUID) -> None:
     )
 
 
-async def create_default_expressions_for_node(uow: UnitOfWork, node: models.Node) -> None:
-    await uow.expressions.create(ExpressionCreate(node_id=node.id, idx=0, type="BASE", raw_string=""))
+async def create_default_expressions_for_node(
+    uow: UnitOfWork,
+    node: models.Node,
+    base_expression_id: uuid.UUID | None = None,
+    sub_expression_id: uuid.UUID | None = None,
+) -> None:
+    await uow.expressions.create(
+        ExpressionCreate(id=base_expression_id, node_id=node.id, idx=0, type="BASE", raw_string="")
+    )
     if node.node_type in {NodeType.LOGICAL_SWITCH, NodeType.AGENTIC_SWITCH, NodeType.JOIN}:
-        await uow.expressions.create(ExpressionCreate(node_id=node.id, idx=0, type="SUB", raw_string=""))
+        await uow.expressions.create(
+            ExpressionCreate(id=sub_expression_id, node_id=node.id, idx=0, type="SUB", raw_string="")
+        )
 
 
 async def swap_expression_indices(uow: UnitOfWork, expression_id: uuid.UUID, direction: str) -> bool:

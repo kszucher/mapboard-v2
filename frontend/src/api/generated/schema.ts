@@ -577,6 +577,18 @@ export interface components {
       /** Id */
       id?: string | null;
     };
+    /** ConnectedNodeCreate */
+    ConnectedNodeCreate: {
+      node_type: components["schemas"]["NodeType"];
+      /** Format: uuid */
+      node_id: string;
+      /** Format: uuid */
+      base_expression_id: string;
+      /** Format: uuid */
+      sub_expression_id?: string | null;
+      /** Format: uuid */
+      edge_id: string;
+    };
     /** NodeRead */
     NodeRead: {
       /**
@@ -997,9 +1009,7 @@ export interface operations {
   };
   create_connected_node_nodes_from_expression__expression_id__post: {
     parameters: {
-      query: {
-        node_type: components["schemas"]["NodeType"];
-      };
+      query?: never;
       header?: {
         "x-client-id"?: string | null;
       };
@@ -1008,7 +1018,11 @@ export interface operations {
       };
       cookie?: never;
     };
-    requestBody?: never;
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ConnectedNodeCreate"];
+      };
+    };
     responses: {
       /** @description Successful Response */
       201: {
