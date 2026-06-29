@@ -150,11 +150,21 @@ async def shortcircuit_node(uow: UnitOfWork, node_id: uuid.UUID) -> None:
     if node.node_type in (
         NodeType.START,
         NodeType.END,
+    ):
+        raise ValidationError("Cannot shortcircuit START or END nodes.")
+
+    expressions = await uow.expressions.list_by_node(node_id)
+    sub_exprs = [e for e in expressions if e.type == "SUB"]
+
+    if node.node_type in (
         NodeType.LOGICAL_SWITCH,
         NodeType.AGENTIC_SWITCH,
         NodeType.JOIN,
     ):
-        raise ValidationError("Cannot shortcircuit START, END, SWITCH, or JOIN nodes.")
+        if len(sub_exprs) != 1:
+            raise ValidationError(
+                "Cannot shortcircuit SWITCH or JOIN nodes unless they have exactly one sub-expression."
+            )
 
     # 1. Get all edges connected to the node
     all_edges = await uow.edges.list_by_node(node_id)
@@ -198,8 +208,14 @@ async def insert_node_between(
     expression_id: uuid.UUID,
     node_type: NodeType,
 ) -> uuid.UUID:
-    if node_type not in (NodeType.LOGIC, NodeType.AGENT):
-        raise ValidationError("Can only insert LOGIC or AGENT nodes.")
+    if node_type not in (
+        NodeType.LOGIC,
+        NodeType.AGENT,
+        NodeType.LOGICAL_SWITCH,
+        NodeType.AGENTIC_SWITCH,
+        NodeType.JOIN,
+    ):
+        raise ValidationError("Can only insert LOGIC, AGENT, SWITCH, or JOIN nodes.")
 
     expr = await uow.expressions.get(expression_id)
     if not expr:
@@ -223,10 +239,16 @@ async def insert_node_between(
     NODE_COLORS: dict[NodeType, Color] = {
         NodeType.LOGIC: "purple",
         NodeType.AGENT: "blue",
+        NodeType.LOGICAL_SWITCH: "amber",
+        NodeType.AGENTIC_SWITCH: "grass",
+        NodeType.JOIN: "indigo",
     }
     NODE_LABELS = {
         NodeType.LOGIC: "Logic",
         NodeType.AGENT: "Agent",
+        NodeType.LOGICAL_SWITCH: "Logical Switch",
+        NodeType.AGENTIC_SWITCH: "Agentic Switch",
+        NodeType.JOIN: "Join",
     }
 
     # 1. Create the new node using repository directly
@@ -244,22 +266,37 @@ async def insert_node_between(
     # 2. Initialize default expressions for the new node
     await expression_service.create_default_expressions_for_node(uow, new_node)
 
-    # 3. Retrieve the created BASE expression of the new node
+    # 3. Retrieve the created expressions of the new node
     new_expressions = await uow.expressions.list_by_node(new_node.id)
     new_base_expr = next((e for e in new_expressions if e.type == "BASE"), None)
+    new_sub_expr = next((e for e in new_expressions if e.type == "SUB"), None)
+
     if not new_base_expr:
         raise ValidationError("Base expression not created for the new node.")
+    if node_type in (NodeType.LOGICAL_SWITCH, NodeType.AGENTIC_SWITCH, NodeType.JOIN) and not new_sub_expr:
+        raise ValidationError("Sub expression not created for the new node.")
 
-    # 4. Reassign original edge to point to the newly created node
+    # Determine input (to) and output (from) expression IDs for routing
+    if node_type == NodeType.JOIN:
+        to_expression_id_for_new_node = new_sub_expr.id
+        from_expression_id_for_new_node = new_base_expr.id
+    elif node_type in (NodeType.LOGICAL_SWITCH, NodeType.AGENTIC_SWITCH):
+        to_expression_id_for_new_node = new_base_expr.id
+        from_expression_id_for_new_node = new_sub_expr.id
+    else:
+        to_expression_id_for_new_node = new_base_expr.id
+        from_expression_id_for_new_node = new_base_expr.id
+
+    # 4. Reassign original edge to point to the newly created node's input expression
     old_to_expression_id = existing_edge.to_expression_id
-    existing_edge.to_expression_id = new_base_expr.id
+    existing_edge.to_expression_id = to_expression_id_for_new_node
     await uow.session.flush()
 
-    # 7. Create the new connecting edge from new node to the old target node
+    # 7. Create the new connecting edge from new node's output expression to the old target node
     await uow.edges.create(
         EdgeCreate(
             graph_id=parent_node.graph_id,
-            from_expression_id=new_base_expr.id,
+            from_expression_id=from_expression_id_for_new_node,
             to_expression_id=old_to_expression_id,
         )
     )

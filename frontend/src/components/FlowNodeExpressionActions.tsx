@@ -49,7 +49,7 @@ export const FlowNodeExpressionActions = ({
   );
 
   const handleInsertNode = useCallback(
-    (nodeType: 'LOGIC' | 'AGENT') => {
+    (nodeType: 'LOGIC' | 'AGENT' | 'LOGICAL_SWITCH' | 'AGENTIC_SWITCH' | 'JOIN') => {
       insertNode.mutate({ expressionId, nodeType, graphId });
     },
     [insertNode, expressionId, graphId]
@@ -105,6 +105,9 @@ export const FlowNodeExpressionActions = ({
             <DropdownMenu.SubContent>
               <DropdownMenu.Item onClick={() => handleInsertNode('LOGIC')}>{'Logic'}</DropdownMenu.Item>
               <DropdownMenu.Item onClick={() => handleInsertNode('AGENT')}>{'Agent'}</DropdownMenu.Item>
+              <DropdownMenu.Item onClick={() => handleInsertNode('LOGICAL_SWITCH')}>{'Logical Switch'}</DropdownMenu.Item>
+              <DropdownMenu.Item onClick={() => handleInsertNode('AGENTIC_SWITCH')}>{'Agentic Switch'}</DropdownMenu.Item>
+              <DropdownMenu.Item onClick={() => handleInsertNode('JOIN')}>{'Join'}</DropdownMenu.Item>
             </DropdownMenu.SubContent>
           </DropdownMenu.Sub>
         ) : (

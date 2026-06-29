@@ -121,7 +121,7 @@ export const useInsertNode = () => {
   return useMutation({
     mutationFn: async (variables: {
       expressionId: string;
-      nodeType: 'LOGIC' | 'AGENT';
+      nodeType: 'LOGIC' | 'AGENT' | 'LOGICAL_SWITCH' | 'AGENTIC_SWITCH' | 'JOIN';
       graphId: string;
     }) => {
       const res = await apiClient.POST('/nodes/insert-between/{expression_id}', {
