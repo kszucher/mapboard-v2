@@ -54,7 +54,7 @@ const buildElkNodes = (nodes: AppFlowNode[], edges: AppFlowEdge[]): ElkNode[] =>
     const isStart = nodeType === 'START';
     const isEnd = nodeType === 'END';
     const isSwitch = nodeType === 'LOGICAL_SWITCH' || nodeType === 'AGENTIC_SWITCH';
-    const isJoin = nodeType === 'JOIN';
+    const isJoin = nodeType === 'LOGICAL_JOIN' || nodeType === 'AGENTIC_JOIN';
 
     const subExpressions = (node.data?.expressions ?? [])
       .filter((e) => e.type === 'SUB')

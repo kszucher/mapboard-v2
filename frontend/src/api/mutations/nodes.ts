@@ -15,7 +15,8 @@ const NODE_COLORS: Record<NodeType, NodeColor> = {
   AGENT: 'blue',
   LOGICAL_SWITCH: 'amber',
   AGENTIC_SWITCH: 'grass',
-  JOIN: 'indigo',
+  LOGICAL_JOIN: 'teal',
+  AGENTIC_JOIN: 'indigo',
 };
 
 const NODE_LABELS: Record<NodeType, string> = {
@@ -25,7 +26,8 @@ const NODE_LABELS: Record<NodeType, string> = {
   AGENT: 'Agent',
   LOGICAL_SWITCH: 'Logical Switch',
   AGENTIC_SWITCH: 'Agentic Switch',
-  JOIN: 'Join',
+  LOGICAL_JOIN: 'Logical Join',
+  AGENTIC_JOIN: 'Agentic Join',
 };
 
 export const useCreateNode = () => {
@@ -106,7 +108,7 @@ export const useAddConnectedNode = () => {
       const nodeId = variables.nodeId || crypto.randomUUID();
       const baseExpressionId = variables.baseExpressionId || crypto.randomUUID();
       const edgeId = variables.edgeId || crypto.randomUUID();
-      const subExpressionId = variables.subExpressionId || (['LOGICAL_SWITCH', 'AGENTIC_SWITCH', 'JOIN'].includes(variables.nodeType) ? crypto.randomUUID() : null);
+      const subExpressionId = variables.subExpressionId || (['LOGICAL_SWITCH', 'AGENTIC_SWITCH', 'LOGICAL_JOIN', 'AGENTIC_JOIN'].includes(variables.nodeType) ? crypto.randomUUID() : null);
 
       const res = await apiClient.POST('/nodes/from-expression/{expression_id}', {
         params: {

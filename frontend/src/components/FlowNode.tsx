@@ -53,7 +53,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   const isStart = node.node_type === 'START';
   const isEnd = node.node_type === 'END';
   const isSwitch = node.node_type === 'LOGICAL_SWITCH' || node.node_type === 'AGENTIC_SWITCH';
-  const isJoin = node.node_type === 'JOIN';
+  const isJoin = node.node_type === 'LOGICAL_JOIN' || node.node_type === 'AGENTIC_JOIN';
   const isSwitchOrJoin = isSwitch || isJoin;
 
   const baseExpression = useMemo(() => {

@@ -407,6 +407,27 @@ export interface components {
       /** Graph Id */
       graph_id: string | null;
     };
+    /** ConnectedNodeCreate */
+    ConnectedNodeCreate: {
+      node_type: components["schemas"]["NodeType"];
+      /**
+       * Node Id
+       * Format: uuid
+       */
+      node_id: string;
+      /**
+       * Base Expression Id
+       * Format: uuid
+       */
+      base_expression_id: string;
+      /** Sub Expression Id */
+      sub_expression_id?: string | null;
+      /**
+       * Edge Id
+       * Format: uuid
+       */
+      edge_id: string;
+    };
     /** EdgeCreate */
     EdgeCreate: {
       /** Id */
@@ -577,18 +598,6 @@ export interface components {
       /** Id */
       id?: string | null;
     };
-    /** ConnectedNodeCreate */
-    ConnectedNodeCreate: {
-      node_type: components["schemas"]["NodeType"];
-      /** Format: uuid */
-      node_id: string;
-      /** Format: uuid */
-      base_expression_id: string;
-      /** Format: uuid */
-      sub_expression_id?: string | null;
-      /** Format: uuid */
-      edge_id: string;
-    };
     /** NodeRead */
     NodeRead: {
       /**
@@ -618,7 +627,7 @@ export interface components {
      * NodeType
      * @enum {string}
      */
-    NodeType: "START" | "END" | "LOGIC" | "AGENT" | "LOGICAL_SWITCH" | "AGENTIC_SWITCH" | "JOIN";
+    NodeType: "START" | "END" | "LOGIC" | "AGENT" | "LOGICAL_SWITCH" | "AGENTIC_SWITCH" | "LOGICAL_JOIN" | "AGENTIC_JOIN";
     /** SetActiveGraph */
     SetActiveGraph: {
       /**

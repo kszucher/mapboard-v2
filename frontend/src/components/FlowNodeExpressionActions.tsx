@@ -114,7 +114,10 @@ export const FlowNodeExpressionActions = ({
                   onClick={() => handleInsertNode('LOGICAL_SWITCH')}>{'Logical Switch'}</DropdownMenu.Item>
                 <DropdownMenu.Item
                   onClick={() => handleInsertNode('AGENTIC_SWITCH')}>{'Agentic Switch'}</DropdownMenu.Item>
-                <DropdownMenu.Item onClick={() => handleInsertNode('JOIN')}>{'Join'}</DropdownMenu.Item>
+                <DropdownMenu.Item
+                  onClick={() => handleInsertNode('LOGICAL_JOIN')}>{'Logical Join'}</DropdownMenu.Item>
+                <DropdownMenu.Item
+                  onClick={() => handleInsertNode('AGENTIC_JOIN')}>{'Agentic Join'}</DropdownMenu.Item>
               </DropdownMenu.SubContent>
             </DropdownMenu.Sub>
           ) : (
@@ -130,7 +133,9 @@ export const FlowNodeExpressionActions = ({
                 <DropdownMenu.Item
                   onClick={() => handleAddConnectedNode('AGENTIC_SWITCH')}>{'Agentic Switch'}</DropdownMenu.Item>
                 <DropdownMenu.Item
-                  onClick={() => handleAddConnectedNode('JOIN')}>{'Join'}</DropdownMenu.Item>
+                  onClick={() => handleAddConnectedNode('LOGICAL_JOIN')}>{'Logical Join'}</DropdownMenu.Item>
+                <DropdownMenu.Item
+                  onClick={() => handleAddConnectedNode('AGENTIC_JOIN')}>{'Agentic Join'}</DropdownMenu.Item>
               </DropdownMenu.SubContent>
             </DropdownMenu.Sub>
           )

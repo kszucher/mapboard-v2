@@ -91,7 +91,8 @@ async def create_connected_node(
         NodeType.AGENT: "blue",
         NodeType.LOGICAL_SWITCH: "amber",
         NodeType.AGENTIC_SWITCH: "grass",
-        NodeType.JOIN: "indigo",
+        NodeType.LOGICAL_JOIN: "teal",
+        NodeType.AGENTIC_JOIN: "indigo",
         NodeType.END: "gray",
     }
     NODE_LABELS = {
@@ -99,7 +100,8 @@ async def create_connected_node(
         NodeType.AGENT: "Agent",
         NodeType.LOGICAL_SWITCH: "Logical Switch",
         NodeType.AGENTIC_SWITCH: "Agentic Switch",
-        NodeType.JOIN: "Join",
+        NodeType.LOGICAL_JOIN: "Logical Join",
+        NodeType.AGENTIC_JOIN: "Agentic Join",
         NodeType.END: "End",
     }
 
@@ -121,7 +123,7 @@ async def create_connected_node(
 
     new_node_expressions = await uow.expressions.list_by_node(new_node.id)
     to_expression_id = None
-    if node_type == NodeType.JOIN:
+    if node_type in (NodeType.LOGICAL_JOIN, NodeType.AGENTIC_JOIN):
         sub_exprs = [e for e in new_node_expressions if e.type == "SUB"]
         if sub_exprs:
             sub_exprs.sort(key=lambda x: x.idx)
@@ -170,7 +172,8 @@ async def shortcircuit_node(uow: UnitOfWork, node_id: uuid.UUID) -> None:
     if node.node_type in (
         NodeType.LOGICAL_SWITCH,
         NodeType.AGENTIC_SWITCH,
-        NodeType.JOIN,
+        NodeType.LOGICAL_JOIN,
+        NodeType.AGENTIC_JOIN,
     ):
         if len(sub_exprs) != 1:
             raise ValidationError(
@@ -224,7 +227,8 @@ async def insert_node_between(
         NodeType.AGENT,
         NodeType.LOGICAL_SWITCH,
         NodeType.AGENTIC_SWITCH,
-        NodeType.JOIN,
+        NodeType.LOGICAL_JOIN,
+        NodeType.AGENTIC_JOIN,
     ):
         raise ValidationError("Can only insert LOGIC, AGENT, SWITCH, or JOIN nodes.")
 
@@ -252,14 +256,16 @@ async def insert_node_between(
         NodeType.AGENT: "blue",
         NodeType.LOGICAL_SWITCH: "amber",
         NodeType.AGENTIC_SWITCH: "grass",
-        NodeType.JOIN: "indigo",
+        NodeType.LOGICAL_JOIN: "teal",
+        NodeType.AGENTIC_JOIN: "indigo",
     }
     NODE_LABELS = {
         NodeType.LOGIC: "Logic",
         NodeType.AGENT: "Agent",
         NodeType.LOGICAL_SWITCH: "Logical Switch",
         NodeType.AGENTIC_SWITCH: "Agentic Switch",
-        NodeType.JOIN: "Join",
+        NodeType.LOGICAL_JOIN: "Logical Join",
+        NodeType.AGENTIC_JOIN: "Agentic Join",
     }
 
     # 1. Create the new node using repository directly
@@ -284,11 +290,11 @@ async def insert_node_between(
 
     if not new_base_expr:
         raise ValidationError("Base expression not created for the new node.")
-    if node_type in (NodeType.LOGICAL_SWITCH, NodeType.AGENTIC_SWITCH, NodeType.JOIN) and not new_sub_expr:
+    if node_type in (NodeType.LOGICAL_SWITCH, NodeType.AGENTIC_SWITCH, NodeType.LOGICAL_JOIN, NodeType.AGENTIC_JOIN) and not new_sub_expr:
         raise ValidationError("Sub expression not created for the new node.")
 
     # Determine input (to) and output (from) expression IDs for routing
-    if node_type == NodeType.JOIN:
+    if node_type in (NodeType.LOGICAL_JOIN, NodeType.AGENTIC_JOIN):
         to_expression_id_for_new_node = new_sub_expr.id
         from_expression_id_for_new_node = new_base_expr.id
     elif node_type in (NodeType.LOGICAL_SWITCH, NodeType.AGENTIC_SWITCH):
