@@ -23,6 +23,11 @@ async def list_nodes(uow: UnitOfWork, graph_id: uuid.UUID) -> list[models.Node]:
 
 
 async def create_node(uow: UnitOfWork, data: NodeCreate) -> uuid.UUID:
+    # Calculate next iid to avoid duplicates
+    all_nodes = await uow.nodes.list_by_graph(data.graph_id)
+    next_iid = max([n.iid for n in all_nodes], default=0) + 1
+    data.iid = next_iid
+
     # Repository now handles the simplified node creation
     node = await uow.nodes.create(data)
 
@@ -308,3 +313,18 @@ async def insert_node_between(
     )
 
     return new_node.id
+
+
+async def cleanup_duplicate_iids_for_graph(uow: UnitOfWork, graph_id: uuid.UUID) -> None:
+    nodes = await uow.nodes.list_by_graph(graph_id)
+    iids = [n.iid for n in nodes]
+    if len(iids) != len(set(iids)):
+        logger.info("Found duplicate iids in graph %s, cleaning up...", graph_id)
+        sorted_nodes = sorted(
+            nodes,
+            key=lambda n: (0 if n.node_type == NodeType.START else 1, n.iid, n.id),
+        )
+        for idx, node in enumerate(sorted_nodes, start=1):
+            if node.iid != idx:
+                node.iid = idx
+        await uow.session.flush()

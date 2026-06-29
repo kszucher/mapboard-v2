@@ -170,6 +170,11 @@ async def sync_graph_flow(
     # Flush deletes to DB to avoid FK conflicts
     await uow.session.flush()
 
+    # Clean up duplicate IIDs if any exist
+    from app.nodes.service import cleanup_duplicate_iids_for_graph
+
+    await cleanup_duplicate_iids_for_graph(uow, graph_id)
+
     # Emit the single graph updated event
     uow.emit(
         event=EventName.GRAPH_UPDATED,

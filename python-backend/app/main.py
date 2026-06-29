@@ -51,7 +51,23 @@ def create_app() -> FastAPI:
 
     @app.on_event("startup")
     async def _startup() -> None:
-        return
+        from app.context import UnitOfWork
+        from app.db import SessionLocal
+        from app.events import get_broker
+        from app.nodes.service import cleanup_duplicate_iids_for_graph
+
+        async with SessionLocal() as session:
+            broker = get_broker()
+            uow = UnitOfWork(session, broker)
+            try:
+                graphs = await uow.graphs.list_all()
+                for graph in graphs:
+                    await cleanup_duplicate_iids_for_graph(uow, graph.id)
+                await uow.commit()
+                logger.info("Startup duplicate node IID cleanup completed successfully.")
+            except Exception as e:
+                logger.exception("Failed to run duplicate IID cleanup during startup: %s", e)
+                await uow.rollback()
 
     return app
 
