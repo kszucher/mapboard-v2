@@ -104,7 +104,6 @@ const FlowContent = ({
           type: 'custom' as const,
           animated: true,
           data: {
-            isBack,
             sections,
           },
           style: {
