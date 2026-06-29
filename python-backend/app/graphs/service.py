@@ -5,7 +5,9 @@ from typing import TYPE_CHECKING
 
 from app.constants import EventName, NodeType
 from app.edges.schemas import EdgeCreate
+from app.exceptions import ValidationError
 from app.expressions.schemas import ExpressionCreate
+from app.expressions.service import validate_expressions_for_node_type
 from app.graphs.schemas import GraphSyncPayload
 from app.nodes.schemas import NodeCreate
 
@@ -50,6 +52,23 @@ async def sync_graph_flow(
     graph_id: uuid.UUID,
     payload: GraphSyncPayload,
 ) -> None:
+    # 0. Validate graph boundaries and expression constraints
+    for node_payload in payload.nodes:
+        if node_payload.graph_id != graph_id:
+            raise ValidationError(f"Node {node_payload.id} does not belong to this graph")
+
+    for edge_payload in payload.edges:
+        if edge_payload.graph_id != graph_id:
+            raise ValidationError(f"Edge {edge_payload.id} does not belong to this graph")
+
+    exprs_by_node = {}
+    for expr_payload in payload.expressions:
+        exprs_by_node.setdefault(expr_payload.node_id, []).append(expr_payload)
+
+    for node_payload in payload.nodes:
+        node_exprs = exprs_by_node.get(node_payload.id, [])
+        validate_expressions_for_node_type(node_payload.node_type, node_exprs)
+
     # 1. Fetch current database state
     current_nodes = await uow.nodes.list_by_graph(graph_id)
     current_edges = await uow.edges.list_by_graph(graph_id)

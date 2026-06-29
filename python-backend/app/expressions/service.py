@@ -36,8 +36,10 @@ async def create_expression(uow: UnitOfWork, data: ExpressionCreate) -> models.E
     if not node:
         raise NotFoundError(f"Node {data.node_id} not found")
 
+    expressions = await uow.expressions.list_by_node(data.node_id)
+    validate_expressions_for_node_type(node.node_type, expressions + [data])
+
     if data.idx is None:
-        expressions = await uow.expressions.list_by_node(data.node_id)
         sub_exprs = [e for e in expressions if e.type == "SUB"]
         data.idx = len(sub_exprs)
     else:
