@@ -100,7 +100,7 @@ export const FlowNodeExpressionActions = ({
         {hasConnectedNode ? (
           <DropdownMenu.Sub>
             <DropdownMenu.SubTrigger>
-              <PlusIcon style={{ marginRight: 8 }}/> Insert Node
+              <PlusIcon style={{ marginRight: 8 }}/> Add Interim Node
             </DropdownMenu.SubTrigger>
             <DropdownMenu.SubContent>
               <DropdownMenu.Item onClick={() => handleInsertNode('LOGIC')}>{'Logic'}</DropdownMenu.Item>
@@ -110,7 +110,7 @@ export const FlowNodeExpressionActions = ({
         ) : (
           <DropdownMenu.Sub>
             <DropdownMenu.SubTrigger>
-              <PlusIcon style={{ marginRight: 8 }}/> Append Node
+              <PlusIcon style={{ marginRight: 8 }}/> Add Node
             </DropdownMenu.SubTrigger>
             <DropdownMenu.SubContent>
               <DropdownMenu.Item onClick={() => handleAddConnectedNode('LOGIC')}>{'Logic'}</DropdownMenu.Item>
