@@ -3,13 +3,8 @@ import { apiClient, getClientId } from '../client';
 import type { components } from '../generated/schema';
 import { queryKeys } from '../queryKeys';
 
-type NodeRead = components['schemas']['NodeRead'];
-type NodeType = NodeRead['node_type'];
+type NodeType = components['schemas']['NodeRead']['node_type'];
 type NodeColor = components['schemas']['NodeCreate']['color'];
-
-type ExpressionRead = components['schemas']['ExpressionRead'];
-type EdgeRead = components['schemas']['EdgeRead'];
-type GraphFlowRead = components['schemas']['GraphFlowRead'];
 
 export type InsertableNodeType = Exclude<NodeType, 'START' | 'END'>;
 
@@ -108,105 +103,28 @@ export const useAddConnectedNode = () => {
       subExpressionId?: string;
       edgeId?: string;
     }) => {
+      const nodeId = variables.nodeId || crypto.randomUUID();
+      const baseExpressionId = variables.baseExpressionId || crypto.randomUUID();
+      const edgeId = variables.edgeId || crypto.randomUUID();
+      const subExpressionId = variables.subExpressionId || (['LOGICAL_SWITCH', 'AGENTIC_SWITCH', 'JOIN'].includes(variables.nodeType) ? crypto.randomUUID() : null);
+
       const res = await apiClient.POST('/nodes/from-expression/{expression_id}', {
         params: {
           path: { expression_id: variables.expressionId },
         },
         body: {
           node_type: variables.nodeType,
-          node_id: variables.nodeId!,
-          base_expression_id: variables.baseExpressionId!,
-          sub_expression_id: variables.subExpressionId || null,
-          edge_id: variables.edgeId!,
+          node_id: nodeId,
+          base_expression_id: baseExpressionId,
+          sub_expression_id: subExpressionId,
+          edge_id: edgeId,
         },
         headers: { 'X-Client-Id': getClientId() },
       });
       if ('error' in res) throw res.error;
       return res.data;
     },
-    onMutate: async (variables) => {
-      await queryClient.cancelQueries({ queryKey: queryKeys.graphs.flow(variables.graphId) });
-
-      // Generate stable client-side IDs
-      variables.nodeId = variables.nodeId || crypto.randomUUID();
-      variables.baseExpressionId = variables.baseExpressionId || crypto.randomUUID();
-      variables.edgeId = variables.edgeId || crypto.randomUUID();
-      if (!variables.subExpressionId && ['LOGICAL_SWITCH', 'AGENTIC_SWITCH', 'JOIN'].includes(variables.nodeType)) {
-        variables.subExpressionId = crypto.randomUUID();
-      }
-
-      const previousGraph = queryClient.getQueryData<GraphFlowRead>(
-        queryKeys.graphs.flow(variables.graphId)
-      );
-
-      if (previousGraph) {
-        const maxIid = previousGraph.nodes.reduce((max, n) => Math.max(max, n.iid), 0);
-        const nextIid = maxIid + 1;
-
-        const newNode: NodeRead = {
-          id: variables.nodeId,
-          graph_id: variables.graphId,
-          iid: nextIid,
-          color: NODE_COLORS[variables.nodeType],
-          label: NODE_LABELS[variables.nodeType],
-          node_type: variables.nodeType,
-          is_processing: false,
-        };
-
-        const newExpressions: ExpressionRead[] = [
-          {
-            id: variables.baseExpressionId,
-            node_id: variables.nodeId,
-            idx: 0,
-            type: 'BASE',
-            raw_string: '',
-          },
-        ];
-
-        if (variables.subExpressionId) {
-          newExpressions.push({
-            id: variables.subExpressionId,
-            node_id: variables.nodeId,
-            idx: 0,
-            type: 'SUB',
-            raw_string: '',
-          });
-        }
-
-        const fromNodeId = previousGraph.expressions.find(e => e.id === variables.expressionId)?.node_id || '';
-        const toExpressionId = variables.nodeType === 'JOIN' && variables.subExpressionId ? variables.subExpressionId : variables.baseExpressionId;
-
-        const newEdge: EdgeRead = {
-          id: variables.edgeId,
-          graph_id: variables.graphId,
-          from_node_id: fromNodeId,
-          to_node_id: variables.nodeId,
-          from_expression_id: variables.expressionId,
-          to_expression_id: toExpressionId,
-        };
-
-        queryClient.setQueryData<GraphFlowRead>(
-          queryKeys.graphs.flow(variables.graphId),
-          {
-            ...previousGraph,
-            nodes: [...previousGraph.nodes, newNode],
-            expressions: [...previousGraph.expressions, ...newExpressions],
-            edges: [...previousGraph.edges, newEdge],
-          }
-        );
-      }
-
-      return { previousGraph };
-    },
-    onError: (_err, variables, context) => {
-      if (context?.previousGraph) {
-        queryClient.setQueryData<GraphFlowRead>(
-          queryKeys.graphs.flow(variables.graphId),
-          context.previousGraph
-        );
-      }
-    },
-    onSettled: (_data, _error, variables) => {
+    onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.graphs.flow(variables.graphId) });
     },
   });
