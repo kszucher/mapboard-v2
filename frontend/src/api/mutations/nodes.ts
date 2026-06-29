@@ -10,6 +10,7 @@ type NodeColor = components['schemas']['NodeCreate']['color'];
 
 const NODE_COLORS: Record<NodeType, NodeColor> = {
   START: 'gray',
+  END: 'gray',
   LOGIC: 'purple',
   AGENT: 'blue',
   LOGICAL_SWITCH: 'amber',
@@ -19,6 +20,7 @@ const NODE_COLORS: Record<NodeType, NodeColor> = {
 
 const NODE_LABELS: Record<NodeType, string> = {
   START: 'Start',
+  END: 'End',
   LOGIC: 'Logic',
   AGENT: 'Agent',
   LOGICAL_SWITCH: 'Logical Switch',
@@ -137,4 +139,3 @@ export const useInsertNode = () => {
     },
   });
 };
-

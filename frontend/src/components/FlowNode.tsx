@@ -51,6 +51,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
 
   const { node } = data;
   const isStart = node.node_type === 'START';
+  const isEnd = node.node_type === 'END';
   const isSwitch = node.node_type === 'LOGICAL_SWITCH' || node.node_type === 'AGENTIC_SWITCH';
   const isJoin = node.node_type === 'JOIN';
   const isSwitchOrJoin = isSwitch || isJoin;
@@ -193,7 +194,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
             </IconButton>
           </DropdownMenu.Trigger>
           <DropdownMenu.Content onCloseAutoFocus={e => e.preventDefault()}>
-            {!isStart && !isSwitchOrJoin && (
+            {!isStart && !isEnd && !isSwitchOrJoin && (
               <DropdownMenu.Item onClick={handleShortcircuit}>
                 {'Shortcircuit'}
               </DropdownMenu.Item>
@@ -250,13 +251,13 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
           )}
           <Flex className="nodrag nopan" flexGrow="1" align="center" height="100%" pl={isJoin ? '5' : undefined}>
             <FlowNodeExpressionEditor
-              initialValue={isStart ? 'Start Node (Output)' : baseExpression.raw_string}
+              initialValue={isStart ? 'Start Node (Output)' : isEnd ? 'End Node (Input)' : baseExpression.raw_string}
               onSave={handleUpdateBase}
-              disabled={isStart}
+              disabled={isStart || isEnd}
               minWidth={240}
               maxWidth={600}
               actions={
-                !isSwitchOrJoin ? (
+                !isSwitchOrJoin && !isEnd ? (
                   <FlowNodeExpressionActions
                     expressionId={baseExpression.id}
                     graphId={node.graph_id}
@@ -265,7 +266,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
               }
             />
           </Flex>
-          {(!isSwitch || isJoin) && (
+          {(!isSwitch || isJoin) && !isEnd && (
             <Handle
               id={baseExpression.id}
               type="source"

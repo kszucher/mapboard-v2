@@ -17,6 +17,7 @@ class EventName(str, Enum):
 
 class NodeType(str, Enum):
     START = "START"
+    END = "END"
     LOGIC = "LOGIC"
     AGENT = "AGENT"
     LOGICAL_SWITCH = "LOGICAL_SWITCH"

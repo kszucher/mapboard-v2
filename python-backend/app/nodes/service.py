@@ -83,6 +83,7 @@ async def create_connected_node(
         NodeType.LOGICAL_SWITCH: "amber",
         NodeType.AGENTIC_SWITCH: "grass",
         NodeType.JOIN: "indigo",
+        NodeType.END: "gray",
     }
     NODE_LABELS = {
         NodeType.LOGIC: "Logic",
@@ -90,6 +91,7 @@ async def create_connected_node(
         NodeType.LOGICAL_SWITCH: "Logical Switch",
         NodeType.AGENTIC_SWITCH: "Agentic Switch",
         NodeType.JOIN: "Join",
+        NodeType.END: "End",
     }
 
     # 1. Create the new node using repository directly
@@ -145,8 +147,14 @@ async def shortcircuit_node(uow: UnitOfWork, node_id: uuid.UUID) -> None:
     if not node:
         return
 
-    if node.node_type in (NodeType.START, NodeType.LOGICAL_SWITCH, NodeType.AGENTIC_SWITCH, NodeType.JOIN):
-        raise ValidationError("Cannot shortcircuit START, SWITCH, or JOIN nodes.")
+    if node.node_type in (
+        NodeType.START,
+        NodeType.END,
+        NodeType.LOGICAL_SWITCH,
+        NodeType.AGENTIC_SWITCH,
+        NodeType.JOIN,
+    ):
+        raise ValidationError("Cannot shortcircuit START, END, SWITCH, or JOIN nodes.")
 
     # 1. Get all edges connected to the node
     all_edges = await uow.edges.list_by_node(node_id)

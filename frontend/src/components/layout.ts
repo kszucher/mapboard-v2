@@ -52,6 +52,7 @@ const buildElkNodes = (nodes: AppFlowNode[], edges: AppFlowEdge[]): ElkNode[] =>
     const nodeWidth = node.measured?.width ?? node.width ?? 200;
     const nodeType = node.data?.node?.node_type;
     const isStart = nodeType === 'START';
+    const isEnd = nodeType === 'END';
     const isSwitch = nodeType === 'LOGICAL_SWITCH' || nodeType === 'AGENTIC_SWITCH';
     const isJoin = nodeType === 'JOIN';
 
@@ -98,6 +99,7 @@ const buildElkNodes = (nodes: AppFlowNode[], edges: AppFlowEdge[]): ElkNode[] =>
 
     const layoutOptions: LayoutOptions = { 'elk.portConstraints': 'FIXED_POS' };
     if (isStart) layoutOptions['org.eclipse.elk.layered.layering.layerConstraint'] = 'FIRST';
+    if (isEnd) layoutOptions['org.eclipse.elk.layered.layering.layerConstraint'] = 'LAST';
 
     return { id: node.id, width: nodeWidth, height: nodeHeight, ports, layoutOptions };
   });

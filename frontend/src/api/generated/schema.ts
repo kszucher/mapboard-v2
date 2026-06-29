@@ -606,7 +606,7 @@ export interface components {
      * NodeType
      * @enum {string}
      */
-    NodeType: "START" | "LOGIC" | "AGENT" | "LOGICAL_SWITCH" | "AGENTIC_SWITCH" | "JOIN";
+    NodeType: "START" | "END" | "LOGIC" | "AGENT" | "LOGICAL_SWITCH" | "AGENTIC_SWITCH" | "JOIN";
     /** SetActiveGraph */
     SetActiveGraph: {
       /**

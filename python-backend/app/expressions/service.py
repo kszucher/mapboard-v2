@@ -18,9 +18,9 @@ def validate_expressions_for_node_type(
     base_exprs = [e for e in expressions if e.type == "BASE"]
     sub_exprs = [e for e in expressions if e.type == "SUB"]
 
-    if node_type == NodeType.START:
+    if node_type in (NodeType.START, NodeType.END):
         if len(base_exprs) != 1 or len(sub_exprs) != 0:
-            raise ValidationError("START nodes must have exactly 1 BASE expression and 0 SUB expressions")
+            raise ValidationError(f"{node_type} nodes must have exactly 1 BASE expression and 0 SUB expressions")
     elif node_type in {NodeType.LOGIC, NodeType.AGENT}:
         if len(base_exprs) != 1 or len(sub_exprs) != 0:
             raise ValidationError(f"{node_type} nodes must have exactly 1 BASE expression and 0 SUB expressions")
