@@ -316,36 +316,10 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
 };
 
 export const CustomNode = memo(CustomNodeComponent, (prevProps, nextProps) => {
-  if (prevProps.id !== nextProps.id) return false;
-  if (prevProps.selected !== nextProps.selected) return false;
-  if (prevProps.dragging !== nextProps.dragging) return false;
-
-  const prevData = prevProps.data;
-  const nextData = nextProps.data;
-
-  if (prevData.isPositioned !== nextData.isPositioned) return false;
-  if (prevData.node.id !== nextData.node.id) return false;
-  if (prevData.node.label !== nextData.node.label) return false;
-  if (prevData.node.color !== nextData.node.color) return false;
-  if (prevData.node.iid !== nextData.node.iid) return false;
-  if (prevData.node.node_type !== nextData.node.node_type) return false;
-  if (prevData.node.is_processing !== nextData.node.is_processing) return false;
-
-  const prevExprs = prevData.expressions || [];
-  const nextExprs = nextData.expressions || [];
-  if (prevExprs.length !== nextExprs.length) return false;
-  for (let i = 0; i < prevExprs.length; i++) {
-    const pExpr = prevExprs[i];
-    const nExpr = nextExprs[i];
-    if (
-      pExpr.id !== nExpr.id ||
-      pExpr.idx !== nExpr.idx ||
-      pExpr.raw_string !== nExpr.raw_string ||
-      pExpr.type !== nExpr.type
-    ) {
-      return false;
-    }
-  }
-
-  return true;
+  return (
+    prevProps.id === nextProps.id &&
+    prevProps.selected === nextProps.selected &&
+    prevProps.dragging === nextProps.dragging &&
+    JSON.stringify(prevProps.data) === JSON.stringify(nextProps.data)
+  );
 });
