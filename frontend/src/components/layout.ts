@@ -31,17 +31,14 @@ const ELK_LAYOUT_OPTIONS: LayoutOptions = {
 const rowCenter = (rowIndex: number) =>
   NODE_PADDING / 2 + ROW_HEIGHT * rowIndex + ROW_HEIGHT / 2;
 
-const groupByHandle = (
+const getUniqueHandles = (
   edges: AppFlowEdge[],
   key: 'sourceHandle' | 'targetHandle'
-): Record<string, AppFlowEdge[]> =>
-  edges.reduce<Record<string, AppFlowEdge[]>>((acc, e) => {
-    const id = e[key];
-    if (id) {
-      (acc[id] ??= []).push(e);
-    }
-    return acc;
-  }, {});
+): string[] => {
+  return Array.from(
+    new Set(edges.map((e) => e[key]).filter((id): id is string => !!id))
+  );
+};
 
 const buildElkNodes = (orderedNodes: AppFlowNode[], edges: AppFlowEdge[]): ElkNode[] => {
   const incomingMap: Record<string, AppFlowEdge[]> = {};
@@ -68,8 +65,8 @@ const buildElkNodes = (orderedNodes: AppFlowNode[], edges: AppFlowEdge[]): ElkNo
     const ports: ElkPort[] = [];
 
     // WEST ports (incoming)
-    Object.entries(groupByHandle(incomingMap[node.id] ?? [], 'targetHandle'))
-      .forEach(([handleId]) => {
+    getUniqueHandles(incomingMap[node.id] ?? [], 'targetHandle')
+      .forEach((handleId) => {
         const exprIdx = subExpressions.findIndex((e) => e.id === handleId);
         const rowIdx = isJoin && exprIdx !== -1 ? 1 + exprIdx : 1;
         ports.push({
@@ -83,8 +80,8 @@ const buildElkNodes = (orderedNodes: AppFlowNode[], edges: AppFlowEdge[]): ElkNo
       });
 
     // EAST ports (outgoing)
-    Object.entries(groupByHandle(outgoingMap[node.id] ?? [], 'sourceHandle'))
-      .forEach(([handleId]) => {
+    getUniqueHandles(outgoingMap[node.id] ?? [], 'sourceHandle')
+      .forEach((handleId) => {
         const exprIdx = subExpressions.findIndex((e) => e.id === handleId);
         let rowIdx = 1;
         if (isSwitch && exprIdx !== -1) rowIdx = 2 + exprIdx;
