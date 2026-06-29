@@ -63,25 +63,6 @@ async def sync_graph_flow(
     payload_edges_map = {e.id: e for e in payload.edges}
     payload_exprs_map = {expr.id: expr for expr in payload.expressions}
 
-    # --- DELETIONS (Bottom-Up: Edges -> Expressions -> Nodes) ---
-    # 1. Edges to delete
-    for db_edge_id in db_edges_map.keys():
-        if db_edge_id not in payload_edges_map:
-            await uow.edges.delete(db_edge_id)
-
-    # 2. Expressions to delete
-    for db_expr_id in db_exprs_map.keys():
-        if db_expr_id not in payload_exprs_map:
-            await uow.expressions.delete(db_expr_id)
-
-    # 3. Nodes to delete
-    for db_node_id in db_nodes_map.keys():
-        if db_node_id not in payload_nodes_map:
-            await uow.nodes.delete(db_node_id)
-
-    # Flush deletes to DB to avoid FK conflicts
-    await uow.session.flush()
-
     # --- INSERTIONS / UPDATES (Top-Down: Nodes -> Expressions -> Edges) ---
     # 1. Nodes insert/update
     for node_payload in payload.nodes:
@@ -149,6 +130,25 @@ async def sync_graph_flow(
                 )
             )
 
+    await uow.session.flush()
+
+    # --- DELETIONS (Bottom-Up: Edges -> Expressions -> Nodes) ---
+    # 1. Edges to delete
+    for db_edge_id in db_edges_map.keys():
+        if db_edge_id not in payload_edges_map:
+            await uow.edges.delete(db_edge_id)
+
+    # 2. Expressions to delete
+    for db_expr_id in db_exprs_map.keys():
+        if db_expr_id not in payload_exprs_map:
+            await uow.expressions.delete(db_expr_id)
+
+    # 3. Nodes to delete
+    for db_node_id in db_nodes_map.keys():
+        if db_node_id not in payload_nodes_map:
+            await uow.nodes.delete(db_node_id)
+
+    # Flush deletes to DB to avoid FK conflicts
     await uow.session.flush()
 
     # Emit the single graph updated event

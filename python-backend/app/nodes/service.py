@@ -65,7 +65,8 @@ async def create_connected_node(
         raise NotFoundError(f"Expression {expression_id} not found")
 
     existing_edges = await uow.edges.list_by_expression(expression_id)
-    if existing_edges:
+    existing_outgoing = [e for e in existing_edges if e.from_expression_id == expression_id]
+    if existing_outgoing:
         raise ValidationError("Expression is already connected to another node.")
 
     parent_node = await uow.nodes.get(expr.node_id)
@@ -106,23 +107,27 @@ async def create_connected_node(
     # 2. Initialize default expressions for the new node
     await expression_service.create_default_expressions_for_node(uow, new_node)
 
+    new_node_expressions = await uow.expressions.list_by_node(new_node.id)
     to_expression_id = None
     if node_type == NodeType.JOIN:
-        new_node_expressions = await uow.expressions.list_by_node(new_node.id)
         sub_exprs = [e for e in new_node_expressions if e.type == "SUB"]
         if sub_exprs:
             sub_exprs.sort(key=lambda x: x.idx)
             to_expression_id = sub_exprs[0].id
+    else:
+        base_exprs = [e for e in new_node_expressions if e.type == "BASE"]
+        if base_exprs:
+            to_expression_id = base_exprs[0].id
+
+    if not to_expression_id:
+        raise ValidationError("Could not find a valid expression on the new node to connect to.")
 
     # 4. Create the connecting edge using repository directly
     await uow.edges.create(
         EdgeCreate(
             graph_id=parent_node.graph_id,
-            from_node_id=parent_node.id,
-            to_node_id=new_node.id,
             from_expression_id=expr.id,
             to_expression_id=to_expression_id,
-            handle_index=0,
         )
     )
 
@@ -151,14 +156,12 @@ async def shortcircuit_node(uow: UnitOfWork, node_id: uuid.UUID) -> None:
     deleted_edge_ids = []
 
     if outgoing and incoming:
-        # Sort outgoing edges by handle_index
-        outgoing.sort(key=lambda e: e.handle_index)
-        primary_target_node_id = outgoing[0].to_node_id
+        # Sort outgoing edges deterministically
+        outgoing.sort(key=lambda e: e.id)
         primary_target_expression_id = outgoing[0].to_expression_id
 
-        # Retarget all incoming edges' to_node_id and to_expression_id to the primary target
+        # Retarget all incoming edges' to_expression_id to the primary target's expression
         for in_edge in incoming:
-            in_edge.to_node_id = primary_target_node_id
             in_edge.to_expression_id = primary_target_expression_id
 
         # All outgoing edges will be deleted because their source node is deleted (cascade delete).
@@ -195,11 +198,11 @@ async def insert_node_between(
         raise NotFoundError(f"Expression {expression_id} not found")
 
     existing_edges = await uow.edges.list_by_expression(expression_id)
-    if not existing_edges:
+    outgoing_edges = [e for e in existing_edges if e.from_expression_id == expression_id]
+    if not outgoing_edges:
         raise ValidationError("Expression is not connected to any node.")
 
-    existing_edge = existing_edges[0]
-    old_to_node_id = existing_edge.to_node_id
+    existing_edge = outgoing_edges[0]
 
     parent_node = await uow.nodes.get(expr.node_id)
     if not parent_node:
@@ -241,19 +244,15 @@ async def insert_node_between(
 
     # 4. Reassign original edge to point to the newly created node
     old_to_expression_id = existing_edge.to_expression_id
-    existing_edge.to_node_id = new_node.id
-    existing_edge.to_expression_id = None
+    existing_edge.to_expression_id = new_base_expr.id
     await uow.session.flush()
 
     # 7. Create the new connecting edge from new node to the old target node
     await uow.edges.create(
         EdgeCreate(
             graph_id=parent_node.graph_id,
-            from_node_id=new_node.id,
-            to_node_id=old_to_node_id,
             from_expression_id=new_base_expr.id,
             to_expression_id=old_to_expression_id,
-            handle_index=0,
         )
     )
 
