@@ -26,7 +26,6 @@ async def create_graph(
         NodeCreate(
             graph_id=graph.id,
             node_type=NodeType.START,
-            color="gray",
             iid=1,
             label="Start",
             is_processing=False,
@@ -89,7 +88,6 @@ async def sync_graph_flow(
             # Update existing node
             node = db_nodes_map[node_payload.id]
             node.iid = node_payload.iid
-            node.color = node_payload.color
             node.label = node_payload.label
             node.is_processing = node_payload.is_processing
             node.node_type = node_payload.node_type
@@ -100,7 +98,6 @@ async def sync_graph_flow(
                     id=node_payload.id,
                     graph_id=node_payload.graph_id,
                     iid=node_payload.iid,
-                    color=node_payload.color,
                     label=node_payload.label,
                     is_processing=node_payload.is_processing,
                     node_type=node_payload.node_type,

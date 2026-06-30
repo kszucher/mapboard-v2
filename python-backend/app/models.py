@@ -45,7 +45,6 @@ class Node(Base):
     )
 
     iid: Mapped[int] = mapped_column(Integer, nullable=False)
-    color: Mapped[str] = mapped_column(String(32), nullable=False)
     label: Mapped[str] = mapped_column(String(255), nullable=False)
     is_processing: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     node_type: Mapped[str] = mapped_column(String(32), nullable=False)

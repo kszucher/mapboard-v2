@@ -15,9 +15,20 @@ import {
 
 import { FlowNodeExpressionActions } from './FlowNodeExpressionActions.tsx';
 import { FlowNodeExpressionEditor } from './FlowNodeExpressionEditor.tsx';
-import type { AppFlowNode } from './types.ts';
+import type { AppFlowNode, NodeType } from './types.ts';
 
 const NODE_PADDING = 6;
+
+const NODE_COLORS: Record<NodeType, BadgeProps['color']> = {
+  START: 'gray',
+  END: 'gray',
+  LOGIC: 'purple',
+  AGENT: 'blue',
+  LOGICAL_SWITCH: 'amber',
+  AGENTIC_SWITCH: 'grass',
+  LOGICAL_JOIN: 'teal',
+  AGENTIC_JOIN: 'indigo',
+};
 
 const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   const deleteNodeMutation = useDeleteNode();
@@ -182,7 +193,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
           <Badge color="gray" size="1" style={{ height: 'var(--space-5)' }}>
             {'N' + data.node.iid}
           </Badge>
-          <Badge color={data.node.color as BadgeProps['color']} size="1" style={{ height: 'var(--space-5)' }}>
+          <Badge color={NODE_COLORS[data.node.node_type]} size="1" style={{ height: 'var(--space-5)' }}>
             {data.node.label}
           </Badge>
         </Flex>

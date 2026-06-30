@@ -5,13 +5,12 @@ import uuid
 from pydantic import BaseModel
 
 from app.constants import NodeType
-from app.schemas import Color, OrmModel
+from app.schemas import OrmModel
 
 
 class NodeBase(BaseModel):
     graph_id: uuid.UUID
     iid: int
-    color: Color
     label: str
     is_processing: bool
     node_type: NodeType

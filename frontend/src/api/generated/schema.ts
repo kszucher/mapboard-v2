@@ -585,11 +585,6 @@ export interface components {
       graph_id: string;
       /** Iid */
       iid: number;
-      /**
-       * Color
-       * @enum {string}
-       */
-      color: "gray" | "gold" | "bronze" | "brown" | "yellow" | "amber" | "orange" | "tomato" | "red" | "ruby" | "crimson" | "pink" | "plum" | "purple" | "violet" | "iris" | "indigo" | "blue" | "cyan" | "teal" | "jade" | "green" | "grass" | "lime" | "mint" | "sky";
       /** Label */
       label: string;
       /** Is Processing */
@@ -607,11 +602,6 @@ export interface components {
       graph_id: string;
       /** Iid */
       iid: number;
-      /**
-       * Color
-       * @enum {string}
-       */
-      color: "gray" | "gold" | "bronze" | "brown" | "yellow" | "amber" | "orange" | "tomato" | "red" | "ruby" | "crimson" | "pink" | "plum" | "purple" | "violet" | "iris" | "indigo" | "blue" | "cyan" | "teal" | "jade" | "green" | "grass" | "lime" | "mint" | "sky";
       /** Label */
       label: string;
       /** Is Processing */

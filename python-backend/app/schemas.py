@@ -9,34 +9,6 @@ from app.constants import EventName
 
 # Shared type definitions
 ColorMode = Literal["DARK", "LIGHT"]
-Color = Literal[
-    "gray",
-    "gold",
-    "bronze",
-    "brown",
-    "yellow",
-    "amber",
-    "orange",
-    "tomato",
-    "red",
-    "ruby",
-    "crimson",
-    "pink",
-    "plum",
-    "purple",
-    "violet",
-    "iris",
-    "indigo",
-    "blue",
-    "cyan",
-    "teal",
-    "jade",
-    "green",
-    "grass",
-    "lime",
-    "mint",
-    "sky",
-]
 
 
 # Base classes

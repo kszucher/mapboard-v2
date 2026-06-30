@@ -4,20 +4,8 @@ import type { components } from '../generated/schema';
 import { queryKeys } from '../queryKeys';
 
 type NodeType = components['schemas']['NodeRead']['node_type'];
-type NodeColor = components['schemas']['NodeCreate']['color'];
 
 export type InsertableNodeType = Exclude<NodeType, 'START' | 'END'>;
-
-const NODE_COLORS: Record<NodeType, NodeColor> = {
-  START: 'gray',
-  END: 'gray',
-  LOGIC: 'purple',
-  AGENT: 'blue',
-  LOGICAL_SWITCH: 'amber',
-  AGENTIC_SWITCH: 'grass',
-  LOGICAL_JOIN: 'teal',
-  AGENTIC_JOIN: 'indigo',
-};
 
 const NODE_LABELS: Record<NodeType, string> = {
   START: 'Start',
@@ -41,7 +29,6 @@ export const useCreateNode = () => {
           id: nodeId,
           graph_id: graphId,
           iid: 1,
-          color: NODE_COLORS[nodeType],
           label: NODE_LABELS[nodeType],
           node_type: nodeType,
           is_processing: false,

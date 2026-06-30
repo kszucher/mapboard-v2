@@ -10,7 +10,6 @@ from app.edges.schemas import EdgeCreate
 from app.exceptions import NotFoundError, ValidationError
 from app.expressions import service as expression_service
 from app.nodes.schemas import NodeCreate
-from app.schemas import Color
 
 if TYPE_CHECKING:
     from app.context import UnitOfWork
@@ -86,15 +85,6 @@ async def create_connected_node(
     all_nodes = await uow.nodes.list_by_graph(parent_node.graph_id)
     next_iid = max([n.iid for n in all_nodes], default=0) + 1
 
-    NODE_COLORS: dict[NodeType, Color] = {
-        NodeType.LOGIC: "purple",
-        NodeType.AGENT: "blue",
-        NodeType.LOGICAL_SWITCH: "amber",
-        NodeType.AGENTIC_SWITCH: "grass",
-        NodeType.LOGICAL_JOIN: "teal",
-        NodeType.AGENTIC_JOIN: "indigo",
-        NodeType.END: "gray",
-    }
     NODE_LABELS = {
         NodeType.LOGIC: "Logic",
         NodeType.AGENT: "Agent",
@@ -111,7 +101,6 @@ async def create_connected_node(
             id=node_id,
             graph_id=parent_node.graph_id,
             iid=next_iid,
-            color=NODE_COLORS[node_type],
             label=NODE_LABELS[node_type],
             is_processing=False,
             node_type=node_type,
@@ -251,14 +240,6 @@ async def insert_node_between(
     all_nodes = await uow.nodes.list_by_graph(parent_node.graph_id)
     next_iid = max([n.iid for n in all_nodes], default=0) + 1
 
-    NODE_COLORS: dict[NodeType, Color] = {
-        NodeType.LOGIC: "purple",
-        NodeType.AGENT: "blue",
-        NodeType.LOGICAL_SWITCH: "amber",
-        NodeType.AGENTIC_SWITCH: "grass",
-        NodeType.LOGICAL_JOIN: "teal",
-        NodeType.AGENTIC_JOIN: "indigo",
-    }
     NODE_LABELS = {
         NodeType.LOGIC: "Logic",
         NodeType.AGENT: "Agent",
@@ -273,7 +254,6 @@ async def insert_node_between(
         NodeCreate(
             graph_id=parent_node.graph_id,
             iid=next_iid,
-            color=NODE_COLORS[node_type],
             label=NODE_LABELS[node_type],
             is_processing=False,
             node_type=node_type,
@@ -290,7 +270,10 @@ async def insert_node_between(
 
     if not new_base_expr:
         raise ValidationError("Base expression not created for the new node.")
-    if node_type in (NodeType.LOGICAL_SWITCH, NodeType.AGENTIC_SWITCH, NodeType.LOGICAL_JOIN, NodeType.AGENTIC_JOIN) and not new_sub_expr:
+    if (
+        node_type in (NodeType.LOGICAL_SWITCH, NodeType.AGENTIC_SWITCH, NodeType.LOGICAL_JOIN, NodeType.AGENTIC_JOIN)
+        and not new_sub_expr
+    ):
         raise ValidationError("Sub expression not created for the new node.")
 
     # Determine input (to) and output (from) expression IDs for routing
