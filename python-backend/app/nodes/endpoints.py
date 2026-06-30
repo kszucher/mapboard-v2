@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.constants import NodeType
 from app.db import get_uow
 from app.exceptions import GraphboardError
+from app.graphs import topology_service
 from app.nodes import service as node_service
 from app.nodes.schemas import ConnectedNodeCreate, NodeCreate, NodeRead
 
@@ -38,7 +39,7 @@ async def create_connected_node(
     expression_id: uuid.UUID, payload: ConnectedNodeCreate, uow: Any = Depends(get_uow)
 ) -> uuid.UUID:
     try:
-        new_node_id = await node_service.create_connected_node(
+        new_node_id = await topology_service.create_connected_node(
             uow,
             expression_id,
             payload.node_type,
@@ -60,7 +61,7 @@ async def create_connected_node(
 @router.post("/{node_id}/shortcircuit", status_code=status.HTTP_204_NO_CONTENT)
 async def shortcircuit_node(node_id: uuid.UUID, uow: Any = Depends(get_uow)) -> None:
     try:
-        await node_service.shortcircuit_node(uow, node_id)
+        await topology_service.shortcircuit_node(uow, node_id)
         await uow.commit()
     except GraphboardError:
         await uow.rollback()
@@ -73,7 +74,7 @@ async def shortcircuit_node(node_id: uuid.UUID, uow: Any = Depends(get_uow)) -> 
 @router.post("/insert-between/{expression_id}", response_model=uuid.UUID, status_code=201)
 async def insert_node_between(expression_id: uuid.UUID, node_type: NodeType, uow: Any = Depends(get_uow)) -> uuid.UUID:
     try:
-        new_node_id = await node_service.insert_node_between(uow, expression_id, node_type)
+        new_node_id = await topology_service.insert_node_between(uow, expression_id, node_type)
         await uow.commit()
         return new_node_id
     except GraphboardError:
