@@ -93,6 +93,8 @@ async def create_connected_node(
         NodeType.LOGICAL_JOIN: "Logical Join",
         NodeType.AGENTIC_JOIN: "Agentic Join",
         NodeType.END: "End",
+        NodeType.TRANSFORM_AGENT_TO_LOGICAL: "Transform Agent To Logical",
+        NodeType.TRANSFORM_LOGICAL_TO_AGENT: "Transform Logical To Agent",
     }
 
     # 1. Create the new node using repository directly
@@ -112,15 +114,22 @@ async def create_connected_node(
 
     new_node_expressions = await uow.expressions.list_by_node(new_node.id)
     to_expression_id = None
-    if node_type in (NodeType.LOGICAL_JOIN, NodeType.AGENTIC_JOIN):
-        sub_exprs = [e for e in new_node_expressions if e.type == "SUB"]
-        if sub_exprs:
-            sub_exprs.sort(key=lambda x: x.idx)
-            to_expression_id = sub_exprs[0].id
+
+    # Generic input port lookup:
+    # 1. Prefer BASE_INPUT
+    # 2. Else BASE_INPUT_OUTPUT
+    # 3. Else SUB_INPUT (idx=0)
+    base_input = next((e for e in new_node_expressions if e.type == "BASE_INPUT"), None)
+    base_input_output = next((e for e in new_node_expressions if e.type == "BASE_INPUT_OUTPUT"), None)
+    if base_input:
+        to_expression_id = base_input.id
+    elif base_input_output:
+        to_expression_id = base_input_output.id
     else:
-        base_exprs = [e for e in new_node_expressions if e.type == "BASE"]
-        if base_exprs:
-            to_expression_id = base_exprs[0].id
+        sub_inputs = [e for e in new_node_expressions if e.type == "SUB_INPUT"]
+        if sub_inputs:
+            sub_inputs.sort(key=lambda x: x.idx)
+            to_expression_id = sub_inputs[0].id
 
     if not to_expression_id:
         raise ValidationError("Could not find a valid expression on the new node to connect to.")
@@ -156,17 +165,19 @@ async def shortcircuit_node(uow: UnitOfWork, node_id: uuid.UUID) -> None:
         raise ValidationError("Cannot shortcircuit START or END nodes.")
 
     expressions = await uow.expressions.list_by_node(node_id)
-    sub_exprs = [e for e in expressions if e.type == "SUB"]
+    sub_exprs = [e for e in expressions if e.type.startswith("SUB_")]
 
     if node.node_type in (
         NodeType.LOGICAL_SWITCH,
         NodeType.AGENTIC_SWITCH,
         NodeType.LOGICAL_JOIN,
         NodeType.AGENTIC_JOIN,
+        NodeType.TRANSFORM_AGENT_TO_LOGICAL,
+        NodeType.TRANSFORM_LOGICAL_TO_AGENT,
     ):
         if len(sub_exprs) != 1:
             raise ValidationError(
-                "Cannot shortcircuit SWITCH or JOIN nodes unless they have exactly one sub-expression."
+                "Cannot shortcircuit SWITCH, JOIN, or TRANSFORM nodes unless they have exactly one sub-expression."
             )
 
     # 1. Get all edges connected to the node
@@ -218,8 +229,10 @@ async def insert_node_between(
         NodeType.AGENTIC_SWITCH,
         NodeType.LOGICAL_JOIN,
         NodeType.AGENTIC_JOIN,
+        NodeType.TRANSFORM_AGENT_TO_LOGICAL,
+        NodeType.TRANSFORM_LOGICAL_TO_AGENT,
     ):
-        raise ValidationError("Can only insert LOGIC, AGENT, SWITCH, or JOIN nodes.")
+        raise ValidationError("Can only insert LOGIC, AGENT, SWITCH, JOIN, or TRANSFORM nodes.")
 
     expr = await uow.expressions.get(expression_id)
     if not expr:
@@ -247,6 +260,8 @@ async def insert_node_between(
         NodeType.AGENTIC_SWITCH: "Agentic Switch",
         NodeType.LOGICAL_JOIN: "Logical Join",
         NodeType.AGENTIC_JOIN: "Agentic Join",
+        NodeType.TRANSFORM_AGENT_TO_LOGICAL: "Transform Agent To Logical",
+        NodeType.TRANSFORM_LOGICAL_TO_AGENT: "Transform Logical To Agent",
     }
 
     # 1. Create the new node using repository directly
@@ -265,38 +280,37 @@ async def insert_node_between(
 
     # 3. Retrieve the created expressions of the new node
     new_expressions = await uow.expressions.list_by_node(new_node.id)
-    new_base_expr = next((e for e in new_expressions if e.type == "BASE"), None)
-    new_sub_expr = next((e for e in new_expressions if e.type == "SUB"), None)
 
-    if not new_base_expr:
-        raise ValidationError("Base expression not created for the new node.")
-    if (
-        node_type in (NodeType.LOGICAL_SWITCH, NodeType.AGENTIC_SWITCH, NodeType.LOGICAL_JOIN, NodeType.AGENTIC_JOIN)
-        and not new_sub_expr
-    ):
-        raise ValidationError("Sub expression not created for the new node.")
+    # Generic input and output expression detection for the new node
+    new_input_expr = next((e for e in new_expressions if e.type in ("BASE_INPUT", "BASE_INPUT_OUTPUT")), None)
+    if not new_input_expr:
+        sub_inputs = [e for e in new_expressions if e.type == "SUB_INPUT"]
+        if sub_inputs:
+            sub_inputs.sort(key=lambda x: x.idx)
+            new_input_expr = sub_inputs[0]
 
-    # Determine input (to) and output (from) expression IDs for routing
-    if node_type in (NodeType.LOGICAL_JOIN, NodeType.AGENTIC_JOIN):
-        to_expression_id_for_new_node = new_sub_expr.id
-        from_expression_id_for_new_node = new_base_expr.id
-    elif node_type in (NodeType.LOGICAL_SWITCH, NodeType.AGENTIC_SWITCH):
-        to_expression_id_for_new_node = new_base_expr.id
-        from_expression_id_for_new_node = new_sub_expr.id
-    else:
-        to_expression_id_for_new_node = new_base_expr.id
-        from_expression_id_for_new_node = new_base_expr.id
+    new_output_expr = next((e for e in new_expressions if e.type in ("BASE_OUTPUT", "BASE_INPUT_OUTPUT")), None)
+    if not new_output_expr:
+        sub_outputs = [e for e in new_expressions if e.type == "SUB_OUTPUT"]
+        if sub_outputs:
+            sub_outputs.sort(key=lambda x: x.idx)
+            new_output_expr = sub_outputs[0]
+
+    if not new_input_expr:
+        raise ValidationError("Input expression not found for the new node.")
+    if not new_output_expr:
+        raise ValidationError("Output expression not found for the new node.")
 
     # 4. Reassign original edge to point to the newly created node's input expression
     old_to_expression_id = existing_edge.to_expression_id
-    existing_edge.to_expression_id = to_expression_id_for_new_node
+    existing_edge.to_expression_id = new_input_expr.id
     await uow.session.flush()
 
     # 7. Create the new connecting edge from new node's output expression to the old target node
     await uow.edges.create(
         EdgeCreate(
             graph_id=parent_node.graph_id,
-            from_expression_id=from_expression_id_for_new_node,
+            from_expression_id=new_output_expr.id,
             to_expression_id=old_to_expression_id,
         )
     )

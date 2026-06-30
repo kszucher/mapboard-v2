@@ -16,6 +16,8 @@ const NODE_LABELS: Record<NodeType, string> = {
   AGENTIC_SWITCH: 'Agentic Switch',
   LOGICAL_JOIN: 'Logical Join',
   AGENTIC_JOIN: 'Agentic Join',
+  TRANSFORM_AGENT_TO_LOGICAL: 'Transform Agent To Logical',
+  TRANSFORM_LOGICAL_TO_AGENT: 'Transform Logical To Agent',
 };
 
 export const useCreateNode = () => {

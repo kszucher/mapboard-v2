@@ -54,7 +54,6 @@ class Node(Base):
         "Expression",
         back_populates="node",
         cascade="all, delete-orphan",
-        order_by="Expression.type, Expression.idx",
     )
 
 

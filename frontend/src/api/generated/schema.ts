@@ -485,7 +485,6 @@ export interface components {
     ExpressionCreate: {
       /** Raw String */
       raw_string: string;
-      /** @default SUB */
       type: components["schemas"]["ExpressionType"];
       /** Id */
       id?: string | null;
@@ -501,7 +500,6 @@ export interface components {
     ExpressionRead: {
       /** Raw String */
       raw_string: string;
-      /** @default SUB */
       type: components["schemas"]["ExpressionType"];
       /**
        * Id
@@ -520,7 +518,7 @@ export interface components {
      * ExpressionType
      * @enum {string}
      */
-    ExpressionType: "BASE" | "SUB";
+    ExpressionType: "BASE_INPUT" | "SUB_INPUT" | "SUB_UNCONNECTED" | "BASE_OUTPUT" | "SUB_OUTPUT" | "BASE_INPUT_OUTPUT";
     /** ExpressionUpdate */
     ExpressionUpdate: {
       /** Raw String */
@@ -617,7 +615,7 @@ export interface components {
      * NodeType
      * @enum {string}
      */
-    NodeType: "START" | "END" | "LOGIC" | "AGENT" | "LOGICAL_SWITCH" | "AGENTIC_SWITCH" | "LOGICAL_JOIN" | "AGENTIC_JOIN";
+    NodeType: "START" | "END" | "LOGIC" | "AGENT" | "LOGICAL_SWITCH" | "AGENTIC_SWITCH" | "LOGICAL_JOIN" | "AGENTIC_JOIN" | "TRANSFORM_AGENT_TO_LOGICAL" | "TRANSFORM_LOGICAL_TO_AGENT";
     /** SetActiveGraph */
     SetActiveGraph: {
       /**

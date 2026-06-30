@@ -15,12 +15,18 @@ class ExpressionRepository(BaseRepository[models.Expression, ExpressionCreate, E
         super().__init__(models.Expression, session)
 
     async def list_by_node(self, node_id: uuid.UUID) -> list[models.Expression]:
-        result = await self.session.execute(
-            select(models.Expression)
-            .where(models.Expression.node_id == node_id)
-            .order_by(models.Expression.type, models.Expression.idx)
-        )
-        return list(result.scalars().all())
+        result = await self.session.execute(select(models.Expression).where(models.Expression.node_id == node_id))
+        exprs = list(result.scalars().all())
+        TYPE_ORDER = {
+            "BASE_INPUT": 0,
+            "SUB_INPUT": 1,
+            "SUB_UNCONNECTED": 2,
+            "BASE_INPUT_OUTPUT": 3,
+            "BASE_OUTPUT": 4,
+            "SUB_OUTPUT": 5,
+        }
+        exprs.sort(key=lambda e: (TYPE_ORDER.get(e.type, 99), e.idx))
+        return exprs
 
     async def swap_indices(self, expr1: models.Expression, expr2: models.Expression) -> None:
         temp = expr1.idx
@@ -28,11 +34,13 @@ class ExpressionRepository(BaseRepository[models.Expression, ExpressionCreate, E
         expr2.idx = temp
         await self.session.flush()
 
-    async def shift_indices_after_deletion(self, node_id: uuid.UUID, deleted_idx: int) -> list[models.Expression]:
+    async def shift_indices_after_deletion(
+        self, node_id: uuid.UUID, deleted_idx: int, expr_type: str
+    ) -> list[models.Expression]:
         stmt = (
             update(models.Expression)
             .where(models.Expression.node_id == node_id)
-            .where(models.Expression.type == "SUB")
+            .where(models.Expression.type == expr_type)
             .where(models.Expression.idx > deleted_idx)
             .values(idx=models.Expression.idx - 1)
             .returning(models.Expression)
@@ -41,11 +49,13 @@ class ExpressionRepository(BaseRepository[models.Expression, ExpressionCreate, E
         await self.session.flush()
         return list(result.scalars().all())
 
-    async def shift_indices_before_insertion(self, node_id: uuid.UUID, new_idx: int) -> list[models.Expression]:
+    async def shift_indices_before_insertion(
+        self, node_id: uuid.UUID, new_idx: int, expr_type: str
+    ) -> list[models.Expression]:
         stmt = (
             update(models.Expression)
             .where(models.Expression.node_id == node_id)
-            .where(models.Expression.type == "SUB")
+            .where(models.Expression.type == expr_type)
             .where(models.Expression.idx >= new_idx)
             .values(idx=models.Expression.idx + 1)
             .returning(models.Expression)
@@ -56,9 +66,16 @@ class ExpressionRepository(BaseRepository[models.Expression, ExpressionCreate, E
 
     async def list_by_graph(self, graph_id: uuid.UUID) -> list[models.Expression]:
         result = await self.session.execute(
-            select(models.Expression)
-            .join(models.Node)
-            .where(models.Node.graph_id == graph_id)
-            .order_by(models.Expression.type, models.Expression.idx)
+            select(models.Expression).join(models.Node).where(models.Node.graph_id == graph_id)
         )
-        return list(result.scalars().all())
+        exprs = list(result.scalars().all())
+        TYPE_ORDER = {
+            "BASE_INPUT": 0,
+            "SUB_INPUT": 1,
+            "SUB_UNCONNECTED": 2,
+            "BASE_INPUT_OUTPUT": 3,
+            "BASE_OUTPUT": 4,
+            "SUB_OUTPUT": 5,
+        }
+        exprs.sort(key=lambda e: (e.node_id, TYPE_ORDER.get(e.type, 99), e.idx))
+        return exprs

@@ -7,12 +7,12 @@ export const useCreateExpression = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ nodeId, idx, raw_string, type = 'SUB', expressionId }: {
+    mutationFn: async ({ nodeId, idx, raw_string, type, expressionId }: {
       nodeId: string;
       idx?: number;
       raw_string: string;
       graphId: string;
-      type?: 'BASE' | 'SUB';
+      type: components['schemas']['ExpressionType'];
       expressionId?: string;
     }) => {
       const res = await apiClient.POST('/expressions', {

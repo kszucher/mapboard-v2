@@ -53,14 +53,9 @@ const buildElkNodes = (nodes: AppFlowNode[], edges: AppFlowEdge[]): ElkNode[] =>
     const nodeType = node.data?.node?.node_type;
     const isStart = nodeType === 'START';
     const isEnd = nodeType === 'END';
-    const isSwitch = nodeType === 'LOGICAL_SWITCH' || nodeType === 'AGENTIC_SWITCH';
-    const isJoin = nodeType === 'LOGICAL_JOIN' || nodeType === 'AGENTIC_JOIN';
 
-    const subExpressions = (node.data?.expressions ?? [])
-      .filter((e) => e.type === 'SUB')
-      .sort((a, b) => a.idx - b.idx);
-
-    const rowCount = isSwitch || isJoin ? 2 + subExpressions.length : 2;
+    const expressions = node.data?.expressions ?? [];
+    const rowCount = 1 + expressions.length;
     const nodeHeight = ROW_HEIGHT * rowCount + NODE_PADDING;
 
     const ports: ElkPort[] = [];
@@ -68,8 +63,8 @@ const buildElkNodes = (nodes: AppFlowNode[], edges: AppFlowEdge[]): ElkNode[] =>
     // WEST ports (incoming)
     getUniqueHandles(incomingMap[node.id] ?? [], 'targetHandle')
       .forEach((handleId) => {
-        const exprIdx = subExpressions.findIndex((e) => e.id === handleId);
-        const rowIdx = isJoin && exprIdx !== -1 ? 1 + exprIdx : 1;
+        const exprIdx = expressions.findIndex((e) => e.id === handleId);
+        const rowIdx = exprIdx !== -1 ? 1 + exprIdx : 1;
         ports.push({
           id: `${node.id}-target-${handleId}`,
           x: -NODE_PADDING,
@@ -83,10 +78,8 @@ const buildElkNodes = (nodes: AppFlowNode[], edges: AppFlowEdge[]): ElkNode[] =>
     // EAST ports (outgoing)
     getUniqueHandles(outgoingMap[node.id] ?? [], 'sourceHandle')
       .forEach((handleId) => {
-        const exprIdx = subExpressions.findIndex((e) => e.id === handleId);
-        let rowIdx = 1;
-        if (isSwitch && exprIdx !== -1) rowIdx = 2 + exprIdx;
-        else if (isJoin) rowIdx = 1 + subExpressions.length;
+        const exprIdx = expressions.findIndex((e) => e.id === handleId);
+        const rowIdx = exprIdx !== -1 ? 1 + exprIdx : 1;
         ports.push({
           id: `${node.id}-source-${handleId}`,
           x: nodeWidth + NODE_PADDING,

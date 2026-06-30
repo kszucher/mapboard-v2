@@ -118,6 +118,10 @@ export const FlowNodeExpressionActions = ({
                   onClick={() => handleInsertNode('LOGICAL_JOIN')}>{'Logical Join'}</DropdownMenu.Item>
                 <DropdownMenu.Item
                   onClick={() => handleInsertNode('AGENTIC_JOIN')}>{'Agentic Join'}</DropdownMenu.Item>
+                <DropdownMenu.Item
+                  onClick={() => handleInsertNode('TRANSFORM_AGENT_TO_LOGICAL')}>{'Transform Agent To Logical'}</DropdownMenu.Item>
+                <DropdownMenu.Item
+                  onClick={() => handleInsertNode('TRANSFORM_LOGICAL_TO_AGENT')}>{'Transform Logical To Agent'}</DropdownMenu.Item>
               </DropdownMenu.SubContent>
             </DropdownMenu.Sub>
           ) : (
@@ -136,6 +140,10 @@ export const FlowNodeExpressionActions = ({
                   onClick={() => handleAddConnectedNode('LOGICAL_JOIN')}>{'Logical Join'}</DropdownMenu.Item>
                 <DropdownMenu.Item
                   onClick={() => handleAddConnectedNode('AGENTIC_JOIN')}>{'Agentic Join'}</DropdownMenu.Item>
+                <DropdownMenu.Item
+                  onClick={() => handleAddConnectedNode('TRANSFORM_AGENT_TO_LOGICAL')}>{'Transform Agent To Logical'}</DropdownMenu.Item>
+                <DropdownMenu.Item
+                  onClick={() => handleAddConnectedNode('TRANSFORM_LOGICAL_TO_AGENT')}>{'Transform Logical To Agent'}</DropdownMenu.Item>
               </DropdownMenu.SubContent>
             </DropdownMenu.Sub>
           )

@@ -10,7 +10,7 @@ from app.schemas import OrmModel
 
 class ExpressionBase(BaseModel):
     raw_string: str
-    type: ExpressionType = ExpressionType.SUB
+    type: ExpressionType
 
 
 class ExpressionCreate(ExpressionBase):
