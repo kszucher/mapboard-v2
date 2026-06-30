@@ -83,3 +83,21 @@ async def insert_node_between(expression_id: uuid.UUID, node_type: NodeType, uow
     except Exception as e:
         await uow.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{node_id}/convert", response_model=uuid.UUID)
+async def convert_node(
+    node_id: uuid.UUID,
+    target_type: NodeType,
+    uow: Any = Depends(get_uow),
+) -> uuid.UUID:
+    try:
+        updated_node_id = await topology_service.convert_node(uow, node_id, target_type)
+        await uow.commit()
+        return updated_node_id
+    except GraphboardError:
+        await uow.rollback()
+        raise
+    except Exception as e:
+        await uow.rollback()
+        raise HTTPException(status_code=500, detail=str(e))

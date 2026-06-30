@@ -145,3 +145,24 @@ export const useInsertNode = () => {
     },
   });
 };
+
+export const useConvertNode = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (variables: { nodeId: string; targetType: NodeType; graphId: string }) => {
+      const res = await apiClient.POST('/nodes/{node_id}/convert', {
+        params: {
+          path: { node_id: variables.nodeId },
+          query: { target_type: variables.targetType },
+        },
+        headers: { 'X-Client-Id': getClientId() },
+      });
+      if ('error' in res) throw res.error;
+      return res.data;
+    },
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.graphs.flow(variables.graphId) });
+    },
+  });
+};

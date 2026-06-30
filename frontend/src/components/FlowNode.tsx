@@ -11,6 +11,7 @@ import {
   useMoveExpressionUp,
   useShortcircuitNode,
   useUpdateExpression,
+  useConvertNode,
 } from '../api/mutations';
 
 import { FlowNodeExpressionActions } from './FlowNodeExpressionActions.tsx';
@@ -61,6 +62,37 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   const handleShortcircuit = useCallback(() => {
     shortcircuitNodeMutation.mutate({ nodeId: data.node.id, graphId: data.node.graph_id });
   }, [data.node.id, data.node.graph_id, shortcircuitNodeMutation]);
+
+  const convertNodeMutation = useConvertNode();
+
+  const conversionConfig = useMemo(() => {
+    const type = data.node.node_type;
+    const mappings: Record<NodeType, { targetType: NodeType; label: string } | null> = {
+      AGENT: { targetType: 'LOGIC', label: 'Logic' },
+      LOGIC: { targetType: 'AGENT', label: 'Agent' },
+      AGENTIC_SWITCH: { targetType: 'TRANSFORM_AGENT_TO_LOGICAL', label: 'Transform Agent To Logical' },
+      TRANSFORM_AGENT_TO_LOGICAL: { targetType: 'AGENTIC_SWITCH', label: 'Agentic Switch' },
+      LOGICAL_SWITCH: { targetType: 'TRANSFORM_LOGICAL_TO_AGENT', label: 'Transform Logical to Agent' },
+      TRANSFORM_LOGICAL_TO_AGENT: { targetType: 'LOGICAL_SWITCH', label: 'Logical Switch' },
+      START: null,
+      END: null,
+      LOGICAL_JOIN: null,
+      AGENTIC_JOIN: null,
+    };
+    return mappings[type] || null;
+  }, [data.node.node_type]);
+
+  const handleConvert = useCallback((targetType: NodeType) => {
+    convertNodeMutation.mutate(
+      { nodeId: data.node.id, targetType, graphId: data.node.graph_id },
+      {
+        onError: (err: any) => {
+          const detail = err?.detail || err?.message || 'Unknown error occurred';
+          alert(`Conversion failed: ${detail}`);
+        },
+      }
+    );
+  }, [data.node.id, data.node.graph_id, convertNodeMutation]);
 
   const { node } = data;
   const isStart = node.node_type === 'START';
@@ -165,6 +197,18 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
             </IconButton>
           </DropdownMenu.Trigger>
           <DropdownMenu.Content onCloseAutoFocus={e => e.preventDefault()}>
+            {conversionConfig && (
+              <DropdownMenu.Sub>
+                <DropdownMenu.SubTrigger>
+                  {'Convert'}
+                </DropdownMenu.SubTrigger>
+                <DropdownMenu.SubContent>
+                  <DropdownMenu.Item onClick={() => handleConvert(conversionConfig.targetType)}>
+                    {conversionConfig.label}
+                  </DropdownMenu.Item>
+                </DropdownMenu.SubContent>
+              </DropdownMenu.Sub>
+            )}
             {!isStart && !isEnd && subExpressionsCount <= 1 && (
               <DropdownMenu.Item onClick={handleShortcircuit}>
                 {'Shortcircuit'}
