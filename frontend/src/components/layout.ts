@@ -1,6 +1,13 @@
 import type { ElkExtendedEdge, ElkNode, ElkPort, LayoutOptions } from 'elkjs';
 import ELK from 'elkjs/lib/elk.bundled.js';
-import { type AppFlowEdge, type AppFlowNode, hasExpressionActions, hasLeftHandle, hasRightHandle } from './types';
+import {
+  type ApiExpression,
+  type AppFlowEdge,
+  type AppFlowNode,
+  hasExpressionActions,
+  hasLeftHandle,
+  hasRightHandle
+} from './types';
 
 const elk = new ELK();
 
@@ -60,7 +67,7 @@ export const measureTextWidth = (text: string, font: string = '13px Consolas, Me
 
 export const getNodeDimensions = (
   nodeType: string,
-  expressions: any[]
+  expressions: ApiExpression[]
 ): { width: number; height: number } => {
   const isStartOrEnd = nodeType === 'START' || nodeType === 'END';
   if (isStartOrEnd) {
