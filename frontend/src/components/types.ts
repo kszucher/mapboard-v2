@@ -13,6 +13,21 @@ export type AppFlowNode = Node<{
   isPositioned?: boolean;
 }, 'custom'>;
 
+export const hasLeftHandle = (exprType: string): boolean => {
+  return exprType === 'BASE_INPUT' || exprType === 'SUB_INPUT' || exprType === 'BASE_INPUT_OUTPUT';
+};
+
+export const hasRightHandle = (exprType: string): boolean => {
+  return exprType === 'BASE_OUTPUT' || exprType === 'SUB_OUTPUT' || exprType === 'BASE_INPUT_OUTPUT';
+};
+
+export const hasExpressionActions = (exprType: string, nodeType: string): boolean => {
+  const isSub = exprType.startsWith('SUB_');
+  const isEnd = nodeType === 'END';
+  const rightHandle = hasRightHandle(exprType);
+  return isSub || (rightHandle && !isEnd);
+};
+
 export type AppFlowEdge = Edge<{
   sections?: ElkEdgeSection[];
 }, 'custom'>;

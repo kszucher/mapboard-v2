@@ -1,12 +1,10 @@
-import { Flex, TextField } from '@radix-ui/themes';
+import { TextField } from '@radix-ui/themes';
 import { useEffect, useRef, useState } from 'react';
 
 interface PlainEditorProps {
   initialValue: string;
   onSave: (value: string) => void;
   disabled?: boolean;
-  minWidth?: number;
-  maxWidth?: number;
   actions?: React.ReactNode;
 }
 
@@ -14,8 +12,6 @@ export const FlowNodeExpressionEditor = ({
   initialValue,
   onSave,
   disabled = false,
-  minWidth = 240,
-  maxWidth = 600,
   actions,
 }: PlainEditorProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -23,9 +19,6 @@ export const FlowNodeExpressionEditor = ({
   const [value, setValue] = useState(initialValue);
   const internalValueRef = useRef(initialValue);
   const isFocusedRef = useRef(false);
-
-  const spanRef = useRef<HTMLSpanElement>(null);
-  const [measuredWidth, setMeasuredWidth] = useState<number>(minWidth);
 
   const onSaveRef = useRef(onSave);
   useEffect(() => {
@@ -39,17 +32,6 @@ export const FlowNodeExpressionEditor = ({
       setValue(initialValue);
     }
   }, [initialValue]);
-
-  const hasActions = !!actions;
-
-  useEffect(() => {
-    const span = spanRef.current;
-    if (!span) return;
-    const textWidth = span.offsetWidth;
-    const buffer = hasActions ? 60 : 24;
-    const finalWidth = Math.max(minWidth, Math.min(textWidth + buffer, maxWidth));
-    setMeasuredWidth(finalWidth);
-  }, [value, minWidth, maxWidth, hasActions]);
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -96,26 +78,13 @@ export const FlowNodeExpressionEditor = ({
   };
 
   return (
-    <Flex
-      direction="column"
+    <div
       className="nodrag nopan"
       onDoubleClick={(e) => e.stopPropagation()}
-      width="100%"
-      minWidth={`${measuredWidth}px`}
+      style={{
+        width: '100%',
+      }}
     >
-      <span
-        ref={spanRef}
-        style={{
-          position: 'absolute',
-          visibility: 'hidden',
-          whiteSpace: 'pre',
-          fontFamily: 'var(--font-mono)',
-          fontSize: '13px',
-        }}
-      >
-        {value || ' '}
-      </span>
-
       <TextField.Root
         ref={inputRef}
         value={value}
@@ -127,14 +96,18 @@ export const FlowNodeExpressionEditor = ({
         color="gray"
         variant="soft"
         size="1"
-        style={{ fontFamily: 'var(--font-mono)', fontSize: '13px' }}
+        style={{
+          fontFamily: 'Consolas, Menlo, Monaco, "Courier New", monospace',
+          fontSize: '13px',
+          width: '100%',
+        }}
       >
         {actions && (
-          <TextField.Slot side="right" pl="3" pr="1">
+          <TextField.Slot side="right" pl="0" pr="1">
             {actions}
           </TextField.Slot>
         )}
       </TextField.Root>
-    </Flex>
+    </div>
   );
 };

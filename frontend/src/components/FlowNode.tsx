@@ -4,6 +4,7 @@ import { Badge, DropdownMenu, Flex, IconButton } from '@radix-ui/themes';
 import { Handle, type NodeProps, Position, useUpdateNodeInternals } from '@xyflow/react';
 import { memo, useCallback, useEffect, useMemo } from 'react';
 import {
+  useConvertNode,
   useCreateExpression,
   useDeleteExpression,
   useDeleteNode,
@@ -11,14 +12,12 @@ import {
   useMoveExpressionUp,
   useShortcircuitNode,
   useUpdateExpression,
-  useConvertNode,
 } from '../api/mutations';
-
 import { FlowNodeExpressionActions } from './FlowNodeExpressionActions.tsx';
 import { FlowNodeExpressionEditor } from './FlowNodeExpressionEditor.tsx';
-import type { ApiExpression, AppFlowNode, NodeType } from './types.ts';
+import { NODE_PADDING } from './layout.ts';
+import { type ApiExpression, type AppFlowNode, hasLeftHandle, hasRightHandle, type NodeType } from './types.ts';
 
-const NODE_PADDING = 6;
 
 const NODE_COLORS: Record<NodeType, BadgeProps['color']> = {
   START: 'gray',
@@ -86,8 +85,9 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
     convertNodeMutation.mutate(
       { nodeId: data.node.id, targetType, graphId: data.node.graph_id },
       {
-        onError: (err: any) => {
-          const detail = err?.detail || err?.message || 'Unknown error occurred';
+        onError: (err) => {
+          const apiError = err as { detail?: string; message?: string };
+          const detail = apiError?.detail || apiError?.message || 'Unknown error occurred';
           alert(`Conversion failed: ${detail}`);
         },
       }
@@ -169,9 +169,9 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   return (
     <Flex
       direction="column"
-      gap="1"
-      minWidth="240px"
       style={{
+        width: '100%',
+        height: '100%',
         background: 'var(--gray-3)',
         borderRadius: 'var(--radius-3)',
         padding: NODE_PADDING,
@@ -222,12 +222,12 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
       </Flex>
 
       {myExpressions.map((expr) => {
-        const hasLeftHandle = expr.type === 'BASE_INPUT' || expr.type === 'SUB_INPUT' || expr.type === 'BASE_INPUT_OUTPUT';
-        const hasRightHandle = expr.type === 'BASE_OUTPUT' || expr.type === 'SUB_OUTPUT' || expr.type === 'BASE_INPUT_OUTPUT';
+        const leftHandle = hasLeftHandle(expr.type);
+        const rightHandle = hasRightHandle(expr.type);
         const isSub = expr.type.startsWith('SUB_');
 
-        const pl = hasLeftHandle ? undefined : '5';
-        const pr = hasRightHandle ? undefined : '5';
+        const pl = leftHandle ? undefined : '5';
+        const pr = rightHandle ? undefined : '5';
 
         // Same type expressions relative index calculations for sub expressions
         const sameTypeExprs = myExpressions.filter(e => e.type === expr.type).sort((a, b) => a.idx - b.idx);
@@ -251,10 +251,10 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
                 onAddAbove={() => handleAddAbove(expr)}
                 onAddBelow={() => handleAddBelow(expr)}
                 canDelete={canDelete}
-                hideAddNode={!hasRightHandle}
+                hideAddNode={!rightHandle}
               />
             );
-          } else if (hasRightHandle && !isEnd) {
+          } else if (rightHandle && !isEnd) {
             return (
               <FlowNodeExpressionActions
                 expressionId={expr.id}
@@ -276,7 +276,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
 
         return (
           <Flex key={expr.id} align="center" width="100%" height="24px" style={{ position: 'relative' }}>
-            {hasLeftHandle && (
+            {leftHandle && (
               <Handle
                 type="target"
                 id={expr.id}
@@ -284,17 +284,15 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
                 style={{ left: -NODE_PADDING }}
               />
             )}
-            <Flex className="nodrag nopan" flexGrow="1" align="center" height="100%" pl={pl} pr={pr}>
+            <Flex className="nodrag nopan" flexGrow="1" minWidth="0" align="center" height="100%" pl={pl} pr={pr}>
               <FlowNodeExpressionEditor
                 initialValue={initialValue}
                 onSave={(newValue) => handleUpdateItem(expr, newValue)}
                 disabled={disabled}
-                minWidth={isSub ? 100 : 240}
-                maxWidth={isSub ? undefined : 600}
                 actions={actions}
               />
             </Flex>
-            {hasRightHandle && (
+            {rightHandle && (
               <Handle
                 type="source"
                 id={expr.id}

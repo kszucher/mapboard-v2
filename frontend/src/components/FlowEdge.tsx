@@ -46,7 +46,7 @@ export default memo(FlowEdge, (prevProps, nextProps) => {
     prevProps.sourceY === nextProps.sourceY &&
     prevProps.targetX === nextProps.targetX &&
     prevProps.targetY === nextProps.targetY &&
-    prevProps.markerEnd === nextProps.markerEnd &&
+    JSON.stringify(prevProps.markerEnd) === JSON.stringify(nextProps.markerEnd) &&
     JSON.stringify(prevProps.style) === JSON.stringify(nextProps.style) &&
     JSON.stringify(prevProps.data) === JSON.stringify(nextProps.data)
   );

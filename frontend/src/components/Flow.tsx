@@ -1,11 +1,4 @@
-import {
-  type Connection,
-  Controls,
-  type NodeChange,
-  ReactFlow,
-  useNodesInitialized,
-  useReactFlow,
-} from '@xyflow/react';
+import { type Connection, Controls, ReactFlow, useReactFlow, } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { ElkExtendedEdge } from 'elkjs';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -14,67 +7,59 @@ import { useGraphFlow } from '../api/queries';
 import FlowEdge from './FlowEdge.tsx';
 import { CustomNode } from './FlowNode.tsx';
 import { useGraphWebSocket } from './hooks/useGraphWebSocket.ts';
-import { getLayoutedElements } from './layout.ts';
+import { getLayoutedElements, getNodeDimensions } from './layout.ts';
 import type { AppFlowEdge, AppFlowNode } from './types.ts';
+
+const nodeTypes = { custom: CustomNode };
+const edgeTypes = { custom: FlowEdge };
 
 const FlowContent = ({
   selectedGraphId,
 }: {
   selectedGraphId: string;
 }) => {
-  // data fetching
   const { data: graphData } = useGraphFlow(selectedGraphId);
 
-  // subscriptions / side effects
   useGraphWebSocket(selectedGraphId);
 
-  // mutations — extract stable .mutate refs to avoid recreating callbacks every render
-  // (useMutation returns a new object reference each render in TanStack Query v5)
   const createEdgeMutation = useCreateEdge();
   const deleteEdgeMutation = useDeleteEdge();
   const createEdge = createEdgeMutation.mutate;
   const deleteEdge = deleteEdgeMutation.mutate;
 
-  // react-flow / external hooks
   const { fitView } = useReactFlow();
-  const nodesInitialized = useNodesInitialized();
 
-  // local layout & overrides state
-  const [nodeState, setNodeState] = useState<Record<string, Partial<AppFlowNode>>>({});
   const [layoutData, setLayoutData] = useState<{
     positions: Record<string, { x: number; y: number }>;
     edgeSections: Record<string, ElkExtendedEdge>;
   }>({ positions: {}, edgeSections: {} });
 
-  const [isReady, setIsReady] = useState(false);
   const edgeReconnectSuccessful = useRef(true);
-  // Always reflects the latest rendered nodes/edges without putting them in effect deps
   const layoutInputRef = useRef({ nodes: [] as AppFlowNode[], edges: [] as AppFlowEdge[] });
+  const hasFittedViewRef = useRef(false);
 
-  // derived nodes
   const nodes = useMemo<AppFlowNode[]>(() => {
     if (!graphData) return [];
     return graphData.nodes.map(n => {
-      const state = nodeState[n.id] || {};
       const position = layoutData.positions[n.id];
       const tempPosition = position || { x: 0, y: 0 };
       const nodeExpressions = graphData.expressions.filter(e => e.node_id === n.id);
+      const { width, height } = getNodeDimensions(n.node_type, nodeExpressions);
 
       return {
         id: n.id,
         type: 'custom' as const,
         position: tempPosition,
+        style: { width, height },
         data: {
           node: n,
           expressions: nodeExpressions,
           isPositioned: layoutData.positions[n.id] !== undefined,
         },
-        measured: state.measured,
       };
     });
-  }, [graphData, layoutData.positions, nodeState]);
+  }, [graphData, layoutData.positions]);
 
-  // derived edges — dynamically compute back edges based on node layout positions
   const allEdges = useMemo<AppFlowEdge[]>(() => {
     if (!graphData) return [];
     const nodeIds = new Set(graphData.nodes.map(n => n.id));
@@ -126,63 +111,15 @@ const FlowContent = ({
     });
   }, [allEdges]);
 
-  // Keep ref current before any effects fire so the layout effect always reads the latest values
   useLayoutEffect(() => {
     layoutInputRef.current = { nodes, edges: allEdges };
   });
-
-  // Fit view once on initial load — isReady resets to false on remount (key={selectedGraphId})
-  useEffect(() => {
-    if (isReady) return;
-    const hasLayout = nodes.length > 0 && nodes.every(n => layoutData.positions[n.id] !== undefined);
-    if (!hasLayout || !nodesInitialized) return;
-    void fitView({ padding: 0.1, duration: 0 }).then(success => {
-      if (success) setIsReady(true);
-    });
-  }, [layoutData.positions, nodes, isReady, nodesInitialized, fitView]);
-
-  // memoized values
-  const nodeTypes = useMemo(
-    () => ({ custom: CustomNode }),
-    [],
-  );
-  const edgeTypes = useMemo(
-    () => ({ custom: FlowEdge }),
-    [],
-  );
-
-  const onNodesChange = useCallback((changes: NodeChange[]) => {
-    setNodeState(prev => {
-      let hasChanges = false;
-      const next = { ...prev };
-      changes.forEach(change => {
-        if (change.type === 'dimensions' && 'id' in change) {
-          const id = change.id;
-          const current = next[id] || {};
-          if (
-            current.measured?.width !== change.dimensions?.width ||
-            current.measured?.height !== change.dimensions?.height
-          ) {
-            hasChanges = true;
-            next[id] = {
-              ...current,
-              measured: change.dimensions,
-              width: change.dimensions?.width,
-              height: change.dimensions?.height,
-            };
-          }
-        }
-      });
-      return hasChanges ? next : prev;
-    });
-  }, []);
 
   const isValidConnection = useCallback(
     () => true,
     [],
   );
 
-  // Shared helper — handles both new connections and reconnects
   const createEdgeFromConnection = useCallback(
     (connection: Pick<Connection, 'source' | 'target' | 'sourceHandle' | 'targetHandle'>) => {
       if (!connection.source || !connection.target) return;
@@ -243,16 +180,21 @@ const FlowContent = ({
     [fitView],
   );
 
-  // Run layout when nodes are fully initialized/measured and graph structure changes.
   useEffect(() => {
     if (!graphData) return;
     const { nodes: currentNodes, edges: currentEdges } = layoutInputRef.current;
-    if (currentNodes.length === 0 || !currentNodes.every(n => n.measured !== undefined)) return;
+    if (currentNodes.length === 0) return;
 
     let cancelled = false;
     void getLayoutedElements(currentNodes, currentEdges)
       .then((layout) => {
-        if (!cancelled) setLayoutData(layout);
+        if (!cancelled) {
+          setLayoutData(layout);
+          if (!hasFittedViewRef.current) {
+            void fitView({ padding: 0.1, duration: 0 });
+            hasFittedViewRef.current = true;
+          }
+        }
       })
       .catch(err => {
         if (!cancelled) console.error('Failed to auto-layout nodes:', err);
@@ -261,14 +203,14 @@ const FlowContent = ({
     return () => {
       cancelled = true;
     };
-  }, [graphData, nodeState]);
+  }, [graphData, fitView]);
 
   const containerStyle = useMemo(() => ({
     width: '100%' as const,
     height: '100%' as const,
-    opacity: isReady ? 1 : 0,
-    transition: 'opacity 0.2s ease-in-out',
-  }), [isReady]);
+    opacity: nodes.length > 0 && Object.keys(layoutData.positions).length > 0 ? 1 : 0,
+    transition: 'opacity 0.1s ease-in-out',
+  }), [nodes.length, layoutData.positions]);
 
   if (!graphData) return null;
 
@@ -279,7 +221,6 @@ const FlowContent = ({
         edgeTypes={edgeTypes}
         nodes={nodes}
         edges={edges}
-        onNodesChange={onNodesChange}
         onConnect={handleConnect}
         onEdgesDelete={handleEdgesDelete}
         onReconnect={handleReconnect}

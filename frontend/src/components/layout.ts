@@ -1,12 +1,20 @@
 import type { ElkExtendedEdge, ElkNode, ElkPort, LayoutOptions } from 'elkjs';
 import ELK from 'elkjs/lib/elk.bundled.js';
-
-import type { AppFlowEdge, AppFlowNode } from './types';
+import { type AppFlowEdge, type AppFlowNode, hasExpressionActions, hasLeftHandle, hasRightHandle } from './types';
 
 const elk = new ELK();
 
-const NODE_PADDING = 6;
+export const NODE_PADDING = 6;
+
 const ROW_HEIGHT = 30;
+const START_END_NODE_WIDTH = 200;
+const INDENT_SIZE = 24;
+const NODE_HORIZONTAL_PADDING = 12;
+const INPUT_PADDING_WITH_HANDLE = 12;
+const INPUT_PADDING_WITHOUT_HANDLE = 24;
+const ACTIONS_BUTTON_WIDTH = 24;
+const TEXT_MEASUREMENT_BUFFER = 16;
+const MIN_EDITOR_WIDTH = 240;
 
 const ELK_LAYOUT_OPTIONS: LayoutOptions = {
   'elk.algorithm': 'layered',
@@ -40,6 +48,48 @@ const getUniqueHandles = (
   );
 };
 
+let canvasContext: CanvasRenderingContext2D | null = null;
+
+export const measureTextWidth = (text: string, font: string = '13px Consolas, Menlo, Monaco, "Courier New", monospace'): number => {
+  if (typeof window === 'undefined') return 0;
+  canvasContext ??= document.createElement('canvas').getContext('2d');
+  if (!canvasContext) return 0;
+  canvasContext.font = font;
+  return canvasContext.measureText(text).width;
+};
+
+export const getNodeDimensions = (
+  nodeType: string,
+  expressions: any[]
+): { width: number; height: number } => {
+  const isStartOrEnd = nodeType === 'START' || nodeType === 'END';
+  if (isStartOrEnd) {
+    return {
+      width: START_END_NODE_WIDTH,
+      height: ROW_HEIGHT * (1 + expressions.length) + NODE_PADDING,
+    };
+  }
+
+  const indentPadding = (nodeType === 'AGENT' || nodeType === 'LOGIC') ? 0 : INDENT_SIZE;
+
+  const editorWidths = expressions.map((expr) => {
+    const textWidth = measureTextWidth(expr.raw_string || '');
+    const leftPadding = hasLeftHandle(expr.type) ? INPUT_PADDING_WITH_HANDLE : INPUT_PADDING_WITHOUT_HANDLE;
+    const rightPadding = hasRightHandle(expr.type) ? INPUT_PADDING_WITH_HANDLE : INPUT_PADDING_WITHOUT_HANDLE;
+    const actionsWidth = hasExpressionActions(expr.type, nodeType) ? ACTIONS_BUTTON_WIDTH : 0;
+
+    return textWidth + leftPadding + rightPadding + actionsWidth + TEXT_MEASUREMENT_BUFFER;
+  });
+
+  const maxEditorWidth = Math.max(MIN_EDITOR_WIDTH, ...editorWidths);
+  const nodeWidth = maxEditorWidth + indentPadding + NODE_HORIZONTAL_PADDING;
+
+  return {
+    width: nodeWidth,
+    height: ROW_HEIGHT * (1 + expressions.length) + NODE_PADDING,
+  };
+};
+
 const buildElkNodes = (nodes: AppFlowNode[], edges: AppFlowEdge[]): ElkNode[] => {
   const incomingMap: Record<string, AppFlowEdge[]> = {};
   const outgoingMap: Record<string, AppFlowEdge[]> = {};
@@ -49,14 +99,12 @@ const buildElkNodes = (nodes: AppFlowNode[], edges: AppFlowEdge[]): ElkNode[] =>
   });
 
   return nodes.map((node) => {
-    const nodeWidth = node.measured?.width ?? node.width ?? 200;
-    const nodeType = node.data?.node?.node_type;
+    const nodeType = node.data?.node?.node_type ?? '';
+    const expressions = node.data?.expressions ?? [];
     const isStart = nodeType === 'START';
     const isEnd = nodeType === 'END';
 
-    const expressions = node.data?.expressions ?? [];
-    const rowCount = 1 + expressions.length;
-    const nodeHeight = ROW_HEIGHT * rowCount + NODE_PADDING;
+    const { width: nodeWidth, height: nodeHeight } = getNodeDimensions(nodeType, expressions);
 
     const ports: ElkPort[] = [];
 
