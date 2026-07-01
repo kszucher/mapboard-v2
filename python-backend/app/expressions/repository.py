@@ -4,6 +4,7 @@ import uuid
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from app import models
 from app.expressions.schemas import ExpressionCreate, ExpressionUpdate
@@ -13,6 +14,12 @@ from app.repository import BaseRepository
 class ExpressionRepository(BaseRepository[models.Expression, ExpressionCreate, ExpressionUpdate]):
     def __init__(self, session: AsyncSession):
         super().__init__(models.Expression, session)
+
+    async def get(self, obj_id: uuid.UUID) -> models.Expression | None:
+        result = await self.session.execute(
+            select(self.model).options(joinedload(self.model.node)).where(self.model.id == obj_id)
+        )
+        return result.scalars().first()
 
     async def list_by_node(self, node_id: uuid.UUID) -> list[models.Expression]:
         result = await self.session.execute(select(models.Expression).where(models.Expression.node_id == node_id))

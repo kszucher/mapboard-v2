@@ -7,7 +7,7 @@ export const useCreateExpression = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ nodeId, idx, raw_string, type, expressionId }: {
+    mutationFn: async ({ nodeId, idx, raw_string, type, expressionId, graphId }: {
       nodeId: string;
       idx?: number;
       raw_string: string;
@@ -20,6 +20,7 @@ export const useCreateExpression = () => {
         body: {
           id: expressionId,
           node_id: nodeId,
+          graph_id: graphId,
           idx,
           raw_string,
           type,
@@ -38,15 +39,15 @@ export const useUpdateExpression = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ expressionId, patch }: {
+    mutationFn: async (vars: {
       expressionId: string;
       patch: components['schemas']['ExpressionUpdate'];
       graphId: string
     }) => {
       const res = await apiClient.PATCH('/expressions/{expression_id}', {
-        params: { path: { expression_id: expressionId } },
+        params: { path: { expression_id: vars.expressionId } },
         headers: { 'X-Client-Id': getClientId() },
-        body: patch,
+        body: vars.patch,
       });
       if ('error' in res) throw res.error;
     },

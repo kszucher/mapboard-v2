@@ -366,6 +366,7 @@ async def _convert_switch_to_transform(
         ExpressionCreate(
             id=uuid.uuid4(),
             node_id=node.id,
+            graph_id=node.graph_id,
             idx=0,
             type=ExpressionType.BASE_OUTPUT,
             raw_string="",

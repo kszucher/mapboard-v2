@@ -16,6 +16,7 @@ class ExpressionBase(BaseModel):
 class ExpressionCreate(ExpressionBase):
     id: uuid.UUID | None = None
     node_id: uuid.UUID
+    graph_id: uuid.UUID
     idx: int | None = None
 
 
@@ -27,4 +28,5 @@ class ExpressionUpdate(BaseModel):
 class ExpressionRead(ExpressionBase, OrmModel):
     id: uuid.UUID
     node_id: uuid.UUID
+    graph_id: uuid.UUID
     idx: int

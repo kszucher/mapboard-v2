@@ -167,12 +167,15 @@ export const getLayoutedElements = async (
   positions: Record<string, { x: number; y: number }>;
   edgeSections: Record<string, ElkExtendedEdge>;
 }> => {
+  const startTime = performance.now();
   const layoutedGraph = await elk.layout({
     id: 'root',
     layoutOptions: ELK_LAYOUT_OPTIONS,
     children: buildElkNodes(nodes, edges),
     edges: buildElkEdges(edges),
   });
+  const duration = performance.now() - startTime;
+  console.log(`[ELK Layout] took ${duration.toFixed(2)}ms`);
 
   const positions: Record<string, { x: number; y: number }> = {};
   layoutedGraph.children?.forEach((n) => {

@@ -21,9 +21,7 @@ async def create_expression(data: ExpressionCreate, uow: Any = Depends(get_uow))
 async def update_expression(expression_id: uuid.UUID, data: ExpressionUpdate, uow: Any = Depends(get_uow)):
     expr = await service.update_expression(uow, expression_id, data)
     if not expr:
-        await uow.rollback()
         raise HTTPException(status_code=404, detail="Expression not found")
-    await uow.commit()
     return expr
 
 

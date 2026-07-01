@@ -64,11 +64,15 @@ class Expression(Base):
     node_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("nodes.id", ondelete="CASCADE"), nullable=False
     )
+    graph_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("graphs.id", ondelete="CASCADE"), nullable=False
+    )
     idx: Mapped[int] = mapped_column(Integer, nullable=False)
     type: Mapped[str] = mapped_column(String(32), nullable=False, default="SUB")
     raw_string: Mapped[str] = mapped_column(Text, nullable=False)
 
     node: Mapped[Node] = relationship("Node", back_populates="expressions")
+    graph: Mapped[Graph] = relationship("Graph")
     edges: Mapped[list[Edge]] = relationship(
         "Edge", foreign_keys="[Edge.from_expression_id]", back_populates="from_expression"
     )

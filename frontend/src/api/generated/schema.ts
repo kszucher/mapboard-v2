@@ -510,6 +510,11 @@ export interface components {
        * Format: uuid
        */
       node_id: string;
+      /**
+       * Graph Id
+       * Format: uuid
+       */
+      graph_id: string;
       /** Idx */
       idx?: number | null;
     };
@@ -528,6 +533,11 @@ export interface components {
        * Format: uuid
        */
       node_id: string;
+      /**
+       * Graph Id
+       * Format: uuid
+       */
+      graph_id: string;
       /** Idx */
       idx: number;
     };

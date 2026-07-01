@@ -120,6 +120,7 @@ async def sync_graph_flow(
                 ExpressionCreate(
                     id=expr_payload.id,
                     node_id=expr_payload.node_id,
+                    graph_id=graph_id,
                     idx=expr_payload.idx,
                     type=expr_payload.type,
                     raw_string=expr_payload.raw_string,

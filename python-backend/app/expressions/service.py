@@ -3,8 +3,11 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
+from sqlalchemy import update
+
 from app import models
 from app.constants import EventName, NodeType
+from app.db import engine
 from app.exceptions import NotFoundError, ValidationError
 from app.expressions.schemas import ExpressionCreate, ExpressionUpdate
 
@@ -88,17 +91,38 @@ async def create_expression(uow: UnitOfWork, data: ExpressionCreate) -> models.E
 async def update_expression(
     uow: UnitOfWork, expression_id: uuid.UUID, data: ExpressionUpdate
 ) -> models.Expression | None:
-    expr = await uow.expressions.update(expression_id, data)
-    if not expr:
-        return None
+    update_data = data.model_dump(exclude_unset=True)
+    if not update_data:
+        return await uow.expressions.get(expression_id)
 
-    node = await uow.nodes.get(expr.node_id)
-    if node:
-        uow.emit(
-            event=EventName.GRAPH_UPDATED,
-            graph_id=node.graph_id,
-            payload={},
+    stmt = (
+        update(models.Expression)
+        .where(models.Expression.id == expression_id)
+        .values(**update_data)
+        .returning(models.Expression)
+    )
+
+    async with engine.execution_options(isolation_level="AUTOCOMMIT").connect() as conn:
+        result = await conn.execute(stmt)
+        row = result.fetchone()
+        if not row:
+            return None
+
+        expr = models.Expression(
+            id=row.id,
+            node_id=row.node_id,
+            graph_id=row.graph_id,
+            idx=row.idx,
+            type=row.type,
+            raw_string=row.raw_string,
         )
+
+    await uow.broker.emit(
+        event=EventName.GRAPH_UPDATED,
+        graph_id=expr.graph_id,
+        payload={},
+        sender_client_id=uow.sender_client_id,
+    )
     return expr
 
 
@@ -143,39 +167,74 @@ async def create_default_expressions_for_node(
 ) -> None:
     if node.node_type == NodeType.START:
         await uow.expressions.create(
-            ExpressionCreate(id=base_expression_id, node_id=node.id, idx=0, type="BASE_OUTPUT", raw_string="")
+            ExpressionCreate(
+                id=base_expression_id, node_id=node.id, graph_id=node.graph_id, idx=0, type="BASE_OUTPUT", raw_string=""
+            )
         )
     elif node.node_type == NodeType.END:
         await uow.expressions.create(
-            ExpressionCreate(id=base_expression_id, node_id=node.id, idx=0, type="BASE_INPUT", raw_string="")
+            ExpressionCreate(
+                id=base_expression_id, node_id=node.id, graph_id=node.graph_id, idx=0, type="BASE_INPUT", raw_string=""
+            )
         )
     elif node.node_type in (NodeType.LOGIC, NodeType.AGENT):
         await uow.expressions.create(
-            ExpressionCreate(id=base_expression_id, node_id=node.id, idx=0, type="BASE_INPUT_OUTPUT", raw_string="")
+            ExpressionCreate(
+                id=base_expression_id,
+                node_id=node.id,
+                graph_id=node.graph_id,
+                idx=0,
+                type="BASE_INPUT_OUTPUT",
+                raw_string="",
+            )
         )
     elif node.node_type in (NodeType.LOGICAL_SWITCH, NodeType.AGENTIC_SWITCH):
         await uow.expressions.create(
-            ExpressionCreate(id=base_expression_id, node_id=node.id, idx=0, type="BASE_INPUT", raw_string="")
+            ExpressionCreate(
+                id=base_expression_id, node_id=node.id, graph_id=node.graph_id, idx=0, type="BASE_INPUT", raw_string=""
+            )
         )
         await uow.expressions.create(
-            ExpressionCreate(id=sub_expression_id, node_id=node.id, idx=0, type="SUB_OUTPUT", raw_string="")
+            ExpressionCreate(
+                id=sub_expression_id, node_id=node.id, graph_id=node.graph_id, idx=0, type="SUB_OUTPUT", raw_string=""
+            )
         )
     elif node.node_type in (NodeType.LOGICAL_JOIN, NodeType.AGENTIC_JOIN):
         await uow.expressions.create(
-            ExpressionCreate(id=sub_expression_id, node_id=node.id, idx=0, type="SUB_INPUT", raw_string="")
+            ExpressionCreate(
+                id=sub_expression_id, node_id=node.id, graph_id=node.graph_id, idx=0, type="SUB_INPUT", raw_string=""
+            )
         )
         await uow.expressions.create(
-            ExpressionCreate(id=base_expression_id, node_id=node.id, idx=0, type="BASE_OUTPUT", raw_string="")
+            ExpressionCreate(
+                id=base_expression_id, node_id=node.id, graph_id=node.graph_id, idx=0, type="BASE_OUTPUT", raw_string=""
+            )
         )
     elif node.node_type in (NodeType.TRANSFORM_AGENT_TO_LOGICAL, NodeType.TRANSFORM_LOGICAL_TO_AGENT):
         await uow.expressions.create(
-            ExpressionCreate(id=base_expression_id, node_id=node.id, idx=0, type="BASE_INPUT", raw_string="")
+            ExpressionCreate(
+                id=base_expression_id, node_id=node.id, graph_id=node.graph_id, idx=0, type="BASE_INPUT", raw_string=""
+            )
         )
         await uow.expressions.create(
-            ExpressionCreate(id=sub_expression_id, node_id=node.id, idx=0, type="SUB_UNCONNECTED", raw_string="")
+            ExpressionCreate(
+                id=sub_expression_id,
+                node_id=node.id,
+                graph_id=node.graph_id,
+                idx=0,
+                type="SUB_UNCONNECTED",
+                raw_string="",
+            )
         )
         await uow.expressions.create(
-            ExpressionCreate(id=base_output_expression_id, node_id=node.id, idx=0, type="BASE_OUTPUT", raw_string="")
+            ExpressionCreate(
+                id=base_output_expression_id,
+                node_id=node.id,
+                graph_id=node.graph_id,
+                idx=0,
+                type="BASE_OUTPUT",
+                raw_string="",
+            )
         )
 
 
