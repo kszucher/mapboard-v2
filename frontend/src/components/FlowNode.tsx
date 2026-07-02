@@ -3,11 +3,12 @@ import type { BadgeProps } from '@radix-ui/themes';
 import { Badge, DropdownMenu, Flex, IconButton } from '@radix-ui/themes';
 import { Handle, type NodeProps, Position, useUpdateNodeInternals } from '@xyflow/react';
 import { memo, useCallback, useEffect, useMemo } from 'react';
+import { NODE_CONVERSIONS, hasLeftHandle, hasRightHandle } from '../utils/flowUtils';
 import { useGraphStore } from '../store/useGraphStore';
 import { FlowNodeExpressionActions } from './FlowNodeExpressionActions.tsx';
 import { FlowNodeExpressionEditor } from './FlowNodeExpressionEditor.tsx';
 import { NODE_PADDING } from './layout.ts';
-import { type ApiExpression, type AppFlowNode, hasLeftHandle, hasRightHandle, type NodeType } from './types.ts';
+import { type ApiExpression, type AppFlowNode, type NodeType } from './types.ts';
 
 
 const NODE_COLORS: Record<NodeType, BadgeProps['color']> = {
@@ -53,22 +54,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
     void shortcircuitNode(data.node.id);
   }, [data.node.id, shortcircuitNode]);
 
-  const conversionConfig = useMemo(() => {
-    const type = data.node.node_type;
-    const mappings: Record<NodeType, { targetType: NodeType; label: string } | null> = {
-      AGENT: { targetType: 'LOGIC', label: 'Logic' },
-      LOGIC: { targetType: 'AGENT', label: 'Agent' },
-      AGENTIC_SWITCH: { targetType: 'TRANSFORM_AGENT_TO_LOGICAL', label: 'Transform Agent To Logical' },
-      TRANSFORM_AGENT_TO_LOGICAL: { targetType: 'AGENTIC_SWITCH', label: 'Agentic Switch' },
-      LOGICAL_SWITCH: { targetType: 'TRANSFORM_LOGICAL_TO_AGENT', label: 'Transform Logical to Agent' },
-      TRANSFORM_LOGICAL_TO_AGENT: { targetType: 'LOGICAL_SWITCH', label: 'Logical Switch' },
-      START: null,
-      END: null,
-      LOGICAL_JOIN: null,
-      AGENTIC_JOIN: null,
-    };
-    return mappings[type] || null;
-  }, [data.node.node_type]);
+  const conversionConfig = NODE_CONVERSIONS[data.node.node_type];
 
   const handleConvert = useCallback((targetType: NodeType) => {
     void convertNode(data.node.id, targetType);

@@ -17,6 +17,19 @@ export const NODE_LABELS: Record<NodeType, string> = {
   TRANSFORM_LOGICAL_TO_AGENT: 'Transform Logical To Agent',
 };
 
+export const NODE_CONVERSIONS: Record<NodeType, { targetType: NodeType; label: string } | null> = {
+  AGENT: { targetType: 'LOGIC', label: 'Logic' },
+  LOGIC: { targetType: 'AGENT', label: 'Agent' },
+  AGENTIC_SWITCH: { targetType: 'TRANSFORM_AGENT_TO_LOGICAL', label: 'Transform Agent To Logical' },
+  TRANSFORM_AGENT_TO_LOGICAL: { targetType: 'AGENTIC_SWITCH', label: 'Agentic Switch' },
+  LOGICAL_SWITCH: { targetType: 'TRANSFORM_LOGICAL_TO_AGENT', label: 'Transform Logical to Agent' },
+  TRANSFORM_LOGICAL_TO_AGENT: { targetType: 'LOGICAL_SWITCH', label: 'Logical Switch' },
+  START: null,
+  END: null,
+  LOGICAL_JOIN: null,
+  AGENTIC_JOIN: null,
+};
+
 export const createDefaultExpressionsForNode = (
   nodeId: string,
   graphId: string,
@@ -228,3 +241,12 @@ export const updateNodeNodeType = (node: AppFlowNode, targetType: NodeType): App
     }
   };
 };
+
+export const hasLeftHandle = (exprType: string): boolean => {
+  return exprType === 'BASE_INPUT' || exprType === 'SUB_INPUT' || exprType === 'BASE_INPUT_OUTPUT';
+};
+
+export const hasRightHandle = (exprType: string): boolean => {
+  return exprType === 'BASE_OUTPUT' || exprType === 'SUB_OUTPUT' || exprType === 'BASE_INPUT_OUTPUT';
+};
+
