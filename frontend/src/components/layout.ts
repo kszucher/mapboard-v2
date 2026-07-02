@@ -15,7 +15,7 @@ const ELK_LAYOUT_OPTIONS: LayoutOptions = {
   'elk.randomSeed': '42',
   'elk.portConstraints': 'FIXED_POS',
   'elk.spacing.nodeNode': '45',
-  'elk.spacing.edgeEdge': '20',
+  'elk.spacing.edgeEdge': '29',
   'elk.spacing.edgeNode': '30',
   'elk.layered.spacing.nodeNodeBetweenLayers': '70',
   'elk.layered.spacing.edgeEdgeBetweenLayers': '20',

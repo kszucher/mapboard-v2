@@ -1,4 +1,3 @@
-import { TextField } from '@radix-ui/themes';
 import { useEffect, useRef, useState } from 'react';
 
 interface PlainEditorProps {
@@ -14,30 +13,25 @@ export const FlowNodeExpressionEditor = ({
   disabled = false,
   actions,
 }: PlainEditorProps) => {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const elementRef = useRef<HTMLSpanElement>(null);
+  const [isFocused, setIsFocused] = useState(false);
 
-  const [value, setValue] = useState(initialValue);
-  const internalValueRef = useRef(initialValue);
-  const isFocusedRef = useRef(false);
+  // Sync internal text with initialValue, but only when not currently typing/focused
+  useEffect(() => {
+    if (elementRef.current && document.activeElement !== elementRef.current) {
+      elementRef.current.innerText = initialValue;
+    }
+  }, [initialValue]);
 
   const onSaveRef = useRef(onSave);
   useEffect(() => {
     onSaveRef.current = onSave;
   }, [onSave]);
 
-  useEffect(() => {
-    if (isFocusedRef.current) return;
-    if (initialValue !== internalValueRef.current) {
-      internalValueRef.current = initialValue;
-      setValue(initialValue);
-    }
-  }, [initialValue]);
-
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value.replace(/[\r\n]/g, '');
-    internalValueRef.current = newValue;
-    setValue(newValue);
+
+  const handleInput = (e: React.FormEvent<HTMLSpanElement>) => {
+    const newValue = e.currentTarget.innerText.replace(/[\r\n]/g, '');
 
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
@@ -54,60 +48,81 @@ export const FlowNodeExpressionEditor = ({
     };
   }, []);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLSpanElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-      onSaveRef.current(value);
-      inputRef.current?.blur();
+      elementRef.current?.blur();
     }
   };
 
   const handleFocus = () => {
-    isFocusedRef.current = true;
+    setIsFocused(true);
   };
 
   const handleBlur = () => {
-    isFocusedRef.current = false;
+    setIsFocused(false);
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
-    onSaveRef.current(value);
+    if (elementRef.current) {
+      const finalValue = elementRef.current.innerText.replace(/[\r\n]/g, '');
+      onSaveRef.current(finalValue);
+    }
   };
 
   return (
     <div
       className="nodrag nopan"
       onDoubleClick={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
       style={{
-        width: '100%',
+        display: 'inline-flex',
+        alignItems: 'center',
+        width: 'max-content',
       }}
     >
-      <TextField.Root
-        ref={inputRef}
-        value={value}
-        onChange={handleChange}
-        onKeyDown={handleKeyDown}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        disabled={disabled}
-        color="gray"
-        variant="soft"
-        size="1"
+      <div
         style={{
-          fontFamily: 'Consolas, Menlo, Monaco, "Courier New", monospace',
-          fontSize: '13px',
-          width: '100%',
+          display: 'inline-flex',
+          alignItems: 'center',
+          background: 'var(--gray-a3)',
+          borderRadius: 'var(--radius-1)',
+          padding: '2px 8px',
+          boxSizing: 'border-box',
+          minHeight: '24px',
+          width: 'max-content',
+          minWidth: '120px',
+          outline: isFocused ? '1px solid var(--accent-8)' : 'none',
+          boxShadow: isFocused ? '0 0 0 1px var(--accent-8)' : 'none',
         }}
       >
-        {actions && (
-          <TextField.Slot side="right" pl="0" pr="1">
-            {actions}
-          </TextField.Slot>
-        )}
-      </TextField.Root>
+        <span
+          ref={elementRef}
+          contentEditable={!disabled}
+          suppressContentEditableWarning
+          onInput={handleInput}
+          onKeyDown={handleKeyDown}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          style={{
+            fontFamily: 'Consolas, Menlo, Monaco, "Courier New", monospace',
+            fontSize: '13px',
+            outline: 'none',
+            minWidth: '50px',
+            whiteSpace: 'pre',
+            cursor: disabled ? 'default' : 'text',
+            userSelect: disabled ? 'none' : 'text',
+            opacity: disabled ? 0.7 : 1,
+            color: 'var(--gray-12)',
+          }}
+        />
+      </div>
+      {actions && (
+        <div style={{ display: 'inline-flex', alignItems: 'center', marginLeft: '6px' }}>
+          {actions}
+        </div>
+      )}
     </div>
   );
 };
