@@ -1,16 +1,13 @@
+import { applyEdgeChanges, applyNodeChanges, } from '@xyflow/react';
 import { create } from 'zustand';
-import {
-  applyNodeChanges,
-  applyEdgeChanges,
-} from '@xyflow/react';
-import type { AppFlowNode, AppFlowEdge } from '../components/types';
-import type { GraphStoreState } from './types';
+import type { AppFlowEdge, AppFlowNode } from '../components/types';
 import { setOnSaveStateChange, triggerSave } from './helpers';
-import { createInitSlice } from './slices/initSlice';
-import { createFlowSlice } from './slices/flowSlice';
-import { createNodeSlice } from './slices/nodeSlice';
 import { createExpressionSlice } from './slices/expressionSlice';
+import { createFlowSlice } from './slices/flowSlice';
 import { createHistorySlice } from './slices/historySlice';
+import { createInitSlice } from './slices/initSlice';
+import { createNodeSlice } from './slices/nodeSlice';
+import type { GraphStoreState } from './types';
 
 export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
   graphId: null,

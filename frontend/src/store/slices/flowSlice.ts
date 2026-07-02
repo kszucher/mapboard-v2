@@ -1,8 +1,8 @@
-import type { StateCreator } from 'zustand';
 import type { Connection } from '@xyflow/react';
+import type { StateCreator } from 'zustand';
 import type { AppFlowEdge } from '../../components/types';
-import type { GraphStoreState } from '../types';
 import { updateFlowState } from '../helpers';
+import type { GraphStoreState } from '../types';
 
 export interface FlowSlice {
   onConnect: (connection: Connection) => Promise<void>;

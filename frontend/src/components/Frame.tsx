@@ -4,8 +4,8 @@ import { ReactFlowProvider } from '@xyflow/react';
 import { useCallback, useMemo } from 'react';
 import { useCreateGraph, useSetActiveGraph } from '../api/mutations';
 import { useActiveGraphId, useUserGraphs, useUserId } from '../api/queries';
-import { Flow } from './Flow.tsx';
 import { useGraphStore } from '../store/useGraphStore';
+import { Flow } from './Flow.tsx';
 import type { NodeType } from './types';
 
 const NODE_TYPES: NodeType[] = [

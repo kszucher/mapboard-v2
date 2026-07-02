@@ -1,6 +1,6 @@
-import type { NodeChange, EdgeChange, Connection } from '@xyflow/react';
+import type { Connection, EdgeChange, NodeChange } from '@xyflow/react';
 import type { components } from '../api/generated/schema';
-import type { ApiExpression, AppFlowNode, AppFlowEdge, NodeType } from '../components/types';
+import type { ApiExpression, AppFlowEdge, AppFlowNode, NodeType } from '../components/types';
 
 export type GraphFlowRead = components['schemas']['GraphFlowRead'];
 

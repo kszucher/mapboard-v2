@@ -1,11 +1,7 @@
 import type { StateCreator } from 'zustand';
-import type { ApiNode, ApiExpression, AppFlowNode, AppFlowEdge, NodeType } from '../../components/types';
+import type { ApiExpression, ApiNode, AppFlowEdge, AppFlowNode, NodeType } from '../../components/types';
+import { createDefaultExpressionsForNode, NODE_LABELS, updateFlowState, } from '../helpers';
 import type { GraphStoreState } from '../types';
-import {
-  NODE_LABELS,
-  createDefaultExpressionsForNode,
-  updateFlowState,
-} from '../helpers';
 
 export interface NodeSlice {
   addNode: (nodeType: NodeType) => Promise<void>;

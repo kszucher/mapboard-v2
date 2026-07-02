@@ -130,8 +130,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
     <Flex
       direction="column"
       style={{
-        width: '100%',
-        height: '100%',
+        width: 280,
         background: 'var(--gray-3)',
         borderRadius: 'var(--radius-3)',
         padding: NODE_PADDING,

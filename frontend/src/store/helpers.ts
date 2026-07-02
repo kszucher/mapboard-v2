@@ -1,8 +1,8 @@
-import { getLayoutedElements, getNodeDimensions } from '../components/layout';
-import type { ApiNode, ApiExpression, AppFlowNode, AppFlowEdge, NodeType } from '../components/types';
-import type { components } from '../api/generated/schema';
-import { apiClient, getClientId } from '../api/client';
 import type { StoreApi } from 'zustand';
+import { apiClient, getClientId } from '../api/client';
+import type { components } from '../api/generated/schema';
+import { getLayoutedElements } from '../components/layout';
+import type { ApiExpression, ApiNode, AppFlowEdge, AppFlowNode, NodeType } from '../components/types';
 import type { GraphStoreState } from './types';
 
 type ApiEdge = components['schemas']['EdgeRead'];
@@ -68,13 +68,11 @@ export const mapToReactFlowElements = (
 
   const rfNodes = nodes.map(n => {
     const nodeExpressions = expressions.filter(e => e.node_id === n.id);
-    const { width, height } = getNodeDimensions(n.node_type, nodeExpressions);
     const position = (n.position as { x: number; y: number } | null) || positions[n.id] || { x: 0, y: 0 };
     return {
       id: n.id,
       type: 'custom' as const,
       position,
-      style: { width, height },
       data: {
         node: n,
         expressions: nodeExpressions,
@@ -291,10 +289,8 @@ export const updateFlowState = async (
 
   const nodesWithDimensions = updated.nodes.map(n => {
     const nodeExpressions = updated.expressions.filter(e => e.node_id === n.id);
-    const { width, height } = getNodeDimensions(n.data?.node?.node_type ?? 'LOGIC', nodeExpressions);
     return {
       ...n,
-      style: { ...n.style, width, height },
       data: {
         ...n.data,
         expressions: nodeExpressions,

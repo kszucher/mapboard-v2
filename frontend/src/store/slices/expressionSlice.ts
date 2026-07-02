@@ -1,8 +1,7 @@
 import type { StateCreator } from 'zustand';
 import type { ApiExpression, AppFlowNode } from '../../components/types';
+import { triggerSave, updateFlowState } from '../helpers';
 import type { GraphStoreState } from '../types';
-import { getNodeDimensions } from '../../components/layout';
-import { updateFlowState, triggerSave } from '../helpers';
 
 export interface ExpressionSlice {
   createExpression: (nodeId: string, type: string, idx: number) => Promise<void>;
@@ -89,10 +88,8 @@ export const createExpressionSlice: StateCreator<
       const nextNodes = state.nodes.map((n) => {
         if (expr && n.id === expr.node_id) {
           const nodeExpressions = nextExpressions.filter((e) => e.node_id === n.id);
-          const { width, height } = getNodeDimensions(n.data?.node?.node_type ?? 'LOGIC', nodeExpressions);
           return {
             ...n,
-            style: { ...n.style, width, height },
             data: { ...n.data, expressions: nodeExpressions }
           };
         }

@@ -1,10 +1,10 @@
 import { Controls, ReactFlow, useReactFlow } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useCallback, useEffect } from 'react';
+import { useGraphStore } from '../store/useGraphStore';
 import FlowEdge from './FlowEdge.tsx';
 import { CustomNode } from './FlowNode.tsx';
 import { useGraphWebSocket } from './hooks/useGraphWebSocket.ts';
-import { useGraphStore } from '../store/useGraphStore';
 
 const nodeTypes = { custom: CustomNode };
 const edgeTypes = { custom: FlowEdge };
