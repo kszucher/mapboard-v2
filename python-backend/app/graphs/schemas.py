@@ -1,13 +1,12 @@
-from __future__ import annotations
-
 import uuid
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
-from app.edges.schemas import EdgeRead
-from app.expressions.schemas import ExpressionRead
-from app.nodes.schemas import NodeRead
-from app.schemas import OrmModel
+from app.constants import NodeType
+
+
+class OrmModel(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
 
 
 class GraphCreate(BaseModel):
@@ -19,6 +18,34 @@ class GraphRead(OrmModel):
     id: uuid.UUID
     name: str
     user_id: uuid.UUID
+
+
+class NodeRead(BaseModel):
+    id: uuid.UUID
+    graph_id: uuid.UUID
+    iid: int
+    label: str
+    is_processing: bool
+    node_type: NodeType
+    position: dict | None = None
+
+
+class ExpressionRead(BaseModel):
+    id: uuid.UUID
+    node_id: uuid.UUID
+    graph_id: uuid.UUID
+    idx: int
+    type: str
+    raw_string: str
+
+
+class EdgeRead(BaseModel):
+    id: uuid.UUID
+    graph_id: uuid.UUID
+    from_expression_id: uuid.UUID
+    to_expression_id: uuid.UUID
+    from_node_id: uuid.UUID
+    to_node_id: uuid.UUID
 
 
 class GraphFlowRead(BaseModel):

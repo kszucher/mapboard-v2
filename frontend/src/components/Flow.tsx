@@ -1,14 +1,10 @@
-import { type Connection, Controls, ReactFlow, useReactFlow, } from '@xyflow/react';
+import { Controls, ReactFlow, useReactFlow } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import type { ElkExtendedEdge } from 'elkjs';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useCreateEdge, useDeleteEdge } from '../api/mutations';
-import { useGraphFlow } from '../api/queries';
+import { useCallback, useEffect } from 'react';
 import FlowEdge from './FlowEdge.tsx';
 import { CustomNode } from './FlowNode.tsx';
 import { useGraphWebSocket } from './hooks/useGraphWebSocket.ts';
-import { getLayoutedElements, getNodeDimensions } from './layout.ts';
-import type { AppFlowEdge, AppFlowNode } from './types.ts';
+import { useGraphStore } from '../store/useGraphStore';
 
 const nodeTypes = { custom: CustomNode };
 const edgeTypes = { custom: FlowEdge };
@@ -18,221 +14,74 @@ const FlowContent = ({
 }: {
   selectedGraphId: string;
 }) => {
-  const { data: graphData } = useGraphFlow(selectedGraphId);
+  const nodes = useGraphStore(state => state.nodes);
+  const edges = useGraphStore(state => state.edges);
+  const isLoading = useGraphStore(state => state.isLoading);
+  const init = useGraphStore(state => state.init);
 
-  useGraphWebSocket(selectedGraphId);
-
-  const createEdgeMutation = useCreateEdge();
-  const deleteEdgeMutation = useDeleteEdge();
-  const createEdge = createEdgeMutation.mutate;
-  const deleteEdge = deleteEdgeMutation.mutate;
+  const onNodesChange = useGraphStore(state => state.onNodesChange);
+  const onEdgesChange = useGraphStore(state => state.onEdgesChange);
+  const onConnect = useGraphStore(state => state.onConnect);
+  const onEdgesDelete = useGraphStore(state => state.onEdgesDelete);
+  const onReconnect = useGraphStore(state => state.onReconnect);
+  const onNodeDragStop = useGraphStore(state => state.onNodeDragStop);
 
   const { fitView } = useReactFlow();
 
-  const [layoutData, setLayoutData] = useState<{
-    positions: Record<string, { x: number; y: number }>;
-    edgeSections: Record<string, ElkExtendedEdge>;
-  }>({ positions: {}, edgeSections: {} });
+  useGraphWebSocket(selectedGraphId);
 
-  const edgeReconnectSuccessful = useRef(true);
-  const layoutInputRef = useRef({ nodes: [] as AppFlowNode[], edges: [] as AppFlowEdge[] });
-  const hasFittedViewRef = useRef(false);
+  useEffect(() => {
+    void init(selectedGraphId);
+  }, [selectedGraphId, init]);
 
-  const nodes = useMemo<AppFlowNode[]>(() => {
-    if (!graphData) return [];
-    return graphData.nodes.map(n => {
-      const position = layoutData.positions[n.id];
-      const tempPosition = position || { x: 0, y: 0 };
-      const nodeExpressions = graphData.expressions.filter(e => e.node_id === n.id);
-      const { width, height } = getNodeDimensions(n.node_type, nodeExpressions);
-
-      return {
-        id: n.id,
-        type: 'custom' as const,
-        position: tempPosition,
-        style: { width, height },
-        data: {
-          node: n,
-          expressions: nodeExpressions,
-          isPositioned: layoutData.positions[n.id] !== undefined,
-        },
-      };
-    });
-  }, [graphData, layoutData.positions]);
-
-  const allEdges = useMemo<AppFlowEdge[]>(() => {
-    if (!graphData) return [];
-    const nodeIds = new Set(graphData.nodes.map(n => n.id));
-    const expressionIds = new Set(graphData.expressions.map(e => e.id));
-
-    return graphData.edges
-      .filter(edge => {
-        if (!nodeIds.has(edge.from_node_id) || !nodeIds.has(edge.to_node_id)) return false;
-        if (edge.from_expression_id && !expressionIds.has(edge.from_expression_id)) return false;
-        return true;
-      })
-      .map(edge => {
-        const sourcePos = layoutData.positions[edge.from_node_id];
-        const targetPos = layoutData.positions[edge.to_node_id];
-
-        const elkEdge = layoutData.edgeSections[edge.id];
-        const sections = elkEdge?.sections ?? [];
-
-        const isLayoutReady = !!sourcePos && !!targetPos && sections.length > 0;
-        const isBack = isLayoutReady && (targetPos.x <= sourcePos.x);
-
-        return {
-          id: edge.id,
-          source: edge.from_node_id,
-          target: edge.to_node_id,
-          sourceHandle: edge.from_expression_id,
-          targetHandle: edge.to_expression_id,
-          type: 'custom' as const,
-          animated: true,
-          data: {
-            sections,
-          },
-          style: {
-            stroke: isBack ? '#ff9800' : '#888888',
-            strokeWidth: isBack ? 2.5 : 2,
-            opacity: isLayoutReady ? 1 : 0,
-            transition: 'opacity 0.2s ease-in-out',
-          },
-          deletable: true,
-          reconnectable: true,
-        };
-      });
-  }, [graphData, layoutData.positions, layoutData.edgeSections]);
-
-  const edges = useMemo(() => {
-    return allEdges.filter(edge => {
-      const sections = edge.data?.sections || [];
-      return sections.length > 0;
-    });
-  }, [allEdges]);
-
-  useLayoutEffect(() => {
-    layoutInputRef.current = { nodes, edges: allEdges };
-  });
-
-  const isValidConnection = useCallback(
-    () => true,
-    [],
-  );
-
-  const createEdgeFromConnection = useCallback(
-    (connection: Pick<Connection, 'source' | 'target' | 'sourceHandle' | 'targetHandle'>) => {
-      if (!connection.source || !connection.target) return;
-      const { sourceHandle, targetHandle } = connection;
-      if (!sourceHandle || !targetHandle) return;
-      createEdge({
-        edgeId: crypto.randomUUID(),
-        graphId: selectedGraphId,
-        fromExpressionId: sourceHandle,
-        toExpressionId: targetHandle,
-      });
-    },
-    [selectedGraphId, createEdge],
-  );
-
-  const handleConnect = useCallback(
-    (params: Connection) => createEdgeFromConnection(params),
-    [createEdgeFromConnection],
-  );
-
-  const handleEdgesDelete = useCallback(
-    (edgesToDelete: AppFlowEdge[]) => {
-      edgesToDelete.forEach(edge => {
-        deleteEdge({ edgeId: edge.id, graphId: selectedGraphId });
-      });
-    },
-    [deleteEdge, selectedGraphId],
-  );
-
-  const handleReconnectStart = useCallback(() => {
-    edgeReconnectSuccessful.current = false;
-  }, []);
-
-  const handleReconnect = useCallback(
-    (oldEdge: AppFlowEdge, newConnection: Connection) => {
-      edgeReconnectSuccessful.current = true;
-      deleteEdge({ edgeId: oldEdge.id, graphId: selectedGraphId });
-      createEdgeFromConnection(newConnection);
-    },
-    [createEdgeFromConnection, deleteEdge, selectedGraphId],
-  );
-
-  const handleReconnectEnd = useCallback(
-    (_event: MouseEvent | TouchEvent, edge: AppFlowEdge) => {
-      if (!edgeReconnectSuccessful.current) {
-        deleteEdge({ edgeId: edge.id, graphId: selectedGraphId });
-      }
-      edgeReconnectSuccessful.current = true;
-    },
-    [deleteEdge, selectedGraphId],
-  );
+  const isValidConnection = useCallback(() => true, []);
 
   const handleDoubleClick = useCallback(
     (event: React.MouseEvent) => {
-      event.preventDefault();
-      void fitView({ padding: 0.1, maxZoom: 1, duration: 300 });
+      const target = event.target as HTMLElement;
+      if (target.classList.contains('react-flow__pane')) {
+        event.preventDefault();
+        void fitView({ padding: 0.1, duration: 300 });
+      }
     },
     [fitView],
   );
 
-  useEffect(() => {
-    if (!graphData) return;
-    const { nodes: currentNodes, edges: currentEdges } = layoutInputRef.current;
-    if (currentNodes.length === 0) return;
-
-    let cancelled = false;
-    void getLayoutedElements(currentNodes, currentEdges)
-      .then((layout) => {
-        if (!cancelled) {
-          setLayoutData(layout);
-          if (!hasFittedViewRef.current) {
-            void fitView({ padding: 0.1, duration: 0 });
-            hasFittedViewRef.current = true;
-          }
-        }
-      })
-      .catch(err => {
-        if (!cancelled) console.error('Failed to auto-layout nodes:', err);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [graphData, fitView]);
-
-  const containerStyle = useMemo(() => ({
-    width: '100%' as const,
-    height: '100%' as const,
-    opacity: nodes.length > 0 && Object.keys(layoutData.positions).length > 0 ? 1 : 0,
-    transition: 'opacity 0.1s ease-in-out',
-  }), [nodes.length, layoutData.positions]);
-
-  if (!graphData) return null;
+  if (isLoading) {
+    return (
+      <div style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'var(--gray-11)',
+      }}>
+        Loading Graph...
+      </div>
+    );
+  }
 
   return (
-    <div style={containerStyle}>
-      <ReactFlow<AppFlowNode, AppFlowEdge>
+    <div style={{ width: '100%', height: '100%' }}>
+      <ReactFlow
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         nodes={nodes}
         edges={edges}
-        onConnect={handleConnect}
-        onEdgesDelete={handleEdgesDelete}
-        onReconnect={handleReconnect}
-        onReconnectStart={handleReconnectStart}
-        onReconnectEnd={handleReconnectEnd}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        onEdgesDelete={onEdgesDelete}
+        onReconnect={onReconnect}
+        onNodeDragStop={onNodeDragStop}
         isValidConnection={isValidConnection}
-        nodesDraggable={false}
-        onDoubleClick={handleDoubleClick}
+        nodesDraggable={true}
         colorMode="dark"
         zoomOnScroll={true}
         zoomOnDoubleClick={false}
         panOnScroll={false}
+        onDoubleClick={handleDoubleClick}
       >
         <Controls/>
       </ReactFlow>
@@ -245,3 +94,4 @@ export const Flow = ({ selectedGraphId }: { selectedGraphId: string }) => {
     <FlowContent key={selectedGraphId} selectedGraphId={selectedGraphId}/>
   );
 };
+

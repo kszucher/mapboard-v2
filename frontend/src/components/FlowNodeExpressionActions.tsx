@@ -1,14 +1,11 @@
 import { ArrowDownIcon, ArrowUpIcon, DotsHorizontalIcon, PlusIcon, TrashIcon } from '@radix-ui/react-icons';
 import { DropdownMenu, IconButton } from '@radix-ui/themes';
 import { useCallback, useMemo } from 'react';
-import { useAddConnectedNode, useInsertNode } from '../api/mutations';
-import { useGraphFlow } from '../api/queries';
+import { useGraphStore } from '../store/useGraphStore';
 import type { InsertableNodeType } from './types';
-
 
 interface ExpressionActionsDropdownProps {
   expressionId: string;
-  graphId: string;
   triggerStyle?: React.CSSProperties;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
@@ -23,7 +20,6 @@ interface ExpressionActionsDropdownProps {
 
 export const FlowNodeExpressionActions = ({
   expressionId,
-  graphId,
   triggerStyle,
   onMoveUp,
   onMoveDown,
@@ -35,28 +31,28 @@ export const FlowNodeExpressionActions = ({
   canDelete = true,
   hideAddNode = false,
 }: ExpressionActionsDropdownProps) => {
-  const addConnectedNode = useAddConnectedNode();
-  const insertNode = useInsertNode();
-  const { data: graphData } = useGraphFlow(graphId);
+  const addConnectedNode = useGraphStore(state => state.addConnectedNode);
+  const insertNodeBetween = useGraphStore(state => state.insertNodeBetween);
+  const edges = useGraphStore(state => state.edges);
 
   const connectedEdge = useMemo(() => {
-    return graphData?.edges?.find(e => e.from_expression_id === expressionId);
-  }, [graphData?.edges, expressionId]);
+    return edges.find(e => e.sourceHandle === expressionId);
+  }, [edges, expressionId]);
 
   const hasConnectedNode = !!connectedEdge;
 
   const handleAddConnectedNode = useCallback(
     (nodeType: InsertableNodeType) => {
-      addConnectedNode.mutate({ expressionId, nodeType, graphId });
+      void addConnectedNode(expressionId, nodeType);
     },
-    [addConnectedNode, expressionId, graphId]
+    [addConnectedNode, expressionId]
   );
 
   const handleInsertNode = useCallback(
     (nodeType: InsertableNodeType) => {
-      insertNode.mutate({ expressionId, nodeType, graphId });
+      void insertNodeBetween(expressionId, nodeType);
     },
-    [insertNode, expressionId, graphId]
+    [insertNodeBetween, expressionId]
   );
 
   return (

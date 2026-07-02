@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections.abc import AsyncIterator
 from typing import TYPE_CHECKING
 
@@ -32,7 +34,7 @@ async def get_uow(
     session: AsyncSession = Depends(get_session),
     broker: GraphEventBroker = Depends(get_broker),
     x_client_id: str | None = Header(default=None),
-) -> AsyncIterator["UnitOfWork"]:
+) -> AsyncIterator[UnitOfWork]:
     from .context import UnitOfWork
 
     uow = UnitOfWork(session, broker, x_client_id)

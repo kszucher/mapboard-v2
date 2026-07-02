@@ -2,10 +2,10 @@ import { CaretDownIcon, CheckIcon, MixIcon, PlayIcon, ResetIcon } from '@radix-u
 import { Box, Button, DropdownMenu, Flex, IconButton, Text } from '@radix-ui/themes';
 import { ReactFlowProvider } from '@xyflow/react';
 import { useCallback, useMemo } from 'react';
-import { useCreateGraph, useCreateNode, useSetActiveGraph } from '../api/mutations';
+import { useCreateGraph, useSetActiveGraph } from '../api/mutations';
 import { useActiveGraphId, useUserGraphs, useUserId } from '../api/queries';
 import { Flow } from './Flow.tsx';
-import { useGraphHistory } from './hooks/useGraphHistory';
+import { useGraphStore } from '../store/useGraphStore';
 import type { NodeType } from './types';
 
 const NODE_TYPES: NodeType[] = [
@@ -26,18 +26,20 @@ export const Frame = () => {
   const { data: selectedGraphId } = useActiveGraphId(userId ?? null);
   const { data: graphs } = useUserGraphs(userId ?? null);
 
-  const { undo, redo, canUndo, canRedo } = useGraphHistory(selectedGraphId ?? null);
+  const undo = useGraphStore(state => state.undo);
+  const redo = useGraphStore(state => state.redo);
+  const canUndo = useGraphStore(state => state.past.length > 0);
+  const canRedo = useGraphStore(state => state.future.length > 0);
 
-  const createNodeMutation = useCreateNode();
+  const addNode = useGraphStore(state => state.addNode);
   const createGraphMutation = useCreateGraph();
   const setActiveGraphMutation = useSetActiveGraph();
 
   const handleCreateNode = useCallback(
-    (graphId: string, nodeType: NodeType) => {
-      if (!graphId) return;
-      createNodeMutation.mutate({ graphId, nodeType });
+    (nodeType: NodeType) => {
+      void addNode(nodeType);
     },
-    [createNodeMutation]
+    [addNode]
   );
 
   const handleCreateGraph = useCallback(() => {
@@ -147,7 +149,7 @@ export const Frame = () => {
               {isGraphSelected && (
                 <DropdownMenu.Content onCloseAutoFocus={e => e.preventDefault()}>
                   {NODE_TYPES.map((nodeType, id) => (
-                    <DropdownMenu.Item onClick={() => handleCreateNode(selectedGraphId, nodeType)} key={id}>
+                    <DropdownMenu.Item onClick={() => handleCreateNode(nodeType)} key={id}>
                       {nodeType}
                     </DropdownMenu.Item>
                   ))}

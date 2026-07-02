@@ -9,10 +9,7 @@ from app.constants import EventName
 from app.events import GraphEventBroker
 
 if TYPE_CHECKING:
-    from app.edges.repository import EdgeRepository
-    from app.expressions.repository import ExpressionRepository
     from app.graphs.repository import GraphRepository
-    from app.nodes.repository import NodeRepository
     from app.users.repository import UserRepository
 
 
@@ -24,35 +21,8 @@ class UnitOfWork:
         self._events: list[dict[str, Any]] = []
 
         # Lazy-loaded repositories
-        self._nodes: NodeRepository | None = None
-        self._edges: EdgeRepository | None = None
-        self._expressions: ExpressionRepository | None = None
         self._graphs: GraphRepository | None = None
         self._users: UserRepository | None = None
-
-    @property
-    def nodes(self) -> NodeRepository:
-        if self._nodes is None:
-            from app.nodes.repository import NodeRepository
-
-            self._nodes = NodeRepository(self.session)
-        return self._nodes
-
-    @property
-    def edges(self) -> EdgeRepository:
-        if self._edges is None:
-            from app.edges.repository import EdgeRepository
-
-            self._edges = EdgeRepository(self.session)
-        return self._edges
-
-    @property
-    def expressions(self) -> ExpressionRepository:
-        if self._expressions is None:
-            from app.expressions.repository import ExpressionRepository
-
-            self._expressions = ExpressionRepository(self.session)
-        return self._expressions
 
     @property
     def graphs(self) -> GraphRepository:

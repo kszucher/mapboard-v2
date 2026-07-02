@@ -1,19 +1,11 @@
-from __future__ import annotations
-
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.db import get_uow
-from app.edges import service as edge_service
-from app.edges.schemas import EdgeRead
-from app.expressions import service as expression_service
-from app.expressions.schemas import ExpressionRead
 from app.graphs import service as graph_service
 from app.graphs.schemas import GraphCreate, GraphFlowRead, GraphRead, GraphSyncPayload
-from app.nodes import service as node_service
-from app.nodes.schemas import NodeRead
 
 router = APIRouter(prefix="/graphs", tags=["graphs"])
 
@@ -33,15 +25,10 @@ async def list_graphs(user_id: uuid.UUID, uow: Any = Depends(get_uow)) -> list[G
 
 @router.get("/{graph_id}/flow", response_model=GraphFlowRead)
 async def get_graph_flow(graph_id: uuid.UUID, uow: Any = Depends(get_uow)) -> GraphFlowRead:
-    nodes = await node_service.list_nodes(uow, graph_id)
-    edges = await edge_service.list_edges(uow, graph_id)
-    expressions = await expression_service.list_expressions_by_graph(uow, graph_id)
-
-    return GraphFlowRead(
-        nodes=[NodeRead.model_validate(n) for n in nodes],
-        edges=[EdgeRead.model_validate(e) for e in edges],
-        expressions=[ExpressionRead.model_validate(expr) for expr in expressions],
-    )
+    graph = await uow.graphs.get(graph_id)
+    if not graph:
+        raise HTTPException(status_code=404, detail="Graph not found")
+    return GraphFlowRead.model_validate(graph.flow_json)
 
 
 @router.put("/{graph_id}/sync", status_code=status.HTTP_204_NO_CONTENT)

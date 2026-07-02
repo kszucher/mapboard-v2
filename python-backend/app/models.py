@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -32,81 +32,4 @@ class Graph(Base):
     )
 
     user: Mapped[User] = relationship("User", back_populates="graphs")
-    nodes: Mapped[list[Node]] = relationship("Node", back_populates="graph", cascade="all, delete-orphan")
-    edges: Mapped[list[Edge]] = relationship("Edge", back_populates="graph", cascade="all, delete-orphan")
-
-
-class Node(Base):
-    __tablename__ = "nodes"
-
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    graph_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("graphs.id", ondelete="CASCADE"), nullable=False
-    )
-
-    iid: Mapped[int] = mapped_column(Integer, nullable=False)
-    label: Mapped[str] = mapped_column(String(255), nullable=False)
-    is_processing: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    node_type: Mapped[str] = mapped_column(String(32), nullable=False)
-
-    graph: Mapped[Graph] = relationship("Graph", back_populates="nodes")
-    expressions: Mapped[list[Expression]] = relationship(
-        "Expression",
-        back_populates="node",
-        cascade="all, delete-orphan",
-    )
-
-
-class Expression(Base):
-    __tablename__ = "expressions"
-
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    node_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("nodes.id", ondelete="CASCADE"), nullable=False
-    )
-    graph_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("graphs.id", ondelete="CASCADE"), nullable=False
-    )
-    idx: Mapped[int] = mapped_column(Integer, nullable=False)
-    type: Mapped[str] = mapped_column(String(32), nullable=False, default="SUB")
-    raw_string: Mapped[str] = mapped_column(Text, nullable=False)
-
-    node: Mapped[Node] = relationship("Node", back_populates="expressions")
-    graph: Mapped[Graph] = relationship("Graph")
-    edges: Mapped[list[Edge]] = relationship(
-        "Edge", foreign_keys="[Edge.from_expression_id]", back_populates="from_expression"
-    )
-    incoming_edges: Mapped[list[Edge]] = relationship(
-        "Edge", foreign_keys="[Edge.to_expression_id]", back_populates="to_expression"
-    )
-
-
-class Edge(Base):
-    __tablename__ = "edges"
-
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    graph_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("graphs.id", ondelete="CASCADE"), nullable=False
-    )
-    from_expression_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("expressions.id", ondelete="CASCADE"), nullable=False
-    )
-    to_expression_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("expressions.id", ondelete="CASCADE"), nullable=False
-    )
-
-    graph: Mapped[Graph] = relationship("Graph", back_populates="edges")
-    from_expression: Mapped[Expression] = relationship(
-        "Expression", foreign_keys=[from_expression_id], back_populates="edges", lazy="joined"
-    )
-    to_expression: Mapped[Expression] = relationship(
-        "Expression", foreign_keys=[to_expression_id], back_populates="incoming_edges", lazy="joined"
-    )
-
-    @property
-    def from_node_id(self) -> uuid.UUID:
-        return self.from_expression.node_id
-
-    @property
-    def to_node_id(self) -> uuid.UUID:
-        return self.to_expression.node_id
+    flow_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)

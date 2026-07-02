@@ -3,13 +3,8 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
-from app.constants import EventName, NodeType
-from app.edges.schemas import EdgeCreate
-from app.exceptions import ValidationError
-from app.expressions.schemas import ExpressionCreate
-from app.expressions.service import validate_expressions_for_node_type
+from app.constants import EventName
 from app.graphs.schemas import GraphSyncPayload
-from app.nodes.schemas import NodeCreate
 
 if TYPE_CHECKING:
     from app.context import UnitOfWork
@@ -22,15 +17,33 @@ async def create_graph(
 ) -> uuid.UUID:
     graph = await uow.graphs.create(user_id=user_id, name=graph_name)
 
-    await uow.nodes.create(
-        NodeCreate(
-            graph_id=graph.id,
-            node_type=NodeType.START,
-            iid=1,
-            label="Start",
-            is_processing=False,
-        )
-    )
+    start_node_id = uuid.uuid4()
+    start_expr_id = uuid.uuid4()
+    initial_flow = {
+        "nodes": [
+            {
+                "id": str(start_node_id),
+                "graph_id": str(graph.id),
+                "iid": 1,
+                "label": "Start",
+                "is_processing": False,
+                "node_type": "START",
+            }
+        ],
+        "edges": [],
+        "expressions": [
+            {
+                "id": str(start_expr_id),
+                "node_id": str(start_node_id),
+                "graph_id": str(graph.id),
+                "idx": 0,
+                "type": "BASE_OUTPUT",
+                "raw_string": "",
+            }
+        ],
+    }
+    graph.flow_json = initial_flow
+    await uow.session.flush()
 
     await uow.users.set_active_graph(user_id, graph.id)
 
@@ -51,129 +64,15 @@ async def sync_graph_flow(
     graph_id: uuid.UUID,
     payload: GraphSyncPayload,
 ) -> None:
-    # 0. Validate graph boundaries and expression constraints
-    for node_payload in payload.nodes:
-        if node_payload.graph_id != graph_id:
-            raise ValidationError(f"Node {node_payload.id} does not belong to this graph")
+    graph = await uow.graphs.get(graph_id)
+    if not graph:
+        from app.exceptions import ValidationError
 
-    for edge_payload in payload.edges:
-        if edge_payload.graph_id != graph_id:
-            raise ValidationError(f"Edge {edge_payload.id} does not belong to this graph")
+        raise ValidationError(f"Graph {graph_id} not found")
 
-    exprs_by_node = {}
-    for expr_payload in payload.expressions:
-        exprs_by_node.setdefault(expr_payload.node_id, []).append(expr_payload)
-
-    for node_payload in payload.nodes:
-        node_exprs = exprs_by_node.get(node_payload.id, [])
-        validate_expressions_for_node_type(node_payload.node_type, node_exprs)
-
-    # 1. Fetch current database state
-    current_nodes = await uow.nodes.list_by_graph(graph_id)
-    current_edges = await uow.edges.list_by_graph(graph_id)
-    current_exprs = await uow.expressions.list_by_graph(graph_id)
-
-    db_nodes_map = {n.id: n for n in current_nodes}
-    db_edges_map = {e.id: e for e in current_edges}
-    db_exprs_map = {expr.id: expr for expr in current_exprs}
-
-    payload_nodes_map = {n.id: n for n in payload.nodes}
-    payload_edges_map = {e.id: e for e in payload.edges}
-    payload_exprs_map = {expr.id: expr for expr in payload.expressions}
-
-    # --- INSERTIONS / UPDATES (Top-Down: Nodes -> Expressions -> Edges) ---
-    # 1. Nodes insert/update
-    for node_payload in payload.nodes:
-        if node_payload.id in db_nodes_map:
-            # Update existing node
-            node = db_nodes_map[node_payload.id]
-            node.iid = node_payload.iid
-            node.label = node_payload.label
-            node.is_processing = node_payload.is_processing
-            node.node_type = node_payload.node_type
-        else:
-            # Insert new node
-            await uow.nodes.create(
-                NodeCreate(
-                    id=node_payload.id,
-                    graph_id=node_payload.graph_id,
-                    iid=node_payload.iid,
-                    label=node_payload.label,
-                    is_processing=node_payload.is_processing,
-                    node_type=node_payload.node_type,
-                )
-            )
-
+    graph.flow_json = payload.model_dump(mode="json")
     await uow.session.flush()
 
-    # 2. Expressions insert/update
-    for expr_payload in payload.expressions:
-        if expr_payload.id in db_exprs_map:
-            # Update existing expression
-            expr = db_exprs_map[expr_payload.id]
-            expr.raw_string = expr_payload.raw_string
-            expr.idx = expr_payload.idx
-            expr.type = expr_payload.type
-        else:
-            # Insert new expression
-            await uow.expressions.create(
-                ExpressionCreate(
-                    id=expr_payload.id,
-                    node_id=expr_payload.node_id,
-                    graph_id=graph_id,
-                    idx=expr_payload.idx,
-                    type=expr_payload.type,
-                    raw_string=expr_payload.raw_string,
-                )
-            )
-
-    await uow.session.flush()
-
-    # 3. Edges insert/update
-    for edge_payload in payload.edges:
-        if edge_payload.id in db_edges_map:
-            # Update existing edge
-            edge = db_edges_map[edge_payload.id]
-            edge.from_expression_id = edge_payload.from_expression_id
-            edge.to_expression_id = edge_payload.to_expression_id
-        else:
-            # Insert new edge
-            await uow.edges.create(
-                EdgeCreate(
-                    id=edge_payload.id,
-                    graph_id=edge_payload.graph_id,
-                    from_expression_id=edge_payload.from_expression_id,
-                    to_expression_id=edge_payload.to_expression_id,
-                )
-            )
-
-    await uow.session.flush()
-
-    # --- DELETIONS (Bottom-Up: Edges -> Expressions -> Nodes) ---
-    # 1. Edges to delete
-    for db_edge_id in db_edges_map.keys():
-        if db_edge_id not in payload_edges_map:
-            await uow.edges.delete(db_edge_id)
-
-    # 2. Expressions to delete
-    for db_expr_id in db_exprs_map.keys():
-        if db_expr_id not in payload_exprs_map:
-            await uow.expressions.delete(db_expr_id)
-
-    # 3. Nodes to delete
-    for db_node_id in db_nodes_map.keys():
-        if db_node_id not in payload_nodes_map:
-            await uow.nodes.delete(db_node_id)
-
-    # Flush deletes to DB to avoid FK conflicts
-    await uow.session.flush()
-
-    # Clean up duplicate IIDs if any exist
-    from app.nodes.service import cleanup_duplicate_iids_for_graph
-
-    await cleanup_duplicate_iids_for_graph(uow, graph_id)
-
-    # Emit the single graph updated event
     uow.emit(
         event=EventName.GRAPH_UPDATED,
         graph_id=graph_id,

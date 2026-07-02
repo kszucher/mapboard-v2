@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app import edges, expressions, graphs, nodes, users, ws
+from app import graphs, users, ws
 from app.config import settings
 from app.exceptions import GraphboardError
 
@@ -40,34 +40,11 @@ def create_app() -> FastAPI:
 
     app.include_router(users.router)
     app.include_router(graphs.router)
-    app.include_router(nodes.router)
-    app.include_router(edges.router)
     app.include_router(ws.router)
-    app.include_router(expressions.router)
 
     @app.get("/health")
     async def health() -> dict[str, str]:
         return {"status": "ok"}
-
-    @app.on_event("startup")
-    async def _startup() -> None:
-        from app.context import UnitOfWork
-        from app.db import SessionLocal
-        from app.events import get_broker
-        from app.nodes.service import cleanup_duplicate_iids_for_graph
-
-        async with SessionLocal() as session:
-            broker = get_broker()
-            uow = UnitOfWork(session, broker)
-            try:
-                graphs = await uow.graphs.list_all()
-                for graph in graphs:
-                    await cleanup_duplicate_iids_for_graph(uow, graph.id)
-                await uow.commit()
-                logger.info("Startup duplicate node IID cleanup completed successfully.")
-            except Exception as e:
-                logger.exception("Failed to run duplicate IID cleanup during startup: %s", e)
-                await uow.rollback()
 
     return app
 

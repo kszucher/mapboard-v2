@@ -3,16 +3,7 @@ import type { BadgeProps } from '@radix-ui/themes';
 import { Badge, DropdownMenu, Flex, IconButton } from '@radix-ui/themes';
 import { Handle, type NodeProps, Position, useUpdateNodeInternals } from '@xyflow/react';
 import { memo, useCallback, useEffect, useMemo } from 'react';
-import {
-  useConvertNode,
-  useCreateExpression,
-  useDeleteExpression,
-  useDeleteNode,
-  useMoveExpressionDown,
-  useMoveExpressionUp,
-  useShortcircuitNode,
-  useUpdateExpression,
-} from '../api/mutations';
+import { useGraphStore } from '../store/useGraphStore';
 import { FlowNodeExpressionActions } from './FlowNodeExpressionActions.tsx';
 import { FlowNodeExpressionEditor } from './FlowNodeExpressionEditor.tsx';
 import { NODE_PADDING } from './layout.ts';
@@ -33,15 +24,15 @@ const NODE_COLORS: Record<NodeType, BadgeProps['color']> = {
 };
 
 const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
-  const deleteNodeMutation = useDeleteNode();
-  const shortcircuitNodeMutation = useShortcircuitNode();
-  const updateNodeInternals = useUpdateNodeInternals();
+  const deleteNode = useGraphStore(state => state.deleteNode);
+  const shortcircuitNode = useGraphStore(state => state.shortcircuitNode);
+  const convertNode = useGraphStore(state => state.convertNode);
+  const createExpression = useGraphStore(state => state.createExpression);
+  const deleteExpression = useGraphStore(state => state.deleteExpression);
+  const updateExpression = useGraphStore(state => state.updateExpression);
+  const swapExpressionIndices = useGraphStore(state => state.swapExpressionIndices);
 
-  const createExpression = useCreateExpression();
-  const deleteExpression = useDeleteExpression();
-  const updateExpression = useUpdateExpression();
-  const moveExpressionUp = useMoveExpressionUp();
-  const moveExpressionDown = useMoveExpressionDown();
+  const updateNodeInternals = useUpdateNodeInternals();
 
   const myExpressions = useMemo(() => data.expressions ?? [], [data.expressions]);
 
@@ -55,14 +46,12 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   }, [myExpressionsHash, data.node.node_type, id, updateNodeInternals]);
 
   const handleDelete = useCallback(() => {
-    deleteNodeMutation.mutate({ nodeId: data.node.id, graphId: data.node.graph_id });
-  }, [data.node.id, data.node.graph_id, deleteNodeMutation]);
+    void deleteNode(data.node.id);
+  }, [data.node.id, deleteNode]);
 
   const handleShortcircuit = useCallback(() => {
-    shortcircuitNodeMutation.mutate({ nodeId: data.node.id, graphId: data.node.graph_id });
-  }, [data.node.id, data.node.graph_id, shortcircuitNodeMutation]);
-
-  const convertNodeMutation = useConvertNode();
+    void shortcircuitNode(data.node.id);
+  }, [data.node.id, shortcircuitNode]);
 
   const conversionConfig = useMemo(() => {
     const type = data.node.node_type;
@@ -82,17 +71,8 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   }, [data.node.node_type]);
 
   const handleConvert = useCallback((targetType: NodeType) => {
-    convertNodeMutation.mutate(
-      { nodeId: data.node.id, targetType, graphId: data.node.graph_id },
-      {
-        onError: (err) => {
-          const apiError = err as { detail?: string; message?: string };
-          const detail = apiError?.detail || apiError?.message || 'Unknown error occurred';
-          alert(`Conversion failed: ${detail}`);
-        },
-      }
-    );
-  }, [data.node.id, data.node.graph_id, convertNodeMutation]);
+    void convertNode(data.node.id, targetType);
+  }, [data.node.id, convertNode]);
 
   const { node } = data;
   const isStart = node.node_type === 'START';
@@ -104,64 +84,44 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
 
   const handleAddAbove = useCallback(
     (expr: ApiExpression) => {
-      const newExpressionId = crypto.randomUUID();
-      createExpression.mutate({
-        nodeId: node.id,
-        raw_string: '',
-        graphId: node.graph_id,
-        type: expr.type,
-        expressionId: newExpressionId,
-        idx: expr.idx,
-      });
+      void createExpression(node.id, expr.type, expr.idx);
     },
-    [createExpression, node.id, node.graph_id]
+    [createExpression, node.id]
   );
 
   const handleAddBelow = useCallback(
     (expr: ApiExpression) => {
-      const newExpressionId = crypto.randomUUID();
-      createExpression.mutate({
-        nodeId: node.id,
-        raw_string: '',
-        graphId: node.graph_id,
-        type: expr.type,
-        expressionId: newExpressionId,
-        idx: expr.idx + 1,
-      });
+      void createExpression(node.id, expr.type, expr.idx + 1);
     },
-    [createExpression, node.id, node.graph_id]
+    [createExpression, node.id]
   );
 
   const handleUpdateItem = useCallback(
     (expr: ApiExpression, newValue: string) => {
-      updateExpression.mutate({
-        expressionId: expr.id,
-        patch: { raw_string: newValue },
-        graphId: node.graph_id,
-      });
+      updateExpression(expr.id, newValue);
     },
-    [updateExpression, node.graph_id]
+    [updateExpression]
   );
 
   const handleDeleteItem = useCallback(
     (expr: ApiExpression) => {
-      deleteExpression.mutate({ expressionId: expr.id, graphId: node.graph_id });
+      void deleteExpression(expr.id);
     },
-    [deleteExpression, node.graph_id]
+    [deleteExpression]
   );
 
   const handleMoveUp = useCallback(
     (expr: ApiExpression) => {
-      moveExpressionUp.mutate({ expressionId: expr.id, graphId: node.graph_id });
+      void swapExpressionIndices(expr.id, 'up');
     },
-    [moveExpressionUp, node.graph_id]
+    [swapExpressionIndices]
   );
 
   const handleMoveDown = useCallback(
     (expr: ApiExpression) => {
-      moveExpressionDown.mutate({ expressionId: expr.id, graphId: node.graph_id });
+      void swapExpressionIndices(expr.id, 'down');
     },
-    [moveExpressionDown, node.graph_id]
+    [swapExpressionIndices]
   );
 
   if (!data) return null;
@@ -242,7 +202,6 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
             return (
               <FlowNodeExpressionActions
                 expressionId={expr.id}
-                graphId={node.graph_id}
                 onMoveUp={() => handleMoveUp(expr)}
                 onMoveDown={() => handleMoveDown(expr)}
                 onDelete={() => handleDeleteItem(expr)}
@@ -258,7 +217,6 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
             return (
               <FlowNodeExpressionActions
                 expressionId={expr.id}
-                graphId={node.graph_id}
               />
             );
           }
