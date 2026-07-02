@@ -1,8 +1,8 @@
 import type { StateCreator } from 'zustand';
 import type { ApiExpression, AppFlowNode } from '../../components/types';
+import { isValidOrder, runLayout } from '../../utils/flowUtils';
 import { triggerSave, updateFlowState } from '../helpers';
 import type { ExpressionSlice, GraphStoreState } from '../types';
-import { isValidOrder } from '../../utils/flowUtils';
 
 export const createExpressionSlice: StateCreator<
   GraphStoreState,
@@ -73,7 +73,7 @@ export const createExpressionSlice: StateCreator<
     });
   },
 
-  updateExpression: (expressionId, updates) => {
+  updateExpression: async (expressionId, updates) => {
     set((state) => {
       const nextExpressions = state.expressions.map((e) =>
         e.id === expressionId ? { ...e, ...updates } : e
@@ -85,7 +85,7 @@ export const createExpressionSlice: StateCreator<
           const nodeExpressions = nextExpressions.filter((e) => e.node_id === n.id);
           return {
             ...n,
-            data: { ...n.data, expressions: nodeExpressions }
+            data: { ...n.data, expressions: nodeExpressions },
           };
         }
         return n;
@@ -98,6 +98,14 @@ export const createExpressionSlice: StateCreator<
         expressions: nextExpressions,
       };
     });
+    // After updating expression, recompute layout via ELK
+    const { nodes, edges } = get();
+    try {
+      const laidOut = await runLayout(nodes, edges);
+      set({ nodes: laidOut.nodes, edges: laidOut.edges });
+    } catch (err) {
+      console.error('Failed to run ELK layout after expression update:', err);
+    }
   },
 
   swapExpressionIndices: async (expressionId, direction) => {

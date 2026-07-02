@@ -42,7 +42,11 @@ export interface NodeSlice {
 export interface ExpressionSlice {
   createExpression: (nodeId: string, isInput: boolean, isOutput: boolean, idx: number) => Promise<void>;
   deleteExpression: (expressionId: string) => Promise<void>;
-  updateExpression: (expressionId: string, updates: { raw_string?: string; is_input?: boolean; is_output?: boolean }) => void;
+  updateExpression: (expressionId: string, updates: {
+    raw_string?: string;
+    is_input?: boolean;
+    is_output?: boolean
+  }) => Promise<void>;
   swapExpressionIndices: (expressionId: string, direction: 'up' | 'down') => Promise<void>;
 }
 
