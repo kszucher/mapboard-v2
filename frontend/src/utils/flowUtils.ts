@@ -1,6 +1,6 @@
+import type { components } from '../api/generated/schema';
 import { getLayoutedElements } from '../components/layout';
 import type { ApiExpression, ApiNode, AppFlowEdge, AppFlowNode, NodeType } from '../components/types';
-import type { components } from '../api/generated/schema';
 
 type ApiEdge = components['schemas']['EdgeRead'];
 

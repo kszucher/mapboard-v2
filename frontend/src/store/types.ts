@@ -1,11 +1,11 @@
 import type { EdgeChange, NodeChange } from '@xyflow/react';
-import type { ApiExpression, AppFlowEdge, AppFlowNode } from '../components/types';
 import type { components } from '../api/generated/schema';
-import type { InitSlice } from './slices/initSlice';
-import type { FlowSlice } from './slices/flowSlice';
-import type { NodeSlice } from './slices/nodeSlice';
+import type { ApiExpression, AppFlowEdge, AppFlowNode } from '../components/types';
 import type { ExpressionSlice } from './slices/expressionSlice';
+import type { FlowSlice } from './slices/flowSlice';
 import type { HistorySlice } from './slices/historySlice';
+import type { InitSlice } from './slices/initSlice';
+import type { NodeSlice } from './slices/nodeSlice';
 
 export type GraphFlowRead = components['schemas']['GraphFlowRead'];
 
