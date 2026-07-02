@@ -1,6 +1,12 @@
 import type { StateCreator } from 'zustand';
-import type { ApiExpression, ApiNode, AppFlowEdge, AppFlowNode, NodeType } from '../../components/types';
-import { createDefaultExpressionsForNode, NODE_LABELS, updateFlowState, } from '../helpers';
+import type { ApiExpression, AppFlowEdge, NodeType } from '../../components/types';
+import {
+  createNewNode,
+  getPrimaryInputExprId,
+  getPrimaryOutputExprId,
+  updateNodeNodeType,
+} from '../../utils/flowUtils';
+import { updateFlowState } from '../helpers';
 import type { GraphStoreState } from '../types';
 
 export interface NodeSlice {
@@ -23,31 +29,7 @@ export const createNodeSlice: StateCreator<
     if (!graphId) return;
 
     await updateFlowState(set, get, (state) => {
-      const newNodeId = crypto.randomUUID();
-      const nextIid = Math.max(...state.nodes.map(n => n.data?.node?.iid ?? 0), 0) + 1;
-      const label = NODE_LABELS[nodeType];
-
-      const newNode: ApiNode = {
-        id: newNodeId,
-        graph_id: graphId,
-        iid: nextIid,
-        label,
-        is_processing: false,
-        node_type: nodeType,
-      };
-
-      const defaultExprs = createDefaultExpressionsForNode(newNodeId, graphId, nodeType);
-
-      const appNode: AppFlowNode = {
-        id: newNodeId,
-        type: 'custom',
-        position: { x: 0, y: 0 },
-        data: {
-          node: newNode,
-          expressions: defaultExprs,
-          isPositioned: false,
-        }
-      };
+      const { appNode, defaultExprs } = createNewNode(graphId, nodeType, state.nodes);
 
       return {
         nodes: [...state.nodes, appNode],
@@ -68,40 +50,8 @@ export const createNodeSlice: StateCreator<
         return state;
       }
 
-      const newNodeId = crypto.randomUUID();
-      const nextIid = Math.max(...state.nodes.map(n => n.data?.node?.iid ?? 0), 0) + 1;
-      const label = NODE_LABELS[nodeType];
-
-      const newNode: ApiNode = {
-        id: newNodeId,
-        graph_id: graphId,
-        iid: nextIid,
-        label,
-        is_processing: false,
-        node_type: nodeType,
-      };
-
-      const defaultExprs = createDefaultExpressionsForNode(newNodeId, graphId, nodeType);
-
-      let toExprId = '';
-      const baseInput = defaultExprs.find(e => e.type === 'BASE_INPUT');
-      const baseInputOutput = defaultExprs.find(e => e.type === 'BASE_INPUT_OUTPUT');
-      const subInputs = defaultExprs.filter(e => e.type === 'SUB_INPUT').sort((a, b) => a.idx - b.idx);
-
-      if (baseInput) toExprId = baseInput.id;
-      else if (baseInputOutput) toExprId = baseInputOutput.id;
-      else if (subInputs.length > 0) toExprId = subInputs[0].id;
-
-      const appNode: AppFlowNode = {
-        id: newNodeId,
-        type: 'custom',
-        position: { x: 0, y: 0 },
-        data: {
-          node: newNode,
-          expressions: defaultExprs,
-          isPositioned: false,
-        }
-      };
+      const { appNode, defaultExprs } = createNewNode(graphId, nodeType, state.nodes);
+      const toExprId = getPrimaryInputExprId(defaultExprs);
 
       const newEdgeId = crypto.randomUUID();
       const fromNodeId = state.expressions.find(e => e.id === expressionId)?.node_id || '';
@@ -109,7 +59,7 @@ export const createNodeSlice: StateCreator<
       const newEdge: AppFlowEdge = {
         id: newEdgeId,
         source: fromNodeId,
-        target: newNodeId,
+        target: appNode.id,
         sourceHandle: expressionId,
         targetHandle: toExprId,
         type: 'custom',
@@ -137,57 +87,19 @@ export const createNodeSlice: StateCreator<
       const targetNodeId = oldEdge.target;
       const targetHandle = oldEdge.targetHandle;
 
-      const newNodeId = crypto.randomUUID();
-      const nextIid = Math.max(...state.nodes.map(n => n.data?.node?.iid ?? 0), 0) + 1;
-      const label = NODE_LABELS[nodeType];
-
-      const newNode: ApiNode = {
-        id: newNodeId,
-        graph_id: graphId,
-        iid: nextIid,
-        label,
-        is_processing: false,
-        node_type: nodeType,
-      };
-
-      const defaultExprs = createDefaultExpressionsForNode(newNodeId, graphId, nodeType);
-
-      let toExprId = '';
-      const baseInput = defaultExprs.find(e => e.type === 'BASE_INPUT');
-      const baseInputOutput = defaultExprs.find(e => e.type === 'BASE_INPUT_OUTPUT');
-      const subInputs = defaultExprs.filter(e => e.type === 'SUB_INPUT').sort((a, b) => a.idx - b.idx);
-      if (baseInput) toExprId = baseInput.id;
-      else if (baseInputOutput) toExprId = baseInputOutput.id;
-      else if (subInputs.length > 0) toExprId = subInputs[0].id;
-
-      let fromExprId = '';
-      const baseOutput = defaultExprs.find(e => e.type === 'BASE_OUTPUT');
-      const baseInputOutputOut = defaultExprs.find(e => e.type === 'BASE_INPUT_OUTPUT');
-      const subOutputs = defaultExprs.filter(e => e.type === 'SUB_OUTPUT').sort((a, b) => a.idx - b.idx);
-      if (baseOutput) fromExprId = baseOutput.id;
-      else if (baseInputOutputOut) fromExprId = baseInputOutputOut.id;
-      else if (subOutputs.length > 0) fromExprId = subOutputs[0].id;
-
-      const appNode: AppFlowNode = {
-        id: newNodeId,
-        type: 'custom',
-        position: { x: 0, y: 0 },
-        data: {
-          node: newNode,
-          expressions: defaultExprs,
-          isPositioned: false,
-        }
-      };
+      const { appNode, defaultExprs } = createNewNode(graphId, nodeType, state.nodes);
+      const toExprId = getPrimaryInputExprId(defaultExprs);
+      const fromExprId = getPrimaryOutputExprId(defaultExprs);
 
       const updatedOldEdge: AppFlowEdge = {
         ...oldEdge,
-        target: newNodeId,
+        target: appNode.id,
         targetHandle: toExprId,
       };
 
       const newEdge: AppFlowEdge = {
         id: crypto.randomUUID(),
-        source: newNodeId,
+        source: appNode.id,
         target: targetNodeId,
         sourceHandle: fromExprId,
         targetHandle,
@@ -283,18 +195,7 @@ export const createNodeSlice: StateCreator<
       let nextEdges = [...state.edges];
 
       if ((currentType === 'AGENT' && targetType === 'LOGIC') || (currentType === 'LOGIC' && targetType === 'AGENT')) {
-        if (!node.data?.node) return state;
-        const updatedNode: AppFlowNode = {
-          ...node,
-          data: {
-            ...node.data,
-            node: {
-              ...node.data.node,
-              node_type: targetType,
-              label: NODE_LABELS[targetType],
-            }
-          }
-        };
+        const updatedNode = updateNodeNodeType(node, targetType);
         const nextNodes = [...state.nodes];
         nextNodes[nodeIndex] = updatedNode;
         return { nodes: nextNodes, edges: state.edges, expressions: state.expressions };
@@ -330,18 +231,7 @@ export const createNodeSlice: StateCreator<
           return edge;
         });
 
-        if (!node.data?.node) return state;
-        const updatedNode: AppFlowNode = {
-          ...node,
-          data: {
-            ...node.data,
-            node: {
-              ...node.data.node,
-              node_type: targetType,
-              label: NODE_LABELS[targetType],
-            }
-          }
-        };
+        const updatedNode = updateNodeNodeType(node, targetType);
         const nextNodes = [...state.nodes];
         nextNodes[nodeIndex] = updatedNode;
 
@@ -381,18 +271,7 @@ export const createNodeSlice: StateCreator<
             return e;
           });
 
-        if (!node.data?.node) return state;
-        const updatedNode: AppFlowNode = {
-          ...node,
-          data: {
-            ...node.data,
-            node: {
-              ...node.data.node,
-              node_type: targetType,
-              label: NODE_LABELS[targetType],
-            }
-          }
-        };
+        const updatedNode = updateNodeNodeType(node, targetType);
         const nextNodes = [...state.nodes];
         nextNodes[nodeIndex] = updatedNode;
 

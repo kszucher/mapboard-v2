@@ -83,7 +83,7 @@ const FlowContent = ({
         panOnScroll={false}
         onDoubleClick={handleDoubleClick}
       >
-        <Controls/>
+        <Controls />
       </ReactFlow>
     </div>
   );
@@ -91,7 +91,6 @@ const FlowContent = ({
 
 export const Flow = ({ selectedGraphId }: { selectedGraphId: string }) => {
   return (
-    <FlowContent key={selectedGraphId} selectedGraphId={selectedGraphId}/>
+    <FlowContent key={selectedGraphId} selectedGraphId={selectedGraphId} />
   );
 };
-

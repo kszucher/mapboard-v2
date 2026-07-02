@@ -1,10 +1,15 @@
-import type { Connection, EdgeChange, NodeChange } from '@xyflow/react';
+import type { EdgeChange, NodeChange } from '@xyflow/react';
+import type { ApiExpression, AppFlowEdge, AppFlowNode } from '../components/types';
 import type { components } from '../api/generated/schema';
-import type { ApiExpression, AppFlowEdge, AppFlowNode, NodeType } from '../components/types';
+import type { InitSlice } from './slices/initSlice';
+import type { FlowSlice } from './slices/flowSlice';
+import type { NodeSlice } from './slices/nodeSlice';
+import type { ExpressionSlice } from './slices/expressionSlice';
+import type { HistorySlice } from './slices/historySlice';
 
 export type GraphFlowRead = components['schemas']['GraphFlowRead'];
 
-export interface GraphStoreState {
+export interface BaseState {
   graphId: string | null;
   nodes: AppFlowNode[];
   edges: AppFlowEdge[];
@@ -14,29 +19,14 @@ export interface GraphStoreState {
   isLoading: boolean;
   isSaving: boolean;
 
-  init: (graphId: string) => Promise<void>;
-  updateFromWebSocket: (flow: GraphFlowRead) => void;
   onNodesChange: (changes: NodeChange[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;
-  onConnect: (connection: Connection) => void;
-  onEdgesDelete: (edgesToDelete: AppFlowEdge[]) => void;
-  onReconnect: (oldEdge: AppFlowEdge, newConnection: Connection) => void;
   onNodeDragStop: () => void;
-
-  addNode: (nodeType: NodeType) => Promise<void>;
-  addConnectedNode: (expressionId: string, nodeType: NodeType) => Promise<void>;
-  insertNodeBetween: (expressionId: string, nodeType: NodeType) => Promise<void>;
-  deleteNode: (nodeId: string) => Promise<void>;
-  shortcircuitNode: (nodeId: string) => Promise<void>;
-  convertNode: (nodeId: string, targetType: NodeType) => Promise<void>;
-
-  createExpression: (nodeId: string, type: string, idx: number) => Promise<void>;
-  deleteExpression: (expressionId: string) => Promise<void>;
-  updateExpression: (expressionId: string, raw_string: string) => void;
-  swapExpressionIndices: (expressionId: string, direction: 'up' | 'down') => Promise<void>;
-
-  undo: () => void;
-  redo: () => void;
-  canUndo: () => boolean;
-  canRedo: () => boolean;
 }
+
+export type GraphStoreState = BaseState &
+  InitSlice &
+  FlowSlice &
+  NodeSlice &
+  ExpressionSlice &
+  HistorySlice;
