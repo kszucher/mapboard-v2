@@ -2,12 +2,7 @@ import type { StateCreator } from 'zustand';
 import { apiClient } from '../../api/client';
 import { mapToReactFlowElements, runLayout } from '../../utils/flowUtils';
 import { resetLastSavedState, triggerSave } from '../helpers';
-import type { GraphFlowRead, GraphStoreState } from '../types';
-
-export interface InitSlice {
-  init: (graphId: string) => Promise<void>;
-  updateFromWebSocket: (flow: GraphFlowRead) => void;
-}
+import type { GraphStoreState, InitSlice } from '../types';
 
 export const createInitSlice: StateCreator<
   GraphStoreState,

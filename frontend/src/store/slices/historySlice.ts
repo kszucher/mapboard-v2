@@ -1,13 +1,6 @@
 import type { StateCreator } from 'zustand';
 import { takeSnapshot, triggerSave } from '../helpers';
-import type { GraphStoreState } from '../types';
-
-export interface HistorySlice {
-  undo: () => void;
-  redo: () => void;
-  canUndo: () => boolean;
-  canRedo: () => boolean;
-}
+import type { GraphStoreState, HistorySlice } from '../types';
 
 export const createHistorySlice: StateCreator<
   GraphStoreState,

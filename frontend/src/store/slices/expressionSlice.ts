@@ -1,14 +1,7 @@
 import type { StateCreator } from 'zustand';
 import type { ApiExpression, AppFlowNode } from '../../components/types';
 import { triggerSave, updateFlowState } from '../helpers';
-import type { GraphStoreState } from '../types';
-
-export interface ExpressionSlice {
-  createExpression: (nodeId: string, type: string, idx: number) => Promise<void>;
-  deleteExpression: (expressionId: string) => Promise<void>;
-  updateExpression: (expressionId: string, raw_string: string) => void;
-  swapExpressionIndices: (expressionId: string, direction: 'up' | 'down') => Promise<void>;
-}
+import type { ExpressionSlice, GraphStoreState } from '../types';
 
 export const createExpressionSlice: StateCreator<
   GraphStoreState,

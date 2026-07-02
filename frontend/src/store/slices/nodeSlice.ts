@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import type { ApiExpression, AppFlowEdge, NodeType } from '../../components/types';
+import type { ApiExpression, AppFlowEdge } from '../../components/types';
 import {
   createNewNode,
   getPrimaryInputExprId,
@@ -7,16 +7,7 @@ import {
   updateNodeNodeType,
 } from '../../utils/flowUtils';
 import { updateFlowState } from '../helpers';
-import type { GraphStoreState } from '../types';
-
-export interface NodeSlice {
-  addNode: (nodeType: NodeType) => Promise<void>;
-  addConnectedNode: (expressionId: string, nodeType: NodeType) => Promise<void>;
-  insertNodeBetween: (expressionId: string, nodeType: NodeType) => Promise<void>;
-  deleteNode: (nodeId: string) => Promise<void>;
-  shortcircuitNode: (nodeId: string) => Promise<void>;
-  convertNode: (nodeId: string, targetType: NodeType) => Promise<void>;
-}
+import type { GraphStoreState, NodeSlice } from '../types';
 
 export const createNodeSlice: StateCreator<
   GraphStoreState,
