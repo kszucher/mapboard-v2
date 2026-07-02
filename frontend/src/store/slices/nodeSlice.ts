@@ -1,0 +1,409 @@
+import type { StateCreator } from 'zustand';
+import type { ApiNode, ApiExpression, AppFlowNode, AppFlowEdge, NodeType } from '../../components/types';
+import type { GraphStoreState } from '../types';
+import {
+  NODE_LABELS,
+  createDefaultExpressionsForNode,
+  updateFlowState,
+} from '../helpers';
+
+export interface NodeSlice {
+  addNode: (nodeType: NodeType) => Promise<void>;
+  addConnectedNode: (expressionId: string, nodeType: NodeType) => Promise<void>;
+  insertNodeBetween: (expressionId: string, nodeType: NodeType) => Promise<void>;
+  deleteNode: (nodeId: string) => Promise<void>;
+  shortcircuitNode: (nodeId: string) => Promise<void>;
+  convertNode: (nodeId: string, targetType: NodeType) => Promise<void>;
+}
+
+export const createNodeSlice: StateCreator<
+  GraphStoreState,
+  [],
+  [],
+  NodeSlice
+> = (set, get) => ({
+  addNode: async (nodeType) => {
+    const { graphId } = get();
+    if (!graphId) return;
+
+    await updateFlowState(set, get, (state) => {
+      const newNodeId = crypto.randomUUID();
+      const nextIid = Math.max(...state.nodes.map(n => n.data?.node?.iid ?? 0), 0) + 1;
+      const label = NODE_LABELS[nodeType];
+
+      const newNode: ApiNode = {
+        id: newNodeId,
+        graph_id: graphId,
+        iid: nextIid,
+        label,
+        is_processing: false,
+        node_type: nodeType,
+      };
+
+      const defaultExprs = createDefaultExpressionsForNode(newNodeId, graphId, nodeType);
+
+      const appNode: AppFlowNode = {
+        id: newNodeId,
+        type: 'custom',
+        position: { x: 0, y: 0 },
+        data: {
+          node: newNode,
+          expressions: defaultExprs,
+          isPositioned: false,
+        }
+      };
+
+      return {
+        nodes: [...state.nodes, appNode],
+        edges: state.edges,
+        expressions: [...state.expressions, ...defaultExprs],
+      };
+    });
+  },
+
+  addConnectedNode: async (expressionId, nodeType) => {
+    const { graphId } = get();
+    if (!graphId) return;
+
+    await updateFlowState(set, get, (state) => {
+      const exists = state.edges.some(e => e.sourceHandle === expressionId);
+      if (exists) {
+        alert('Expression is already connected to another node.');
+        return state;
+      }
+
+      const newNodeId = crypto.randomUUID();
+      const nextIid = Math.max(...state.nodes.map(n => n.data?.node?.iid ?? 0), 0) + 1;
+      const label = NODE_LABELS[nodeType];
+
+      const newNode: ApiNode = {
+        id: newNodeId,
+        graph_id: graphId,
+        iid: nextIid,
+        label,
+        is_processing: false,
+        node_type: nodeType,
+      };
+
+      const defaultExprs = createDefaultExpressionsForNode(newNodeId, graphId, nodeType);
+
+      let toExprId = '';
+      const baseInput = defaultExprs.find(e => e.type === 'BASE_INPUT');
+      const baseInputOutput = defaultExprs.find(e => e.type === 'BASE_INPUT_OUTPUT');
+      const subInputs = defaultExprs.filter(e => e.type === 'SUB_INPUT').sort((a, b) => a.idx - b.idx);
+
+      if (baseInput) toExprId = baseInput.id;
+      else if (baseInputOutput) toExprId = baseInputOutput.id;
+      else if (subInputs.length > 0) toExprId = subInputs[0].id;
+
+      const appNode: AppFlowNode = {
+        id: newNodeId,
+        type: 'custom',
+        position: { x: 0, y: 0 },
+        data: {
+          node: newNode,
+          expressions: defaultExprs,
+          isPositioned: false,
+        }
+      };
+
+      const newEdgeId = crypto.randomUUID();
+      const fromNodeId = state.expressions.find(e => e.id === expressionId)?.node_id || '';
+
+      const newEdge: AppFlowEdge = {
+        id: newEdgeId,
+        source: fromNodeId,
+        target: newNodeId,
+        sourceHandle: expressionId,
+        targetHandle: toExprId,
+        type: 'custom',
+        animated: true,
+        style: { opacity: 0 }
+      };
+
+      return {
+        nodes: [...state.nodes, appNode],
+        edges: [...state.edges, newEdge],
+        expressions: [...state.expressions, ...defaultExprs],
+      };
+    });
+  },
+
+  insertNodeBetween: async (expressionId, nodeType) => {
+    const { graphId } = get();
+    if (!graphId) return;
+
+    await updateFlowState(set, get, (state) => {
+      const oldEdgeIndex = state.edges.findIndex(e => e.sourceHandle === expressionId);
+      if (oldEdgeIndex === -1) return state;
+
+      const oldEdge = state.edges[oldEdgeIndex];
+      const targetNodeId = oldEdge.target;
+      const targetHandle = oldEdge.targetHandle;
+
+      const newNodeId = crypto.randomUUID();
+      const nextIid = Math.max(...state.nodes.map(n => n.data?.node?.iid ?? 0), 0) + 1;
+      const label = NODE_LABELS[nodeType];
+
+      const newNode: ApiNode = {
+        id: newNodeId,
+        graph_id: graphId,
+        iid: nextIid,
+        label,
+        is_processing: false,
+        node_type: nodeType,
+      };
+
+      const defaultExprs = createDefaultExpressionsForNode(newNodeId, graphId, nodeType);
+
+      let toExprId = '';
+      const baseInput = defaultExprs.find(e => e.type === 'BASE_INPUT');
+      const baseInputOutput = defaultExprs.find(e => e.type === 'BASE_INPUT_OUTPUT');
+      const subInputs = defaultExprs.filter(e => e.type === 'SUB_INPUT').sort((a, b) => a.idx - b.idx);
+      if (baseInput) toExprId = baseInput.id;
+      else if (baseInputOutput) toExprId = baseInputOutput.id;
+      else if (subInputs.length > 0) toExprId = subInputs[0].id;
+
+      let fromExprId = '';
+      const baseOutput = defaultExprs.find(e => e.type === 'BASE_OUTPUT');
+      const baseInputOutputOut = defaultExprs.find(e => e.type === 'BASE_INPUT_OUTPUT');
+      const subOutputs = defaultExprs.filter(e => e.type === 'SUB_OUTPUT').sort((a, b) => a.idx - b.idx);
+      if (baseOutput) fromExprId = baseOutput.id;
+      else if (baseInputOutputOut) fromExprId = baseInputOutputOut.id;
+      else if (subOutputs.length > 0) fromExprId = subOutputs[0].id;
+
+      const appNode: AppFlowNode = {
+        id: newNodeId,
+        type: 'custom',
+        position: { x: 0, y: 0 },
+        data: {
+          node: newNode,
+          expressions: defaultExprs,
+          isPositioned: false,
+        }
+      };
+
+      const updatedOldEdge: AppFlowEdge = {
+        ...oldEdge,
+        target: newNodeId,
+        targetHandle: toExprId,
+      };
+
+      const newEdge: AppFlowEdge = {
+        id: crypto.randomUUID(),
+        source: newNodeId,
+        target: targetNodeId,
+        sourceHandle: fromExprId,
+        targetHandle,
+        type: 'custom',
+        animated: true,
+        style: { opacity: 0 }
+      };
+
+      const nextEdges = [...state.edges];
+      nextEdges[oldEdgeIndex] = updatedOldEdge;
+      nextEdges.push(newEdge);
+
+      return {
+        nodes: [...state.nodes, appNode],
+        edges: nextEdges,
+        expressions: [...state.expressions, ...defaultExprs],
+      };
+    });
+  },
+
+  deleteNode: async (nodeId) => {
+    await updateFlowState(set, get, (state) => {
+      const exprIds = new Set(state.expressions.filter(e => e.node_id === nodeId).map(e => e.id));
+      const nextNodes = state.nodes.filter(n => n.id !== nodeId);
+      const nextEdges = state.edges.filter(e =>
+        e.source !== nodeId &&
+        e.target !== nodeId &&
+        !exprIds.has(e.sourceHandle || '') &&
+        !exprIds.has(e.targetHandle || '')
+      );
+      const nextExpressions = state.expressions.filter(e => e.node_id !== nodeId);
+
+      return {
+        nodes: nextNodes,
+        edges: nextEdges,
+        expressions: nextExpressions,
+      };
+    });
+  },
+
+  shortcircuitNode: async (nodeId) => {
+    await updateFlowState(set, get, (state) => {
+      const node = state.nodes.find(n => n.id === nodeId);
+      if (!node) return state;
+
+      const nodeType = node.data?.node?.node_type;
+      if (!nodeType || nodeType === 'START' || nodeType === 'END') return state;
+
+      const nodeExprs = state.expressions.filter(e => e.node_id === nodeId);
+      const subExprs = nodeExprs.filter(e => e.type.startsWith('SUB_'));
+
+      if (['LOGICAL_SWITCH', 'AGENTIC_SWITCH', 'LOGICAL_JOIN', 'AGENTIC_JOIN', 'TRANSFORM_AGENT_TO_LOGICAL', 'TRANSFORM_LOGICAL_TO_AGENT'].includes(nodeType)) {
+        if (subExprs.length !== 1) return state;
+      }
+
+      const nodeExprIds = new Set(nodeExprs.map(e => e.id));
+      const incoming = state.edges.filter(e => nodeExprIds.has(e.targetHandle || ''));
+      const outgoing = state.edges.filter(e => nodeExprIds.has(e.sourceHandle || ''));
+
+      let nextEdges = state.edges.filter(e => !nodeExprIds.has(e.sourceHandle || '') && !nodeExprIds.has(e.targetHandle || ''));
+
+      if (incoming.length > 0 && outgoing.length > 0) {
+        const sortedOutgoing = [...outgoing].sort((a, b) => a.id.localeCompare(b.id));
+        const primaryTargetHandle = sortedOutgoing[0].targetHandle;
+        const primaryTargetNode = sortedOutgoing[0].target;
+
+        const reRoutedIncoming: AppFlowEdge[] = incoming.map(e => ({
+          ...e,
+          target: primaryTargetNode,
+          targetHandle: primaryTargetHandle,
+        }));
+
+        nextEdges = [...nextEdges, ...reRoutedIncoming];
+      }
+
+      return {
+        nodes: state.nodes.filter(n => n.id !== nodeId),
+        edges: nextEdges,
+        expressions: state.expressions.filter(e => e.node_id !== nodeId),
+      };
+    });
+  },
+
+  convertNode: async (nodeId, targetType) => {
+    await updateFlowState(set, get, (state) => {
+      const nodeIndex = state.nodes.findIndex(n => n.id === nodeId);
+      if (nodeIndex === -1) return state;
+      const node = state.nodes[nodeIndex];
+      const currentType = node.data?.node?.node_type;
+      if (!currentType || currentType === targetType) return state;
+
+      let nextExpressions = [...state.expressions];
+      let nextEdges = [...state.edges];
+
+      if ((currentType === 'AGENT' && targetType === 'LOGIC') || (currentType === 'LOGIC' && targetType === 'AGENT')) {
+        if (!node.data?.node) return state;
+        const updatedNode: AppFlowNode = {
+          ...node,
+          data: {
+            ...node.data,
+            node: {
+              ...node.data.node,
+              node_type: targetType,
+              label: NODE_LABELS[targetType],
+            }
+          }
+        };
+        const nextNodes = [...state.nodes];
+        nextNodes[nodeIndex] = updatedNode;
+        return { nodes: nextNodes, edges: state.edges, expressions: state.expressions };
+      }
+
+      if (['AGENTIC_SWITCH', 'LOGICAL_SWITCH'].includes(currentType) && ['TRANSFORM_AGENT_TO_LOGICAL', 'TRANSFORM_LOGICAL_TO_AGENT'].includes(targetType)) {
+        const newBaseOutputId = crypto.randomUUID();
+        const newBaseOutput: ApiExpression = {
+          id: newBaseOutputId,
+          node_id: nodeId,
+          graph_id: node.data?.node?.graph_id || '',
+          idx: 0,
+          type: 'BASE_OUTPUT',
+          raw_string: '',
+        };
+
+        const nodeExprs = state.expressions.filter(e => e.node_id === nodeId);
+        const subOutputs = nodeExprs.filter(e => e.type === 'SUB_OUTPUT');
+
+        nextExpressions = state.expressions.map(e => {
+          if (e.node_id === nodeId && e.type === 'SUB_OUTPUT') {
+            return { ...e, type: 'SUB_UNCONNECTED' };
+          }
+          return e;
+        });
+        nextExpressions.push(newBaseOutput);
+
+        const subOutputIds = new Set(subOutputs.map(e => e.id));
+        nextEdges = state.edges.map(edge => {
+          if (edge.sourceHandle && subOutputIds.has(edge.sourceHandle)) {
+            return { ...edge, sourceHandle: newBaseOutputId };
+          }
+          return edge;
+        });
+
+        if (!node.data?.node) return state;
+        const updatedNode: AppFlowNode = {
+          ...node,
+          data: {
+            ...node.data,
+            node: {
+              ...node.data.node,
+              node_type: targetType,
+              label: NODE_LABELS[targetType],
+            }
+          }
+        };
+        const nextNodes = [...state.nodes];
+        nextNodes[nodeIndex] = updatedNode;
+
+        return { nodes: nextNodes, edges: nextEdges, expressions: nextExpressions };
+      }
+
+      if (['TRANSFORM_AGENT_TO_LOGICAL', 'TRANSFORM_LOGICAL_TO_AGENT'].includes(currentType) && ['AGENTIC_SWITCH', 'LOGICAL_SWITCH'].includes(targetType)) {
+        const nodeExprs = state.expressions.filter(e => e.node_id === nodeId);
+        const baseOutput = nodeExprs.find(e => e.type === 'BASE_OUTPUT');
+        if (!baseOutput) return state;
+
+        const outgoingEdges = state.edges.filter(e => e.sourceHandle === baseOutput.id);
+        if (outgoingEdges.length > 1) {
+          alert('Cannot convert to Switch node: the BASE_OUTPUT has multiple outgoing edges. At most one is allowed.');
+          return state;
+        }
+
+        const subUnconnecteds = nodeExprs.filter(e => e.type === 'SUB_UNCONNECTED').sort((a, b) => a.idx - b.idx);
+        if (subUnconnecteds.length === 0) return state;
+
+        if (outgoingEdges.length === 1) {
+          const firstSub = subUnconnecteds[0];
+          nextEdges = state.edges.map(edge => {
+            if (edge.sourceHandle === baseOutput.id) {
+              return { ...edge, sourceHandle: firstSub.id };
+            }
+            return edge;
+          });
+        }
+
+        nextExpressions = state.expressions
+          .filter(e => e.id !== baseOutput.id)
+          .map(e => {
+            if (e.node_id === nodeId && e.type === 'SUB_UNCONNECTED') {
+              return { ...e, type: 'SUB_OUTPUT' };
+            }
+            return e;
+          });
+
+        if (!node.data?.node) return state;
+        const updatedNode: AppFlowNode = {
+          ...node,
+          data: {
+            ...node.data,
+            node: {
+              ...node.data.node,
+              node_type: targetType,
+              label: NODE_LABELS[targetType],
+            }
+          }
+        };
+        const nextNodes = [...state.nodes];
+        nextNodes[nodeIndex] = updatedNode;
+
+        return { nodes: nextNodes, edges: nextEdges, expressions: nextExpressions };
+      }
+
+      return state;
+    });
+  },
+});
