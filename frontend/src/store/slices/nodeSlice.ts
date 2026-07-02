@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import type { ApiExpression, AppFlowEdge } from '../../components/types';
+import type { AppFlowEdge } from '../../components/types';
 import {
   createNewNode,
   getPrimaryInputExprId,
@@ -140,10 +140,11 @@ export const createNodeSlice: StateCreator<
       if (!nodeType || nodeType === 'START' || nodeType === 'END') return state;
 
       const nodeExprs = state.expressions.filter(e => e.node_id === nodeId);
-      const subExprs = nodeExprs.filter(e => e.type.startsWith('SUB_'));
-
-      if (['LOGICAL_SWITCH', 'AGENTIC_SWITCH', 'LOGICAL_JOIN', 'AGENTIC_JOIN', 'TRANSFORM_AGENT_TO_LOGICAL', 'TRANSFORM_LOGICAL_TO_AGENT'].includes(nodeType)) {
-        if (subExprs.length !== 1) return state;
+      const inputs = nodeExprs.filter(e => e.is_input);
+      const outputs = nodeExprs.filter(e => e.is_output);
+      if (inputs.length !== 1 || outputs.length !== 1) {
+        alert('Can only shortcircuit nodes with exactly one input and one output expression.');
+        return state;
       }
 
       const nodeExprIds = new Set(nodeExprs.map(e => e.id));
@@ -182,94 +183,15 @@ export const createNodeSlice: StateCreator<
       const currentType = node.data?.node?.node_type;
       if (!currentType || currentType === targetType) return state;
 
-      let nextExpressions = [...state.expressions];
-      let nextEdges = [...state.edges];
+      const updatedNode = updateNodeNodeType(node, targetType);
+      const nextNodes = [...state.nodes];
+      nextNodes[nodeIndex] = updatedNode;
 
-      if ((currentType === 'AGENT' && targetType === 'LOGIC') || (currentType === 'LOGIC' && targetType === 'AGENT')) {
-        const updatedNode = updateNodeNodeType(node, targetType);
-        const nextNodes = [...state.nodes];
-        nextNodes[nodeIndex] = updatedNode;
-        return { nodes: nextNodes, edges: state.edges, expressions: state.expressions };
-      }
-
-      if (['AGENTIC_SWITCH', 'LOGICAL_SWITCH'].includes(currentType) && ['TRANSFORM_AGENT_TO_LOGICAL', 'TRANSFORM_LOGICAL_TO_AGENT'].includes(targetType)) {
-        const newBaseOutputId = crypto.randomUUID();
-        const newBaseOutput: ApiExpression = {
-          id: newBaseOutputId,
-          node_id: nodeId,
-          graph_id: node.data?.node?.graph_id || '',
-          idx: 0,
-          type: 'BASE_OUTPUT',
-          raw_string: '',
-        };
-
-        const nodeExprs = state.expressions.filter(e => e.node_id === nodeId);
-        const subOutputs = nodeExprs.filter(e => e.type === 'SUB_OUTPUT');
-
-        nextExpressions = state.expressions.map(e => {
-          if (e.node_id === nodeId && e.type === 'SUB_OUTPUT') {
-            return { ...e, type: 'SUB_UNCONNECTED' };
-          }
-          return e;
-        });
-        nextExpressions.push(newBaseOutput);
-
-        const subOutputIds = new Set(subOutputs.map(e => e.id));
-        nextEdges = state.edges.map(edge => {
-          if (edge.sourceHandle && subOutputIds.has(edge.sourceHandle)) {
-            return { ...edge, sourceHandle: newBaseOutputId };
-          }
-          return edge;
-        });
-
-        const updatedNode = updateNodeNodeType(node, targetType);
-        const nextNodes = [...state.nodes];
-        nextNodes[nodeIndex] = updatedNode;
-
-        return { nodes: nextNodes, edges: nextEdges, expressions: nextExpressions };
-      }
-
-      if (['TRANSFORM_AGENT_TO_LOGICAL', 'TRANSFORM_LOGICAL_TO_AGENT'].includes(currentType) && ['AGENTIC_SWITCH', 'LOGICAL_SWITCH'].includes(targetType)) {
-        const nodeExprs = state.expressions.filter(e => e.node_id === nodeId);
-        const baseOutput = nodeExprs.find(e => e.type === 'BASE_OUTPUT');
-        if (!baseOutput) return state;
-
-        const outgoingEdges = state.edges.filter(e => e.sourceHandle === baseOutput.id);
-        if (outgoingEdges.length > 1) {
-          alert('Cannot convert to Switch node: the BASE_OUTPUT has multiple outgoing edges. At most one is allowed.');
-          return state;
-        }
-
-        const subUnconnecteds = nodeExprs.filter(e => e.type === 'SUB_UNCONNECTED').sort((a, b) => a.idx - b.idx);
-        if (subUnconnecteds.length === 0) return state;
-
-        if (outgoingEdges.length === 1) {
-          const firstSub = subUnconnecteds[0];
-          nextEdges = state.edges.map(edge => {
-            if (edge.sourceHandle === baseOutput.id) {
-              return { ...edge, sourceHandle: firstSub.id };
-            }
-            return edge;
-          });
-        }
-
-        nextExpressions = state.expressions
-          .filter(e => e.id !== baseOutput.id)
-          .map(e => {
-            if (e.node_id === nodeId && e.type === 'SUB_UNCONNECTED') {
-              return { ...e, type: 'SUB_OUTPUT' };
-            }
-            return e;
-          });
-
-        const updatedNode = updateNodeNodeType(node, targetType);
-        const nextNodes = [...state.nodes];
-        nextNodes[nodeIndex] = updatedNode;
-
-        return { nodes: nextNodes, edges: nextEdges, expressions: nextExpressions };
-      }
-
-      return state;
+      return {
+        nodes: nextNodes,
+        edges: state.edges,
+        expressions: state.expressions,
+      };
     });
   },
 });

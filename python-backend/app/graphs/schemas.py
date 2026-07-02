@@ -35,7 +35,9 @@ class ExpressionRead(BaseModel):
     node_id: uuid.UUID
     graph_id: uuid.UUID
     idx: int
-    type: str
+    type: str | None = None
+    is_input: bool = False
+    is_output: bool = False
     raw_string: str
 
 

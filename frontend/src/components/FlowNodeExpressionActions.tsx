@@ -3,9 +3,12 @@ import { DropdownMenu, IconButton } from '@radix-ui/themes';
 import { useCallback, useMemo } from 'react';
 import { useGraphStore } from '../store/useGraphStore';
 import type { InsertableNodeType } from './types';
+import { isValidOrder } from '../utils/flowUtils';
 
 interface ExpressionActionsDropdownProps {
   expressionId: string;
+  isInput: boolean;
+  isOutput: boolean;
   triggerStyle?: React.CSSProperties;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
@@ -20,6 +23,8 @@ interface ExpressionActionsDropdownProps {
 
 export const FlowNodeExpressionActions = ({
   expressionId,
+  isInput,
+  isOutput,
   triggerStyle,
   onMoveUp,
   onMoveDown,
@@ -33,7 +38,9 @@ export const FlowNodeExpressionActions = ({
 }: ExpressionActionsDropdownProps) => {
   const addConnectedNode = useGraphStore(state => state.addConnectedNode);
   const insertNodeBetween = useGraphStore(state => state.insertNodeBetween);
+  const updateExpression = useGraphStore(state => state.updateExpression);
   const edges = useGraphStore(state => state.edges);
+  const expressions = useGraphStore(state => state.expressions);
 
   const connectedEdge = useMemo(() => {
     return edges.find(e => e.sourceHandle === expressionId);
@@ -54,6 +61,36 @@ export const FlowNodeExpressionActions = ({
     },
     [insertNodeBetween, expressionId]
   );
+
+  const handleToggleInput = useCallback(() => {
+    const expr = expressions.find(e => e.id === expressionId);
+    if (!expr) return;
+    const nodeExprs = expressions
+      .filter(e => e.node_id === expr.node_id)
+      .sort((a, b) => a.idx - b.idx);
+    
+    const updatedExprs = nodeExprs.map(e => e.id === expressionId ? { ...e, is_input: !isInput } : e);
+    if (!isValidOrder(updatedExprs)) {
+      alert("Cannot toggle: expressions must follow the order: Inputs -> Both -> None -> Outputs.");
+      return;
+    }
+    updateExpression(expressionId, { is_input: !isInput });
+  }, [expressionId, isInput, expressions, updateExpression]);
+
+  const handleToggleOutput = useCallback(() => {
+    const expr = expressions.find(e => e.id === expressionId);
+    if (!expr) return;
+    const nodeExprs = expressions
+      .filter(e => e.node_id === expr.node_id)
+      .sort((a, b) => a.idx - b.idx);
+    
+    const updatedExprs = nodeExprs.map(e => e.id === expressionId ? { ...e, is_output: !isOutput } : e);
+    if (!isValidOrder(updatedExprs)) {
+      alert("Cannot toggle: expressions must follow the order: Inputs -> Both -> None -> Outputs.");
+      return;
+    }
+    updateExpression(expressionId, { is_output: !isOutput });
+  }, [expressionId, isOutput, expressions, updateExpression]);
 
   return (
     <DropdownMenu.Root modal={false}>
@@ -97,52 +134,62 @@ export const FlowNodeExpressionActions = ({
           </>
         )}
 
+        <DropdownMenu.Item onClick={handleToggleInput}>
+          {isInput ? '✓ Input Handle' : '  Input Handle'}
+        </DropdownMenu.Item>
+        <DropdownMenu.Item onClick={handleToggleOutput}>
+          {isOutput ? '✓ Output Handle' : '  Output Handle'}
+        </DropdownMenu.Item>
+
         {!hideAddNode && (
-          hasConnectedNode ? (
-            <DropdownMenu.Sub>
-              <DropdownMenu.SubTrigger>
-                <PlusIcon style={{ marginRight: 8 }}/> Add Interim Node
-              </DropdownMenu.SubTrigger>
-              <DropdownMenu.SubContent>
-                <DropdownMenu.Item onClick={() => handleInsertNode('LOGIC')}>{'Logic'}</DropdownMenu.Item>
-                <DropdownMenu.Item onClick={() => handleInsertNode('AGENT')}>{'Agent'}</DropdownMenu.Item>
-                <DropdownMenu.Item
-                  onClick={() => handleInsertNode('LOGICAL_SWITCH')}>{'Logical Switch'}</DropdownMenu.Item>
-                <DropdownMenu.Item
-                  onClick={() => handleInsertNode('AGENTIC_SWITCH')}>{'Agentic Switch'}</DropdownMenu.Item>
-                <DropdownMenu.Item
-                  onClick={() => handleInsertNode('LOGICAL_JOIN')}>{'Logical Join'}</DropdownMenu.Item>
-                <DropdownMenu.Item
-                  onClick={() => handleInsertNode('AGENTIC_JOIN')}>{'Agentic Join'}</DropdownMenu.Item>
-                <DropdownMenu.Item
-                  onClick={() => handleInsertNode('TRANSFORM_AGENT_TO_LOGICAL')}>{'Transform Agent To Logical'}</DropdownMenu.Item>
-                <DropdownMenu.Item
-                  onClick={() => handleInsertNode('TRANSFORM_LOGICAL_TO_AGENT')}>{'Transform Logical To Agent'}</DropdownMenu.Item>
-              </DropdownMenu.SubContent>
-            </DropdownMenu.Sub>
-          ) : (
-            <DropdownMenu.Sub>
-              <DropdownMenu.SubTrigger>
-                <PlusIcon style={{ marginRight: 8 }}/> Add Node
-              </DropdownMenu.SubTrigger>
-              <DropdownMenu.SubContent>
-                <DropdownMenu.Item onClick={() => handleAddConnectedNode('LOGIC')}>{'Logic'}</DropdownMenu.Item>
-                <DropdownMenu.Item onClick={() => handleAddConnectedNode('AGENT')}>{'Agent'}</DropdownMenu.Item>
-                <DropdownMenu.Item
-                  onClick={() => handleAddConnectedNode('LOGICAL_SWITCH')}>{'Logical Switch'}</DropdownMenu.Item>
-                <DropdownMenu.Item
-                  onClick={() => handleAddConnectedNode('AGENTIC_SWITCH')}>{'Agentic Switch'}</DropdownMenu.Item>
-                <DropdownMenu.Item
-                  onClick={() => handleAddConnectedNode('LOGICAL_JOIN')}>{'Logical Join'}</DropdownMenu.Item>
-                <DropdownMenu.Item
-                  onClick={() => handleAddConnectedNode('AGENTIC_JOIN')}>{'Agentic Join'}</DropdownMenu.Item>
-                <DropdownMenu.Item
-                  onClick={() => handleAddConnectedNode('TRANSFORM_AGENT_TO_LOGICAL')}>{'Transform Agent To Logical'}</DropdownMenu.Item>
-                <DropdownMenu.Item
-                  onClick={() => handleAddConnectedNode('TRANSFORM_LOGICAL_TO_AGENT')}>{'Transform Logical To Agent'}</DropdownMenu.Item>
-              </DropdownMenu.SubContent>
-            </DropdownMenu.Sub>
-          )
+          <>
+            <DropdownMenu.Separator/>
+            {hasConnectedNode ? (
+              <DropdownMenu.Sub>
+                <DropdownMenu.SubTrigger>
+                  <PlusIcon style={{ marginRight: 8 }}/> Add Interim Node
+                </DropdownMenu.SubTrigger>
+                <DropdownMenu.SubContent>
+                  <DropdownMenu.Item onClick={() => handleInsertNode('LOGIC')}>{'Logic'}</DropdownMenu.Item>
+                  <DropdownMenu.Item onClick={() => handleInsertNode('AGENT')}>{'Agent'}</DropdownMenu.Item>
+                  <DropdownMenu.Item
+                    onClick={() => handleInsertNode('LOGICAL_SWITCH')}>{'Logical Switch'}</DropdownMenu.Item>
+                  <DropdownMenu.Item
+                    onClick={() => handleInsertNode('AGENTIC_SWITCH')}>{'Agentic Switch'}</DropdownMenu.Item>
+                  <DropdownMenu.Item
+                    onClick={() => handleInsertNode('LOGICAL_JOIN')}>{'Logical Join'}</DropdownMenu.Item>
+                  <DropdownMenu.Item
+                    onClick={() => handleInsertNode('AGENTIC_JOIN')}>{'Agentic Join'}</DropdownMenu.Item>
+                  <DropdownMenu.Item
+                    onClick={() => handleInsertNode('TRANSFORM_AGENT_TO_LOGICAL')}>{'Transform Agent To Logical'}</DropdownMenu.Item>
+                  <DropdownMenu.Item
+                    onClick={() => handleInsertNode('TRANSFORM_LOGICAL_TO_AGENT')}>{'Transform Logical To Agent'}</DropdownMenu.Item>
+                </DropdownMenu.SubContent>
+              </DropdownMenu.Sub>
+            ) : (
+              <DropdownMenu.Sub>
+                <DropdownMenu.SubTrigger>
+                  <PlusIcon style={{ marginRight: 8 }}/> Add Node
+                </DropdownMenu.SubTrigger>
+                <DropdownMenu.SubContent>
+                  <DropdownMenu.Item onClick={() => handleAddConnectedNode('LOGIC')}>{'Logic'}</DropdownMenu.Item>
+                  <DropdownMenu.Item onClick={() => handleAddConnectedNode('AGENT')}>{'Agent'}</DropdownMenu.Item>
+                  <DropdownMenu.Item
+                    onClick={() => handleAddConnectedNode('LOGICAL_SWITCH')}>{'Logical Switch'}</DropdownMenu.Item>
+                  <DropdownMenu.Item
+                    onClick={() => handleAddConnectedNode('AGENTIC_SWITCH')}>{'Agentic Switch'}</DropdownMenu.Item>
+                  <DropdownMenu.Item
+                    onClick={() => handleAddConnectedNode('LOGICAL_JOIN')}>{'Logical Join'}</DropdownMenu.Item>
+                  <DropdownMenu.Item
+                    onClick={() => handleAddConnectedNode('AGENTIC_JOIN')}>{'Agentic Join'}</DropdownMenu.Item>
+                  <DropdownMenu.Item
+                    onClick={() => handleAddConnectedNode('TRANSFORM_AGENT_TO_LOGICAL')}>{'Transform Agent To Logical'}</DropdownMenu.Item>
+                  <DropdownMenu.Item
+                    onClick={() => handleAddConnectedNode('TRANSFORM_LOGICAL_TO_AGENT')}>{'Transform Logical To Agent'}</DropdownMenu.Item>
+                </DropdownMenu.SubContent>
+              </DropdownMenu.Sub>
+            )}
+          </>
         )}
 
         {onDelete && (

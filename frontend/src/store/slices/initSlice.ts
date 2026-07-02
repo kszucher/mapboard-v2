@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand';
 import { apiClient } from '../../api/client';
-import { mapToReactFlowElements, runLayout } from '../../utils/flowUtils';
+import { mapToReactFlowElements, runLayout, normalizeExpressions } from '../../utils/flowUtils';
 import { resetLastSavedState, triggerSave } from '../helpers';
 import type { GraphStoreState, InitSlice } from '../types';
 
@@ -26,7 +26,8 @@ export const createInitSlice: StateCreator<
           }
         });
 
-        const mapped = mapToReactFlowElements(data.nodes, data.edges, data.expressions, positions);
+        const normalizedExprs = normalizeExpressions(data.expressions);
+        const mapped = mapToReactFlowElements(data.nodes, data.edges, normalizedExprs, positions);
 
         const anyPositioned = mapped.nodes.some(n => n.data?.isPositioned);
         let finalNodes = mapped.nodes;
@@ -36,7 +37,7 @@ export const createInitSlice: StateCreator<
           const laidOut = await runLayout(mapped.nodes, mapped.edges);
           finalNodes = laidOut.nodes;
           finalEdges = laidOut.edges;
-          triggerSave(graphId, laidOut.nodes, laidOut.edges, data.expressions);
+          triggerSave(graphId, laidOut.nodes, laidOut.edges, normalizedExprs);
         } else {
           const laidOut = await runLayout(mapped.nodes, mapped.edges);
           finalNodes = laidOut.nodes;
@@ -46,10 +47,10 @@ export const createInitSlice: StateCreator<
         set({
           nodes: finalNodes,
           edges: finalEdges,
-          expressions: data.expressions,
+          expressions: normalizedExprs,
         });
 
-        resetLastSavedState(graphId, finalNodes, finalEdges, data.expressions);
+        resetLastSavedState(graphId, finalNodes, finalEdges, normalizedExprs);
       }
     } catch (err) {
       console.error('Failed to initialize graph:', err);
@@ -73,13 +74,14 @@ export const createInitSlice: StateCreator<
       }
     });
 
-    const mapped = mapToReactFlowElements(flow.nodes, flow.edges, flow.expressions, positions);
+    const normalizedExprs = normalizeExpressions(flow.expressions);
+    const mapped = mapToReactFlowElements(flow.nodes, flow.edges, normalizedExprs, positions);
 
     runLayout(mapped.nodes, mapped.edges).then(laidOut => {
       set({
         nodes: laidOut.nodes,
         edges: laidOut.edges,
-        expressions: flow.expressions,
+        expressions: normalizedExprs,
       });
     });
   },

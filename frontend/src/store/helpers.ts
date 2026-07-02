@@ -1,7 +1,7 @@
 import type { StoreApi } from 'zustand';
 import { apiClient, getClientId } from '../api/client';
 import type { ApiExpression, AppFlowEdge, AppFlowNode } from '../components/types';
-import { runLayout } from '../utils/flowUtils';
+import { runLayout, normalizeExpressions } from '../utils/flowUtils';
 import type { GraphStoreState } from './types';
 
 let onSaveStateChange: ((isSaving: boolean) => void) | null = null;
@@ -134,8 +134,10 @@ export const updateFlowState = async (
   const snapshot = takeSnapshot(current);
   const updated = updateFn(current);
 
+  const normalizedExprs = normalizeExpressions(updated.expressions);
+
   const nodesWithDimensions = updated.nodes.map(n => {
-    const nodeExpressions = updated.expressions.filter(e => e.node_id === n.id);
+    const nodeExpressions = normalizedExprs.filter(e => e.node_id === n.id);
     return {
       ...n,
       data: {
@@ -150,10 +152,10 @@ export const updateFlowState = async (
   set((state) => ({
     nodes: laidOut.nodes,
     edges: laidOut.edges,
-    expressions: updated.expressions,
+    expressions: normalizedExprs,
     past: [...state.past, snapshot],
     future: [],
   }));
 
-  triggerSave(current.graphId, laidOut.nodes, laidOut.edges, updated.expressions);
+  triggerSave(current.graphId, laidOut.nodes, laidOut.edges, normalizedExprs);
 };

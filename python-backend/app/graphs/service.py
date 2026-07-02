@@ -38,6 +38,8 @@ async def create_graph(
                 "graph_id": str(graph.id),
                 "idx": 0,
                 "type": "BASE_OUTPUT",
+                "is_input": False,
+                "is_output": True,
                 "raw_string": "",
             }
         ],

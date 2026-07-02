@@ -3,7 +3,7 @@ import type { BadgeProps } from '@radix-ui/themes';
 import { Badge, DropdownMenu, Flex, IconButton } from '@radix-ui/themes';
 import { Handle, type NodeProps, Position, useUpdateNodeInternals } from '@xyflow/react';
 import { memo, useCallback, useEffect, useMemo } from 'react';
-import { NODE_CONVERSIONS, hasLeftHandle, hasRightHandle } from '../utils/flowUtils';
+import { NODE_CONVERSIONS, isValidOrder } from '../utils/flowUtils';
 import { useGraphStore } from '../store/useGraphStore';
 import { FlowNodeExpressionActions } from './FlowNodeExpressionActions.tsx';
 import { FlowNodeExpressionEditor } from './FlowNodeExpressionEditor.tsx';
@@ -39,7 +39,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
 
   const myExpressionsHash = useMemo(() => {
     const sorted = [...myExpressions].sort((a, b) => a.idx - b.idx);
-    return sorted.map(e => `${e.id}:${e.idx}`).join(',');
+    return sorted.map(e => `${e.id}:${e.idx}:${e.is_input}:${e.is_output}`).join(',');
   }, [myExpressions]);
 
   useEffect(() => {
@@ -64,27 +64,29 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   const isStart = node.node_type === 'START';
   const isEnd = node.node_type === 'END';
 
-  const subExpressionsCount = useMemo(() => {
-    return myExpressions.filter(e => e.type.startsWith('SUB_')).length;
+  const canShortcircuit = useMemo(() => {
+    const inputs = myExpressions.filter(e => e.is_input);
+    const outputs = myExpressions.filter(e => e.is_output);
+    return inputs.length === 1 && outputs.length === 1;
   }, [myExpressions]);
 
   const handleAddAbove = useCallback(
     (expr: ApiExpression) => {
-      void createExpression(node.id, expr.type, expr.idx);
+      void createExpression(node.id, expr.is_input, expr.is_output, expr.idx);
     },
     [createExpression, node.id]
   );
 
   const handleAddBelow = useCallback(
     (expr: ApiExpression) => {
-      void createExpression(node.id, expr.type, expr.idx + 1);
+      void createExpression(node.id, expr.is_input, expr.is_output, expr.idx + 1);
     },
     [createExpression, node.id]
   );
 
   const handleUpdateItem = useCallback(
     (expr: ApiExpression, newValue: string) => {
-      updateExpression(expr.id, newValue);
+      updateExpression(expr.id, { raw_string: newValue });
     },
     [updateExpression]
   );
@@ -155,7 +157,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
                 </DropdownMenu.SubContent>
               </DropdownMenu.Sub>
             )}
-            {!isStart && !isEnd && subExpressionsCount <= 1 && (
+            {!isStart && !isEnd && canShortcircuit && (
               <DropdownMenu.Item onClick={handleShortcircuit}>
                 {'Shortcircuit'}
               </DropdownMenu.Item>
@@ -167,56 +169,60 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
         </DropdownMenu.Root>
       </Flex>
 
-      {myExpressions.map((expr) => {
-        const leftHandle = hasLeftHandle(expr.type);
-        const rightHandle = hasRightHandle(expr.type);
-        const isSub = expr.type.startsWith('SUB_');
+      {myExpressions.map((expr, index) => {
+        const leftHandle = expr.is_input;
+        const rightHandle = expr.is_output;
 
         const pl = leftHandle ? undefined : '5';
         const pr = rightHandle ? undefined : '5';
 
         // Same type expressions relative index calculations for sub expressions
-        const sameTypeExprs = myExpressions.filter(e => e.type === expr.type).sort((a, b) => a.idx - b.idx);
-        const relativeIndex = sameTypeExprs.findIndex(e => e.id === expr.id);
-        const canMoveUp = relativeIndex > 0;
-        const canMoveDown = relativeIndex < sameTypeExprs.length - 1;
-        const canDelete = sameTypeExprs.length > 1;
+        const canMoveUp = (() => {
+          if (index === 0) return false;
+          const test = [...myExpressions];
+          const tmp = test[index];
+          test[index] = test[index - 1];
+          test[index - 1] = tmp;
+          return isValidOrder(test);
+        })();
+
+        const canMoveDown = (() => {
+          if (index === myExpressions.length - 1) return false;
+          const test = [...myExpressions];
+          const tmp = test[index];
+          test[index] = test[index + 1];
+          test[index + 1] = tmp;
+          return isValidOrder(test);
+        })();
+
+        const canDelete = myExpressions.length > 1;
+
+        const disabled = isStart || isEnd;
 
         // Custom actions determination
-        const actions = (() => {
-          if (isSub) {
-            return (
-              <FlowNodeExpressionActions
-                expressionId={expr.id}
-                onMoveUp={() => handleMoveUp(expr)}
-                onMoveDown={() => handleMoveDown(expr)}
-                onDelete={() => handleDeleteItem(expr)}
-                canMoveUp={canMoveUp}
-                canMoveDown={canMoveDown}
-                onAddAbove={() => handleAddAbove(expr)}
-                onAddBelow={() => handleAddBelow(expr)}
-                canDelete={canDelete}
-                hideAddNode={!rightHandle}
-              />
-            );
-          } else if (rightHandle && !isEnd) {
-            return (
-              <FlowNodeExpressionActions
-                expressionId={expr.id}
-              />
-            );
-          }
-          return undefined;
-        })();
+        const actions = !disabled ? (
+          <FlowNodeExpressionActions
+            expressionId={expr.id}
+            isInput={leftHandle}
+            isOutput={rightHandle}
+            onMoveUp={() => handleMoveUp(expr)}
+            onMoveDown={() => handleMoveDown(expr)}
+            onDelete={() => handleDeleteItem(expr)}
+            canMoveUp={canMoveUp}
+            canMoveDown={canMoveDown}
+            onAddAbove={() => handleAddAbove(expr)}
+            onAddBelow={() => handleAddBelow(expr)}
+            canDelete={canDelete}
+            hideAddNode={!rightHandle}
+          />
+        ) : undefined;
 
         // Value placeholders
         const initialValue = (() => {
-          if (isStart && expr.type === 'BASE_OUTPUT') return 'Start Node (Output)';
-          if (isEnd && expr.type === 'BASE_INPUT') return 'End Node (Input)';
+          if (isStart) return expr.raw_string || 'Start Node (Output)';
+          if (isEnd) return expr.raw_string || 'End Node (Input)';
           return expr.raw_string;
         })();
-
-        const disabled = isStart || isEnd;
 
         return (
           <Flex key={expr.id} align="center" width="100%" height="24px" style={{ position: 'relative' }}>

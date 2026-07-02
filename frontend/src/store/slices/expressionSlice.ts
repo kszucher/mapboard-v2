@@ -2,6 +2,7 @@ import type { StateCreator } from 'zustand';
 import type { ApiExpression, AppFlowNode } from '../../components/types';
 import { triggerSave, updateFlowState } from '../helpers';
 import type { ExpressionSlice, GraphStoreState } from '../types';
+import { isValidOrder } from '../../utils/flowUtils';
 
 export const createExpressionSlice: StateCreator<
   GraphStoreState,
@@ -9,7 +10,7 @@ export const createExpressionSlice: StateCreator<
   [],
   ExpressionSlice
 > = (set, get) => ({
-  createExpression: async (nodeId, type, idx) => {
+  createExpression: async (nodeId, isInput, isOutput, idx) => {
     await updateFlowState(set, get, (state) => {
       const { graphId } = get();
       if (!graphId) return state;
@@ -20,12 +21,13 @@ export const createExpressionSlice: StateCreator<
         node_id: nodeId,
         graph_id: graphId,
         idx,
-        type,
+        is_input: isInput,
+        is_output: isOutput,
         raw_string: '',
       };
 
       const nextExpressions = state.expressions.map(e => {
-        if (e.node_id === nodeId && e.type === type && e.idx >= idx) {
+        if (e.node_id === nodeId && e.idx >= idx) {
           return { ...e, idx: e.idx + 1 };
         }
         return e;
@@ -43,11 +45,11 @@ export const createExpressionSlice: StateCreator<
   deleteExpression: async (expressionId) => {
     await updateFlowState(set, get, (state) => {
       const expr = state.expressions.find(e => e.id === expressionId);
-      if (!expr || expr.type.startsWith('BASE_')) return state;
+      if (!expr) return state;
 
-      const nodeExprs = state.expressions.filter(e => e.node_id === expr.node_id && e.type === expr.type);
+      const nodeExprs = state.expressions.filter(e => e.node_id === expr.node_id);
       if (nodeExprs.length <= 1) {
-        alert('Cannot delete the last remaining expression of this type.');
+        alert('Cannot delete the last remaining expression of this node.');
         return state;
       }
 
@@ -55,7 +57,7 @@ export const createExpressionSlice: StateCreator<
 
       let nextExpressions = state.expressions.filter(e => e.id !== expressionId);
       nextExpressions = nextExpressions.map(e => {
-        if (e.node_id === expr.node_id && e.type === expr.type && e.idx > deletedIdx) {
+        if (e.node_id === expr.node_id && e.idx > deletedIdx) {
           return { ...e, idx: e.idx - 1 };
         }
         return e;
@@ -71,10 +73,10 @@ export const createExpressionSlice: StateCreator<
     });
   },
 
-  updateExpression: (expressionId, raw_string) => {
+  updateExpression: (expressionId, updates) => {
     set((state) => {
       const nextExpressions = state.expressions.map((e) =>
-        e.id === expressionId ? { ...e, raw_string } : e
+        e.id === expressionId ? { ...e, ...updates } : e
       );
 
       const expr = nextExpressions.find((e) => e.id === expressionId);
@@ -101,22 +103,32 @@ export const createExpressionSlice: StateCreator<
   swapExpressionIndices: async (expressionId, direction) => {
     await updateFlowState(set, get, (state) => {
       const expr = state.expressions.find(e => e.id === expressionId);
-      if (!expr || expr.type.startsWith('BASE_')) return state;
+      if (!expr) return state;
 
-      const nodeSameTypeExprs = state.expressions
-        .filter(e => e.node_id === expr.node_id && e.type === expr.type)
+      const nodeExprs = state.expressions
+        .filter(e => e.node_id === expr.node_id)
         .sort((a, b) => a.idx - b.idx);
 
-      const currentIndex = nodeSameTypeExprs.findIndex(e => e.id === expressionId);
+      const currentIndex = nodeExprs.findIndex(e => e.id === expressionId);
       if (currentIndex === -1) return state;
 
       let targetIndex = -1;
       if (direction === 'up' && currentIndex > 0) targetIndex = currentIndex - 1;
-      else if (direction === 'down' && currentIndex < nodeSameTypeExprs.length - 1) targetIndex = currentIndex + 1;
+      else if (direction === 'down' && currentIndex < nodeExprs.length - 1) targetIndex = currentIndex + 1;
 
       if (targetIndex === -1) return state;
 
-      const otherExpr = nodeSameTypeExprs[targetIndex];
+      const otherExpr = nodeExprs[targetIndex];
+
+      const nextNodeExprs = [...nodeExprs];
+      nextNodeExprs[currentIndex] = { ...otherExpr, idx: expr.idx };
+      nextNodeExprs[targetIndex] = { ...expr, idx: otherExpr.idx };
+      nextNodeExprs.sort((a, b) => a.idx - b.idx);
+
+      if (!isValidOrder(nextNodeExprs)) {
+        alert("Invalid order: expressions must follow the order: Inputs -> Both -> None -> Outputs.");
+        return state;
+      }
 
       const nextExpressions = state.expressions.map(e => {
         if (e.id === expr.id) {

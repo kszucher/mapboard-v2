@@ -30,6 +30,38 @@ export const NODE_CONVERSIONS: Record<NodeType, { targetType: NodeType; label: s
   AGENTIC_JOIN: null,
 };
 
+export const normalizeExpressions = (expressions: ApiExpression[]): ApiExpression[] => {
+  const groups: Record<string, ApiExpression[]> = {};
+  expressions.forEach(e => {
+    (groups[e.node_id] ??= []).push(e);
+  });
+
+  const result: ApiExpression[] = [];
+  Object.keys(groups).forEach(nodeId => {
+    const sorted = groups[nodeId].map(e => {
+      const isInput = e.is_input ?? (e.type === 'BASE_INPUT' || e.type === 'SUB_INPUT' || e.type === 'BASE_INPUT_OUTPUT');
+      const isOutput = e.is_output ?? (e.type === 'BASE_OUTPUT' || e.type === 'SUB_OUTPUT' || e.type === 'BASE_INPUT_OUTPUT');
+      return {
+        ...e,
+        is_input: !!isInput,
+        is_output: !!isOutput,
+      };
+    }).sort((a, b) => {
+      if (a.idx !== b.idx) return a.idx - b.idx;
+      return a.id.localeCompare(b.id);
+    });
+
+    sorted.forEach((e, idx) => {
+      result.push({
+        ...e,
+        idx,
+      });
+    });
+  });
+
+  return result;
+};
+
 export const createDefaultExpressionsForNode = (
   nodeId: string,
   graphId: string,
@@ -40,26 +72,26 @@ export const createDefaultExpressionsForNode = (
   const baseOutId = crypto.randomUUID();
 
   if (nodeType === 'START') {
-    return [{ id: baseId, node_id: nodeId, graph_id: graphId, idx: 0, type: 'BASE_OUTPUT', raw_string: '' }];
+    return [{ id: baseId, node_id: nodeId, graph_id: graphId, idx: 0, is_input: false, is_output: true, raw_string: '' }];
   } else if (nodeType === 'END') {
-    return [{ id: baseId, node_id: nodeId, graph_id: graphId, idx: 0, type: 'BASE_INPUT', raw_string: '' }];
+    return [{ id: baseId, node_id: nodeId, graph_id: graphId, idx: 0, is_input: true, is_output: false, raw_string: '' }];
   } else if (nodeType === 'LOGIC' || nodeType === 'AGENT') {
-    return [{ id: baseId, node_id: nodeId, graph_id: graphId, idx: 0, type: 'BASE_INPUT_OUTPUT', raw_string: '' }];
+    return [{ id: baseId, node_id: nodeId, graph_id: graphId, idx: 0, is_input: true, is_output: true, raw_string: '' }];
   } else if (nodeType === 'LOGICAL_SWITCH' || nodeType === 'AGENTIC_SWITCH') {
     return [
-      { id: baseId, node_id: nodeId, graph_id: graphId, idx: 0, type: 'BASE_INPUT', raw_string: '' },
-      { id: subId, node_id: nodeId, graph_id: graphId, idx: 0, type: 'SUB_OUTPUT', raw_string: '' }
+      { id: baseId, node_id: nodeId, graph_id: graphId, idx: 0, is_input: true, is_output: false, raw_string: '' },
+      { id: subId, node_id: nodeId, graph_id: graphId, idx: 1, is_input: false, is_output: true, raw_string: '' }
     ];
   } else if (nodeType === 'LOGICAL_JOIN' || nodeType === 'AGENTIC_JOIN') {
     return [
-      { id: subId, node_id: nodeId, graph_id: graphId, idx: 0, type: 'SUB_INPUT', raw_string: '' },
-      { id: baseId, node_id: nodeId, graph_id: graphId, idx: 0, type: 'BASE_OUTPUT', raw_string: '' }
+      { id: subId, node_id: nodeId, graph_id: graphId, idx: 0, is_input: true, is_output: false, raw_string: '' },
+      { id: baseId, node_id: nodeId, graph_id: graphId, idx: 1, is_input: false, is_output: true, raw_string: '' }
     ];
   } else if (nodeType === 'TRANSFORM_AGENT_TO_LOGICAL' || nodeType === 'TRANSFORM_LOGICAL_TO_AGENT') {
     return [
-      { id: baseId, node_id: nodeId, graph_id: graphId, idx: 0, type: 'BASE_INPUT', raw_string: '' },
-      { id: subId, node_id: nodeId, graph_id: graphId, idx: 0, type: 'SUB_UNCONNECTED', raw_string: '' },
-      { id: baseOutId, node_id: nodeId, graph_id: graphId, idx: 0, type: 'BASE_OUTPUT', raw_string: '' }
+      { id: baseId, node_id: nodeId, graph_id: graphId, idx: 0, is_input: true, is_output: false, raw_string: '' },
+      { id: subId, node_id: nodeId, graph_id: graphId, idx: 1, is_input: false, is_output: false, raw_string: '' },
+      { id: baseOutId, node_id: nodeId, graph_id: graphId, idx: 2, is_input: false, is_output: true, raw_string: '' }
     ];
   }
   return [];
@@ -72,10 +104,11 @@ export const mapToReactFlowElements = (
   positions: Record<string, { x: number; y: number }> = {}
 ): { nodes: AppFlowNode[]; edges: AppFlowEdge[] } => {
   const nodeIds = new Set(nodes.map(n => n.id));
-  const expressionIds = new Set(expressions.map(e => e.id));
+  const normalizedExprs = normalizeExpressions(expressions);
+  const expressionIds = new Set(normalizedExprs.map(e => e.id));
 
   const rfNodes = nodes.map(n => {
-    const nodeExpressions = expressions.filter(e => e.node_id === n.id);
+    const nodeExpressions = normalizedExprs.filter(e => e.node_id === n.id);
     const position = (n.position as { x: number; y: number } | null) || positions[n.id] || { x: 0, y: 0 };
     return {
       id: n.id,
@@ -205,26 +238,32 @@ export const createNewNode = (
   return { appNode, defaultExprs };
 };
 
-export const getPrimaryInputExprId = (expressions: ApiExpression[]): string => {
-  const baseInput = expressions.find(e => e.type === 'BASE_INPUT');
-  const baseInputOutput = expressions.find(e => e.type === 'BASE_INPUT_OUTPUT');
-  const subInputs = expressions.filter(e => e.type === 'SUB_INPUT').sort((a, b) => a.idx - b.idx);
+export const getExprCategory = (e: { is_input: boolean; is_output: boolean }): number => {
+  if (e.is_input && !e.is_output) return 0; // Input only
+  if (e.is_input && e.is_output) return 1;    // Both
+  if (!e.is_input && !e.is_output) return 2; // None
+  return 3;                                  // Output only
+};
 
-  if (baseInput) return baseInput.id;
-  if (baseInputOutput) return baseInputOutput.id;
-  if (subInputs.length > 0) return subInputs[0].id;
-  return '';
+export const isValidOrder = (exprs: { is_input: boolean; is_output: boolean }[]): boolean => {
+  for (let i = 0; i < exprs.length - 1; i++) {
+    if (getExprCategory(exprs[i]) > getExprCategory(exprs[i + 1])) {
+      return false;
+    }
+  }
+  return true;
+};
+
+export const getPrimaryInputExprId = (expressions: ApiExpression[]): string => {
+  const sorted = [...expressions].sort((a, b) => a.idx - b.idx);
+  const inputExpr = sorted.find(e => e.is_input);
+  return inputExpr ? inputExpr.id : '';
 };
 
 export const getPrimaryOutputExprId = (expressions: ApiExpression[]): string => {
-  const baseOutput = expressions.find(e => e.type === 'BASE_OUTPUT');
-  const baseInputOutput = expressions.find(e => e.type === 'BASE_INPUT_OUTPUT');
-  const subOutputs = expressions.filter(e => e.type === 'SUB_OUTPUT').sort((a, b) => a.idx - b.idx);
-
-  if (baseOutput) return baseOutput.id;
-  if (baseInputOutput) return baseInputOutput.id;
-  if (subOutputs.length > 0) return subOutputs[0].id;
-  return '';
+  const sorted = [...expressions].sort((a, b) => a.idx - b.idx);
+  const outputExpr = sorted.find(e => e.is_output);
+  return outputExpr ? outputExpr.id : '';
 };
 
 export const updateNodeNodeType = (node: AppFlowNode, targetType: NodeType): AppFlowNode => {
@@ -242,11 +281,11 @@ export const updateNodeNodeType = (node: AppFlowNode, targetType: NodeType): App
   };
 };
 
-export const hasLeftHandle = (exprType: string): boolean => {
-  return exprType === 'BASE_INPUT' || exprType === 'SUB_INPUT' || exprType === 'BASE_INPUT_OUTPUT';
+export const hasLeftHandle = (expr: ApiExpression): boolean => {
+  return expr.is_input;
 };
 
-export const hasRightHandle = (exprType: string): boolean => {
-  return exprType === 'BASE_OUTPUT' || exprType === 'SUB_OUTPUT' || exprType === 'BASE_INPUT_OUTPUT';
+export const hasRightHandle = (expr: ApiExpression): boolean => {
+  return expr.is_output;
 };
 

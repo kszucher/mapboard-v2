@@ -221,7 +221,11 @@ export interface components {
       /** Idx */
       idx: number;
       /** Type */
-      type: string;
+      type?: string;
+      /** Is Input */
+      is_input: boolean;
+      /** Is Output */
+      is_output: boolean;
       /** Raw String */
       raw_string: string;
     };
