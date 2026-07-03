@@ -81,6 +81,12 @@ export const FlowNodeExpressionEditor = ({
       }}
     >
       <div
+        // 1. Trigger focus on the span when clicking the wrapper div
+        onClick={() => {
+          if (!disabled) {
+            elementRef.current?.focus();
+          }
+        }}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -93,28 +99,31 @@ export const FlowNodeExpressionEditor = ({
           minWidth: '120px',
           outline: isFocused ? '1px solid var(--accent-8)' : 'none',
           boxShadow: isFocused ? '0 0 0 1px var(--accent-8)' : 'none',
+          // 2. Move the cursor behavior here
+          cursor: disabled ? 'default' : 'text',
         }}
       >
-        <span
-          ref={elementRef}
-          contentEditable={!disabled}
-          suppressContentEditableWarning
-          onInput={handleInput}
-          onKeyDown={handleKeyDown}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          style={{
-            fontFamily: 'Consolas, Menlo, Monaco, "Courier New", monospace',
-            fontSize: '13px',
-            outline: 'none',
-            minWidth: '50px',
-            whiteSpace: 'pre',
-            cursor: disabled ? 'default' : 'text',
-            userSelect: disabled ? 'none' : 'text',
-            opacity: disabled ? 0.7 : 1,
-            color: 'var(--gray-12)',
-          }}
-        />
+      <span
+        ref={elementRef}
+        contentEditable={!disabled}
+        suppressContentEditableWarning
+        onInput={handleInput}
+        onKeyDown={handleKeyDown}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        style={{
+          fontFamily: 'Consolas, Menlo, Monaco, "Courier New", monospace',
+          fontSize: '13px',
+          outline: 'none',
+          minWidth: '50px',
+          whiteSpace: 'pre',
+          // 3. Keep width 100% so the text hit-box fills the space
+          width: '100%',
+          userSelect: disabled ? 'none' : 'text',
+          opacity: disabled ? 0.7 : 1,
+          color: 'var(--gray-12)',
+        }}
+      />
       </div>
     </div>
   );
