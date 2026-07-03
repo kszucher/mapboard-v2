@@ -4,14 +4,12 @@ interface PlainEditorProps {
   initialValue: string;
   onSave: (value: string) => void;
   disabled?: boolean;
-  actions?: React.ReactNode;
 }
 
 export const FlowNodeExpressionEditor = ({
   initialValue,
   onSave,
   disabled = false,
-  actions,
 }: PlainEditorProps) => {
   const elementRef = useRef<HTMLSpanElement>(null);
   const [isFocused, setIsFocused] = useState(false);
@@ -77,9 +75,9 @@ export const FlowNodeExpressionEditor = ({
       onMouseDown={(e) => e.stopPropagation()}
       onPointerDown={(e) => e.stopPropagation()}
       style={{
-        display: 'inline-flex',
+        display: 'flex',
         alignItems: 'center',
-        width: 'max-content',
+        width: '100%',
       }}
     >
       <div
@@ -91,7 +89,7 @@ export const FlowNodeExpressionEditor = ({
           padding: '2px 8px',
           boxSizing: 'border-box',
           minHeight: '24px',
-          width: 'max-content',
+          flexGrow: 1,
           minWidth: '120px',
           outline: isFocused ? '1px solid var(--accent-8)' : 'none',
           boxShadow: isFocused ? '0 0 0 1px var(--accent-8)' : 'none',
@@ -118,11 +116,6 @@ export const FlowNodeExpressionEditor = ({
           }}
         />
       </div>
-      {actions && (
-        <div style={{ display: 'inline-flex', alignItems: 'center', marginLeft: '6px' }}>
-          {actions}
-        </div>
-      )}
     </div>
   );
 };

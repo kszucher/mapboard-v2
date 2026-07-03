@@ -118,7 +118,6 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
     <Flex
       direction="column"
       style={{
-        minWidth: 280,
         width: 'max-content',
         background: 'var(--gray-3)',
         borderRadius: 'var(--radius-3)',
@@ -128,8 +127,8 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
         transition: 'opacity 0.2s ease-in-out',
       }}
     >
-      <Flex align="center" justify="between" width="100%" height="24px" style={{ position: 'relative' }}>
-        <Flex direction="row" gap="1" align="center">
+      <Flex align="center" width="100%" height="24px" style={{ position: 'relative', gap: '6px' }}>
+        <Flex direction="row" gap="1" align="center" flexGrow="1">
           <Badge color="gray" size="1" style={{ height: 'var(--space-5)' }}>
             {'N' + data.node.iid}
           </Badge>
@@ -138,12 +137,13 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
           </Badge>
         </Flex>
 
-        <DropdownMenu.Root modal={false}>
-          <DropdownMenu.Trigger>
-            <IconButton variant="soft" size="1" color="gray" style={{ pointerEvents: 'auto', background: 'none' }}>
-              <DotsHorizontalIcon/>
-            </IconButton>
-          </DropdownMenu.Trigger>
+        <div style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0, paddingRight: '2px' }}>
+          <DropdownMenu.Root modal={false}>
+            <DropdownMenu.Trigger>
+              <IconButton variant="ghost" size="1" color="gray" style={{ pointerEvents: 'auto' }}>
+                <DotsHorizontalIcon/>
+              </IconButton>
+            </DropdownMenu.Trigger>
           <DropdownMenu.Content onCloseAutoFocus={e => e.preventDefault()}>
             {conversionConfig && (
               <DropdownMenu.Sub>
@@ -167,6 +167,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
             </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Root>
+        </div>
       </Flex>
 
       {myExpressions.map((expr, index) => {
@@ -225,7 +226,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
         })();
 
         return (
-          <Flex key={expr.id} align="center" width="100%" height="24px" style={{ position: 'relative' }}>
+          <Flex key={expr.id} align="center" width="100%" height="24px" style={{ position: 'relative', gap: '6px' }}>
             {leftHandle && (
               <Handle
                 type="target"
@@ -234,14 +235,18 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
                 style={{ left: -NODE_PADDING }}
               />
             )}
-            <Flex className="nodrag nopan" flexGrow="1" minWidth="0" align="center" height="100%" pl={pl} pr={pr}>
+            <Flex className="nodrag nopan" flexGrow="1" align="center" height="100%" pl={pl} pr={pr}>
               <FlowNodeExpressionEditor
                 initialValue={initialValue}
                 onSave={(newValue) => handleUpdateItem(expr, newValue)}
                 disabled={disabled}
-                actions={actions}
               />
             </Flex>
+            {actions && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0, paddingRight: '2px' }}>
+                {actions}
+              </div>
+            )}
             {rightHandle && (
               <Handle
                 type="source"

@@ -54,7 +54,7 @@ const buildElkNodes = (nodes: AppFlowNode[], edges: AppFlowEdge[]): ElkNode[] =>
     const isStart = nodeType === 'START';
     const isEnd = nodeType === 'END';
 
-    const nodeWidth = node.measured?.width ?? node.width ?? 280;
+    const nodeWidth = node.measured?.width ?? node.width ?? 150;
     const nodeHeight = node.measured?.height ?? node.height ?? (ROW_HEIGHT * (1 + expressions.length) + NODE_PADDING);
 
     const ports: ElkPort[] = [];
