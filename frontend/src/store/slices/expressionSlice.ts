@@ -74,6 +74,15 @@ export const createExpressionSlice: StateCreator<
   },
 
   updateExpression: async (expressionId, updates) => {
+    const currentExpr = get().expressions.find(e => e.id === expressionId);
+
+    // 🧠 THE SMART GUARD:
+    // If raw_string hasn't changed, halt execution right here.
+    if (currentExpr && updates.raw_string === currentExpr.raw_string) {
+      return;
+    }
+
+    // Only run this heavy, reference-breaking work if the text is ACTUALLY different
     set((state) => {
       const nextExpressions = state.expressions.map((e) =>
         e.id === expressionId ? { ...e, ...updates } : e
