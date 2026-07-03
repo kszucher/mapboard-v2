@@ -1,4 +1,5 @@
 import type { StateCreator } from 'zustand';
+import { runLayout } from '../../utils/flowUtils';
 import { takeSnapshot, triggerSave } from '../helpers';
 import type { GraphStoreState, HistorySlice } from '../types';
 
@@ -16,15 +17,17 @@ export const createHistorySlice: StateCreator<
     const newPast = past.slice(0, -1);
     const currentSnapshot = takeSnapshot({ nodes, edges, expressions });
 
-    set({
-      nodes: previous.nodes,
-      edges: previous.edges,
-      expressions: previous.expressions,
-      past: newPast,
-      future: [currentSnapshot, ...future],
-    });
+    runLayout(previous.nodes, previous.edges).then((laidOut) => {
+      set({
+        nodes: laidOut.nodes,
+        edges: laidOut.edges,
+        expressions: previous.expressions,
+        past: newPast,
+        future: [currentSnapshot, ...future],
+      });
 
-    triggerSave(graphId, previous.nodes, previous.edges, previous.expressions);
+      triggerSave(graphId, laidOut.nodes, laidOut.edges, previous.expressions);
+    });
   },
 
   redo: () => {
@@ -35,15 +38,17 @@ export const createHistorySlice: StateCreator<
     const newFuture = future.slice(1);
     const currentSnapshot = takeSnapshot({ nodes, edges, expressions });
 
-    set({
-      nodes: next.nodes,
-      edges: next.edges,
-      expressions: next.expressions,
-      past: [...past, currentSnapshot],
-      future: newFuture,
-    });
+    runLayout(next.nodes, next.edges).then((laidOut) => {
+      set({
+        nodes: laidOut.nodes,
+        edges: laidOut.edges,
+        expressions: next.expressions,
+        past: [...past, currentSnapshot],
+        future: newFuture,
+      });
 
-    triggerSave(graphId, next.nodes, next.edges, next.expressions);
+      triggerSave(graphId, laidOut.nodes, laidOut.edges, next.expressions);
+    });
   },
 
   canUndo: () => get().past.length > 0,

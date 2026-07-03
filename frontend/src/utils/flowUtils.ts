@@ -158,9 +158,12 @@ export const mapToReactFlowElements = (
   return { nodes: rfNodes, edges: rfEdges };
 };
 
+const LAYOUT_TRANSITION = 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1)';
+
 export const runLayout = async (
   nodes: AppFlowNode[],
-  edges: AppFlowEdge[]
+  edges: AppFlowEdge[],
+  animate = true
 ): Promise<{ nodes: AppFlowNode[]; edges: AppFlowEdge[] }> => {
   if (nodes.length === 0) return { nodes, edges };
   try {
@@ -169,6 +172,9 @@ export const runLayout = async (
     const updatedNodes = nodes.map(n => ({
       ...n,
       position: layout.positions[n.id] || n.position,
+      style: animate
+        ? { ...n.style, transition: LAYOUT_TRANSITION }
+        : { ...n.style, transition: undefined },
       data: {
         ...n.data,
         isPositioned: true,

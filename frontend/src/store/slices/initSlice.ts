@@ -34,12 +34,12 @@ export const createInitSlice: StateCreator<
         let finalEdges = mapped.edges;
 
         if (!anyPositioned && mapped.nodes.length > 0) {
-          const laidOut = await runLayout(mapped.nodes, mapped.edges);
+          const laidOut = await runLayout(mapped.nodes, mapped.edges, false);
           finalNodes = laidOut.nodes;
           finalEdges = laidOut.edges;
           triggerSave(graphId, laidOut.nodes, laidOut.edges, normalizedExprs);
         } else {
-          const laidOut = await runLayout(mapped.nodes, mapped.edges);
+          const laidOut = await runLayout(mapped.nodes, mapped.edges, false);
           finalNodes = laidOut.nodes;
           finalEdges = laidOut.edges;
         }
