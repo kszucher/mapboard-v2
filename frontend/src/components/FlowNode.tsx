@@ -3,6 +3,7 @@ import type { BadgeProps } from '@radix-ui/themes';
 import { Badge, DropdownMenu, Flex, IconButton } from '@radix-ui/themes';
 import { type NodeProps, useUpdateNodeInternals } from '@xyflow/react';
 import { memo, useCallback, useEffect, useMemo } from 'react';
+import { useShallow } from 'zustand/shallow';
 import { useGraphStore } from '../store/useGraphStore';
 import { isValidOrder, NODE_CONVERSIONS } from '../utils/flowUtils';
 import { FlowNodeExpressionRow } from './FlowNodeExpressionRow.tsx';
@@ -30,7 +31,9 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
 
   const updateNodeInternals = useUpdateNodeInternals();
 
-  const myExpressions = useMemo(() => data.expressions ?? [], [data.expressions]);
+  const myExpressions = useGraphStore(
+    useShallow(state => state.expressions.filter(e => e.node_id === id))
+  );
 
   const myExpressionsHash = useMemo(() => {
     const sorted = [...myExpressions].sort((a, b) => a.idx - b.idx);

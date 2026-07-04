@@ -111,9 +111,9 @@ export const createExpressionSlice: StateCreator<
       };
     });
     // After updating expression, recompute layout via ELK
-    const { nodes, edges } = get();
+    const { nodes, edges, expressions } = get();
     try {
-      const laidOut = await runLayout(nodes, edges);
+      const laidOut = await runLayout(nodes, edges, expressions);
       set({ nodes: laidOut.nodes, edges: laidOut.edges });
     } catch (err) {
       console.error('Failed to run ELK layout after expression update:', err);

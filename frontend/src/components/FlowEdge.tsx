@@ -14,7 +14,7 @@ function FlowEdge({
 }: EdgeProps<AppFlowEdge>) {
   const sections = data?.sections;
   let path;
-  
+
   if (sections && sections.length > 0) {
     path = sections
       .map((section) => {

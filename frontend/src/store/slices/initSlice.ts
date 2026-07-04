@@ -64,7 +64,7 @@ export const createInitSlice: StateCreator<
     const normalizedExprs = normalizeExpressions(flow.expressions);
     const mapped = mapToReactFlowElements(flow.nodes, flow.edges, normalizedExprs, positions);
 
-    runLayout(mapped.nodes, mapped.edges).then(laidOut => {
+    runLayout(mapped.nodes, mapped.edges, normalizedExprs).then(laidOut => {
       set({
         nodes: laidOut.nodes,
         edges: laidOut.edges,

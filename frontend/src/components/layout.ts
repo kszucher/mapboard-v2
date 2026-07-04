@@ -1,6 +1,6 @@
 import type { ElkExtendedEdge, ElkNode, ElkPort, LayoutOptions } from 'elkjs';
 import ELK from 'elkjs/lib/elk.bundled.js';
-import { type AppFlowEdge, type AppFlowNode } from './types';
+import { type ApiExpression, type AppFlowEdge, type AppFlowNode } from './types';
 
 const elk = new ELK();
 
@@ -40,7 +40,11 @@ const getUniqueHandles = (
   );
 };
 
-const buildElkNodes = (nodes: AppFlowNode[], edges: AppFlowEdge[]): ElkNode[] => {
+const buildElkNodes = (
+  nodes: AppFlowNode[],
+  edges: AppFlowEdge[],
+  expressions: ApiExpression[]
+): ElkNode[] => {
   const incomingMap: Record<string, AppFlowEdge[]> = {};
   const outgoingMap: Record<string, AppFlowEdge[]> = {};
   edges.forEach((e) => {
@@ -50,19 +54,19 @@ const buildElkNodes = (nodes: AppFlowNode[], edges: AppFlowEdge[]): ElkNode[] =>
 
   return nodes.map((node) => {
     const nodeType = node.data?.node?.node_type ?? '';
-    const expressions = node.data?.expressions ?? [];
+    const nodeExpressions = expressions.filter((e) => e.node_id === node.id);
     const isStart = nodeType === 'START';
     const isEnd = nodeType === 'END';
 
     const nodeWidth = node.measured?.width ?? node.width ?? 150;
-    const nodeHeight = node.measured?.height ?? node.height ?? (ROW_HEIGHT * (1 + expressions.length) + NODE_PADDING);
+    const nodeHeight = node.measured?.height ?? node.height ?? (ROW_HEIGHT * (1 + nodeExpressions.length) + NODE_PADDING);
 
     const ports: ElkPort[] = [];
 
     // WEST ports (incoming)
     getUniqueHandles(incomingMap[node.id] ?? [], 'targetHandle')
       .forEach((handleId) => {
-        const exprIdx = expressions.findIndex((e) => e.id === handleId);
+        const exprIdx = nodeExpressions.findIndex((e) => e.id === handleId);
         const rowIdx = exprIdx !== -1 ? 1 + exprIdx : 1;
         ports.push({
           id: `${node.id}-target-${handleId}`,
@@ -77,7 +81,7 @@ const buildElkNodes = (nodes: AppFlowNode[], edges: AppFlowEdge[]): ElkNode[] =>
     // EAST ports (outgoing)
     getUniqueHandles(outgoingMap[node.id] ?? [], 'sourceHandle')
       .forEach((handleId) => {
-        const exprIdx = expressions.findIndex((e) => e.id === handleId);
+        const exprIdx = nodeExpressions.findIndex((e) => e.id === handleId);
         const rowIdx = exprIdx !== -1 ? 1 + exprIdx : 1;
         ports.push({
           id: `${node.id}-source-${handleId}`,
@@ -106,7 +110,8 @@ const buildElkEdges = (edges: AppFlowEdge[]): ElkExtendedEdge[] =>
 
 export const getLayoutedElements = async (
   nodes: AppFlowNode[],
-  edges: AppFlowEdge[]
+  edges: AppFlowEdge[],
+  expressions: ApiExpression[]
 ): Promise<{
   positions: Record<string, { x: number; y: number }>;
   edgeSections: Record<string, ElkExtendedEdge>;
@@ -115,7 +120,7 @@ export const getLayoutedElements = async (
   const layoutedGraph = await elk.layout({
     id: 'root',
     layoutOptions: ELK_LAYOUT_OPTIONS,
-    children: buildElkNodes(nodes, edges),
+    children: buildElkNodes(nodes, edges, expressions),
     edges: buildElkEdges(edges),
   });
   const duration = performance.now() - startTime;

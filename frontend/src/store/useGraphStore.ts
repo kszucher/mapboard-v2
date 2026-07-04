@@ -31,7 +31,7 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
       return { nodes: newNodes as AppFlowNode[] };
     });
 
-    const { nodes, edges, graphId, isLoading } = get();
+    const { nodes, edges, graphId, isLoading, expressions } = get();
     const hasDimensionsChange = changes.some(c => c.type === 'dimensions');
 
     if (hasDimensionsChange && isLoading) {
@@ -39,13 +39,12 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
         n => n.measured?.width !== undefined && n.measured?.height !== undefined
       );
       if (allMeasured) {
-        void runLayout(nodes, edges).then((laidOut) => {
+        void runLayout(nodes, edges, expressions).then((laidOut) => {
           set({
             nodes: laidOut.nodes,
             edges: laidOut.edges,
             isLoading: false,
           });
-          const { expressions } = get();
           triggerSave(graphId, laidOut.nodes, laidOut.edges, expressions);
         });
       }

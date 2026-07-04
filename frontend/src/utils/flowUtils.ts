@@ -132,7 +132,6 @@ export const mapToReactFlowElements = (
   const expressionIds = new Set(normalizedExprs.map(e => e.id));
 
   const rfNodes = nodes.map(n => {
-    const nodeExpressions = normalizedExprs.filter(e => e.node_id === n.id);
     const position = (n.position as { x: number; y: number } | null) || positions[n.id] || { x: 0, y: 0 };
     return {
       id: n.id,
@@ -140,7 +139,6 @@ export const mapToReactFlowElements = (
       position,
       data: {
         node: n,
-        expressions: nodeExpressions,
         isPositioned: !!n.position || !!positions[n.id],
       },
     };
@@ -187,11 +185,12 @@ const LAYOUT_TRANSITION = 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1)';
 export const runLayout = async (
   nodes: AppFlowNode[],
   edges: AppFlowEdge[],
+  expressions: ApiExpression[],
   animate = true
 ): Promise<{ nodes: AppFlowNode[]; edges: AppFlowEdge[] }> => {
   if (nodes.length === 0) return { nodes, edges };
   try {
-    const layout = await getLayoutedElements(nodes, edges);
+    const layout = await getLayoutedElements(nodes, edges, expressions);
 
     const updatedNodes = nodes.map(n => {
       const newPos = layout.positions[n.id] || n.position;
@@ -278,7 +277,6 @@ export const createNewNode = (
     position: { x: 0, y: 0 },
     data: {
       node: newNode,
-      expressions: defaultExprs,
       isPositioned: false,
     }
   };

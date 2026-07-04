@@ -9,7 +9,6 @@ export type InsertableNodeType = Exclude<NodeType, 'START' | 'END'>;
 
 export type AppFlowNode = Node<{
   node: ApiNode;
-  expressions?: ApiExpression[];
   isPositioned?: boolean;
 }, 'custom'>;
 

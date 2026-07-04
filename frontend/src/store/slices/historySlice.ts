@@ -17,7 +17,7 @@ export const createHistorySlice: StateCreator<
     const newPast = past.slice(0, -1);
     const currentSnapshot = takeSnapshot({ nodes, edges, expressions });
 
-    runLayout(previous.nodes, previous.edges).then((laidOut) => {
+    runLayout(previous.nodes, previous.edges, previous.expressions).then((laidOut) => {
       set({
         nodes: laidOut.nodes,
         edges: laidOut.edges,
@@ -38,7 +38,7 @@ export const createHistorySlice: StateCreator<
     const newFuture = future.slice(1);
     const currentSnapshot = takeSnapshot({ nodes, edges, expressions });
 
-    runLayout(next.nodes, next.edges).then((laidOut) => {
+    runLayout(next.nodes, next.edges, next.expressions).then((laidOut) => {
       set({
         nodes: laidOut.nodes,
         edges: laidOut.edges,
