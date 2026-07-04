@@ -35,12 +35,6 @@ export const createNodeSlice: StateCreator<
     if (!graphId) return;
 
     await updateFlowState(set, get, (state) => {
-      const exists = state.edges.some(e => e.sourceHandle === expressionId);
-      if (exists) {
-        alert('Expression is already connected to another node.');
-        return state;
-      }
-
       const { appNode, defaultExprs } = createNewNode(graphId, nodeType, state.nodes);
       const toExprId = getPrimaryInputExprId(defaultExprs);
 
@@ -208,6 +202,17 @@ export const createNodeSlice: StateCreator<
         }
         return e;
       });
+      return {
+        nodes: state.nodes,
+        edges: nextEdges,
+        expressions: state.expressions,
+      };
+    });
+  },
+
+  deleteOutgoingEdge: async (expressionId) => {
+    await updateFlowState(set, get, (state) => {
+      const nextEdges = state.edges.filter(e => e.sourceHandle !== expressionId);
       return {
         nodes: state.nodes,
         edges: nextEdges,

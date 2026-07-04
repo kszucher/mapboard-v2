@@ -43,6 +43,7 @@ export const FlowNodeExpressionActions = ({
   const expressions = useGraphStore(state => state.expressions);
   const nodes = useGraphStore(state => state.nodes);
   const reconnectEdge = useGraphStore(state => state.reconnectEdge);
+  const deleteOutgoingEdge = useGraphStore(state => state.deleteOutgoingEdge);
 
   const connectedEdge = useMemo(() => {
     return edges.find(e => e.sourceHandle === expressionId);
@@ -202,6 +203,15 @@ export const FlowNodeExpressionActions = ({
                     )}
                   </DropdownMenu.SubContent>
                 </DropdownMenu.Sub>
+
+                <DropdownMenu.Item
+                  onClick={() => {
+                    void deleteOutgoingEdge(expressionId);
+                  }}
+                  color="red"
+                >
+                  Delete Outgoing Edge
+                </DropdownMenu.Item>
               </>
             ) : (
               <DropdownMenu.Sub>

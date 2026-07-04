@@ -39,6 +39,7 @@ export interface NodeSlice {
   shortcircuitNode: (nodeId: string) => Promise<void>;
   convertNode: (nodeId: string, targetType: NodeType) => Promise<void>;
   reconnectEdge: (edgeId: string, targetNodeId: string, targetExpressionId: string) => Promise<void>;
+  deleteOutgoingEdge: (expressionId: string) => Promise<void>;
 }
 
 export interface ExpressionSlice {
