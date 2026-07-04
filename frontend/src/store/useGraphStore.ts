@@ -1,6 +1,7 @@
 import { applyEdgeChanges, applyNodeChanges, } from '@xyflow/react';
 import { create } from 'zustand';
 import type { AppFlowEdge, AppFlowNode } from '../components/types';
+import { runLayout } from '../utils/flowUtils';
 import { setOnSaveStateChange, triggerSave } from './helpers';
 import { createExpressionSlice } from './slices/expressionSlice';
 import { createFlowSlice } from './slices/flowSlice';
@@ -27,6 +28,26 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
       const newNodes = applyNodeChanges(changes, state.nodes);
       return { nodes: newNodes as AppFlowNode[] };
     });
+
+    const { nodes, edges, graphId, isLoading } = get();
+    const hasDimensionsChange = changes.some(c => c.type === 'dimensions');
+
+    if (hasDimensionsChange && isLoading) {
+      const allMeasured = nodes.length > 0 && nodes.every(
+        n => n.measured?.width !== undefined && n.measured?.height !== undefined
+      );
+      if (allMeasured) {
+        void runLayout(nodes, edges).then((laidOut) => {
+          set({
+            nodes: laidOut.nodes,
+            edges: laidOut.edges,
+            isLoading: false,
+          });
+          const { expressions } = get();
+          triggerSave(graphId, laidOut.nodes, laidOut.edges, expressions);
+        });
+      }
+    }
   },
 
   onEdgesChange: (changes) => {

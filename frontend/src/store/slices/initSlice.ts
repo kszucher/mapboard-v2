@@ -1,7 +1,7 @@
 import type { StateCreator } from 'zustand';
 import { apiClient } from '../../api/client';
 import { mapToReactFlowElements, normalizeExpressions, runLayout } from '../../utils/flowUtils';
-import { resetLastSavedState, triggerSave } from '../helpers';
+import { resetLastSavedState } from '../helpers';
 import type { GraphStoreState, InitSlice } from '../types';
 
 export const createInitSlice: StateCreator<
@@ -29,32 +29,19 @@ export const createInitSlice: StateCreator<
         const normalizedExprs = normalizeExpressions(data.expressions);
         const mapped = mapToReactFlowElements(data.nodes, data.edges, normalizedExprs, positions);
 
-        const anyPositioned = mapped.nodes.some(n => n.data?.isPositioned);
-        let finalNodes = mapped.nodes;
-        let finalEdges = mapped.edges;
-
-        if (!anyPositioned && mapped.nodes.length > 0) {
-          const laidOut = await runLayout(mapped.nodes, mapped.edges, false);
-          finalNodes = laidOut.nodes;
-          finalEdges = laidOut.edges;
-          triggerSave(graphId, laidOut.nodes, laidOut.edges, normalizedExprs);
-        } else {
-          const laidOut = await runLayout(mapped.nodes, mapped.edges, false);
-          finalNodes = laidOut.nodes;
-          finalEdges = laidOut.edges;
-        }
-
         set({
-          nodes: finalNodes,
-          edges: finalEdges,
+          nodes: mapped.nodes,
+          edges: mapped.edges,
           expressions: normalizedExprs,
+          isLoading: mapped.nodes.length > 0,
         });
 
-        resetLastSavedState(graphId, finalNodes, finalEdges, normalizedExprs);
+        resetLastSavedState(graphId, mapped.nodes, mapped.edges, normalizedExprs);
+      } else {
+        set({ isLoading: false });
       }
     } catch (err) {
       console.error('Failed to initialize graph:', err);
-    } finally {
       set({ isLoading: false });
     }
   },

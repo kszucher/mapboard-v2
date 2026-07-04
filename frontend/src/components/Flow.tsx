@@ -47,44 +47,55 @@ const FlowContent = ({
     [fitView],
   );
 
-  if (isLoading) {
-    return (
+  return (
+    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <div style={{
         width: '100%',
         height: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: 'var(--gray-11)',
+        opacity: isLoading ? 0 : 1,
+        transition: 'opacity 0.2s ease-in-out',
+        pointerEvents: isLoading ? 'none' : 'auto',
       }}>
-        Loading Graph...
+        <ReactFlow
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          onEdgesDelete={onEdgesDelete}
+          onReconnect={onReconnect}
+          onNodeDragStop={onNodeDragStop}
+          isValidConnection={isValidConnection}
+          nodesDraggable={true}
+          colorMode="dark"
+          zoomOnScroll={true}
+          zoomOnDoubleClick={false}
+          panOnScroll={false}
+          onDoubleClick={handleDoubleClick}
+        >
+          <Controls/>
+        </ReactFlow>
       </div>
-    );
-  }
 
-  return (
-    <div style={{ width: '100%', height: '100%' }}>
-      <ReactFlow
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        onEdgesDelete={onEdgesDelete}
-        onReconnect={onReconnect}
-        onNodeDragStop={onNodeDragStop}
-        isValidConnection={isValidConnection}
-        nodesDraggable={true}
-        colorMode="dark"
-        zoomOnScroll={true}
-        zoomOnDoubleClick={false}
-        panOnScroll={false}
-        onDoubleClick={handleDoubleClick}
-      >
-        <Controls/>
-      </ReactFlow>
+      {isLoading && (
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'var(--gray-11)',
+          background: 'var(--gray-1)',
+          zIndex: 10,
+        }}>
+          Loading Graph...
+        </div>
+      )}
     </div>
   );
 };
