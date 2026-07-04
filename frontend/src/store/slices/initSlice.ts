@@ -36,7 +36,12 @@ export const createInitSlice: StateCreator<
           isLoading: mapped.nodes.length > 0,
         });
 
-        resetLastSavedState(graphId, mapped.nodes, mapped.edges, normalizedExprs);
+        resetLastSavedState({
+          graphId,
+          nodes: mapped.nodes,
+          edges: mapped.edges,
+          expressions: normalizedExprs,
+        });
       } else {
         set({ isLoading: false });
       }

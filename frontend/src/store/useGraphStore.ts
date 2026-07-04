@@ -45,7 +45,12 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
             edges: laidOut.edges,
             isLoading: false,
           });
-          triggerSave(graphId, laidOut.nodes, laidOut.edges, expressions);
+          triggerSave({
+            graphId,
+            nodes: laidOut.nodes,
+            edges: laidOut.edges,
+            expressions,
+          });
         });
       }
     }

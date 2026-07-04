@@ -35,11 +35,9 @@ export const serializeFlowState = (
 };
 
 export const triggerSave = (
-  graphId: string | null,
-  nodes: AppFlowNode[],
-  edges: AppFlowEdge[],
-  expressions: ApiExpression[]
+  state: Pick<GraphStoreState, 'graphId' | 'nodes' | 'edges' | 'expressions'>
 ) => {
+  const graphId = state.graphId;
   if (!graphId) return;
 
   const existingTimeout = saveTimeoutsByGraph.get(graphId);
@@ -50,7 +48,7 @@ export const triggerSave = (
   const timeout = window.setTimeout(async () => {
     saveTimeoutsByGraph.delete(graphId);
 
-    const payload = serializeFlowState({ graphId, nodes, edges, expressions });
+    const payload = serializeFlowState(state);
     const stateStr = JSON.stringify(payload);
     if (stateStr === lastSavedStateByGraph.get(graphId)) {
       return;
@@ -123,11 +121,16 @@ export const updateFlowState = async (
     expressions: normalizedExprs,
     ...(!options.skipHistory && snapshot
       ? {
-          past: [...state.past, snapshot],
-          future: [],
-        }
+        past: [...state.past, snapshot],
+        future: [],
+      }
       : {}),
   }));
 
-  triggerSave(current.graphId, laidOut.nodes, laidOut.edges, normalizedExprs);
+  triggerSave({
+    graphId: current.graphId,
+    nodes: laidOut.nodes,
+    edges: laidOut.edges,
+    expressions: normalizedExprs,
+  });
 };

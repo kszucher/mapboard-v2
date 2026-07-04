@@ -32,7 +32,12 @@ export const createHistorySlice: StateCreator<
         future: [currentSnapshot, ...future],
       });
 
-      triggerSave(graphId, laidOut.nodes, laidOut.edges, previous.expressions);
+      triggerSave({
+        graphId,
+        nodes: laidOut.nodes,
+        edges: laidOut.edges,
+        expressions: previous.expressions,
+      });
     });
   },
 
@@ -59,7 +64,12 @@ export const createHistorySlice: StateCreator<
         future: newFuture,
       });
 
-      triggerSave(graphId, laidOut.nodes, laidOut.edges, next.expressions);
+      triggerSave({
+        graphId,
+        nodes: laidOut.nodes,
+        edges: laidOut.edges,
+        expressions: next.expressions,
+      });
     });
   },
 
