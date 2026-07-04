@@ -17,7 +17,13 @@ export const createHistorySlice: StateCreator<
     const newPast = past.slice(0, -1);
     const currentSnapshot = takeSnapshot({ nodes, edges, expressions });
 
-    runLayout(previous.nodes, previous.edges, previous.expressions).then((laidOut) => {
+    const currentPositions = Object.fromEntries(nodes.map(n => [n.id, n.position]));
+    const nodesAtCurrentPositions = previous.nodes.map(n => ({
+      ...n,
+      position: currentPositions[n.id] ?? n.position,
+    }));
+
+    runLayout(nodesAtCurrentPositions, previous.edges, previous.expressions).then((laidOut) => {
       set({
         nodes: laidOut.nodes,
         edges: laidOut.edges,
@@ -38,7 +44,13 @@ export const createHistorySlice: StateCreator<
     const newFuture = future.slice(1);
     const currentSnapshot = takeSnapshot({ nodes, edges, expressions });
 
-    runLayout(next.nodes, next.edges, next.expressions).then((laidOut) => {
+    const currentPositions = Object.fromEntries(nodes.map(n => [n.id, n.position]));
+    const nodesAtCurrentPositions = next.nodes.map(n => ({
+      ...n,
+      position: currentPositions[n.id] ?? n.position,
+    }));
+
+    runLayout(nodesAtCurrentPositions, next.edges, next.expressions).then((laidOut) => {
       set({
         nodes: laidOut.nodes,
         edges: laidOut.edges,
