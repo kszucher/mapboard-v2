@@ -20,8 +20,6 @@ const NODE_COLORS: Record<NodeType, BadgeProps['color']> = {
   AGENTIC_SWITCH: 'grass',
   LOGICAL_JOIN: 'teal',
   AGENTIC_JOIN: 'indigo',
-  TRANSFORM_AGENT_TO_LOGICAL: 'ruby',
-  TRANSFORM_LOGICAL_TO_AGENT: 'plum',
 };
 
 const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {

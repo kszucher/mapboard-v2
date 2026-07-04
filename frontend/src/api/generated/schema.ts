@@ -303,7 +303,7 @@ export interface components {
      * NodeType
      * @enum {string}
      */
-    NodeType: "START" | "END" | "LOGIC" | "AGENT" | "LOGICAL_SWITCH" | "AGENTIC_SWITCH" | "LOGICAL_JOIN" | "AGENTIC_JOIN" | "TRANSFORM_AGENT_TO_LOGICAL" | "TRANSFORM_LOGICAL_TO_AGENT";
+    NodeType: "START" | "END" | "LOGIC" | "AGENT" | "LOGICAL_SWITCH" | "AGENTIC_SWITCH" | "LOGICAL_JOIN" | "AGENTIC_JOIN";
     /** SetActiveGraph */
     SetActiveGraph: {
       /**

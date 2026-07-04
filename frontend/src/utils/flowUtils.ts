@@ -13,17 +13,13 @@ export const NODE_LABELS: Record<NodeType, string> = {
   AGENTIC_SWITCH: 'Agentic Switch',
   LOGICAL_JOIN: 'Logical Join',
   AGENTIC_JOIN: 'Agentic Join',
-  TRANSFORM_AGENT_TO_LOGICAL: 'Transform Agent To Logical',
-  TRANSFORM_LOGICAL_TO_AGENT: 'Transform Logical To Agent',
 };
 
 export const NODE_CONVERSIONS: Record<NodeType, { targetType: NodeType; label: string } | null> = {
   AGENT: { targetType: 'LOGIC', label: 'Logic' },
   LOGIC: { targetType: 'AGENT', label: 'Agent' },
-  AGENTIC_SWITCH: { targetType: 'TRANSFORM_AGENT_TO_LOGICAL', label: 'Transform Agent To Logical' },
-  TRANSFORM_AGENT_TO_LOGICAL: { targetType: 'AGENTIC_SWITCH', label: 'Agentic Switch' },
-  LOGICAL_SWITCH: { targetType: 'TRANSFORM_LOGICAL_TO_AGENT', label: 'Transform Logical to Agent' },
-  TRANSFORM_LOGICAL_TO_AGENT: { targetType: 'LOGICAL_SWITCH', label: 'Logical Switch' },
+  AGENTIC_SWITCH: { targetType: 'LOGICAL_SWITCH', label: 'Logical Switch' },
+  LOGICAL_SWITCH: { targetType: 'AGENTIC_SWITCH', label: 'Agentic Switch' },
   START: null,
   END: null,
   LOGICAL_JOIN: null,
@@ -67,7 +63,6 @@ export const createDefaultExpressionsForNode = (
 ): ApiExpression[] => {
   const baseId = crypto.randomUUID();
   const subId = crypto.randomUUID();
-  const baseOutId = crypto.randomUUID();
 
   if (nodeType === 'START') {
     return [{
@@ -108,12 +103,6 @@ export const createDefaultExpressionsForNode = (
     return [
       { id: subId, node_id: nodeId, graph_id: graphId, idx: 0, is_input: true, is_output: false, raw_string: '' },
       { id: baseId, node_id: nodeId, graph_id: graphId, idx: 1, is_input: false, is_output: true, raw_string: '' }
-    ];
-  } else if (nodeType === 'TRANSFORM_AGENT_TO_LOGICAL' || nodeType === 'TRANSFORM_LOGICAL_TO_AGENT') {
-    return [
-      { id: baseId, node_id: nodeId, graph_id: graphId, idx: 0, is_input: true, is_output: false, raw_string: '' },
-      { id: subId, node_id: nodeId, graph_id: graphId, idx: 1, is_input: false, is_output: false, raw_string: '' },
-      { id: baseOutId, node_id: nodeId, graph_id: graphId, idx: 2, is_input: false, is_output: true, raw_string: '' }
     ];
   }
   return [];

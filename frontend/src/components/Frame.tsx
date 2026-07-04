@@ -17,8 +17,6 @@ const NODE_TYPES: NodeType[] = [
   'AGENTIC_SWITCH',
   'LOGICAL_JOIN',
   'AGENTIC_JOIN',
-  'TRANSFORM_AGENT_TO_LOGICAL',
-  'TRANSFORM_LOGICAL_TO_AGENT',
 ];
 
 export const Frame = () => {
