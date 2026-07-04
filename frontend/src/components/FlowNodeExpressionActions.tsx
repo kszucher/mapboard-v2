@@ -41,10 +41,35 @@ export const FlowNodeExpressionActions = ({
   const updateExpression = useGraphStore(state => state.updateExpression);
   const edges = useGraphStore(state => state.edges);
   const expressions = useGraphStore(state => state.expressions);
+  const nodes = useGraphStore(state => state.nodes);
+  const reconnectEdge = useGraphStore(state => state.reconnectEdge);
 
   const connectedEdge = useMemo(() => {
     return edges.find(e => e.sourceHandle === expressionId);
   }, [edges, expressionId]);
+
+  const reconnectOptions = useMemo(() => {
+    return expressions
+      .filter(expr => {
+        if (!expr.is_input) return false;
+        const hasIncoming = edges.some(edge => edge.targetHandle === expr.id);
+        return !hasIncoming;
+      })
+      .map(expr => {
+        const node = nodes.find(n => n.id === expr.node_id);
+        return {
+          expression: expr,
+          node,
+          label: node ? `N${node.data.node.iid}-${expr.idx}` : `?-${expr.idx}`,
+        };
+      })
+      .sort((a, b) => {
+        const aIid = a.node?.data.node.iid ?? 0;
+        const bIid = b.node?.data.node.iid ?? 0;
+        if (aIid !== bIid) return aIid - bIid;
+        return a.expression.idx - b.expression.idx;
+      });
+  }, [expressions, edges, nodes]);
 
   const hasConnectedNode = !!connectedEdge;
 
@@ -135,23 +160,49 @@ export const FlowNodeExpressionActions = ({
           <>
             <DropdownMenu.Separator/>
             {hasConnectedNode ? (
-              <DropdownMenu.Sub>
-                <DropdownMenu.SubTrigger>
-                  <PlusIcon style={{ marginRight: 8 }}/> Add Interim Node
-                </DropdownMenu.SubTrigger>
-                <DropdownMenu.SubContent>
-                  <DropdownMenu.Item onClick={() => handleInsertNode('LOGIC')}>{'Logic'}</DropdownMenu.Item>
-                  <DropdownMenu.Item onClick={() => handleInsertNode('AGENT')}>{'Agent'}</DropdownMenu.Item>
-                  <DropdownMenu.Item
-                    onClick={() => handleInsertNode('LOGICAL_SWITCH')}>{'Logical Switch'}</DropdownMenu.Item>
-                  <DropdownMenu.Item
-                    onClick={() => handleInsertNode('AGENTIC_SWITCH')}>{'Agentic Switch'}</DropdownMenu.Item>
-                  <DropdownMenu.Item
-                    onClick={() => handleInsertNode('LOGICAL_JOIN')}>{'Logical Join'}</DropdownMenu.Item>
-                  <DropdownMenu.Item
-                    onClick={() => handleInsertNode('AGENTIC_JOIN')}>{'Agentic Join'}</DropdownMenu.Item>
-                </DropdownMenu.SubContent>
-              </DropdownMenu.Sub>
+              <>
+                <DropdownMenu.Sub>
+                  <DropdownMenu.SubTrigger>
+                    <PlusIcon style={{ marginRight: 8 }}/> Add Interim Node
+                  </DropdownMenu.SubTrigger>
+                  <DropdownMenu.SubContent>
+                    <DropdownMenu.Item onClick={() => handleInsertNode('LOGIC')}>{'Logic'}</DropdownMenu.Item>
+                    <DropdownMenu.Item onClick={() => handleInsertNode('AGENT')}>{'Agent'}</DropdownMenu.Item>
+                    <DropdownMenu.Item
+                      onClick={() => handleInsertNode('LOGICAL_SWITCH')}>{'Logical Switch'}</DropdownMenu.Item>
+                    <DropdownMenu.Item
+                      onClick={() => handleInsertNode('AGENTIC_SWITCH')}>{'Agentic Switch'}</DropdownMenu.Item>
+                    <DropdownMenu.Item
+                      onClick={() => handleInsertNode('LOGICAL_JOIN')}>{'Logical Join'}</DropdownMenu.Item>
+                    <DropdownMenu.Item
+                      onClick={() => handleInsertNode('AGENTIC_JOIN')}>{'Agentic Join'}</DropdownMenu.Item>
+                  </DropdownMenu.SubContent>
+                </DropdownMenu.Sub>
+
+                <DropdownMenu.Sub>
+                  <DropdownMenu.SubTrigger>
+                    Reconnect To
+                  </DropdownMenu.SubTrigger>
+                  <DropdownMenu.SubContent>
+                    {reconnectOptions.length === 0 ? (
+                      <DropdownMenu.Item disabled>No available inputs</DropdownMenu.Item>
+                    ) : (
+                      reconnectOptions.map(opt => (
+                        <DropdownMenu.Item
+                          key={opt.expression.id}
+                          onClick={() => {
+                            if (connectedEdge) {
+                              void reconnectEdge(connectedEdge.id, opt.expression.node_id, opt.expression.id);
+                            }
+                          }}
+                        >
+                          {opt.label}
+                        </DropdownMenu.Item>
+                      ))
+                    )}
+                  </DropdownMenu.SubContent>
+                </DropdownMenu.Sub>
+              </>
             ) : (
               <DropdownMenu.Sub>
                 <DropdownMenu.SubTrigger>

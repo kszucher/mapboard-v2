@@ -194,4 +194,25 @@ export const createNodeSlice: StateCreator<
       };
     });
   },
+
+  reconnectEdge: async (edgeId, targetNodeId, targetExpressionId) => {
+    await updateFlowState(set, get, (state) => {
+      const nextEdges = state.edges.map(e => {
+        if (e.id === edgeId) {
+          return {
+            ...e,
+            target: targetNodeId,
+            targetHandle: targetExpressionId,
+            style: { ...e.style, opacity: 0 }
+          };
+        }
+        return e;
+      });
+      return {
+        nodes: state.nodes,
+        edges: nextEdges,
+        expressions: state.expressions,
+      };
+    });
+  },
 });
