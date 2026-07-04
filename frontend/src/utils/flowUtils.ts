@@ -149,10 +149,6 @@ export const mapToReactFlowElements = (
       return true;
     })
     .map(edge => {
-      const sourcePos = positions[edge.from_node_id] || { x: 0, y: 0 };
-      const targetPos = positions[edge.to_node_id] || { x: 0, y: 0 };
-      const isBack = targetPos.x <= sourcePos.x;
-
       return {
         id: edge.id,
         source: edge.from_node_id,
@@ -164,14 +160,6 @@ export const mapToReactFlowElements = (
         data: {
           sections: [],
         },
-        style: {
-          stroke: isBack ? '#ff9800' : '#888888',
-          strokeWidth: isBack ? 2.5 : 2,
-          opacity: 0,
-          transition: 'opacity 0.2s ease-in-out',
-        },
-        deletable: true,
-        reconnectable: true,
       };
     });
 
@@ -213,17 +201,12 @@ export const runLayout = async (
     });
 
     const updatedEdges = edges.map(e => {
-      const sourcePos = layout.positions[e.source] || { x: 0, y: 0 };
-      const targetPos = layout.positions[e.target] || { x: 0, y: 0 };
-      const isBack = targetPos.x <= sourcePos.x;
       const elkEdge = layout.edgeSections[e.id];
       const sections = elkEdge?.sections ?? [];
 
       const sectionsChanged = JSON.stringify(e.data?.sections) !== JSON.stringify(sections);
-      const strokeChanged = e.style?.stroke !== (isBack ? '#ff9800' : '#888888');
-      const opacityChanged = e.style?.opacity !== (sections.length > 0 ? 1 : 0);
 
-      if (!sectionsChanged && !strokeChanged && !opacityChanged) {
+      if (!sectionsChanged) {
         return e;
       }
 
@@ -233,12 +216,6 @@ export const runLayout = async (
           ...e.data,
           sections,
         },
-        style: {
-          ...e.style,
-          stroke: isBack ? '#ff9800' : '#888888',
-          strokeWidth: isBack ? 2.5 : 2,
-          opacity: sections.length > 0 ? 1 : 0,
-        }
       };
     });
 
@@ -361,12 +338,3 @@ export const updateNodeNodeType = (node: AppFlowNode, targetType: NodeType): App
     }
   };
 };
-
-export const hasLeftHandle = (expr: ApiExpression): boolean => {
-  return expr.is_input;
-};
-
-export const hasRightHandle = (expr: ApiExpression): boolean => {
-  return expr.is_output;
-};
-

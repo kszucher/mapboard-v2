@@ -15,8 +15,6 @@ function FlowEdge({
   const sections = data?.sections;
   let path;
 
-  console.log('render');
-
   if (sections && sections.length > 0) {
     path = sections
       .map((section) => {
@@ -38,7 +36,17 @@ function FlowEdge({
     path = `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`;
   }
 
-  return <BaseEdge path={path} markerEnd={markerEnd} style={style}/>;
+  // Calculate presentation styles dynamically based on edge flow geometry
+  const isBack = targetX <= sourceX;
+  const edgeStyle = {
+    ...style,
+    stroke: isBack ? '#ff9800' : '#888888',
+    strokeWidth: isBack ? 2.5 : 2,
+    opacity: sections && sections.length > 0 ? 1 : 0,
+    transition: 'opacity 0.2s ease-in-out',
+  };
+
+  return <BaseEdge path={path} markerEnd={markerEnd} style={edgeStyle}/>;
 }
 
 export default memo(FlowEdge, (prevProps, nextProps) => {
@@ -49,7 +57,6 @@ export default memo(FlowEdge, (prevProps, nextProps) => {
     prevProps.targetX === nextProps.targetX &&
     prevProps.targetY === nextProps.targetY &&
     JSON.stringify(prevProps.markerEnd) === JSON.stringify(nextProps.markerEnd) &&
-    JSON.stringify(prevProps.style) === JSON.stringify(nextProps.style) &&
     JSON.stringify(prevProps.data) === JSON.stringify(nextProps.data)
   );
 });
