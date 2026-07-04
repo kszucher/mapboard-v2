@@ -36,8 +36,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   );
 
   const myExpressionsHash = useMemo(() => {
-    const sorted = [...myExpressions].sort((a, b) => a.idx - b.idx);
-    return sorted.map(e => `${e.id}:${e.idx}:${e.is_input}:${e.is_output}`).join(',');
+    return myExpressions.map(e => `${e.id}:${e.idx}:${e.is_input}:${e.is_output}`).join(',');
   }, [myExpressions]);
 
   useEffect(() => {

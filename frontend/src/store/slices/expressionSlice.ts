@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import type { ApiExpression, AppFlowNode } from '../../components/types';
+import type { ApiExpression } from '../../components/types';
 import { isValidOrder, runLayout } from '../../utils/flowUtils';
 import { triggerSave, updateFlowState } from '../helpers';
 import type { ExpressionSlice, GraphStoreState } from '../types';
@@ -85,28 +85,14 @@ export const createExpressionSlice: StateCreator<
       return;
     }
 
-    // Only run this heavy, reference-breaking work if the text is ACTUALLY different
     set((state) => {
       const nextExpressions = state.expressions.map((e) =>
         e.id === expressionId ? { ...e, ...updates } : e
       );
 
-      const expr = nextExpressions.find((e) => e.id === expressionId);
-      const nextNodes = state.nodes.map((n) => {
-        if (expr && n.id === expr.node_id) {
-          const nodeExpressions = nextExpressions.filter((e) => e.node_id === n.id);
-          return {
-            ...n,
-            data: { ...n.data, expressions: nodeExpressions },
-          };
-        }
-        return n;
-      });
-
-      triggerSave(state.graphId, nextNodes, state.edges, nextExpressions);
+      triggerSave(state.graphId, state.nodes, state.edges, nextExpressions);
 
       return {
-        nodes: nextNodes as AppFlowNode[],
         expressions: nextExpressions,
       };
     });
