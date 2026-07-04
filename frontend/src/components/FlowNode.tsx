@@ -82,7 +82,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
         borderRadius: 'var(--radius-3)',
         padding: NODE_PADDING,
         gap: NODE_PADDING,
-        opacity: data.isPositioned ?? true ? 1 : 0,
+        opacity: 1,
         transition: 'opacity 0.2s ease-in-out',
       }}
     >

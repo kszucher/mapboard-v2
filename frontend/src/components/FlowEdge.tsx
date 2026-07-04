@@ -41,8 +41,8 @@ function FlowEdge({
   const edgeStyle = {
     ...style,
     stroke: isBack ? '#ff9800' : '#888888',
-    strokeWidth: isBack ? 2.5 : 2,
-    opacity: sections && sections.length > 0 ? 1 : 0,
+    strokeWidth: 2,
+    opacity: 1,
     transition: 'opacity 0.2s ease-in-out',
   };
 

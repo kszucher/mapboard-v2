@@ -135,9 +135,11 @@ export const mapToReactFlowElements = (
       id: n.id,
       type: 'custom' as const,
       position,
+      style: {
+        transition: 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1)',
+      },
       data: {
         node: n,
-        isPositioned: !!n.position || !!positions[n.id],
       },
     };
   });
@@ -166,13 +168,10 @@ export const mapToReactFlowElements = (
   return { nodes: rfNodes, edges: rfEdges };
 };
 
-const LAYOUT_TRANSITION = 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1)';
-
 export const runLayout = async (
   nodes: AppFlowNode[],
   edges: AppFlowEdge[],
-  expressions: ApiExpression[],
-  animate = true
+  expressions: ApiExpression[]
 ): Promise<{ nodes: AppFlowNode[]; edges: AppFlowEdge[] }> => {
   if (nodes.length === 0) return { nodes, edges };
   try {
@@ -181,22 +180,14 @@ export const runLayout = async (
     const updatedNodes = nodes.map(n => {
       const newPos = layout.positions[n.id] || n.position;
       const posChanged = Math.abs(newPos.x - n.position.x) > 0.01 || Math.abs(newPos.y - n.position.y) > 0.01;
-      const isPositionedChanged = !n.data?.isPositioned;
 
-      if (!posChanged && !isPositionedChanged) {
+      if (!posChanged) {
         return n;
       }
 
       return {
         ...n,
         position: newPos,
-        style: animate
-          ? { ...n.style, transition: LAYOUT_TRANSITION }
-          : { ...n.style, transition: undefined },
-        data: {
-          ...n.data,
-          isPositioned: true,
-        }
       };
     });
 
@@ -250,9 +241,11 @@ export const createNewNode = (
     id: newNodeId,
     type: 'custom',
     position: { x: 0, y: 0 },
+    style: {
+      transition: 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1)',
+    },
     data: {
       node: newNode,
-      isPositioned: false,
     }
   };
 
