@@ -1,18 +1,26 @@
-# Workspace Rules for Graphboard
+# Workspace Rules
 
-These guidelines apply to all development tasks in the Graphboard repository.
+These baseline guidelines apply to all development tasks in this repository.
+
+## Architectural Rules
+- **Documentation Maintenance**: **Always** read `README.md` to understand project constraints, architecture, and core data models before proposing or making changes. Keep `README.md` updated with key architectural changes, ensuring it remains token-efficient, high-density, and focused strictly on gotchas, non-standard behaviors, and design decisions (avoiding boilerplate directory maps or easily discoverable types).
+- **State vs Visual Separation**: **Always** keep visual details (CSS rules, transitions, colors, opacity, interactive flags) inside the React components. **NEVER** calculate layout styles or visual flags inside layout calculation utilities or store them inside global store slices.
+- **Challenge Function Signatures**: **Always** simplify function signatures through structural changes rather than code syntax improvements.
+- **Code Cleanliness**: **Always** ensure no unused functions, imports, or variables remain in the code after modifications.
+
+## Styling & Component Rules
+
+### Frontend (frontend)
+- **Prefer semantic elements** whenever possible.
+- **Use Radix Tokens** for styling wherever possible, unless natural control requires bypassing it.
 
 ## Verification & Code Quality
 
 ### Backend (python-backend)
-- **Always** run ruff formatting and lints after modifying Python source code.
-- Run ruff with the workspace virtual environment's executable:
-  - Format code: `.venv\Scripts\ruff format .`
-  - Lints & Imports: `.venv\Scripts\ruff check . --fix`
-- Fix any remaining errors manually before ending the task.
+- **Always** run linting and formatting commands after modifying Python source code.
+- Format code and fix auto-fixable imports/lints before ending the task.
 
 ### Frontend (frontend)
 - **Always** run typecheck and build validation after modifying frontend source code.
-- Run build verification using:
-  - `npm.cmd run build` (on Windows) or `npm run build`
-- **NEVER** try to open up a frontend to validate UI functionality (e.g., using browser agents/tools); the user will always handle visual validation.
+- Run build verification using the local project build scripts (e.g., `npm run build`).
+- **NEVER** try to open up a browser to validate UI functionality; the user will always handle visual validation.
