@@ -13,6 +13,8 @@ export interface BaseState {
   future: Array<{ nodes: AppFlowNode[]; edges: AppFlowEdge[]; expressions: ApiExpression[] }>;
   isLoading: boolean;
   isSaving: boolean;
+  errorMessage: string | null;
+  clearErrorMessage: () => void;
 
   onNodesChange: (changes: NodeChange[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;

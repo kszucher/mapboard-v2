@@ -19,6 +19,8 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
   future: [],
   isLoading: false,
   isSaving: false,
+  errorMessage: null,
+  clearErrorMessage: () => set({ errorMessage: null }),
 
   ...createInitSlice(set, get, store),
   ...createFlowSlice(set, get, store),

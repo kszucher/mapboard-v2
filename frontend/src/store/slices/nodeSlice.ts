@@ -132,21 +132,21 @@ export const createNodeSlice: StateCreator<
   },
 
   shortcircuitNode: async (nodeId) => {
+    const node = get().nodes.find(n => n.id === nodeId);
+    if (!node) return;
+
+    const nodeType = node.data?.node?.node_type;
+    if (!nodeType || nodeType === 'START' || nodeType === 'END') return;
+
+    const nodeExprs = get().expressions.filter(e => e.node_id === nodeId);
+    const inputs = nodeExprs.filter(e => e.is_input);
+    const outputs = nodeExprs.filter(e => e.is_output);
+    if (inputs.length !== 1 || outputs.length !== 1) {
+      set({ errorMessage: 'Can only shortcircuit nodes with exactly one input and one output expression.' });
+      return;
+    }
+
     await updateFlowState(set, get, (state) => {
-      const node = state.nodes.find(n => n.id === nodeId);
-      if (!node) return state;
-
-      const nodeType = node.data?.node?.node_type;
-      if (!nodeType || nodeType === 'START' || nodeType === 'END') return state;
-
-      const nodeExprs = state.expressions.filter(e => e.node_id === nodeId);
-      const inputs = nodeExprs.filter(e => e.is_input);
-      const outputs = nodeExprs.filter(e => e.is_output);
-      if (inputs.length !== 1 || outputs.length !== 1) {
-        alert('Can only shortcircuit nodes with exactly one input and one output expression.');
-        return state;
-      }
-
       const nodeExprIds = new Set(nodeExprs.map(e => e.id));
       const incoming = state.edges.filter(e => nodeExprIds.has(e.targetHandle || ''));
       const outgoing = state.edges.filter(e => nodeExprIds.has(e.sourceHandle || ''));

@@ -43,16 +43,16 @@ export const createExpressionSlice: StateCreator<
   },
 
   deleteExpression: async (expressionId) => {
+    const expr = get().expressions.find(e => e.id === expressionId);
+    if (!expr) return;
+
+    const nodeExprs = get().expressions.filter(e => e.node_id === expr.node_id);
+    if (nodeExprs.length <= 1) {
+      set({ errorMessage: 'Cannot delete the last remaining expression of this node.' });
+      return;
+    }
+
     await updateFlowState(set, get, (state) => {
-      const expr = state.expressions.find(e => e.id === expressionId);
-      if (!expr) return state;
-
-      const nodeExprs = state.expressions.filter(e => e.node_id === expr.node_id);
-      if (nodeExprs.length <= 1) {
-        alert('Cannot delete the last remaining expression of this node.');
-        return state;
-      }
-
       const deletedIdx = expr.idx;
 
       let nextExpressions = state.expressions.filter(e => e.id !== expressionId);
@@ -75,10 +75,13 @@ export const createExpressionSlice: StateCreator<
 
   updateExpression: async (expressionId, updates) => {
     const currentExpr = get().expressions.find(e => e.id === expressionId);
+    if (!currentExpr) return;
 
-    // 🧠 THE SMART GUARD:
-    // If raw_string hasn't changed, halt execution right here.
-    if (currentExpr && updates.raw_string === currentExpr.raw_string) {
+    // Check for changes across all updated fields
+    const hasChanges = Object.entries(updates).some(
+      ([key, value]) => currentExpr[key as keyof ApiExpression] !== value
+    );
+    if (!hasChanges) {
       return;
     }
 
@@ -118,35 +121,35 @@ export const createExpressionSlice: StateCreator<
   },
 
   swapExpressionIndices: async (expressionId, direction) => {
+    const expr = get().expressions.find(e => e.id === expressionId);
+    if (!expr) return;
+
+    const nodeExprs = get().expressions
+      .filter(e => e.node_id === expr.node_id)
+      .sort((a, b) => a.idx - b.idx);
+
+    const currentIndex = nodeExprs.findIndex(e => e.id === expressionId);
+    if (currentIndex === -1) return;
+
+    let targetIndex = -1;
+    if (direction === 'up' && currentIndex > 0) targetIndex = currentIndex - 1;
+    else if (direction === 'down' && currentIndex < nodeExprs.length - 1) targetIndex = currentIndex + 1;
+
+    if (targetIndex === -1) return;
+
+    const otherExpr = nodeExprs[targetIndex];
+
+    const nextNodeExprs = [...nodeExprs];
+    nextNodeExprs[currentIndex] = { ...otherExpr, idx: expr.idx };
+    nextNodeExprs[targetIndex] = { ...expr, idx: otherExpr.idx };
+    nextNodeExprs.sort((a, b) => a.idx - b.idx);
+
+    if (!isValidOrder(nextNodeExprs)) {
+      set({ errorMessage: 'Invalid order: expressions must follow the order: Inputs -> Both -> None -> Outputs.' });
+      return;
+    }
+
     await updateFlowState(set, get, (state) => {
-      const expr = state.expressions.find(e => e.id === expressionId);
-      if (!expr) return state;
-
-      const nodeExprs = state.expressions
-        .filter(e => e.node_id === expr.node_id)
-        .sort((a, b) => a.idx - b.idx);
-
-      const currentIndex = nodeExprs.findIndex(e => e.id === expressionId);
-      if (currentIndex === -1) return state;
-
-      let targetIndex = -1;
-      if (direction === 'up' && currentIndex > 0) targetIndex = currentIndex - 1;
-      else if (direction === 'down' && currentIndex < nodeExprs.length - 1) targetIndex = currentIndex + 1;
-
-      if (targetIndex === -1) return state;
-
-      const otherExpr = nodeExprs[targetIndex];
-
-      const nextNodeExprs = [...nodeExprs];
-      nextNodeExprs[currentIndex] = { ...otherExpr, idx: expr.idx };
-      nextNodeExprs[targetIndex] = { ...expr, idx: otherExpr.idx };
-      nextNodeExprs.sort((a, b) => a.idx - b.idx);
-
-      if (!isValidOrder(nextNodeExprs)) {
-        alert("Invalid order: expressions must follow the order: Inputs -> Both -> None -> Outputs.");
-        return state;
-      }
-
       const nextExpressions = state.expressions.map(e => {
         if (e.id === expr.id) {
           return { ...e, idx: otherExpr.idx };

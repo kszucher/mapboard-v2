@@ -1,7 +1,7 @@
 import { CaretDownIcon, CheckIcon, MixIcon, PlayIcon, ResetIcon } from '@radix-ui/react-icons';
 import { Box, Button, DropdownMenu, Flex, IconButton, Text } from '@radix-ui/themes';
 import { ReactFlowProvider } from '@xyflow/react';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useCreateGraph, useSetActiveGraph } from '../api/mutations';
 import { useActiveGraphId, useUserGraphs, useUserId } from '../api/queries';
 import { useGraphStore } from '../store/useGraphStore';
@@ -34,6 +34,16 @@ export const Frame = () => {
   const addNode = useGraphStore(state => state.addNode);
   const createGraphMutation = useCreateGraph();
   const setActiveGraphMutation = useSetActiveGraph();
+
+  const errorMessage = useGraphStore(state => state.errorMessage);
+  const clearErrorMessage = useGraphStore(state => state.clearErrorMessage);
+
+  useEffect(() => {
+    if (errorMessage) {
+      alert(errorMessage);
+      clearErrorMessage();
+    }
+  }, [errorMessage, clearErrorMessage]);
 
   const handleCreateNode = useCallback(
     (nodeType: NodeType) => {

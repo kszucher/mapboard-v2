@@ -10,8 +10,34 @@ export const setOnSaveStateChange = (callback: (isSaving: boolean) => void) => {
   onSaveStateChange = callback;
 };
 
-let saveTimeout: number | null = null;
-let lastSavedStateStr: string | null = null;
+const saveTimeoutsByGraph = new Map<string, number>();
+const lastSavedStateByGraph = new Map<string, string>();
+
+export const serializeFlowState = (
+  graphId: string,
+  nodes: AppFlowNode[],
+  edges: AppFlowEdge[],
+  expressions: ApiExpression[]
+) => ({
+  nodes: nodes.map(n => ({
+    id: n.id,
+    graph_id: n.data?.node?.graph_id || graphId,
+    iid: n.data?.node?.iid ?? 0,
+    label: n.data?.node?.label ?? '',
+    is_processing: n.data?.node?.is_processing ?? false,
+    node_type: n.data?.node?.node_type ?? 'LOGIC',
+    position: n.position,
+  })),
+  edges: edges.map(e => ({
+    id: e.id,
+    graph_id: graphId,
+    from_expression_id: e.sourceHandle || '',
+    to_expression_id: e.targetHandle || '',
+    from_node_id: e.source,
+    to_node_id: e.target,
+  })),
+  expressions,
+});
 
 export const triggerSave = (
   graphId: string | null,
@@ -21,41 +47,20 @@ export const triggerSave = (
 ) => {
   if (!graphId) return;
 
-  if (saveTimeout !== null) {
-    window.clearTimeout(saveTimeout);
+  const existingTimeout = saveTimeoutsByGraph.get(graphId);
+  if (existingTimeout !== undefined) {
+    window.clearTimeout(existingTimeout);
   }
 
-  saveTimeout = window.setTimeout(async () => {
-    const nodesPayload = nodes.map(n => ({
-      id: n.id,
-      graph_id: n.data?.node?.graph_id || graphId,
-      iid: n.data?.node?.iid ?? 0,
-      label: n.data?.node?.label ?? '',
-      is_processing: n.data?.node?.is_processing ?? false,
-      node_type: n.data?.node?.node_type ?? 'LOGIC',
-      position: n.position,
-    }));
+  const timeout = window.setTimeout(async () => {
+    saveTimeoutsByGraph.delete(graphId);
 
-    const edgesPayload = edges.map(e => ({
-      id: e.id,
-      graph_id: graphId,
-      from_expression_id: e.sourceHandle || '',
-      to_expression_id: e.targetHandle || '',
-      from_node_id: e.source,
-      to_node_id: e.target,
-    }));
-
-    const payload = {
-      nodes: nodesPayload,
-      edges: edgesPayload,
-      expressions,
-    };
-
+    const payload = serializeFlowState(graphId, nodes, edges, expressions);
     const stateStr = JSON.stringify(payload);
-    if (stateStr === lastSavedStateStr) {
+    if (stateStr === lastSavedStateByGraph.get(graphId)) {
       return;
     }
-    lastSavedStateStr = stateStr;
+    lastSavedStateByGraph.set(graphId, stateStr);
 
     try {
       onSaveStateChange?.(true);
@@ -71,6 +76,8 @@ export const triggerSave = (
       onSaveStateChange?.(false);
     }
   }, 500);
+
+  saveTimeoutsByGraph.set(graphId, timeout);
 };
 
 export const resetLastSavedState = (
@@ -79,30 +86,8 @@ export const resetLastSavedState = (
   edges: AppFlowEdge[],
   expressions: ApiExpression[]
 ) => {
-  const nodesPayload = nodes.map(n => ({
-    id: n.id,
-    graph_id: n.data?.node?.graph_id || graphId,
-    iid: n.data?.node?.iid ?? 0,
-    label: n.data?.node?.label ?? '',
-    is_processing: n.data?.node?.is_processing ?? false,
-    node_type: n.data?.node?.node_type ?? 'LOGIC',
-    position: n.position,
-  }));
-
-  const edgesPayload = edges.map(e => ({
-    id: e.id,
-    graph_id: graphId,
-    from_expression_id: e.sourceHandle || '',
-    to_expression_id: e.targetHandle || '',
-    from_node_id: e.source,
-    to_node_id: e.target,
-  }));
-
-  lastSavedStateStr = JSON.stringify({
-    nodes: nodesPayload,
-    edges: edgesPayload,
-    expressions,
-  });
+  const payload = serializeFlowState(graphId, nodes, edges, expressions);
+  lastSavedStateByGraph.set(graphId, JSON.stringify(payload));
 };
 
 export const takeSnapshot = (state: {
@@ -111,9 +96,9 @@ export const takeSnapshot = (state: {
   expressions: ApiExpression[];
 }) => {
   return {
-    nodes: JSON.parse(JSON.stringify(state.nodes)) as AppFlowNode[],
-    edges: JSON.parse(JSON.stringify(state.edges)) as AppFlowEdge[],
-    expressions: JSON.parse(JSON.stringify(state.expressions)) as ApiExpression[],
+    nodes: structuredClone(state.nodes),
+    edges: structuredClone(state.edges),
+    expressions: structuredClone(state.expressions),
   };
 };
 

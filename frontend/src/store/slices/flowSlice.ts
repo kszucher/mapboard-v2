@@ -12,13 +12,13 @@ export const createFlowSlice: StateCreator<
   onConnect: async (connection) => {
     if (!connection.source || !connection.target || !connection.sourceHandle || !connection.targetHandle) return;
 
-    await updateFlowState(set, get, (state) => {
-      const exists = state.edges.some(e => e.sourceHandle === connection.sourceHandle);
-      if (exists) {
-        alert('Expression is already connected to another node.');
-        return state;
-      }
+    const exists = get().edges.some(e => e.sourceHandle === connection.sourceHandle);
+    if (exists) {
+      set({ errorMessage: 'Expression is already connected to another node.' });
+      return;
+    }
 
+    await updateFlowState(set, get, (state) => {
       const newEdgeId = crypto.randomUUID();
       const newEdge: AppFlowEdge = {
         id: newEdgeId,
@@ -53,13 +53,13 @@ export const createFlowSlice: StateCreator<
   onReconnect: async (oldEdge, newConnection) => {
     if (!newConnection.source || !newConnection.target || !newConnection.sourceHandle || !newConnection.targetHandle) return;
 
-    await updateFlowState(set, get, (state) => {
-      const exists = state.edges.some(e => e.id !== oldEdge.id && e.sourceHandle === newConnection.sourceHandle);
-      if (exists) {
-        alert('Expression is already connected to another node.');
-        return state;
-      }
+    const exists = get().edges.some(e => e.id !== oldEdge.id && e.sourceHandle === newConnection.sourceHandle);
+    if (exists) {
+      set({ errorMessage: 'Expression is already connected to another node.' });
+      return;
+    }
 
+    await updateFlowState(set, get, (state) => {
       const updatedEdge: AppFlowEdge = {
         ...oldEdge,
         source: newConnection.source!,
