@@ -58,11 +58,6 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
     });
   },
 
-  onNodeDragStop: () => {
-    const { graphId, nodes, edges, expressions } = get();
-    triggerSave(graphId, nodes, edges, expressions);
-  },
-
   ...createNodeSlice(set, get, store),
   ...createExpressionSlice(set, get, store),
   ...createHistorySlice(set, get, store),

@@ -15,7 +15,7 @@ function FlowEdge({
   const sections = data?.sections;
   let path;
 
-  console.log('render')
+  console.log('render');
 
   if (sections && sections.length > 0) {
     path = sections

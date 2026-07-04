@@ -24,7 +24,6 @@ const FlowContent = ({
   const onConnect = useGraphStore(state => state.onConnect);
   const onEdgesDelete = useGraphStore(state => state.onEdgesDelete);
   const onReconnect = useGraphStore(state => state.onReconnect);
-  const onNodeDragStop = useGraphStore(state => state.onNodeDragStop);
 
   const { fitView } = useReactFlow();
 
@@ -66,9 +65,8 @@ const FlowContent = ({
           onConnect={onConnect}
           onEdgesDelete={onEdgesDelete}
           onReconnect={onReconnect}
-          onNodeDragStop={onNodeDragStop}
           isValidConnection={isValidConnection}
-          nodesDraggable={true}
+          nodesDraggable={false}
           colorMode="dark"
           zoomOnScroll={true}
           zoomOnDoubleClick={false}

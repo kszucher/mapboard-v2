@@ -18,7 +18,6 @@ export interface BaseState {
 
   onNodesChange: (changes: NodeChange[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;
-  onNodeDragStop: () => void;
 }
 
 export interface InitSlice {
