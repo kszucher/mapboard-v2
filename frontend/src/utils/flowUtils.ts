@@ -39,12 +39,10 @@ export const normalizeExpressions = (expressions: ApiExpression[]): ApiExpressio
   const result: ApiExpression[] = [];
   Object.keys(groups).forEach(nodeId => {
     const sorted = groups[nodeId].map(e => {
-      const isInput = e.is_input ?? (e.type === 'BASE_INPUT' || e.type === 'SUB_INPUT' || e.type === 'BASE_INPUT_OUTPUT');
-      const isOutput = e.is_output ?? (e.type === 'BASE_OUTPUT' || e.type === 'SUB_OUTPUT' || e.type === 'BASE_INPUT_OUTPUT');
       return {
         ...e,
-        is_input: !!isInput,
-        is_output: !!isOutput,
+        is_input: e.is_input,
+        is_output: e.is_output,
       };
     }).sort((a, b) => {
       if (a.idx !== b.idx) return a.idx - b.idx;

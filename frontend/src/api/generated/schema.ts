@@ -220,8 +220,6 @@ export interface components {
       graph_id: string;
       /** Idx */
       idx: number;
-      /** Type */
-      type?: string;
       /** Is Input */
       is_input: boolean;
       /** Is Output */
