@@ -113,13 +113,18 @@ export const updateFlowState = async (
     nodes: AppFlowNode[];
     edges: AppFlowEdge[];
     expressions: ApiExpression[];
-  }
+  },
+  options: { skipHistory?: boolean } = {}
 ) => {
   const current = get();
-  const snapshot = takeSnapshot(current);
+  const snapshot = options.skipHistory ? null : takeSnapshot(current);
   const updated = updateFn(current);
 
   const normalizedExprs = normalizeExpressions(updated.expressions);
+
+  if (options.skipHistory) {
+    set({ expressions: normalizedExprs });
+  }
 
   const laidOut = await runLayout(updated.nodes, updated.edges, normalizedExprs);
 
@@ -127,8 +132,12 @@ export const updateFlowState = async (
     nodes: laidOut.nodes,
     edges: laidOut.edges,
     expressions: normalizedExprs,
-    past: [...state.past, snapshot],
-    future: [],
+    ...(!options.skipHistory && snapshot
+      ? {
+          past: [...state.past, snapshot],
+          future: [],
+        }
+      : {}),
   }));
 
   triggerSave(current.graphId, laidOut.nodes, laidOut.edges, normalizedExprs);
