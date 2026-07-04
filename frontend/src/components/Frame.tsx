@@ -187,7 +187,9 @@ export const Frame = () => {
       )}
 
       {/* Error Message Modal */}
-      <AlertDialog.Root open={!!errorMessage} onOpenChange={(open) => { if (!open) clearErrorMessage(); }}>
+      <AlertDialog.Root open={!!errorMessage} onOpenChange={(open) => {
+        if (!open) clearErrorMessage();
+      }}>
         <AlertDialog.Content style={{ maxWidth: '450px' }}>
           <AlertDialog.Title color="red">Error</AlertDialog.Title>
           <AlertDialog.Description size="2" mb="4">

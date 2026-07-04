@@ -5,12 +5,7 @@ import { type NodeProps, useUpdateNodeInternals } from '@xyflow/react';
 import { memo, useCallback, useEffect, useMemo } from 'react';
 import { useShallow } from 'zustand/shallow';
 import { useGraphStore } from '../store/useGraphStore';
-import {
-  canMoveExpressionDown,
-  canMoveExpressionUp,
-  canShortcircuitNode,
-  NODE_CONVERSIONS,
-} from '../utils/flowUtils';
+import { canMoveExpressionDown, canMoveExpressionUp, canShortcircuitNode, NODE_CONVERSIONS, } from '../utils/flowUtils';
 import { FlowNodeExpressionRow } from './FlowNodeExpressionRow.tsx';
 import { NODE_PADDING } from './layout.ts';
 import { type AppFlowNode, type NodeType } from './types.ts';
