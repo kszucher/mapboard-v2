@@ -14,30 +14,25 @@ const saveTimeoutsByGraph = new Map<string, number>();
 const lastSavedStateByGraph = new Map<string, string>();
 
 export const serializeFlowState = (
-  graphId: string,
-  nodes: AppFlowNode[],
-  edges: AppFlowEdge[],
-  expressions: ApiExpression[]
-) => ({
-  nodes: nodes.map(n => ({
-    id: n.id,
-    graph_id: n.data?.node?.graph_id || graphId,
-    iid: n.data?.node?.iid ?? 0,
-    label: n.data?.node?.label ?? '',
-    is_processing: n.data?.node?.is_processing ?? false,
-    node_type: n.data?.node?.node_type ?? 'LOGIC',
-    position: n.position,
-  })),
-  edges: edges.map(e => ({
-    id: e.id,
-    graph_id: graphId,
-    from_expression_id: e.sourceHandle || '',
-    to_expression_id: e.targetHandle || '',
-    from_node_id: e.source,
-    to_node_id: e.target,
-  })),
-  expressions,
-});
+  state: Pick<GraphStoreState, 'graphId' | 'nodes' | 'edges' | 'expressions'>
+) => {
+  const graphId = state.graphId || '';
+  return {
+    nodes: state.nodes.map(n => ({
+      ...n.data.node,
+      position: n.position,
+    })),
+    edges: state.edges.map(e => ({
+      id: e.id,
+      graph_id: graphId,
+      from_expression_id: e.sourceHandle || '',
+      to_expression_id: e.targetHandle || '',
+      from_node_id: e.source,
+      to_node_id: e.target,
+    })),
+    expressions: state.expressions,
+  };
+};
 
 export const triggerSave = (
   graphId: string | null,
@@ -55,7 +50,7 @@ export const triggerSave = (
   const timeout = window.setTimeout(async () => {
     saveTimeoutsByGraph.delete(graphId);
 
-    const payload = serializeFlowState(graphId, nodes, edges, expressions);
+    const payload = serializeFlowState({ graphId, nodes, edges, expressions });
     const stateStr = JSON.stringify(payload);
     if (stateStr === lastSavedStateByGraph.get(graphId)) {
       return;
@@ -81,25 +76,19 @@ export const triggerSave = (
 };
 
 export const resetLastSavedState = (
-  graphId: string,
-  nodes: AppFlowNode[],
-  edges: AppFlowEdge[],
-  expressions: ApiExpression[]
+  state: Pick<GraphStoreState, 'graphId' | 'nodes' | 'edges' | 'expressions'>
 ) => {
-  const payload = serializeFlowState(graphId, nodes, edges, expressions);
-  lastSavedStateByGraph.set(graphId, JSON.stringify(payload));
+  if (!state.graphId) return;
+  const payload = serializeFlowState(state);
+  lastSavedStateByGraph.set(state.graphId, JSON.stringify(payload));
 };
 
-export const takeSnapshot = (state: {
-  nodes: AppFlowNode[];
-  edges: AppFlowEdge[];
-  expressions: ApiExpression[];
-}) => {
-  return {
-    nodes: structuredClone(state.nodes),
-    edges: structuredClone(state.edges),
-    expressions: structuredClone(state.expressions),
-  };
+export const takeSnapshot = (state: Pick<GraphStoreState, 'nodes' | 'edges' | 'expressions'>) => {
+  return structuredClone({
+    nodes: state.nodes,
+    edges: state.edges,
+    expressions: state.expressions,
+  });
 };
 
 export const updateFlowState = async (
