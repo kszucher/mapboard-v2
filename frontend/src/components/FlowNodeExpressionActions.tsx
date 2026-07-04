@@ -2,7 +2,7 @@ import { ArrowDownIcon, ArrowUpIcon, DotsHorizontalIcon, PlusIcon, TrashIcon } f
 import { DropdownMenu, IconButton } from '@radix-ui/themes';
 import { useCallback, useMemo } from 'react';
 import { useGraphStore } from '../store/useGraphStore';
-import { isValidOrder } from '../utils/flowUtils';
+import { canToggleExpressionPort } from '../utils/flowUtils';
 import type { InsertableNodeType } from './types';
 
 interface ExpressionActionsDropdownProps {
@@ -63,30 +63,20 @@ export const FlowNodeExpressionActions = ({
   );
 
   const handleToggleInput = useCallback(() => {
-    const expr = expressions.find(e => e.id === expressionId);
-    if (!expr) return;
-    const nodeExprs = expressions
-      .filter(e => e.node_id === expr.node_id)
-      .sort((a, b) => a.idx - b.idx);
-
-    const updatedExprs = nodeExprs.map(e => e.id === expressionId ? { ...e, is_input: !isInput } : e);
-    if (!isValidOrder(updatedExprs)) {
-      alert("Cannot toggle: expressions must follow the order: Inputs -> Both -> None -> Outputs.");
+    if (!canToggleExpressionPort(expressionId, 'is_input', !isInput, expressions)) {
+      useGraphStore.setState({
+        errorMessage: "Cannot toggle: expressions must follow the order: Inputs -> Both -> None -> Outputs."
+      });
       return;
     }
     updateExpression(expressionId, { is_input: !isInput });
   }, [expressionId, isInput, expressions, updateExpression]);
 
   const handleToggleOutput = useCallback(() => {
-    const expr = expressions.find(e => e.id === expressionId);
-    if (!expr) return;
-    const nodeExprs = expressions
-      .filter(e => e.node_id === expr.node_id)
-      .sort((a, b) => a.idx - b.idx);
-
-    const updatedExprs = nodeExprs.map(e => e.id === expressionId ? { ...e, is_output: !isOutput } : e);
-    if (!isValidOrder(updatedExprs)) {
-      alert("Cannot toggle: expressions must follow the order: Inputs -> Both -> None -> Outputs.");
+    if (!canToggleExpressionPort(expressionId, 'is_output', !isOutput, expressions)) {
+      useGraphStore.setState({
+        errorMessage: "Cannot toggle: expressions must follow the order: Inputs -> Both -> None -> Outputs."
+      });
       return;
     }
     updateExpression(expressionId, { is_output: !isOutput });

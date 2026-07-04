@@ -5,7 +5,12 @@ import { type NodeProps, useUpdateNodeInternals } from '@xyflow/react';
 import { memo, useCallback, useEffect, useMemo } from 'react';
 import { useShallow } from 'zustand/shallow';
 import { useGraphStore } from '../store/useGraphStore';
-import { isValidOrder, NODE_CONVERSIONS } from '../utils/flowUtils';
+import {
+  canMoveExpressionDown,
+  canMoveExpressionUp,
+  canShortcircuitNode,
+  NODE_CONVERSIONS,
+} from '../utils/flowUtils';
 import { FlowNodeExpressionRow } from './FlowNodeExpressionRow.tsx';
 import { NODE_PADDING } from './layout.ts';
 import { type AppFlowNode, type NodeType } from './types.ts';
@@ -63,9 +68,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   const isEnd = node.node_type === 'END';
 
   const canShortcircuit = useMemo(() => {
-    const inputs = myExpressions.filter(e => e.is_input);
-    const outputs = myExpressions.filter(e => e.is_output);
-    return inputs.length === 1 && outputs.length === 1;
+    return canShortcircuitNode(myExpressions);
   }, [myExpressions]);
 
   if (!data) return null;
@@ -128,23 +131,8 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
 
       {myExpressions.map((expr, index) => {
         // Same type expressions relative index calculations for sub expressions
-        const canMoveUp = (() => {
-          if (index === 0) return false;
-          const test = [...myExpressions];
-          const tmp = test[index];
-          test[index] = test[index - 1];
-          test[index - 1] = tmp;
-          return isValidOrder(test);
-        })();
-
-        const canMoveDown = (() => {
-          if (index === myExpressions.length - 1) return false;
-          const test = [...myExpressions];
-          const tmp = test[index];
-          test[index] = test[index + 1];
-          test[index + 1] = tmp;
-          return isValidOrder(test);
-        })();
+        const canMoveUp = canMoveExpressionUp(index, myExpressions);
+        const canMoveDown = canMoveExpressionDown(index, myExpressions);
 
         const canDelete = myExpressions.length > 1;
         const disabled = isStart || isEnd;
