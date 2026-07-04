@@ -1,7 +1,7 @@
 import type { StoreApi } from 'zustand';
 import { apiClient, getClientId } from '../api/client';
 import type { ApiExpression, AppFlowEdge, AppFlowNode } from '../components/types';
-import { runLayout, normalizeExpressions } from '../utils/flowUtils';
+import { normalizeExpressions, runLayout } from '../utils/flowUtils';
 import type { GraphStoreState } from './types';
 
 let onSaveStateChange: ((isSaving: boolean) => void) | null = null;
@@ -138,6 +138,22 @@ export const updateFlowState = async (
 
   const nodesWithDimensions = updated.nodes.map(n => {
     const nodeExpressions = normalizedExprs.filter(e => e.node_id === n.id);
+    const currentExpressions = n.data?.expressions ?? [];
+
+    const expressionsChanged =
+      currentExpressions.length !== nodeExpressions.length ||
+      currentExpressions.some((e, i) =>
+        e.id !== nodeExpressions[i].id ||
+        e.idx !== nodeExpressions[i].idx ||
+        e.is_input !== nodeExpressions[i].is_input ||
+        e.is_output !== nodeExpressions[i].is_output ||
+        e.raw_string !== nodeExpressions[i].raw_string
+      );
+
+    if (!expressionsChanged) {
+      return n;
+    }
+
     return {
       ...n,
       data: {

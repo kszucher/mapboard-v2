@@ -2,8 +2,8 @@ import { ArrowDownIcon, ArrowUpIcon, DotsHorizontalIcon, PlusIcon, TrashIcon } f
 import { DropdownMenu, IconButton } from '@radix-ui/themes';
 import { useCallback, useMemo } from 'react';
 import { useGraphStore } from '../store/useGraphStore';
-import type { InsertableNodeType } from './types';
 import { isValidOrder } from '../utils/flowUtils';
+import type { InsertableNodeType } from './types';
 
 interface ExpressionActionsDropdownProps {
   expressionId: string;
@@ -68,7 +68,7 @@ export const FlowNodeExpressionActions = ({
     const nodeExprs = expressions
       .filter(e => e.node_id === expr.node_id)
       .sort((a, b) => a.idx - b.idx);
-    
+
     const updatedExprs = nodeExprs.map(e => e.id === expressionId ? { ...e, is_input: !isInput } : e);
     if (!isValidOrder(updatedExprs)) {
       alert("Cannot toggle: expressions must follow the order: Inputs -> Both -> None -> Outputs.");
@@ -83,7 +83,7 @@ export const FlowNodeExpressionActions = ({
     const nodeExprs = expressions
       .filter(e => e.node_id === expr.node_id)
       .sort((a, b) => a.idx - b.idx);
-    
+
     const updatedExprs = nodeExprs.map(e => e.id === expressionId ? { ...e, is_output: !isOutput } : e);
     if (!isValidOrder(updatedExprs)) {
       alert("Cannot toggle: expressions must follow the order: Inputs -> Both -> None -> Outputs.");

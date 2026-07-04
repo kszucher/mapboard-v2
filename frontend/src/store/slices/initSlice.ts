@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand';
 import { apiClient } from '../../api/client';
-import { mapToReactFlowElements, runLayout, normalizeExpressions } from '../../utils/flowUtils';
+import { mapToReactFlowElements, normalizeExpressions, runLayout } from '../../utils/flowUtils';
 import { resetLastSavedState, triggerSave } from '../helpers';
 import type { GraphStoreState, InitSlice } from '../types';
 

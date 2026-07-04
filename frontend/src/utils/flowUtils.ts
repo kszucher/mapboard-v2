@@ -72,11 +72,35 @@ export const createDefaultExpressionsForNode = (
   const baseOutId = crypto.randomUUID();
 
   if (nodeType === 'START') {
-    return [{ id: baseId, node_id: nodeId, graph_id: graphId, idx: 0, is_input: false, is_output: true, raw_string: '' }];
+    return [{
+      id: baseId,
+      node_id: nodeId,
+      graph_id: graphId,
+      idx: 0,
+      is_input: false,
+      is_output: true,
+      raw_string: ''
+    }];
   } else if (nodeType === 'END') {
-    return [{ id: baseId, node_id: nodeId, graph_id: graphId, idx: 0, is_input: true, is_output: false, raw_string: '' }];
+    return [{
+      id: baseId,
+      node_id: nodeId,
+      graph_id: graphId,
+      idx: 0,
+      is_input: true,
+      is_output: false,
+      raw_string: ''
+    }];
   } else if (nodeType === 'LOGIC' || nodeType === 'AGENT') {
-    return [{ id: baseId, node_id: nodeId, graph_id: graphId, idx: 0, is_input: true, is_output: true, raw_string: '' }];
+    return [{
+      id: baseId,
+      node_id: nodeId,
+      graph_id: graphId,
+      idx: 0,
+      is_input: true,
+      is_output: true,
+      raw_string: ''
+    }];
   } else if (nodeType === 'LOGICAL_SWITCH' || nodeType === 'AGENTIC_SWITCH') {
     return [
       { id: baseId, node_id: nodeId, graph_id: graphId, idx: 0, is_input: true, is_output: false, raw_string: '' },
@@ -169,17 +193,27 @@ export const runLayout = async (
   try {
     const layout = await getLayoutedElements(nodes, edges);
 
-    const updatedNodes = nodes.map(n => ({
-      ...n,
-      position: layout.positions[n.id] || n.position,
-      style: animate
-        ? { ...n.style, transition: LAYOUT_TRANSITION }
-        : { ...n.style, transition: undefined },
-      data: {
-        ...n.data,
-        isPositioned: true,
+    const updatedNodes = nodes.map(n => {
+      const newPos = layout.positions[n.id] || n.position;
+      const posChanged = Math.abs(newPos.x - n.position.x) > 0.01 || Math.abs(newPos.y - n.position.y) > 0.01;
+      const isPositionedChanged = !n.data?.isPositioned;
+
+      if (!posChanged && !isPositionedChanged) {
+        return n;
       }
-    }));
+
+      return {
+        ...n,
+        position: newPos,
+        style: animate
+          ? { ...n.style, transition: LAYOUT_TRANSITION }
+          : { ...n.style, transition: undefined },
+        data: {
+          ...n.data,
+          isPositioned: true,
+        }
+      };
+    });
 
     const updatedEdges = edges.map(e => {
       const sourcePos = layout.positions[e.source] || { x: 0, y: 0 };
@@ -187,6 +221,14 @@ export const runLayout = async (
       const isBack = targetPos.x <= sourcePos.x;
       const elkEdge = layout.edgeSections[e.id];
       const sections = elkEdge?.sections ?? [];
+
+      const sectionsChanged = JSON.stringify(e.data?.sections) !== JSON.stringify(sections);
+      const strokeChanged = e.style?.stroke !== (isBack ? '#ff9800' : '#888888');
+      const opacityChanged = e.style?.opacity !== (sections.length > 0 ? 1 : 0);
+
+      if (!sectionsChanged && !strokeChanged && !opacityChanged) {
+        return e;
+      }
 
       return {
         ...e,

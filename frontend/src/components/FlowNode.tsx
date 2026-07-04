@@ -1,14 +1,13 @@
 import { DotsHorizontalIcon } from '@radix-ui/react-icons';
 import type { BadgeProps } from '@radix-ui/themes';
 import { Badge, DropdownMenu, Flex, IconButton } from '@radix-ui/themes';
-import { Handle, type NodeProps, Position, useUpdateNodeInternals } from '@xyflow/react';
+import { type NodeProps, useUpdateNodeInternals } from '@xyflow/react';
 import { memo, useCallback, useEffect, useMemo } from 'react';
-import { NODE_CONVERSIONS, isValidOrder } from '../utils/flowUtils';
 import { useGraphStore } from '../store/useGraphStore';
-import { FlowNodeExpressionActions } from './FlowNodeExpressionActions.tsx';
-import { FlowNodeExpressionEditor } from './FlowNodeExpressionEditor.tsx';
+import { isValidOrder, NODE_CONVERSIONS } from '../utils/flowUtils';
+import { FlowNodeExpressionRow } from './FlowNodeExpressionRow.tsx';
 import { NODE_PADDING } from './layout.ts';
-import { type ApiExpression, type AppFlowNode, type NodeType } from './types.ts';
+import { type AppFlowNode, type NodeType } from './types.ts';
 
 
 const NODE_COLORS: Record<NodeType, BadgeProps['color']> = {
@@ -28,10 +27,6 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   const deleteNode = useGraphStore(state => state.deleteNode);
   const shortcircuitNode = useGraphStore(state => state.shortcircuitNode);
   const convertNode = useGraphStore(state => state.convertNode);
-  const createExpression = useGraphStore(state => state.createExpression);
-  const deleteExpression = useGraphStore(state => state.deleteExpression);
-  const updateExpression = useGraphStore(state => state.updateExpression);
-  const swapExpressionIndices = useGraphStore(state => state.swapExpressionIndices);
 
   const updateNodeInternals = useUpdateNodeInternals();
 
@@ -70,48 +65,6 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
     return inputs.length === 1 && outputs.length === 1;
   }, [myExpressions]);
 
-  const handleAddAbove = useCallback(
-    (expr: ApiExpression) => {
-      void createExpression(node.id, expr.is_input, expr.is_output, expr.idx);
-    },
-    [createExpression, node.id]
-  );
-
-  const handleAddBelow = useCallback(
-    (expr: ApiExpression) => {
-      void createExpression(node.id, expr.is_input, expr.is_output, expr.idx + 1);
-    },
-    [createExpression, node.id]
-  );
-
-  const handleUpdateItem = useCallback(
-    (expr: ApiExpression, newValue: string) => {
-      updateExpression(expr.id, { raw_string: newValue });
-    },
-    [updateExpression]
-  );
-
-  const handleDeleteItem = useCallback(
-    (expr: ApiExpression) => {
-      void deleteExpression(expr.id);
-    },
-    [deleteExpression]
-  );
-
-  const handleMoveUp = useCallback(
-    (expr: ApiExpression) => {
-      void swapExpressionIndices(expr.id, 'up');
-    },
-    [swapExpressionIndices]
-  );
-
-  const handleMoveDown = useCallback(
-    (expr: ApiExpression) => {
-      void swapExpressionIndices(expr.id, 'down');
-    },
-    [swapExpressionIndices]
-  );
-
   if (!data) return null;
 
   return (
@@ -144,39 +97,33 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
                 <DotsHorizontalIcon/>
               </IconButton>
             </DropdownMenu.Trigger>
-          <DropdownMenu.Content onCloseAutoFocus={e => e.preventDefault()}>
-            {conversionConfig && (
-              <DropdownMenu.Sub>
-                <DropdownMenu.SubTrigger>
-                  {'Convert'}
-                </DropdownMenu.SubTrigger>
-                <DropdownMenu.SubContent>
-                  <DropdownMenu.Item onClick={() => handleConvert(conversionConfig.targetType)}>
-                    {conversionConfig.label}
-                  </DropdownMenu.Item>
-                </DropdownMenu.SubContent>
-              </DropdownMenu.Sub>
-            )}
-            {!isStart && !isEnd && canShortcircuit && (
-              <DropdownMenu.Item onClick={handleShortcircuit}>
-                {'Shortcircuit'}
+            <DropdownMenu.Content onCloseAutoFocus={e => e.preventDefault()}>
+              {conversionConfig && (
+                <DropdownMenu.Sub>
+                  <DropdownMenu.SubTrigger>
+                    {'Convert'}
+                  </DropdownMenu.SubTrigger>
+                  <DropdownMenu.SubContent>
+                    <DropdownMenu.Item onClick={() => handleConvert(conversionConfig.targetType)}>
+                      {conversionConfig.label}
+                    </DropdownMenu.Item>
+                  </DropdownMenu.SubContent>
+                </DropdownMenu.Sub>
+              )}
+              {!isStart && !isEnd && canShortcircuit && (
+                <DropdownMenu.Item onClick={handleShortcircuit}>
+                  {'Shortcircuit'}
+                </DropdownMenu.Item>
+              )}
+              <DropdownMenu.Item onClick={handleDelete}>
+                {'Delete'}
               </DropdownMenu.Item>
-            )}
-            <DropdownMenu.Item onClick={handleDelete}>
-              {'Delete'}
-            </DropdownMenu.Item>
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
         </div>
       </Flex>
 
       {myExpressions.map((expr, index) => {
-        const leftHandle = expr.is_input;
-        const rightHandle = expr.is_output;
-
-        const pl = leftHandle ? undefined : '5';
-        const pr = rightHandle ? undefined : '5';
-
         // Same type expressions relative index calculations for sub expressions
         const canMoveUp = (() => {
           if (index === 0) return false;
@@ -197,65 +144,20 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
         })();
 
         const canDelete = myExpressions.length > 1;
-
         const disabled = isStart || isEnd;
 
-        // Custom actions determination
-        const actions = !disabled ? (
-          <FlowNodeExpressionActions
+        return (
+          <FlowNodeExpressionRow
+            key={expr.id}
             expressionId={expr.id}
-            isInput={leftHandle}
-            isOutput={rightHandle}
-            onMoveUp={() => handleMoveUp(expr)}
-            onMoveDown={() => handleMoveDown(expr)}
-            onDelete={() => handleDeleteItem(expr)}
+            nodeId={node.id}
             canMoveUp={canMoveUp}
             canMoveDown={canMoveDown}
-            onAddAbove={() => handleAddAbove(expr)}
-            onAddBelow={() => handleAddBelow(expr)}
             canDelete={canDelete}
-            hideAddNode={!rightHandle}
+            disabled={disabled}
+            isStart={isStart}
+            isEnd={isEnd}
           />
-        ) : undefined;
-
-        // Value placeholders
-        const initialValue = (() => {
-          if (isStart) return expr.raw_string || 'Start Node (Output)';
-          if (isEnd) return expr.raw_string || 'End Node (Input)';
-          return expr.raw_string;
-        })();
-
-        return (
-          <Flex key={expr.id} align="center" width="100%" height="24px" style={{ position: 'relative', gap: '6px' }}>
-            {leftHandle && (
-              <Handle
-                type="target"
-                id={expr.id}
-                position={Position.Left}
-                style={{ left: -NODE_PADDING }}
-              />
-            )}
-            <Flex className="nodrag nopan" flexGrow="1" align="center" height="100%" pl={pl} pr={pr}>
-              <FlowNodeExpressionEditor
-                initialValue={initialValue}
-                onSave={(newValue) => handleUpdateItem(expr, newValue)}
-                disabled={disabled}
-              />
-            </Flex>
-            {actions && (
-              <div style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0, paddingRight: '2px' }}>
-                {actions}
-              </div>
-            )}
-            {rightHandle && (
-              <Handle
-                type="source"
-                id={expr.id}
-                position={Position.Right}
-                style={{ right: -NODE_PADDING }}
-              />
-            )}
-          </Flex>
         );
       })}
     </Flex>
@@ -267,6 +169,6 @@ export const CustomNode = memo(CustomNodeComponent, (prevProps, nextProps) => {
     prevProps.id === nextProps.id &&
     prevProps.selected === nextProps.selected &&
     prevProps.dragging === nextProps.dragging &&
-    JSON.stringify(prevProps.data) === JSON.stringify(nextProps.data)
+    prevProps.data === nextProps.data
   );
 });
