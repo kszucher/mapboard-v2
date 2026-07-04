@@ -1,5 +1,5 @@
 import { CaretDownIcon, CheckIcon, MixIcon, PlayIcon, ResetIcon } from '@radix-ui/react-icons';
-import { Box, Button, DropdownMenu, Flex, IconButton, Text } from '@radix-ui/themes';
+import { AlertDialog, Box, Button, DropdownMenu, Flex, IconButton, Text } from '@radix-ui/themes';
 import { ReactFlowProvider } from '@xyflow/react';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useCreateGraph, useSetActiveGraph } from '../api/mutations';
@@ -38,13 +38,6 @@ export const Frame = () => {
   const errorMessage = useGraphStore(state => state.errorMessage);
   const clearErrorMessage = useGraphStore(state => state.clearErrorMessage);
 
-  useEffect(() => {
-    if (errorMessage) {
-      alert(errorMessage);
-      clearErrorMessage();
-    }
-  }, [errorMessage, clearErrorMessage]);
-
   const handleCreateNode = useCallback(
     (nodeType: NodeType) => {
       void addNode(nodeType);
@@ -57,13 +50,23 @@ export const Frame = () => {
     createGraphMutation.mutate({ userId, graphName: 'New Graph' });
   }, [userId, createGraphMutation]);
 
+  const init = useGraphStore(state => state.init);
+
   const handleSelectGraph = useCallback(
     (graphId: string) => {
       if (!userId) return;
       setActiveGraphMutation.mutate({ userId, graphId });
+      void init(graphId);
     },
-    [userId, setActiveGraphMutation]
+    [userId, setActiveGraphMutation, init]
   );
+
+  // Sync state initialization if selectedGraphId is loaded on initial mount
+  useEffect(() => {
+    if (selectedGraphId) {
+      void init(selectedGraphId);
+    }
+  }, [selectedGraphId, init]);
 
   const activeGraphName = useMemo(
     () => graphs?.find(graph => graph.id === selectedGraphId)?.name ?? 'Select graph',
@@ -182,6 +185,23 @@ export const Frame = () => {
           </ReactFlowProvider>
         </Box>
       )}
+
+      {/* Error Message Modal */}
+      <AlertDialog.Root open={!!errorMessage} onOpenChange={(open) => { if (!open) clearErrorMessage(); }}>
+        <AlertDialog.Content style={{ maxWidth: '450px' }}>
+          <AlertDialog.Title color="red">Error</AlertDialog.Title>
+          <AlertDialog.Description size="2" mb="4">
+            {errorMessage}
+          </AlertDialog.Description>
+          <Flex gap="3" justify="end">
+            <AlertDialog.Cancel>
+              <Button variant="soft" color="gray" onClick={clearErrorMessage}>
+                OK
+              </Button>
+            </AlertDialog.Cancel>
+          </Flex>
+        </AlertDialog.Content>
+      </AlertDialog.Root>
     </>
   );
 };
