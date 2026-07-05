@@ -8,10 +8,6 @@ import { NODE_PADDING } from './layout.ts';
 
 interface FlowNodeExpressionRowProps {
   expressionId: string;
-  nodeId: string;
-  canMoveUp: boolean;
-  canMoveDown: boolean;
-  canDelete: boolean;
   disabled: boolean;
   isStart: boolean;
   isEnd: boolean;
@@ -19,10 +15,6 @@ interface FlowNodeExpressionRowProps {
 
 const FlowNodeExpressionRowComponent = ({
   expressionId,
-  nodeId,
-  canMoveUp,
-  canMoveDown,
-  canDelete,
   disabled,
   isStart,
   isEnd,
@@ -35,10 +27,7 @@ const FlowNodeExpressionRowComponent = ({
     )
   );
 
-  const createExpression = useGraphStore((state) => state.createExpression);
-  const deleteExpression = useGraphStore((state) => state.deleteExpression);
   const updateExpression = useGraphStore((state) => state.updateExpression);
-  const swapExpressionIndices = useGraphStore((state) => state.swapExpressionIndices);
 
   const handleUpdateItem = useCallback(
     (newValue: string) => {
@@ -46,28 +35,6 @@ const FlowNodeExpressionRowComponent = ({
     },
     [expressionId, updateExpression]
   );
-
-  const handleDeleteItem = useCallback(() => {
-    void deleteExpression(expressionId);
-  }, [expressionId, deleteExpression]);
-
-  const handleMoveUp = useCallback(() => {
-    void swapExpressionIndices(expressionId, 'up');
-  }, [expressionId, swapExpressionIndices]);
-
-  const handleMoveDown = useCallback(() => {
-    void swapExpressionIndices(expressionId, 'down');
-  }, [expressionId, swapExpressionIndices]);
-
-  const handleAddAbove = useCallback(() => {
-    if (!expr) return;
-    void createExpression(nodeId, expr.is_input, expr.is_output, expr.idx);
-  }, [createExpression, nodeId, expr]);
-
-  const handleAddBelow = useCallback(() => {
-    if (!expr) return;
-    void createExpression(nodeId, expr.is_input, expr.is_output, expr.idx + 1);
-  }, [createExpression, nodeId, expr]);
 
   if (!expr) return null;
 
@@ -82,15 +49,6 @@ const FlowNodeExpressionRowComponent = ({
       expressionId={expr.id}
       isInput={leftHandle}
       isOutput={rightHandle}
-      onMoveUp={handleMoveUp}
-      onMoveDown={handleMoveDown}
-      onDelete={handleDeleteItem}
-      canMoveUp={canMoveUp}
-      canMoveDown={canMoveDown}
-      onAddAbove={handleAddAbove}
-      onAddBelow={handleAddBelow}
-      canDelete={canDelete}
-      hideAddNode={!rightHandle}
     />
   ) : undefined;
 

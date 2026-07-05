@@ -5,7 +5,7 @@ import { type NodeProps, useUpdateNodeInternals } from '@xyflow/react';
 import { memo, useCallback, useEffect, useMemo } from 'react';
 import { useShallow } from 'zustand/shallow';
 import { useGraphStore } from '../store/useGraphStore';
-import { canMoveExpressionDown, canMoveExpressionUp, canShortcircuitNode, NODE_CONVERSIONS, } from '../utils/flowUtils';
+import { canShortcircuitNode, NODE_CONVERSIONS, } from '../utils/flowUtils';
 import { FlowNodeExpressionRow } from './FlowNodeExpressionRow.tsx';
 import { NODE_PADDING } from './layout.ts';
 import { type AppFlowNode, type NodeType } from './types.ts';
@@ -121,22 +121,13 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
         </div>
       </Flex>
 
-      {myExpressions.map((expr, index) => {
-        // Same type expressions relative index calculations for sub expressions
-        const canMoveUp = canMoveExpressionUp(index, myExpressions);
-        const canMoveDown = canMoveExpressionDown(index, myExpressions);
-
-        const canDelete = myExpressions.length > 1;
+      {myExpressions.map((expr) => {
         const disabled = isStart || isEnd;
 
         return (
           <FlowNodeExpressionRow
             key={expr.id}
             expressionId={expr.id}
-            nodeId={node.id}
-            canMoveUp={canMoveUp}
-            canMoveDown={canMoveDown}
-            canDelete={canDelete}
             disabled={disabled}
             isStart={isStart}
             isEnd={isEnd}

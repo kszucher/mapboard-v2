@@ -1,6 +1,6 @@
 import { DotsHorizontalIcon } from '@radix-ui/react-icons';
 import { DropdownMenu, IconButton } from '@radix-ui/themes';
-import { useState, memo } from 'react';
+import { memo, useState } from 'react';
 import { FlowNodeExpressionActionsContent } from './FlowNodeExpressionActionsContent';
 
 interface ExpressionActionsDropdownProps {
@@ -8,15 +8,6 @@ interface ExpressionActionsDropdownProps {
   isInput: boolean;
   isOutput: boolean;
   triggerStyle?: React.CSSProperties;
-  onMoveUp?: () => void;
-  onMoveDown?: () => void;
-  onDelete?: () => void;
-  canMoveUp?: boolean;
-  canMoveDown?: boolean;
-  onAddAbove?: () => void;
-  onAddBelow?: () => void;
-  canDelete?: boolean;
-  hideAddNode?: boolean;
 }
 
 export const FlowNodeExpressionActions = memo(({
@@ -24,15 +15,6 @@ export const FlowNodeExpressionActions = memo(({
   isInput,
   isOutput,
   triggerStyle,
-  onMoveUp,
-  onMoveDown,
-  onDelete,
-  canMoveUp = false,
-  canMoveDown = false,
-  onAddAbove,
-  onAddBelow,
-  canDelete = true,
-  hideAddNode = false,
 }: ExpressionActionsDropdownProps) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -55,15 +37,6 @@ export const FlowNodeExpressionActions = memo(({
             expressionId={expressionId}
             isInput={isInput}
             isOutput={isOutput}
-            onMoveUp={onMoveUp}
-            onMoveDown={onMoveDown}
-            onDelete={onDelete}
-            canMoveUp={canMoveUp}
-            canMoveDown={canMoveDown}
-            onAddAbove={onAddAbove}
-            onAddBelow={onAddBelow}
-            canDelete={canDelete}
-            hideAddNode={hideAddNode}
           />
         )}
       </DropdownMenu.Content>

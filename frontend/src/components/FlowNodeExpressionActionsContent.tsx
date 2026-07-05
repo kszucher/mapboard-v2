@@ -3,66 +3,81 @@ import { DropdownMenu } from '@radix-ui/themes';
 import { useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useGraphStore } from '../store/useGraphStore';
-import { canToggleExpressionPort } from '../utils/flowUtils';
+import { canMoveExpressionDown, canMoveExpressionUp, canToggleExpressionPort } from '../utils/flowUtils';
 import type { InsertableNodeType } from './types';
 
 export interface ExpressionActionsContentProps {
   expressionId: string;
   isInput: boolean;
   isOutput: boolean;
-  onMoveUp?: () => void;
-  onMoveDown?: () => void;
-  onDelete?: () => void;
-  canMoveUp?: boolean;
-  canMoveDown?: boolean;
-  onAddAbove?: () => void;
-  onAddBelow?: () => void;
-  canDelete?: boolean;
-  hideAddNode?: boolean;
 }
 
 export const FlowNodeExpressionActionsContent = ({
   expressionId,
   isInput,
   isOutput,
-  onMoveUp,
-  onMoveDown,
-  onDelete,
-  canMoveUp = false,
-  canMoveDown = false,
-  onAddAbove,
-  onAddBelow,
-  canDelete = true,
-  hideAddNode = false,
 }: ExpressionActionsContentProps) => {
+  const createExpression = useGraphStore(state => state.createExpression);
+  const deleteExpression = useGraphStore(state => state.deleteExpression);
+  const updateExpression = useGraphStore(state => state.updateExpression);
+  const swapExpressionIndices = useGraphStore(state => state.swapExpressionIndices);
   const addConnectedNode = useGraphStore(state => state.addConnectedNode);
   const insertNodeBetween = useGraphStore(state => state.insertNodeBetween);
-  const updateExpression = useGraphStore(state => state.updateExpression);
   const reconnectEdge = useGraphStore(state => state.reconnectEdge);
   const deleteOutgoingEdge = useGraphStore(state => state.deleteOutgoingEdge);
+
+  const expressions = useGraphStore(useShallow(state => state.expressions));
+  const edges = useGraphStore(useShallow(state => state.edges));
+  const nodes = useGraphStore(useShallow(state => state.nodes));
+
+  const expr = useMemo(() => expressions.find(e => e.id === expressionId), [expressions, expressionId]);
+
+  const myExpressions = useMemo(() => {
+    if (!expr) return [];
+    return expressions
+      .filter(e => e.node_id === expr.node_id)
+      .sort((a, b) => a.idx - b.idx);
+  }, [expressions, expr]);
+
+  const indexInNode = useMemo(() => {
+    if (!expr) return -1;
+    return myExpressions.findIndex(e => e.id === expressionId);
+  }, [myExpressions, expressionId, expr]);
+
+  const canMoveUp = useMemo(() => {
+    if (indexInNode === -1) return false;
+    return canMoveExpressionUp(indexInNode, myExpressions);
+  }, [indexInNode, myExpressions]);
+
+  const canMoveDown = useMemo(() => {
+    if (indexInNode === -1) return false;
+    return canMoveExpressionDown(indexInNode, myExpressions);
+  }, [indexInNode, myExpressions]);
+
+  const canDelete = useMemo(() => {
+    return myExpressions.length > 1;
+  }, [myExpressions]);
+
+  const hideAddNode = !isOutput;
 
   // Only this expression's own outgoing edge, not the whole edges array.
   const connectedEdge = useGraphStore(
     useShallow(state => state.edges.find(e => e.sourceHandle === expressionId))
   );
 
-  const expressions = useGraphStore(useShallow(state => state.expressions));
-  const edges = useGraphStore(useShallow(state => state.edges));
-  const nodes = useGraphStore(useShallow(state => state.nodes));
-
   const reconnectOptions = useMemo(() => {
     return expressions
-      .filter(expr => {
-        if (!expr.is_input) return false;
-        const hasIncoming = edges.some(edge => edge.targetHandle === expr.id);
+      .filter(e => {
+        if (!e.is_input) return false;
+        const hasIncoming = edges.some(edge => edge.targetHandle === e.id);
         return !hasIncoming;
       })
-      .map(expr => {
-        const node = nodes.find(n => n.id === expr.node_id);
+      .map(e => {
+        const node = nodes.find(n => n.id === e.node_id);
         return {
-          expression: expr,
+          expression: e,
           node,
-          label: node ? `N${node.data.node.iid}-${expr.idx}` : `?-${expr.idx}`,
+          label: node ? `N${node.data.node.iid}-${e.idx}` : `?-${e.idx}`,
         };
       })
       .sort((a, b) => {
@@ -109,35 +124,45 @@ export const FlowNodeExpressionActionsContent = ({
     updateExpression(expressionId, { is_output: !isOutput });
   }, [expressionId, isOutput, expressions, updateExpression]);
 
+  const handleMoveUp = useCallback(() => {
+    void swapExpressionIndices(expressionId, 'up');
+  }, [expressionId, swapExpressionIndices]);
+
+  const handleMoveDown = useCallback(() => {
+    void swapExpressionIndices(expressionId, 'down');
+  }, [expressionId, swapExpressionIndices]);
+
+  const handleDeleteItem = useCallback(() => {
+    void deleteExpression(expressionId);
+  }, [expressionId, deleteExpression]);
+
+  const handleAddAbove = useCallback(() => {
+    if (!expr) return;
+    void createExpression(expr.node_id, expr.is_input, expr.is_output, expr.idx);
+  }, [createExpression, expr]);
+
+  const handleAddBelow = useCallback(() => {
+    if (!expr) return;
+    void createExpression(expr.node_id, expr.is_input, expr.is_output, expr.idx + 1);
+  }, [createExpression, expr]);
+
   return (
     <>
-      {(onAddAbove || onAddBelow) && (
-        <>
-          {onAddAbove && (
-            <DropdownMenu.Item onClick={onAddAbove}>
-              <PlusIcon style={{ marginRight: 8 }}/> Add Expression Above
-            </DropdownMenu.Item>
-          )}
-          {onAddBelow && (
-            <DropdownMenu.Item onClick={onAddBelow}>
-              <PlusIcon style={{ marginRight: 8 }}/> Add Expression Below
-            </DropdownMenu.Item>
-          )}
-          <DropdownMenu.Separator/>
-        </>
-      )}
+      <DropdownMenu.Item onClick={handleAddAbove}>
+        <PlusIcon style={{ marginRight: 8 }}/> Add Expression Above
+      </DropdownMenu.Item>
+      <DropdownMenu.Item onClick={handleAddBelow}>
+        <PlusIcon style={{ marginRight: 8 }}/> Add Expression Below
+      </DropdownMenu.Item>
+      <DropdownMenu.Separator/>
 
-      {onMoveUp && (
-        <>
-          <DropdownMenu.Item onClick={onMoveUp} disabled={!canMoveUp}>
-            <ArrowUpIcon style={{ marginRight: 8 }}/> Move Up
-          </DropdownMenu.Item>
-          <DropdownMenu.Item onClick={onMoveDown} disabled={!canMoveDown}>
-            <ArrowDownIcon style={{ marginRight: 8 }}/> Move Down
-          </DropdownMenu.Item>
-          <DropdownMenu.Separator/>
-        </>
-      )}
+      <DropdownMenu.Item onClick={handleMoveUp} disabled={!canMoveUp}>
+        <ArrowUpIcon style={{ marginRight: 8 }}/> Move Up
+      </DropdownMenu.Item>
+      <DropdownMenu.Item onClick={handleMoveDown} disabled={!canMoveDown}>
+        <ArrowDownIcon style={{ marginRight: 8 }}/> Move Down
+      </DropdownMenu.Item>
+      <DropdownMenu.Separator/>
 
       <DropdownMenu.Item onClick={handleToggleInput}>
         {isInput ? '✓ Input Handle' : '  Input Handle'}
@@ -224,14 +249,10 @@ export const FlowNodeExpressionActionsContent = ({
         </>
       )}
 
-      {onDelete && (
-        <>
-          <DropdownMenu.Separator/>
-          <DropdownMenu.Item onClick={onDelete} color="red" disabled={!canDelete}>
-            <TrashIcon style={{ marginRight: 8 }}/> Delete Expression
-          </DropdownMenu.Item>
-        </>
-      )}
+      <DropdownMenu.Separator/>
+      <DropdownMenu.Item onClick={handleDeleteItem} color="red" disabled={!canDelete}>
+        <TrashIcon style={{ marginRight: 8 }}/> Delete Expression
+      </DropdownMenu.Item>
     </>
   );
 };
