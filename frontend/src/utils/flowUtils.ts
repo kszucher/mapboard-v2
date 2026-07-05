@@ -34,22 +34,15 @@ export const normalizeExpressions = (expressions: ApiExpression[]): ApiExpressio
 
   const result: ApiExpression[] = [];
   Object.keys(groups).forEach(nodeId => {
-    const sorted = groups[nodeId].map(e => {
-      return {
-        ...e,
-        is_input: e.is_input,
-        is_output: e.is_output,
-      };
-    }).sort((a, b) => {
+    const sorted = [...groups[nodeId]].sort((a, b) => {
       if (a.idx !== b.idx) return a.idx - b.idx;
       return a.id.localeCompare(b.id);
     });
 
     sorted.forEach((e, idx) => {
-      result.push({
-        ...e,
-        idx,
-      });
+      // Keep the same reference when idx is already correct — this is what
+      // lets useShallow in CustomNode skip re-rendering unaffected nodes.
+      result.push(e.idx === idx ? e : { ...e, idx });
     });
   });
 

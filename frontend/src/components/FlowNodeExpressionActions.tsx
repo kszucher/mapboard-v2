@@ -1,6 +1,7 @@
 import { ArrowDownIcon, ArrowUpIcon, DotsHorizontalIcon, PlusIcon, TrashIcon } from '@radix-ui/react-icons';
 import { DropdownMenu, IconButton } from '@radix-ui/themes';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { useShallow } from "zustand/shallow";
 import { useGraphStore } from '../store/useGraphStore';
 import { canToggleExpressionPort } from '../utils/flowUtils';
 import type { InsertableNodeType } from './types';
@@ -39,17 +40,30 @@ export const FlowNodeExpressionActions = ({
   const addConnectedNode = useGraphStore(state => state.addConnectedNode);
   const insertNodeBetween = useGraphStore(state => state.insertNodeBetween);
   const updateExpression = useGraphStore(state => state.updateExpression);
-  const edges = useGraphStore(state => state.edges);
-  const expressions = useGraphStore(state => state.expressions);
-  const nodes = useGraphStore(state => state.nodes);
   const reconnectEdge = useGraphStore(state => state.reconnectEdge);
   const deleteOutgoingEdge = useGraphStore(state => state.deleteOutgoingEdge);
 
-  const connectedEdge = useMemo(() => {
-    return edges.find(e => e.sourceHandle === expressionId);
-  }, [edges, expressionId]);
+  // Only this expression's own outgoing edge, not the whole edges array.
+  const connectedEdge = useGraphStore(
+    useShallow(state => state.edges.find(e => e.sourceHandle === expressionId))
+  );
+
+  // Only recompute reconnect options when the dropdown is actually open —
+  // this data is only needed once the person opens "Reconnect To".
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const expressions = useGraphStore(
+    useShallow(state => (dropdownOpen ? state.expressions : []))
+  );
+  const edges = useGraphStore(
+    useShallow(state => (dropdownOpen ? state.edges : []))
+  );
+  const nodes = useGraphStore(
+    useShallow(state => (dropdownOpen ? state.nodes : []))
+  );
 
   const reconnectOptions = useMemo(() => {
+    if (!dropdownOpen) return [];
     return expressions
       .filter(expr => {
         if (!expr.is_input) return false;
@@ -70,7 +84,7 @@ export const FlowNodeExpressionActions = ({
         if (aIid !== bIid) return aIid - bIid;
         return a.expression.idx - b.expression.idx;
       });
-  }, [expressions, edges, nodes]);
+  }, [expressions, edges, nodes, dropdownOpen]);
 
   const hasConnectedNode = !!connectedEdge;
 
@@ -109,7 +123,7 @@ export const FlowNodeExpressionActions = ({
   }, [expressionId, isOutput, expressions, updateExpression]);
 
   return (
-    <DropdownMenu.Root modal={false}>
+    <DropdownMenu.Root modal={false} onOpenChange={setDropdownOpen}>
       <DropdownMenu.Trigger>
         <IconButton
           size="1"

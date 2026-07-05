@@ -1,8 +1,14 @@
 import type { ElkExtendedEdge, ElkNode, ElkPort, LayoutOptions } from 'elkjs';
-import ELK from 'elkjs/lib/elk.bundled.js';
+import ELK from 'elkjs/lib/elk-api.js';
 import { type ApiExpression, type AppFlowEdge, type AppFlowNode } from './types';
 
-const elk = new ELK();
+const elk = new ELK({
+  workerFactory: () =>
+    new Worker(
+      new URL('elkjs/lib/elk-worker.min.js', import.meta.url),
+      { type: 'classic' }
+    ),
+});
 
 export const NODE_PADDING = 6;
 

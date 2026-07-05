@@ -1,10 +1,9 @@
 import { BaseEdge, type EdgeProps } from '@xyflow/react';
-import { memo, useEffect, useRef } from 'react';
+import { memo } from 'react';
 import { getRoundedOrthogonalPath } from './edgeUtils.ts';
 import type { AppFlowEdge } from './types';
 
 function FlowEdge({
-  id,
   sourceX,
   sourceY,
   targetX,
@@ -15,37 +14,6 @@ function FlowEdge({
 }: EdgeProps<AppFlowEdge>) {
   const sections = data?.sections;
   let path;
-
-  // Log on every render execution to trace render triggers
-  console.log(`[Edge Render] ID: ${id} render call`, {
-    sourceX,
-    sourceY,
-    targetX,
-    targetY,
-    sectionsCount: sections?.length ?? 0
-  });
-
-  const lastPropsRef = useRef({ sourceX, sourceY, targetX, targetY });
-
-  // Log precise delta changes when coordinate values shift
-  useEffect(() => {
-    const prev = lastPropsRef.current;
-    const dxSource = sourceX - prev.sourceX;
-    const dySource = sourceY - prev.sourceY;
-    const dxTarget = targetX - prev.targetX;
-    const dyTarget = targetY - prev.targetY;
-
-    if (dxSource !== 0 || dySource !== 0 || dxTarget !== 0 || dyTarget !== 0) {
-      console.log(`[Edge Debug] ID: ${id} coordinates changed!`, {
-        sourceDiff: { dx: dxSource, dy: dySource },
-        targetDiff: { dx: dxTarget, dy: dyTarget },
-        current: { sourceX, sourceY, targetX, targetY },
-        previous: prev,
-      });
-    }
-
-    lastPropsRef.current = { sourceX, sourceY, targetX, targetY };
-  }, [id, sourceX, sourceY, targetX, targetY]);
 
   if (sections && sections.length > 0) {
     path = sections

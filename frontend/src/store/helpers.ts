@@ -120,10 +120,7 @@ export const updateFlowState = async (
     edges: laidOut.edges,
     expressions: normalizedExprs,
     ...(!options.skipHistory && snapshot
-      ? {
-        past: [...state.past, snapshot],
-        future: [],
-      }
+      ? { past: [...state.past, snapshot], future: [] }
       : {}),
   }));
 
