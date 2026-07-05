@@ -128,7 +128,7 @@ export const getLayoutedElements = async (
 
   const positions: Record<string, { x: number; y: number }> = {};
   layoutedGraph.children?.forEach((n) => {
-    positions[n.id] = { x: Math.round(n.x ?? 0), y: Math.round(n.y ?? 0) };
+    positions[n.id] = { x: n.x ?? 0, y: n.y ?? 0 };
   });
 
   const edgeSections: Record<string, ElkExtendedEdge> = {};
