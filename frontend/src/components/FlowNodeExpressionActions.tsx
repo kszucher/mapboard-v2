@@ -5,15 +5,11 @@ import { FlowNodeExpressionActionsContent } from './FlowNodeExpressionActionsCon
 
 interface ExpressionActionsDropdownProps {
   expressionId: string;
-  isInput: boolean;
-  isOutput: boolean;
   triggerStyle?: React.CSSProperties;
 }
 
 export const FlowNodeExpressionActions = memo(({
   expressionId,
-  isInput,
-  isOutput,
   triggerStyle,
 }: ExpressionActionsDropdownProps) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -35,8 +31,6 @@ export const FlowNodeExpressionActions = memo(({
         {dropdownOpen && (
           <FlowNodeExpressionActionsContent
             expressionId={expressionId}
-            isInput={isInput}
-            isOutput={isOutput}
           />
         )}
       </DropdownMenu.Content>

@@ -47,8 +47,6 @@ const FlowNodeExpressionRowComponent = ({
   const actions = !disabled ? (
     <FlowNodeExpressionActions
       expressionId={expr.id}
-      isInput={leftHandle}
-      isOutput={rightHandle}
     />
   ) : undefined;
 

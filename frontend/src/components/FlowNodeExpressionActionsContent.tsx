@@ -8,14 +8,10 @@ import type { InsertableNodeType } from './types';
 
 export interface ExpressionActionsContentProps {
   expressionId: string;
-  isInput: boolean;
-  isOutput: boolean;
 }
 
 export const FlowNodeExpressionActionsContent = ({
   expressionId,
-  isInput,
-  isOutput,
 }: ExpressionActionsContentProps) => {
   const createExpression = useGraphStore(state => state.createExpression);
   const deleteExpression = useGraphStore(state => state.deleteExpression);
@@ -31,6 +27,9 @@ export const FlowNodeExpressionActionsContent = ({
   const nodes = useGraphStore(useShallow(state => state.nodes));
 
   const expr = useMemo(() => expressions.find(e => e.id === expressionId), [expressions, expressionId]);
+
+  const isInput = expr?.is_input ?? false;
+  const isOutput = expr?.is_output ?? false;
 
   const myExpressions = useMemo(() => {
     if (!expr) return [];
