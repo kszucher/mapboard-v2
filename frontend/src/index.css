@@ -40,3 +40,8 @@ img {
 .react-flow__attribution {
     display: none !important;
 }
+
+.react-flow__node {
+    transform-style: preserve-3d !important;
+    backface-visibility: hidden !important;
+}

@@ -84,7 +84,7 @@ export const Frame = () => {
         style={{
           zIndex: 9999,
           backgroundColor: 'rgba(32, 32, 36, 0.9)',
-          backdropFilter: 'blur(6px)',
+          // backdropFilter: 'blur(6px)',
           borderBottom: '1px solid var(--gray-4)',
         }}
       >
