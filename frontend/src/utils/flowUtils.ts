@@ -126,7 +126,9 @@ export const mapToReactFlowElements = (
       position,
       style: {
         transition: 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1)',
-      },
+        willChange: 'transform',
+        backfaceVisibility: 'hidden',
+      } as const,
       data: {
         node: n,
       },
@@ -232,7 +234,9 @@ export const createNewNode = (
     position: { x: 0, y: 0 },
     style: {
       transition: 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1)',
-    },
+      willChange: 'transform',
+      backfaceVisibility: 'hidden',
+    } as const,
     data: {
       node: newNode,
     }
