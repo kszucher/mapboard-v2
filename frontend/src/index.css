@@ -40,3 +40,7 @@ img {
 .react-flow__attribution {
     display: none !important;
 }
+
+.react-flow__node {
+    transition: transform 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
