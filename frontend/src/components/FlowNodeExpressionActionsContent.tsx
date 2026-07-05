@@ -95,7 +95,7 @@ export const FlowNodeExpressionActionsContent = ({
       });
       return;
     }
-    updateExpression(expressionId, { is_input: !isInput });
+    void updateExpression(expressionId, { is_input: !isInput });
   }, [expressionId, isInput, expressions, updateExpression]);
 
   const handleToggleOutput = useCallback(() => {
@@ -105,7 +105,7 @@ export const FlowNodeExpressionActionsContent = ({
       });
       return;
     }
-    updateExpression(expressionId, { is_output: !isOutput });
+    void updateExpression(expressionId, { is_output: !isOutput });
   }, [expressionId, isOutput, expressions, updateExpression]);
 
   const handleMoveUp = useCallback(() => {
