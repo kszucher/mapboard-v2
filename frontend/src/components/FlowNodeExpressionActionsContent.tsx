@@ -3,7 +3,13 @@ import { DropdownMenu } from '@radix-ui/themes';
 import { useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useGraphStore } from '../store/useGraphStore';
-import { canMoveExpressionDown, canMoveExpressionUp, canToggleExpressionPort } from '../utils/flowUtils';
+import {
+  canMoveExpressionDown,
+  canMoveExpressionUp,
+  canToggleExpressionPort,
+  getAvailableReconnectOptions,
+  getSortedNodeExpressions
+} from '../utils/flowUtils';
 import type { InsertableNodeType } from './types';
 
 export interface ExpressionActionsContentProps {
@@ -33,9 +39,7 @@ export const FlowNodeExpressionActionsContent = ({
 
   const myExpressions = useMemo(() => {
     if (!expr) return [];
-    return expressions
-      .filter(e => e.node_id === expr.node_id)
-      .sort((a, b) => a.idx - b.idx);
+    return getSortedNodeExpressions(expressions, expr.node_id);
   }, [expressions, expr]);
 
   const indexInNode = useMemo(() => {
@@ -65,26 +69,7 @@ export const FlowNodeExpressionActionsContent = ({
   );
 
   const reconnectOptions = useMemo(() => {
-    return expressions
-      .filter(e => {
-        if (!e.is_input) return false;
-        const hasIncoming = edges.some(edge => edge.targetHandle === e.id);
-        return !hasIncoming;
-      })
-      .map(e => {
-        const node = nodes.find(n => n.id === e.node_id);
-        return {
-          expression: e,
-          node,
-          label: node ? `N${node.data.node.iid}-${e.idx}` : `?-${e.idx}`,
-        };
-      })
-      .sort((a, b) => {
-        const aIid = a.node?.data.node.iid ?? 0;
-        const bIid = b.node?.data.node.iid ?? 0;
-        if (aIid !== bIid) return aIid - bIid;
-        return a.expression.idx - b.expression.idx;
-      });
+    return getAvailableReconnectOptions(expressions, edges, nodes);
   }, [expressions, edges, nodes]);
 
   const hasConnectedNode = !!connectedEdge;

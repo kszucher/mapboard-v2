@@ -313,3 +313,45 @@ export const updateNodeNodeType = (node: AppFlowNode, targetType: NodeType): App
     }
   };
 };
+
+export interface ReconnectOption {
+  expression: ApiExpression;
+  node: AppFlowNode | undefined;
+  label: string;
+}
+
+export const getAvailableReconnectOptions = (
+  expressions: ApiExpression[],
+  edges: AppFlowEdge[],
+  nodes: AppFlowNode[]
+): ReconnectOption[] => {
+  return expressions
+    .filter(e => {
+      if (!e.is_input) return false;
+      const hasIncoming = edges.some(edge => edge.targetHandle === e.id);
+      return !hasIncoming;
+    })
+    .map(e => {
+      const node = nodes.find(n => n.id === e.node_id);
+      return {
+        expression: e,
+        node,
+        label: node ? `N${node.data.node.iid}-${e.idx}` : `?-${e.idx}`,
+      };
+    })
+    .sort((a, b) => {
+      const aIid = a.node?.data.node.iid ?? 0;
+      const bIid = b.node?.data.node.iid ?? 0;
+      if (aIid !== bIid) return aIid - bIid;
+      return a.expression.idx - b.expression.idx;
+    });
+};
+
+export const getSortedNodeExpressions = (
+  expressions: ApiExpression[],
+  nodeId: string
+): ApiExpression[] => {
+  return expressions
+    .filter(e => e.node_id === nodeId)
+    .sort((a, b) => a.idx - b.idx);
+};
