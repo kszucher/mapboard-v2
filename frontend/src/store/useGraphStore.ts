@@ -26,13 +26,20 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
   ...createFlowSlice(set, get, store),
 
   onNodesChange: (changes) => {
+
+    // Skip 'select' changes: they're a no-op for us but would still create a new
+    // `nodes` reference, which triggers a full edge geometry recompute in xyflow
+    // and resets/stutters every edge's flow animation on click.
+    const meaningfulChanges = changes.filter(c => c.type !== 'select');
+    if (meaningfulChanges.length === 0) return; // no-op click: skip the set() entirely
+
     set((state) => {
-      const newNodes = applyNodeChanges(changes, state.nodes);
+      const newNodes = applyNodeChanges(meaningfulChanges, state.nodes);
       return { nodes: newNodes as AppFlowNode[] };
     });
 
     const { nodes, edges, graphId, isLoading, expressions } = get();
-    const hasDimensionsChange = changes.some(c => c.type === 'dimensions');
+    const hasDimensionsChange = meaningfulChanges.some(c => c.type === 'dimensions');
 
     if (hasDimensionsChange && isLoading) {
       const allMeasured = nodes.length > 0 && nodes.every(
