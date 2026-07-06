@@ -8,6 +8,7 @@ import {
   canMoveExpressionUp,
   canToggleExpressionPort,
   getAvailableReconnectOptions,
+  getOutgoingEdgeOptions,
   getSortedNodeExpressions
 } from '../utils/flowUtils';
 import type { InsertableNodeType } from './types';
@@ -72,7 +73,11 @@ export const FlowNodeExpressionActionsContent = ({
     return getAvailableReconnectOptions(expressions, edges, nodes);
   }, [expressions, edges, nodes]);
 
-  const hasConnectedNode = !!connectedEdge;
+  const outgoingEdgeOptions = useMemo(() => {
+    return getOutgoingEdgeOptions(expressionId, edges, expressions, nodes);
+  }, [expressionId, edges, expressions, nodes]);
+
+  const hasConnectedNode = outgoingEdgeOptions.length > 0;
 
   const handleAddConnectedNode = useCallback(
     (nodeType: InsertableNodeType) => {
@@ -202,14 +207,24 @@ export const FlowNodeExpressionActionsContent = ({
                 </DropdownMenu.SubContent>
               </DropdownMenu.Sub>
 
-              <DropdownMenu.Item
-                onClick={() => {
-                  void deleteOutgoingEdge(expressionId);
-                }}
-                color="red"
-              >
-                Delete Outgoing Edge
-              </DropdownMenu.Item>
+              <DropdownMenu.Sub>
+                <DropdownMenu.SubTrigger>
+                  Delete Outgoing Edge
+                </DropdownMenu.SubTrigger>
+                <DropdownMenu.SubContent>
+                  {outgoingEdgeOptions.map(opt => (
+                    <DropdownMenu.Item
+                      key={opt.edgeId}
+                      onClick={() => {
+                        void deleteOutgoingEdge(opt.edgeId);
+                      }}
+                      color="red"
+                    >
+                      {opt.label}
+                    </DropdownMenu.Item>
+                  ))}
+                </DropdownMenu.SubContent>
+              </DropdownMenu.Sub>
             </>
           ) : (
             <DropdownMenu.Sub>

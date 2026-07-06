@@ -210,9 +210,9 @@ export const createNodeSlice: StateCreator<
     });
   },
 
-  deleteOutgoingEdge: async (expressionId) => {
+  deleteOutgoingEdge: async (edgeId) => {
     await updateFlowState(set, get, (state) => {
-      const nextEdges = state.edges.filter(e => e.sourceHandle !== expressionId);
+      const nextEdges = state.edges.filter(e => e.id !== edgeId);
       return {
         nodes: state.nodes,
         edges: nextEdges,

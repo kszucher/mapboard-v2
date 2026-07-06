@@ -314,6 +314,13 @@ export const updateNodeNodeType = (node: AppFlowNode, targetType: NodeType): App
   };
 };
 
+export const formatExpressionLabel = (
+  node: AppFlowNode | undefined,
+  exprIdx: number
+): string => {
+  return node ? `N${node.data.node.iid}-${exprIdx}` : `?-${exprIdx}`;
+};
+
 export interface ReconnectOption {
   expression: ApiExpression;
   node: AppFlowNode | undefined;
@@ -336,7 +343,7 @@ export const getAvailableReconnectOptions = (
       return {
         expression: e,
         node,
-        label: node ? `N${node.data.node.iid}-${e.idx}` : `?-${e.idx}`,
+        label: formatExpressionLabel(node, e.idx),
       };
     })
     .sort((a, b) => {
@@ -345,6 +352,28 @@ export const getAvailableReconnectOptions = (
       if (aIid !== bIid) return aIid - bIid;
       return a.expression.idx - b.expression.idx;
     });
+};
+
+export interface OutgoingEdgeOption {
+  edgeId: string;
+  label: string;
+}
+
+export const getOutgoingEdgeOptions = (
+  expressionId: string,
+  edges: AppFlowEdge[],
+  expressions: ApiExpression[],
+  nodes: AppFlowNode[]
+): OutgoingEdgeOption[] => {
+  const outgoingEdges = edges.filter(e => e.sourceHandle === expressionId);
+  return outgoingEdges.map(edge => {
+    const targetExpr = expressions.find(e => e.id === edge.targetHandle);
+    const targetNode = nodes.find(n => n.id === edge.target);
+    return {
+      edgeId: edge.id,
+      label: formatExpressionLabel(targetNode, targetExpr?.idx ?? 0),
+    };
+  });
 };
 
 export const getSortedNodeExpressions = (
