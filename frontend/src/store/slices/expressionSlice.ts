@@ -84,17 +84,27 @@ export const createExpressionSlice: StateCreator<
       return;
     }
 
+    const shouldSkipHistory = !('is_input' in updates || 'is_output' in updates);
+
     await updateFlowState(set, get, (state) => {
       const nextExpressions = state.expressions.map((e) =>
         e.id === expressionId ? { ...e, ...updates } : e
       );
 
+      let nextEdges = state.edges;
+      if (updates.is_input === false) {
+        nextEdges = nextEdges.filter(e => e.targetHandle !== expressionId);
+      }
+      if (updates.is_output === false) {
+        nextEdges = nextEdges.filter(e => e.sourceHandle !== expressionId);
+      }
+
       return {
         nodes: state.nodes,
-        edges: state.edges,
+        edges: nextEdges,
         expressions: nextExpressions,
       };
-    }, { skipHistory: true });
+    }, { skipHistory: shouldSkipHistory });
   },
 
   moveExpression: async (expressionId, direction) => {
