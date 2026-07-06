@@ -6,7 +6,6 @@ import { useGraphStore } from '../store/useGraphStore';
 import {
   canMoveExpressionDown,
   canMoveExpressionUp,
-  canToggleExpressionPort,
   getAvailableReconnectOptions,
   getOutgoingEdgeOptions,
   getSortedNodeExpressions
@@ -50,13 +49,13 @@ export const FlowNodeExpressionActionsContent = ({
 
   const canMoveUp = useMemo(() => {
     if (indexInNode === -1) return false;
-    return canMoveExpressionUp(indexInNode, myExpressions);
-  }, [indexInNode, myExpressions]);
+    return canMoveExpressionUp(indexInNode);
+  }, [indexInNode]);
 
   const canMoveDown = useMemo(() => {
     if (indexInNode === -1) return false;
-    return canMoveExpressionDown(indexInNode, myExpressions);
-  }, [indexInNode, myExpressions]);
+    return canMoveExpressionDown(indexInNode, myExpressions.length);
+  }, [indexInNode, myExpressions.length]);
 
   const canDelete = useMemo(() => {
     return myExpressions.length > 1;
@@ -94,24 +93,12 @@ export const FlowNodeExpressionActionsContent = ({
   );
 
   const handleToggleInput = useCallback(() => {
-    if (!canToggleExpressionPort(expressionId, 'is_input', !isInput, expressions)) {
-      useGraphStore.setState({
-        errorMessage: "Cannot toggle: expressions must follow the order: Inputs -> Both -> None -> Outputs."
-      });
-      return;
-    }
     void updateExpression(expressionId, { is_input: !isInput });
-  }, [expressionId, isInput, expressions, updateExpression]);
+  }, [expressionId, isInput, updateExpression]);
 
   const handleToggleOutput = useCallback(() => {
-    if (!canToggleExpressionPort(expressionId, 'is_output', !isOutput, expressions)) {
-      useGraphStore.setState({
-        errorMessage: "Cannot toggle: expressions must follow the order: Inputs -> Both -> None -> Outputs."
-      });
-      return;
-    }
     void updateExpression(expressionId, { is_output: !isOutput });
-  }, [expressionId, isOutput, expressions, updateExpression]);
+  }, [expressionId, isOutput, updateExpression]);
 
   const handleMoveUp = useCallback(() => {
     void swapExpressionIndices(expressionId, 'up');

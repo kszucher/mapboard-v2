@@ -1,6 +1,5 @@
 import type { StateCreator } from 'zustand';
 import type { ApiExpression } from '../../components/types';
-import { isValidOrder } from '../../utils/flowUtils';
 import { updateFlowState } from '../helpers';
 import type { ExpressionSlice, GraphStoreState } from '../types';
 
@@ -121,11 +120,6 @@ export const createExpressionSlice: StateCreator<
     nextNodeExprs[currentIndex] = { ...otherExpr, idx: expr.idx };
     nextNodeExprs[targetIndex] = { ...expr, idx: otherExpr.idx };
     nextNodeExprs.sort((a, b) => a.idx - b.idx);
-
-    if (!isValidOrder(nextNodeExprs)) {
-      set({ errorMessage: 'Invalid order: expressions must follow the order: Inputs -> Both -> None -> Outputs.' });
-      return;
-    }
 
     await updateFlowState(set, get, (state) => {
       const nextExpressions = state.expressions.map(e => {

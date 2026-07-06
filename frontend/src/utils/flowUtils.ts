@@ -234,57 +234,18 @@ export const createNewNode = (
   return { appNode, defaultExprs };
 };
 
-export const getExprCategory = (e: { is_input: boolean; is_output: boolean }): number => {
-  if (e.is_input && !e.is_output) return 0; // Input only
-  if (e.is_input && e.is_output) return 1;    // Both
-  if (!e.is_input && !e.is_output) return 2; // None
-  return 3;                                  // Output only
-};
-
-export const isValidOrder = (exprs: { is_input: boolean; is_output: boolean }[]): boolean => {
-  for (let i = 0; i < exprs.length - 1; i++) {
-    if (getExprCategory(exprs[i]) > getExprCategory(exprs[i + 1])) {
-      return false;
-    }
-  }
-  return true;
-};
-
 export const canShortcircuitNode = (expressions: ApiExpression[]): boolean => {
   const inputs = expressions.filter(e => e.is_input);
   const outputs = expressions.filter(e => e.is_output);
   return inputs.length === 1 && outputs.length === 1;
 };
 
-export const canMoveExpressionUp = (index: number, expressions: ApiExpression[]): boolean => {
-  if (index === 0) return false;
-  const test = [...expressions];
-  const tmp = test[index];
-  test[index] = test[index - 1];
-  test[index - 1] = tmp;
-  return isValidOrder(test);
+export const canMoveExpressionUp = (index: number): boolean => {
+  return index > 0;
 };
 
-export const canMoveExpressionDown = (index: number, expressions: ApiExpression[]): boolean => {
-  if (index === expressions.length - 1) return false;
-  const test = [...expressions];
-  const tmp = test[index];
-  test[index] = test[index + 1];
-  test[index + 1] = tmp;
-  return isValidOrder(test);
-};
-
-export const canToggleExpressionPort = (
-  expressionId: string,
-  portField: 'is_input' | 'is_output',
-  nextValue: boolean,
-  expressions: ApiExpression[]
-): boolean => {
-  const expr = expressions.find(e => e.id === expressionId);
-  if (!expr) return false;
-  const nodeExprs = expressions.filter(e => e.node_id === expr.node_id).sort((a, b) => a.idx - b.idx);
-  const updatedExprs = nodeExprs.map(e => e.id === expressionId ? { ...e, [portField]: nextValue } : e);
-  return isValidOrder(updatedExprs);
+export const canMoveExpressionDown = (index: number, totalCount: number): boolean => {
+  return index < totalCount - 1;
 };
 
 export const getPrimaryInputExprId = (expressions: ApiExpression[]): string => {
