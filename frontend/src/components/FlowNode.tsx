@@ -5,7 +5,7 @@ import { type NodeProps, useUpdateNodeInternals } from '@xyflow/react';
 import { memo, useCallback, useEffect, useMemo } from 'react';
 import { useShallow } from 'zustand/shallow';
 import { useGraphStore } from '../store/useGraphStore';
-import { canShortcircuitNode, NODE_CONVERSIONS, } from '../utils/flowUtils';
+import { canShortcircuitNode, getAvailableConversions } from '../utils/flowUtils';
 import { FlowNodeExpressionRow } from './FlowNodeExpressionRow.tsx';
 import { NODE_PADDING } from './layout.ts';
 import { type AppFlowNode, type NodeType } from './types.ts';
@@ -49,7 +49,9 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
     void shortcircuitNode(data.node.id);
   }, [data.node.id, shortcircuitNode]);
 
-  const conversionConfig = NODE_CONVERSIONS[data.node.node_type];
+  const conversions = useMemo(() => {
+    return getAvailableConversions(data.node.node_type);
+  }, [data.node.node_type]);
 
   const handleConvert = useCallback((targetType: NodeType) => {
     void convertNode(data.node.id, targetType);
@@ -96,15 +98,17 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
               </IconButton>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content onCloseAutoFocus={e => e.preventDefault()}>
-              {conversionConfig && (
+              {conversions.length > 0 && (
                 <DropdownMenu.Sub>
                   <DropdownMenu.SubTrigger>
                     {'Convert'}
                   </DropdownMenu.SubTrigger>
                   <DropdownMenu.SubContent>
-                    <DropdownMenu.Item onClick={() => handleConvert(conversionConfig.targetType)}>
-                      {conversionConfig.label}
-                    </DropdownMenu.Item>
+                    {conversions.map(c => (
+                      <DropdownMenu.Item key={c.targetType} onClick={() => handleConvert(c.targetType)}>
+                        {c.label}
+                      </DropdownMenu.Item>
+                    ))}
                   </DropdownMenu.SubContent>
                 </DropdownMenu.Sub>
               )}

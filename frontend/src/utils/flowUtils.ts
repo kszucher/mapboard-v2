@@ -15,15 +15,26 @@ export const NODE_LABELS: Record<NodeType, string> = {
   AGENTIC_JOIN: 'Agentic Join',
 };
 
-export const NODE_CONVERSIONS: Record<NodeType, { targetType: NodeType; label: string } | null> = {
-  AGENT: { targetType: 'LOGIC', label: 'Logic' },
-  LOGIC: { targetType: 'AGENT', label: 'Agent' },
-  AGENTIC_SWITCH: { targetType: 'LOGICAL_SWITCH', label: 'Logical Switch' },
-  LOGICAL_SWITCH: { targetType: 'AGENTIC_SWITCH', label: 'Agentic Switch' },
-  START: null,
-  END: null,
-  LOGICAL_JOIN: null,
-  AGENTIC_JOIN: null,
+export const getAvailableConversions = (
+  currentType: NodeType
+): { targetType: NodeType; label: string }[] => {
+  if (currentType === 'START' || currentType === 'END') {
+    return [];
+  }
+  const allTypes: NodeType[] = [
+    'LOGIC',
+    'AGENT',
+    'LOGICAL_SWITCH',
+    'AGENTIC_SWITCH',
+    'LOGICAL_JOIN',
+    'AGENTIC_JOIN',
+  ];
+  return allTypes
+    .filter(t => t !== currentType)
+    .map(t => ({
+      targetType: t,
+      label: NODE_LABELS[t],
+    }));
 };
 
 export const normalizeExpressions = (expressions: ApiExpression[]): ApiExpression[] => {
