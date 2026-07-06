@@ -92,13 +92,9 @@ export const FlowNodeExpressionActionsContent = ({
     [insertNodeBetween, expressionId]
   );
 
-  const handleToggleInput = useCallback(() => {
-    void updateExpression(expressionId, { is_input: !isInput });
-  }, [expressionId, isInput, updateExpression]);
-
-  const handleToggleOutput = useCallback(() => {
-    void updateExpression(expressionId, { is_output: !isOutput });
-  }, [expressionId, isOutput, updateExpression]);
+  const handleUpdateConnection = useCallback((isInputVal: boolean, isOutputVal: boolean) => {
+    void updateExpression(expressionId, { is_input: isInputVal, is_output: isOutputVal });
+  }, [expressionId, updateExpression]);
 
   const handleMoveTop = useCallback(() => {
     void moveExpression(expressionId, 'top');
@@ -132,6 +128,27 @@ export const FlowNodeExpressionActionsContent = ({
 
   return (
     <>
+      <DropdownMenu.Sub>
+        <DropdownMenu.SubTrigger>
+          Connection
+        </DropdownMenu.SubTrigger>
+        <DropdownMenu.SubContent>
+          <DropdownMenu.Item onClick={() => handleUpdateConnection(true, true)}>
+            {isInput && isOutput ? '✓ Input And Output' : '  Input And Output'}
+          </DropdownMenu.Item>
+          <DropdownMenu.Item onClick={() => handleUpdateConnection(true, false)}>
+            {isInput && !isOutput ? '✓ Input Only' : '  Input Only'}
+          </DropdownMenu.Item>
+          <DropdownMenu.Item onClick={() => handleUpdateConnection(false, true)}>
+            {!isInput && isOutput ? '✓ Output Only' : '  Output Only'}
+          </DropdownMenu.Item>
+          <DropdownMenu.Item onClick={() => handleUpdateConnection(false, false)}>
+            {!isInput && !isOutput ? '✓ None' : '  None'}
+          </DropdownMenu.Item>
+        </DropdownMenu.SubContent>
+      </DropdownMenu.Sub>
+      <DropdownMenu.Separator/>
+
       <DropdownMenu.Item onClick={handleAddAbove}>
         <PlusIcon style={{ marginRight: 8 }}/> Add Expression Above
       </DropdownMenu.Item>
@@ -151,14 +168,6 @@ export const FlowNodeExpressionActionsContent = ({
       </DropdownMenu.Item>
       <DropdownMenu.Item onClick={handleMoveBottom} disabled={!canMoveDown}>
         <ArrowDownIcon style={{ marginRight: 8 }}/> Move to Bottom
-      </DropdownMenu.Item>
-      <DropdownMenu.Separator/>
-
-      <DropdownMenu.Item onClick={handleToggleInput}>
-        {isInput ? '✓ Input Handle' : '  Input Handle'}
-      </DropdownMenu.Item>
-      <DropdownMenu.Item onClick={handleToggleOutput}>
-        {isOutput ? '✓ Output Handle' : '  Output Handle'}
       </DropdownMenu.Item>
 
       {!hideAddNode && (
