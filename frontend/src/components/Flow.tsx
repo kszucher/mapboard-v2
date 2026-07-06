@@ -1,3 +1,4 @@
+import type { OnError } from '@xyflow/react';
 import { Controls, ReactFlow, useReactFlow } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useCallback } from 'react';
@@ -41,6 +42,13 @@ const FlowContent = ({
     [fitView],
   );
 
+  const handleError: OnError = useCallback((code, message) => {
+    if (code === '008') {
+      return;
+    }
+    console.warn(message);
+  }, []);
+
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <div style={{
@@ -67,6 +75,7 @@ const FlowContent = ({
           zoomOnDoubleClick={false}
           panOnScroll={false}
           onDoubleClick={handleDoubleClick}
+          onError={handleError}
         >
           <Controls/>
         </ReactFlow>

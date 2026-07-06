@@ -37,5 +37,3 @@ export const FlowNodeExpressionActions = memo(({
     </DropdownMenu.Root>
   );
 });
-
-FlowNodeExpressionActions.displayName = 'FlowNodeExpressionActions';

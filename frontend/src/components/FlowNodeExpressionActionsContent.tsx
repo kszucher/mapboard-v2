@@ -6,7 +6,6 @@ import { useGraphStore } from '../store/useGraphStore';
 import {
   canMoveExpressionDown,
   canMoveExpressionUp,
-  getAvailableReconnectOptions,
   getOutgoingEdgeOptions,
   getSortedNodeExpressions
 } from '../utils/flowUtils';
@@ -25,7 +24,6 @@ export const FlowNodeExpressionActionsContent = ({
   const moveExpression = useGraphStore(state => state.moveExpression);
   const addConnectedNode = useGraphStore(state => state.addConnectedNode);
   const insertNodeBetween = useGraphStore(state => state.insertNodeBetween);
-  const reconnectEdge = useGraphStore(state => state.reconnectEdge);
   const deleteOutgoingEdge = useGraphStore(state => state.deleteOutgoingEdge);
 
   const expressions = useGraphStore(useShallow(state => state.expressions));
@@ -63,14 +61,7 @@ export const FlowNodeExpressionActionsContent = ({
 
   const hideAddNode = !isOutput;
 
-  // Only this expression's own outgoing edge, not the whole edges array.
-  const connectedEdge = useGraphStore(
-    useShallow(state => state.edges.find(e => e.sourceHandle === expressionId))
-  );
 
-  const reconnectOptions = useMemo(() => {
-    return getAvailableReconnectOptions(expressions, edges, nodes);
-  }, [expressions, edges, nodes]);
 
   const outgoingEdgeOptions = useMemo(() => {
     return getOutgoingEdgeOptions(expressionId, edges, expressions, nodes);
@@ -190,30 +181,6 @@ export const FlowNodeExpressionActionsContent = ({
                     onClick={() => handleInsertNode('LOGICAL_JOIN')}>{'Logical Join'}</DropdownMenu.Item>
                   <DropdownMenu.Item
                     onClick={() => handleInsertNode('AGENTIC_JOIN')}>{'Agentic Join'}</DropdownMenu.Item>
-                </DropdownMenu.SubContent>
-              </DropdownMenu.Sub>
-
-              <DropdownMenu.Sub>
-                <DropdownMenu.SubTrigger>
-                  Reconnect To
-                </DropdownMenu.SubTrigger>
-                <DropdownMenu.SubContent>
-                  {reconnectOptions.length === 0 ? (
-                    <DropdownMenu.Item disabled>No available inputs</DropdownMenu.Item>
-                  ) : (
-                    reconnectOptions.map(opt => (
-                      <DropdownMenu.Item
-                        key={opt.expression.id}
-                        onClick={() => {
-                          if (connectedEdge) {
-                            void reconnectEdge(connectedEdge.id, opt.expression.node_id, opt.expression.id);
-                          }
-                        }}
-                      >
-                        {opt.label}
-                      </DropdownMenu.Item>
-                    ))
-                  )}
                 </DropdownMenu.SubContent>
               </DropdownMenu.Sub>
 
