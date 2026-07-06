@@ -61,8 +61,6 @@ export const FlowNodeExpressionActionsContent = ({
 
   const hideAddNode = !isOutput;
 
-
-
   const outgoingEdgeOptions = useMemo(() => {
     return getOutgoingEdgeOptions(expressionId, edges, expressions, nodes);
   }, [expressionId, edges, expressions, nodes]);
