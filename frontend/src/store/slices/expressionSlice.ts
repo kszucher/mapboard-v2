@@ -97,7 +97,7 @@ export const createExpressionSlice: StateCreator<
     }, { skipHistory: true });
   },
 
-  swapExpressionIndices: async (expressionId, direction) => {
+  moveExpression: async (expressionId, direction) => {
     const expr = get().expressions.find(e => e.id === expressionId);
     if (!expr) return;
 
@@ -108,35 +108,69 @@ export const createExpressionSlice: StateCreator<
     const currentIndex = nodeExprs.findIndex(e => e.id === expressionId);
     if (currentIndex === -1) return;
 
-    let targetIndex = -1;
-    if (direction === 'up' && currentIndex > 0) targetIndex = currentIndex - 1;
-    else if (direction === 'down' && currentIndex < nodeExprs.length - 1) targetIndex = currentIndex + 1;
+    if (direction === 'up' || direction === 'down') {
+      let targetIndex = -1;
+      if (direction === 'up' && currentIndex > 0) targetIndex = currentIndex - 1;
+      else if (direction === 'down' && currentIndex < nodeExprs.length - 1) targetIndex = currentIndex + 1;
 
-    if (targetIndex === -1) return;
+      if (targetIndex === -1) return;
+      const otherExpr = nodeExprs[targetIndex];
 
-    const otherExpr = nodeExprs[targetIndex];
+      await updateFlowState(set, get, (state) => {
+        const nextExpressions = state.expressions.map(e => {
+          if (e.id === expr.id) {
+            return { ...e, idx: otherExpr.idx };
+          }
+          if (e.id === otherExpr.id) {
+            return { ...e, idx: expr.idx };
+          }
+          return e;
+        });
 
-    const nextNodeExprs = [...nodeExprs];
-    nextNodeExprs[currentIndex] = { ...otherExpr, idx: expr.idx };
-    nextNodeExprs[targetIndex] = { ...expr, idx: otherExpr.idx };
-    nextNodeExprs.sort((a, b) => a.idx - b.idx);
-
-    await updateFlowState(set, get, (state) => {
-      const nextExpressions = state.expressions.map(e => {
-        if (e.id === expr.id) {
-          return { ...e, idx: otherExpr.idx };
-        }
-        if (e.id === otherExpr.id) {
-          return { ...e, idx: expr.idx };
-        }
-        return e;
+        return {
+          nodes: state.nodes,
+          edges: state.edges,
+          expressions: nextExpressions,
+        };
       });
-
-      return {
-        nodes: state.nodes,
-        edges: state.edges,
-        expressions: nextExpressions,
-      };
-    });
+    } else if (direction === 'top') {
+      if (currentIndex === 0) return;
+      await updateFlowState(set, get, (state) => {
+        const nextExpressions = state.expressions.map(e => {
+          if (e.node_id !== expr.node_id) return e;
+          if (e.id === expr.id) {
+            return { ...e, idx: 0 };
+          }
+          if (e.idx < currentIndex) {
+            return { ...e, idx: e.idx + 1 };
+          }
+          return e;
+        });
+        return {
+          nodes: state.nodes,
+          edges: state.edges,
+          expressions: nextExpressions,
+        };
+      });
+    } else if (direction === 'bottom') {
+      if (currentIndex === nodeExprs.length - 1) return;
+      await updateFlowState(set, get, (state) => {
+        const nextExpressions = state.expressions.map(e => {
+          if (e.node_id !== expr.node_id) return e;
+          if (e.id === expr.id) {
+            return { ...e, idx: nodeExprs.length - 1 };
+          }
+          if (e.idx > currentIndex) {
+            return { ...e, idx: e.idx - 1 };
+          }
+          return e;
+        });
+        return {
+          nodes: state.nodes,
+          edges: state.edges,
+          expressions: nextExpressions,
+        };
+      });
+    }
   },
 });

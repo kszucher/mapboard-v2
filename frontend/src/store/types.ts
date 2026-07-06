@@ -50,7 +50,7 @@ export interface ExpressionSlice {
     is_input?: boolean;
     is_output?: boolean
   }) => Promise<void>;
-  swapExpressionIndices: (expressionId: string, direction: 'up' | 'down') => Promise<void>;
+  moveExpression: (expressionId: string, direction: 'up' | 'down' | 'top' | 'bottom') => Promise<void>;
 }
 
 export interface HistorySlice {

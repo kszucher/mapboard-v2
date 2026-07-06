@@ -22,7 +22,7 @@ export const FlowNodeExpressionActionsContent = ({
   const createExpression = useGraphStore(state => state.createExpression);
   const deleteExpression = useGraphStore(state => state.deleteExpression);
   const updateExpression = useGraphStore(state => state.updateExpression);
-  const swapExpressionIndices = useGraphStore(state => state.swapExpressionIndices);
+  const moveExpression = useGraphStore(state => state.moveExpression);
   const addConnectedNode = useGraphStore(state => state.addConnectedNode);
   const insertNodeBetween = useGraphStore(state => state.insertNodeBetween);
   const reconnectEdge = useGraphStore(state => state.reconnectEdge);
@@ -100,13 +100,21 @@ export const FlowNodeExpressionActionsContent = ({
     void updateExpression(expressionId, { is_output: !isOutput });
   }, [expressionId, isOutput, updateExpression]);
 
+  const handleMoveTop = useCallback(() => {
+    void moveExpression(expressionId, 'top');
+  }, [expressionId, moveExpression]);
+
   const handleMoveUp = useCallback(() => {
-    void swapExpressionIndices(expressionId, 'up');
-  }, [expressionId, swapExpressionIndices]);
+    void moveExpression(expressionId, 'up');
+  }, [expressionId, moveExpression]);
 
   const handleMoveDown = useCallback(() => {
-    void swapExpressionIndices(expressionId, 'down');
-  }, [expressionId, swapExpressionIndices]);
+    void moveExpression(expressionId, 'down');
+  }, [expressionId, moveExpression]);
+
+  const handleMoveBottom = useCallback(() => {
+    void moveExpression(expressionId, 'bottom');
+  }, [expressionId, moveExpression]);
 
   const handleDeleteItem = useCallback(() => {
     void deleteExpression(expressionId);
@@ -132,11 +140,17 @@ export const FlowNodeExpressionActionsContent = ({
       </DropdownMenu.Item>
       <DropdownMenu.Separator/>
 
+      <DropdownMenu.Item onClick={handleMoveTop} disabled={!canMoveUp}>
+        <ArrowUpIcon style={{ marginRight: 8 }}/> Move to Top
+      </DropdownMenu.Item>
       <DropdownMenu.Item onClick={handleMoveUp} disabled={!canMoveUp}>
         <ArrowUpIcon style={{ marginRight: 8 }}/> Move Up
       </DropdownMenu.Item>
       <DropdownMenu.Item onClick={handleMoveDown} disabled={!canMoveDown}>
         <ArrowDownIcon style={{ marginRight: 8 }}/> Move Down
+      </DropdownMenu.Item>
+      <DropdownMenu.Item onClick={handleMoveBottom} disabled={!canMoveDown}>
+        <ArrowDownIcon style={{ marginRight: 8 }}/> Move to Bottom
       </DropdownMenu.Item>
       <DropdownMenu.Separator/>
 
