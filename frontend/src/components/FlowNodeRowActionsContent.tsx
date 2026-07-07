@@ -125,6 +125,53 @@ export const FlowNodeRowActionsContent = ({
     void createExpression(expr.node_id, expr.is_input, expr.is_output, expr.idx + 1);
   }, [createExpression, expr]);
 
+  const renderInsertSubmenu = (direction: 'before' | 'after') => {
+    const isAfter = direction === 'after';
+    const label = isAfter ? 'Insert Node After' : 'Insert Node Before';
+    const isAllowed = isAfter ? isOutput : isInput;
+    return (
+      <DropdownMenu.Sub>
+        <DropdownMenu.SubTrigger disabled={!isAllowed}>
+          <PlusIcon style={{ marginRight: 8 }}/> {label}
+        </DropdownMenu.SubTrigger>
+        <DropdownMenu.SubContent>
+          {INSERTABLE_NODE_TYPES.map(item => (
+            <DropdownMenu.Item key={item.type} onClick={() => handleInsert(item.type, direction)}>
+              {item.label}
+            </DropdownMenu.Item>
+          ))}
+        </DropdownMenu.SubContent>
+      </DropdownMenu.Sub>
+    );
+  };
+
+  const renderDeleteSubmenu = (direction: 'incoming' | 'outgoing') => {
+    const isOutgoing = direction === 'outgoing';
+    const label = isOutgoing ? 'Delete Outgoing Edge' : 'Delete Incoming Edge';
+    const hasEdges = isOutgoing ? hasOutgoingEdges : hasIncomingEdges;
+    const options = isOutgoing ? outgoingEdgeOptions : incomingEdgeOptions;
+    return (
+      <DropdownMenu.Sub>
+        <DropdownMenu.SubTrigger disabled={!hasEdges}>
+          {label}
+        </DropdownMenu.SubTrigger>
+        <DropdownMenu.SubContent>
+          {options.map(opt => (
+            <DropdownMenu.Item
+              key={opt.edgeId}
+              onClick={() => {
+                void deleteEdge(opt.edgeId);
+              }}
+              color="red"
+            >
+              {opt.label}
+            </DropdownMenu.Item>
+          ))}
+        </DropdownMenu.SubContent>
+      </DropdownMenu.Sub>
+    );
+  };
+
   return (
     <>
       <DropdownMenu.Sub>
@@ -169,78 +216,13 @@ export const FlowNodeRowActionsContent = ({
         <ArrowDownIcon style={{ marginRight: 8 }}/> Move to Bottom
       </DropdownMenu.Item>
 
-      {(isOutput || isInput) && (
-        <>
-          <DropdownMenu.Separator/>
-          {isOutput && (
-            <DropdownMenu.Sub>
-              <DropdownMenu.SubTrigger>
-                <PlusIcon style={{ marginRight: 8 }}/> Insert Node After
-              </DropdownMenu.SubTrigger>
-              <DropdownMenu.SubContent>
-                {INSERTABLE_NODE_TYPES.map(item => (
-                  <DropdownMenu.Item key={item.type} onClick={() => handleInsert(item.type, 'after')}>
-                    {item.label}
-                  </DropdownMenu.Item>
-                ))}
-              </DropdownMenu.SubContent>
-            </DropdownMenu.Sub>
-          )}
-          {isInput && (
-            <DropdownMenu.Sub>
-              <DropdownMenu.SubTrigger>
-                <PlusIcon style={{ marginRight: 8 }}/> Insert Node Before
-              </DropdownMenu.SubTrigger>
-              <DropdownMenu.SubContent>
-                {INSERTABLE_NODE_TYPES.map(item => (
-                  <DropdownMenu.Item key={item.type} onClick={() => handleInsert(item.type, 'before')}>
-                    {item.label}
-                  </DropdownMenu.Item>
-                ))}
-              </DropdownMenu.SubContent>
-            </DropdownMenu.Sub>
-          )}
-        </>
-      )}
+      <DropdownMenu.Separator/>
+      {renderInsertSubmenu('after')}
+      {renderInsertSubmenu('before')}
 
       <DropdownMenu.Separator/>
-      <DropdownMenu.Sub>
-        <DropdownMenu.SubTrigger disabled={!hasOutgoingEdges}>
-          Delete Outgoing Edge
-        </DropdownMenu.SubTrigger>
-        <DropdownMenu.SubContent>
-          {outgoingEdgeOptions.map(opt => (
-            <DropdownMenu.Item
-              key={opt.edgeId}
-              onClick={() => {
-                void deleteEdge(opt.edgeId);
-              }}
-              color="red"
-            >
-              {opt.label}
-            </DropdownMenu.Item>
-          ))}
-        </DropdownMenu.SubContent>
-      </DropdownMenu.Sub>
-
-      <DropdownMenu.Sub>
-        <DropdownMenu.SubTrigger disabled={!hasIncomingEdges}>
-          Delete Incoming Edge
-        </DropdownMenu.SubTrigger>
-        <DropdownMenu.SubContent>
-          {incomingEdgeOptions.map(opt => (
-            <DropdownMenu.Item
-              key={opt.edgeId}
-              onClick={() => {
-                void deleteEdge(opt.edgeId);
-              }}
-              color="red"
-            >
-              {opt.label}
-            </DropdownMenu.Item>
-          ))}
-        </DropdownMenu.SubContent>
-      </DropdownMenu.Sub>
+      {renderDeleteSubmenu('outgoing')}
+      {renderDeleteSubmenu('incoming')}
 
       <DropdownMenu.Separator/>
       <DropdownMenu.Item onClick={handleDeleteItem} color="red" disabled={!canDelete}>

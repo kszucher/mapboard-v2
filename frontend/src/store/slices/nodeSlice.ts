@@ -29,7 +29,7 @@ export const createNodeSlice: StateCreator<
       };
     });
   },
-  
+
   insertNode: async (expressionId, nodeType, direction) => {
     const { graphId } = get();
     if (!graphId) return;
