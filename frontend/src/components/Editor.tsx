@@ -6,7 +6,7 @@ interface PlainEditorProps {
   disabled?: boolean;
 }
 
-export const FlowNodeExpressionEditor = ({
+export const Editor = ({
   initialValue,
   onSave,
   disabled = false,

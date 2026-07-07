@@ -15,7 +15,7 @@ export interface ExpressionActionsContentProps {
   expressionId: string;
 }
 
-export const FlowNodeExpressionActionsContent = ({
+export const FlowNodeRowActionsContent = ({
   expressionId,
 }: ExpressionActionsContentProps) => {
   const createExpression = useGraphStore(state => state.createExpression);

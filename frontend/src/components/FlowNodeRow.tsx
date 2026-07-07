@@ -2,8 +2,8 @@ import { Flex } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
 import { memo, useCallback } from 'react';
 import { useGraphStore } from '../store/useGraphStore';
-import { FlowNodeExpressionActions } from './FlowNodeExpressionActions.tsx';
-import { FlowNodeExpressionEditor } from './FlowNodeExpressionEditor.tsx';
+import { FlowNodeRowActions } from './FlowNodeRowActions.tsx';
+import { Editor } from './Editor.tsx';
 import { NODE_PADDING } from './layout.ts';
 
 interface FlowNodeRowProps {
@@ -45,7 +45,7 @@ export const FlowNodeRow = memo(({
   const pr = rightHandle ? undefined : '5';
 
   const actions = !disabled ? (
-    <FlowNodeExpressionActions
+    <FlowNodeRowActions
       expressionId={expr.id}
     />
   ) : undefined;
@@ -67,7 +67,7 @@ export const FlowNodeRow = memo(({
         />
       )}
       <Flex className="nodrag nopan" flexGrow="1" align="center" height="100%" pl={pl} pr={pr}>
-        <FlowNodeExpressionEditor
+        <Editor
           initialValue={initialValue}
           onSave={handleUpdateItem}
           disabled={disabled}

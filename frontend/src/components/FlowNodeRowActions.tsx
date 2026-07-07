@@ -1,14 +1,14 @@
 import { DotsHorizontalIcon } from '@radix-ui/react-icons';
 import { DropdownMenu, IconButton } from '@radix-ui/themes';
 import { memo, useState } from 'react';
-import { FlowNodeExpressionActionsContent } from './FlowNodeExpressionActionsContent';
+import { FlowNodeRowActionsContent } from './FlowNodeRowActionsContent.tsx';
 
 interface ExpressionActionsDropdownProps {
   expressionId: string;
   triggerStyle?: React.CSSProperties;
 }
 
-export const FlowNodeExpressionActions = memo(({
+export const FlowNodeRowActions = memo(({
   expressionId,
   triggerStyle,
 }: ExpressionActionsDropdownProps) => {
@@ -29,7 +29,7 @@ export const FlowNodeExpressionActions = memo(({
       </DropdownMenu.Trigger>
       <DropdownMenu.Content onCloseAutoFocus={(e) => e.preventDefault()}>
         {dropdownOpen && (
-          <FlowNodeExpressionActionsContent
+          <FlowNodeRowActionsContent
             expressionId={expressionId}
           />
         )}
