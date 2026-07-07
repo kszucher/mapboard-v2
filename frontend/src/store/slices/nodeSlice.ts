@@ -60,42 +60,85 @@ export const createNodeSlice: StateCreator<
     });
   },
 
-  insertNodeBetween: async (expressionId, nodeType) => {
+  insertNodeAfter: async (expressionId, nodeType) => {
     const { graphId } = get();
     if (!graphId) return;
 
     await updateFlowState(set, get, (state) => {
-      const oldEdgeIndex = state.edges.findIndex(e => e.sourceHandle === expressionId);
-      if (oldEdgeIndex === -1) return state;
-
-      const oldEdge = state.edges[oldEdgeIndex];
-      const targetNodeId = oldEdge.target;
-      const targetHandle = oldEdge.targetHandle;
+      const oldEdges = state.edges.filter(e => e.sourceHandle === expressionId);
+      if (oldEdges.length === 0) return state;
 
       const { appNode, defaultExprs } = createNewNode(graphId, nodeType, state.nodes);
       const toExprId = getPrimaryInputExprId(defaultExprs);
       const fromExprId = getPrimaryOutputExprId(defaultExprs);
 
-      const updatedOldEdge: AppFlowEdge = {
-        ...oldEdge,
+      const sourceNodeId = state.expressions.find(e => e.id === expressionId)?.node_id || '';
+
+      const newEdge: AppFlowEdge = {
+        id: crypto.randomUUID(),
+        source: sourceNodeId,
         target: appNode.id,
+        sourceHandle: expressionId,
         targetHandle: toExprId,
+        type: 'custom',
+        animated: true,
+        style: { opacity: 0 }
       };
+
+      const updatedOldEdges = oldEdges.map(oldEdge => ({
+        ...oldEdge,
+        source: appNode.id,
+        sourceHandle: fromExprId,
+      }));
+
+      const oldEdgeIds = new Set(oldEdges.map(e => e.id));
+      const nextEdges = state.edges.filter(e => !oldEdgeIds.has(e.id));
+      nextEdges.push(newEdge);
+      nextEdges.push(...updatedOldEdges);
+
+      return {
+        nodes: [...state.nodes, appNode],
+        edges: nextEdges,
+        expressions: [...state.expressions, ...defaultExprs],
+      };
+    });
+  },
+
+  insertNodeBefore: async (expressionId, nodeType) => {
+    const { graphId } = get();
+    if (!graphId) return;
+
+    await updateFlowState(set, get, (state) => {
+      const oldEdges = state.edges.filter(e => e.targetHandle === expressionId);
+      if (oldEdges.length === 0) return state;
+
+      const { appNode, defaultExprs } = createNewNode(graphId, nodeType, state.nodes);
+      const toExprId = getPrimaryInputExprId(defaultExprs);
+      const fromExprId = getPrimaryOutputExprId(defaultExprs);
+
+      const targetNodeId = state.expressions.find(e => e.id === expressionId)?.node_id || '';
 
       const newEdge: AppFlowEdge = {
         id: crypto.randomUUID(),
         source: appNode.id,
         target: targetNodeId,
         sourceHandle: fromExprId,
-        targetHandle,
+        targetHandle: expressionId,
         type: 'custom',
         animated: true,
         style: { opacity: 0 }
       };
 
-      const nextEdges = [...state.edges];
-      nextEdges[oldEdgeIndex] = updatedOldEdge;
+      const updatedOldEdges = oldEdges.map(oldEdge => ({
+        ...oldEdge,
+        target: appNode.id,
+        targetHandle: toExprId,
+      }));
+
+      const oldEdgeIds = new Set(oldEdges.map(e => e.id));
+      const nextEdges = state.edges.filter(e => !oldEdgeIds.has(e.id));
       nextEdges.push(newEdge);
+      nextEdges.push(...updatedOldEdges);
 
       return {
         nodes: [...state.nodes, appNode],
@@ -189,7 +232,7 @@ export const createNodeSlice: StateCreator<
     });
   },
 
-  deleteOutgoingEdge: async (edgeId) => {
+  deleteEdge: async (edgeId) => {
     await updateFlowState(set, get, (state) => {
       const nextEdges = state.edges.filter(e => e.id !== edgeId);
       return {

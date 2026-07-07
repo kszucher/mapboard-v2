@@ -6,6 +6,7 @@ import { useGraphStore } from '../store/useGraphStore';
 import {
   canMoveExpressionDown,
   canMoveExpressionUp,
+  getIncomingEdgeOptions,
   getOutgoingEdgeOptions,
   getSortedNodeExpressions
 } from '../utils/flowUtils';
@@ -23,8 +24,9 @@ export const FlowNodeRowActionsContent = ({
   const updateExpression = useGraphStore(state => state.updateExpression);
   const moveExpression = useGraphStore(state => state.moveExpression);
   const addConnectedNode = useGraphStore(state => state.addConnectedNode);
-  const insertNodeBetween = useGraphStore(state => state.insertNodeBetween);
-  const deleteOutgoingEdge = useGraphStore(state => state.deleteOutgoingEdge);
+  const insertNodeAfter = useGraphStore(state => state.insertNodeAfter);
+  const insertNodeBefore = useGraphStore(state => state.insertNodeBefore);
+  const deleteEdge = useGraphStore(state => state.deleteEdge);
 
   const expressions = useGraphStore(useShallow(state => state.expressions));
   const edges = useGraphStore(useShallow(state => state.edges));
@@ -65,7 +67,17 @@ export const FlowNodeRowActionsContent = ({
     return getOutgoingEdgeOptions(expressionId, edges, expressions, nodes);
   }, [expressionId, edges, expressions, nodes]);
 
-  const hasConnectedNode = outgoingEdgeOptions.length > 0;
+  const incomingEdgeOptions = useMemo(() => {
+    return getIncomingEdgeOptions(expressionId, edges, expressions, nodes);
+  }, [expressionId, edges, expressions, nodes]);
+
+  const hasOutgoingEdges = useMemo(() => {
+    return edges.some(e => e.sourceHandle === expressionId);
+  }, [edges, expressionId]);
+
+  const hasIncomingEdges = useMemo(() => {
+    return edges.some(e => e.targetHandle === expressionId);
+  }, [edges, expressionId]);
 
   const handleAddConnectedNode = useCallback(
     (nodeType: InsertableNodeType) => {
@@ -74,11 +86,18 @@ export const FlowNodeRowActionsContent = ({
     [addConnectedNode, expressionId]
   );
 
-  const handleInsertNode = useCallback(
+  const handleInsertAfter = useCallback(
     (nodeType: InsertableNodeType) => {
-      void insertNodeBetween(expressionId, nodeType);
+      void insertNodeAfter(expressionId, nodeType);
     },
-    [insertNodeBetween, expressionId]
+    [insertNodeAfter, expressionId]
+  );
+
+  const handleInsertBefore = useCallback(
+    (nodeType: InsertableNodeType) => {
+      void insertNodeBefore(expressionId, nodeType);
+    },
+    [insertNodeBefore, expressionId]
   );
 
   const handleUpdateConnection = useCallback((isInputVal: boolean, isOutputVal: boolean) => {
@@ -159,26 +178,68 @@ export const FlowNodeRowActionsContent = ({
         <ArrowDownIcon style={{ marginRight: 8 }}/> Move to Bottom
       </DropdownMenu.Item>
 
+      {isInput && hasIncomingEdges && (
+        <>
+          <DropdownMenu.Separator/>
+          <DropdownMenu.Sub>
+            <DropdownMenu.SubTrigger>
+              <PlusIcon style={{ marginRight: 8 }}/> Insert Node Before
+            </DropdownMenu.SubTrigger>
+            <DropdownMenu.SubContent>
+              <DropdownMenu.Item onClick={() => handleInsertBefore('LOGIC')}>{'Logic'}</DropdownMenu.Item>
+              <DropdownMenu.Item onClick={() => handleInsertBefore('AGENT')}>{'Agent'}</DropdownMenu.Item>
+              <DropdownMenu.Item
+                onClick={() => handleInsertBefore('LOGICAL_SWITCH')}>{'Logical Switch'}</DropdownMenu.Item>
+              <DropdownMenu.Item
+                onClick={() => handleInsertBefore('AGENTIC_SWITCH')}>{'Agentic Switch'}</DropdownMenu.Item>
+              <DropdownMenu.Item
+                onClick={() => handleInsertBefore('LOGICAL_JOIN')}>{'Logical Join'}</DropdownMenu.Item>
+              <DropdownMenu.Item
+                onClick={() => handleInsertBefore('AGENTIC_JOIN')}>{'Agentic Join'}</DropdownMenu.Item>
+            </DropdownMenu.SubContent>
+          </DropdownMenu.Sub>
+
+          <DropdownMenu.Sub>
+            <DropdownMenu.SubTrigger>
+              Delete Incoming Edge
+            </DropdownMenu.SubTrigger>
+            <DropdownMenu.SubContent>
+              {incomingEdgeOptions.map(opt => (
+                <DropdownMenu.Item
+                  key={opt.edgeId}
+                  onClick={() => {
+                    void deleteEdge(opt.edgeId);
+                  }}
+                  color="red"
+                >
+                  {opt.label}
+                </DropdownMenu.Item>
+              ))}
+            </DropdownMenu.SubContent>
+          </DropdownMenu.Sub>
+        </>
+      )}
+
       {!hideAddNode && (
         <>
           <DropdownMenu.Separator/>
-          {hasConnectedNode ? (
+          {hasOutgoingEdges ? (
             <>
               <DropdownMenu.Sub>
                 <DropdownMenu.SubTrigger>
-                  <PlusIcon style={{ marginRight: 8 }}/> Add Interim Node
+                  <PlusIcon style={{ marginRight: 8 }}/> Insert Node After
                 </DropdownMenu.SubTrigger>
                 <DropdownMenu.SubContent>
-                  <DropdownMenu.Item onClick={() => handleInsertNode('LOGIC')}>{'Logic'}</DropdownMenu.Item>
-                  <DropdownMenu.Item onClick={() => handleInsertNode('AGENT')}>{'Agent'}</DropdownMenu.Item>
+                  <DropdownMenu.Item onClick={() => handleInsertAfter('LOGIC')}>{'Logic'}</DropdownMenu.Item>
+                  <DropdownMenu.Item onClick={() => handleInsertAfter('AGENT')}>{'Agent'}</DropdownMenu.Item>
                   <DropdownMenu.Item
-                    onClick={() => handleInsertNode('LOGICAL_SWITCH')}>{'Logical Switch'}</DropdownMenu.Item>
+                    onClick={() => handleInsertAfter('LOGICAL_SWITCH')}>{'Logical Switch'}</DropdownMenu.Item>
                   <DropdownMenu.Item
-                    onClick={() => handleInsertNode('AGENTIC_SWITCH')}>{'Agentic Switch'}</DropdownMenu.Item>
+                    onClick={() => handleInsertAfter('AGENTIC_SWITCH')}>{'Agentic Switch'}</DropdownMenu.Item>
                   <DropdownMenu.Item
-                    onClick={() => handleInsertNode('LOGICAL_JOIN')}>{'Logical Join'}</DropdownMenu.Item>
+                    onClick={() => handleInsertAfter('LOGICAL_JOIN')}>{'Logical Join'}</DropdownMenu.Item>
                   <DropdownMenu.Item
-                    onClick={() => handleInsertNode('AGENTIC_JOIN')}>{'Agentic Join'}</DropdownMenu.Item>
+                    onClick={() => handleInsertAfter('AGENTIC_JOIN')}>{'Agentic Join'}</DropdownMenu.Item>
                 </DropdownMenu.SubContent>
               </DropdownMenu.Sub>
 
@@ -191,7 +252,7 @@ export const FlowNodeRowActionsContent = ({
                     <DropdownMenu.Item
                       key={opt.edgeId}
                       onClick={() => {
-                        void deleteOutgoingEdge(opt.edgeId);
+                        void deleteEdge(opt.edgeId);
                       }}
                       color="red"
                     >

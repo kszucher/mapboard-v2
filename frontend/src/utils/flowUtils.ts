@@ -293,7 +293,7 @@ export const formatExpressionLabel = (
   return node ? `N${node.data.node.iid}-${exprIdx}` : `?-${exprIdx}`;
 };
 
-export interface OutgoingEdgeOption {
+export interface EdgeOption {
   edgeId: string;
   label: string;
 }
@@ -303,7 +303,7 @@ export const getOutgoingEdgeOptions = (
   edges: AppFlowEdge[],
   expressions: ApiExpression[],
   nodes: AppFlowNode[]
-): OutgoingEdgeOption[] => {
+): EdgeOption[] => {
   const outgoingEdges = edges.filter(e => e.sourceHandle === expressionId);
   return outgoingEdges.map(edge => {
     const targetExpr = expressions.find(e => e.id === edge.targetHandle);
@@ -311,6 +311,23 @@ export const getOutgoingEdgeOptions = (
     return {
       edgeId: edge.id,
       label: formatExpressionLabel(targetNode, targetExpr?.idx ?? 0),
+    };
+  });
+};
+
+export const getIncomingEdgeOptions = (
+  expressionId: string,
+  edges: AppFlowEdge[],
+  expressions: ApiExpression[],
+  nodes: AppFlowNode[]
+): EdgeOption[] => {
+  const incomingEdges = edges.filter(e => e.targetHandle === expressionId);
+  return incomingEdges.map(edge => {
+    const sourceExpr = expressions.find(e => e.id === edge.sourceHandle);
+    const sourceNode = nodes.find(n => n.id === edge.source);
+    return {
+      edgeId: edge.id,
+      label: formatExpressionLabel(sourceNode, sourceExpr?.idx ?? 0),
     };
   });
 };
