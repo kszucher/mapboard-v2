@@ -1,0 +1,74 @@
+import { DropdownMenu } from '@radix-ui/themes';
+import { useCallback, useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
+import { useGraphStore } from '../store/useGraphStore';
+import { canShortcircuitNode, getAvailableConversions } from '../utils/flowUtils';
+import type { NodeType } from './types';
+
+export interface FlowNodeActionsContentProps {
+  nodeId: string;
+}
+
+export const FlowNodeActionsContent = ({ nodeId }: FlowNodeActionsContentProps) => {
+  const deleteNode = useGraphStore(state => state.deleteNode);
+  const shortcircuitNode = useGraphStore(state => state.shortcircuitNode);
+  const convertNode = useGraphStore(state => state.convertNode);
+
+  const nodeData = useGraphStore(
+    useCallback(state => state.nodes.find(n => n.id === nodeId)?.data?.node, [nodeId])
+  );
+
+  const myExpressions = useGraphStore(
+    useShallow(state => state.expressions.filter(e => e.node_id === nodeId))
+  );
+
+  const handleDelete = useCallback(() => {
+    if (nodeData) void deleteNode(nodeData.id);
+  }, [nodeData, deleteNode]);
+
+  const handleShortcircuit = useCallback(() => {
+    if (nodeData) void shortcircuitNode(nodeData.id);
+  }, [nodeData, shortcircuitNode]);
+
+  const conversions = useMemo(() => {
+    return nodeData ? getAvailableConversions(nodeData.node_type) : [];
+  }, [nodeData]);
+
+  const handleConvert = useCallback((targetType: NodeType) => {
+    if (nodeData) void convertNode(nodeData.id, targetType);
+  }, [nodeData, convertNode]);
+
+  if (!nodeData) return null;
+
+  const isStart = nodeData.node_type === 'START';
+  const isEnd = nodeData.node_type === 'END';
+
+  const canShortcircuit = canShortcircuitNode(myExpressions);
+
+  return (
+    <>
+      {conversions.length > 0 && (
+        <DropdownMenu.Sub>
+          <DropdownMenu.SubTrigger>
+            {'Convert'}
+          </DropdownMenu.SubTrigger>
+          <DropdownMenu.SubContent>
+            {conversions.map(c => (
+              <DropdownMenu.Item key={c.targetType} onClick={() => handleConvert(c.targetType)}>
+                {c.label}
+              </DropdownMenu.Item>
+            ))}
+          </DropdownMenu.SubContent>
+        </DropdownMenu.Sub>
+      )}
+      {!isStart && !isEnd && canShortcircuit && (
+        <DropdownMenu.Item onClick={handleShortcircuit}>
+          {'Shortcircuit'}
+        </DropdownMenu.Item>
+      )}
+      <DropdownMenu.Item onClick={handleDelete}>
+        {'Delete'}
+      </DropdownMenu.Item>
+    </>
+  );
+};

@@ -1,11 +1,10 @@
-import { DotsHorizontalIcon } from '@radix-ui/react-icons';
 import type { BadgeProps } from '@radix-ui/themes';
-import { Badge, DropdownMenu, Flex, IconButton } from '@radix-ui/themes';
+import { Badge, Flex } from '@radix-ui/themes';
 import { type NodeProps, useUpdateNodeInternals } from '@xyflow/react';
-import { memo, useCallback, useEffect, useMemo } from 'react';
+import { memo, useEffect, useMemo } from 'react';
 import { useShallow } from 'zustand/shallow';
 import { useGraphStore } from '../store/useGraphStore';
-import { canShortcircuitNode, getAvailableConversions } from '../utils/flowUtils';
+import { FlowNodeActions } from './FlowNodeActions.tsx';
 import { FlowNodeRow } from './FlowNodeRow.tsx';
 import { NODE_PADDING } from './layout.ts';
 import { type AppFlowNode, type NodeType } from './types.ts';
@@ -23,10 +22,6 @@ const NODE_COLORS: Record<NodeType, BadgeProps['color']> = {
 };
 
 const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
-  const deleteNode = useGraphStore(state => state.deleteNode);
-  const shortcircuitNode = useGraphStore(state => state.shortcircuitNode);
-  const convertNode = useGraphStore(state => state.convertNode);
-
   const updateNodeInternals = useUpdateNodeInternals();
 
   const myExpressions = useGraphStore(
@@ -41,29 +36,9 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
     updateNodeInternals(id);
   }, [myExpressionsHash, data.node.node_type, id, updateNodeInternals]);
 
-  const handleDelete = useCallback(() => {
-    void deleteNode(data.node.id);
-  }, [data.node.id, deleteNode]);
-
-  const handleShortcircuit = useCallback(() => {
-    void shortcircuitNode(data.node.id);
-  }, [data.node.id, shortcircuitNode]);
-
-  const conversions = useMemo(() => {
-    return getAvailableConversions(data.node.node_type);
-  }, [data.node.node_type]);
-
-  const handleConvert = useCallback((targetType: NodeType) => {
-    void convertNode(data.node.id, targetType);
-  }, [data.node.id, convertNode]);
-
   const { node } = data;
   const isStart = node.node_type === 'START';
   const isEnd = node.node_type === 'END';
-
-  const canShortcircuit = useMemo(() => {
-    return canShortcircuitNode(myExpressions);
-  }, [myExpressions]);
 
   if (!data) return null;
 
@@ -91,37 +66,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
         </Flex>
 
         <div style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0, paddingRight: '2px' }}>
-          <DropdownMenu.Root modal={false}>
-            <DropdownMenu.Trigger>
-              <IconButton variant="ghost" size="1" color="gray" style={{ pointerEvents: 'auto' }}>
-                <DotsHorizontalIcon/>
-              </IconButton>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content onCloseAutoFocus={e => e.preventDefault()}>
-              {conversions.length > 0 && (
-                <DropdownMenu.Sub>
-                  <DropdownMenu.SubTrigger>
-                    {'Convert'}
-                  </DropdownMenu.SubTrigger>
-                  <DropdownMenu.SubContent>
-                    {conversions.map(c => (
-                      <DropdownMenu.Item key={c.targetType} onClick={() => handleConvert(c.targetType)}>
-                        {c.label}
-                      </DropdownMenu.Item>
-                    ))}
-                  </DropdownMenu.SubContent>
-                </DropdownMenu.Sub>
-              )}
-              {!isStart && !isEnd && canShortcircuit && (
-                <DropdownMenu.Item onClick={handleShortcircuit}>
-                  {'Shortcircuit'}
-                </DropdownMenu.Item>
-              )}
-              <DropdownMenu.Item onClick={handleDelete}>
-                {'Delete'}
-              </DropdownMenu.Item>
-            </DropdownMenu.Content>
-          </DropdownMenu.Root>
+          <FlowNodeActions nodeId={id}/>
         </div>
       </Flex>
 

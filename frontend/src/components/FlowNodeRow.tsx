@@ -2,8 +2,8 @@ import { Flex } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
 import { memo, useCallback } from 'react';
 import { useGraphStore } from '../store/useGraphStore';
-import { FlowNodeRowActions } from './FlowNodeRowActions.tsx';
 import { Editor } from './Editor.tsx';
+import { FlowNodeRowActions } from './FlowNodeRowActions.tsx';
 import { NODE_PADDING } from './layout.ts';
 
 interface FlowNodeRowProps {
@@ -89,4 +89,3 @@ export const FlowNodeRow = memo(({
     </Flex>
   );
 });
-
