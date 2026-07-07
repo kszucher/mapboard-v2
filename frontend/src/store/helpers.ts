@@ -101,13 +101,41 @@ export const updateFlowState = async (
     edges: AppFlowEdge[];
     expressions: ApiExpression[];
   },
-  options: { skipHistory?: boolean } = {}
+  options: { skipHistory?: boolean; skipLayout?: boolean } = {}
 ) => {
   const current = get();
   const snapshot = options.skipHistory ? null : takeSnapshot(current);
   const updated = updateFn(current);
 
   const normalizedExprs = normalizeExpressions(updated.expressions);
+
+  // Auto-detect if any node had expressions added or deleted
+  let skipLayout = options.skipLayout;
+  const currentExprs = current.expressions;
+  const nextExprs = normalizedExprs;
+
+  const nodeWithCountChange = updated.nodes.find(node => {
+    const prevCount = currentExprs.filter(e => e.node_id === node.id).length;
+    const nextCount = nextExprs.filter(e => e.node_id === node.id).length;
+    return prevCount !== nextCount;
+  });
+
+  if (nodeWithCountChange) {
+    set({ pendingLayoutNodeId: nodeWithCountChange.id });
+    skipLayout = true;
+  }
+
+  if (skipLayout) {
+    set((state) => ({
+      nodes: updated.nodes,
+      edges: updated.edges,
+      expressions: normalizedExprs,
+      ...(!options.skipHistory && snapshot
+        ? { past: [...state.past, snapshot], future: [] }
+        : {}),
+    }));
+    return;
+  }
 
   if (options.skipHistory) {
     set({ expressions: normalizedExprs });

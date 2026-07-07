@@ -16,6 +16,7 @@ export interface BaseState {
   errorMessage: string | null;
   clearErrorMessage: () => void;
 
+  pendingLayoutNodeId: string | null;
   onNodesChange: (changes: NodeChange[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;
 }

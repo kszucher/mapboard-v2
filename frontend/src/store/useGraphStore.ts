@@ -21,6 +21,7 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
   isSaving: false,
   errorMessage: null,
   clearErrorMessage: () => set({ errorMessage: null }),
+  pendingLayoutNodeId: null,
 
   ...createInitSlice(set, get, store),
   ...createFlowSlice(set, get, store),
@@ -38,8 +39,29 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
       return { nodes: newNodes as AppFlowNode[] };
     });
 
-    const { nodes, edges, graphId, isLoading, expressions } = get();
+    const { nodes, edges, graphId, isLoading, expressions, pendingLayoutNodeId } = get();
     const hasDimensionsChange = meaningfulChanges.some(c => c.type === 'dimensions');
+
+    if (hasDimensionsChange && pendingLayoutNodeId) {
+      const hasTargetNodeDimensionChange = meaningfulChanges.some(
+        c => c.type === 'dimensions' && c.id === pendingLayoutNodeId
+      );
+      if (hasTargetNodeDimensionChange) {
+        set({ pendingLayoutNodeId: null });
+        void runLayout(nodes, edges, expressions).then((laidOut) => {
+          set({
+            nodes: laidOut.nodes,
+            edges: laidOut.edges,
+          });
+          triggerSave({
+            graphId,
+            nodes: laidOut.nodes,
+            edges: laidOut.edges,
+            expressions,
+          });
+        });
+      }
+    }
 
     if (hasDimensionsChange && isLoading) {
       const allMeasured = nodes.length > 0 && nodes.every(
