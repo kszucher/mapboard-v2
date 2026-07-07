@@ -32,7 +32,6 @@ export const FlowNodeRowActionsContent = ({
   const deleteExpression = useGraphStore(state => state.deleteExpression);
   const updateExpression = useGraphStore(state => state.updateExpression);
   const moveExpression = useGraphStore(state => state.moveExpression);
-  const addConnectedNode = useGraphStore(state => state.addConnectedNode);
   const insertNode = useGraphStore(state => state.insertNode);
   const deleteEdge = useGraphStore(state => state.deleteEdge);
 
@@ -69,8 +68,6 @@ export const FlowNodeRowActionsContent = ({
     return myExpressions.length > 1;
   }, [myExpressions]);
 
-  const hideAddNode = !isOutput;
-
   const outgoingEdgeOptions = useMemo(() => {
     return getOutgoingEdgeOptions(expressionId, edges, expressions, nodes);
   }, [expressionId, edges, expressions, nodes]);
@@ -86,13 +83,6 @@ export const FlowNodeRowActionsContent = ({
   const hasIncomingEdges = useMemo(() => {
     return edges.some(e => e.targetHandle === expressionId);
   }, [edges, expressionId]);
-
-  const handleAddConnectedNode = useCallback(
-    (nodeType: InsertableNodeType) => {
-      void addConnectedNode(expressionId, nodeType);
-    },
-    [addConnectedNode, expressionId]
-  );
 
   const handleInsert = useCallback(
     (nodeType: InsertableNodeType, direction: 'before' | 'after') => {
@@ -179,7 +169,7 @@ export const FlowNodeRowActionsContent = ({
         <ArrowDownIcon style={{ marginRight: 8 }}/> Move to Bottom
       </DropdownMenu.Item>
 
-      {isInput && hasIncomingEdges && (
+      {isInput && (
         <>
           <DropdownMenu.Separator/>
           <DropdownMenu.Sub>
@@ -195,73 +185,60 @@ export const FlowNodeRowActionsContent = ({
             </DropdownMenu.SubContent>
           </DropdownMenu.Sub>
 
+          {hasIncomingEdges && (
+            <DropdownMenu.Sub>
+              <DropdownMenu.SubTrigger>
+                Delete Incoming Edge
+              </DropdownMenu.SubTrigger>
+              <DropdownMenu.SubContent>
+                {incomingEdgeOptions.map(opt => (
+                  <DropdownMenu.Item
+                    key={opt.edgeId}
+                    onClick={() => {
+                      void deleteEdge(opt.edgeId);
+                    }}
+                    color="red"
+                  >
+                    {opt.label}
+                  </DropdownMenu.Item>
+                ))}
+              </DropdownMenu.SubContent>
+            </DropdownMenu.Sub>
+          )}
+        </>
+      )}
+
+      {isOutput && (
+        <>
+          <DropdownMenu.Separator/>
           <DropdownMenu.Sub>
             <DropdownMenu.SubTrigger>
-              Delete Incoming Edge
+              <PlusIcon style={{ marginRight: 8 }}/> Insert Node After
             </DropdownMenu.SubTrigger>
             <DropdownMenu.SubContent>
-              {incomingEdgeOptions.map(opt => (
-                <DropdownMenu.Item
-                  key={opt.edgeId}
-                  onClick={() => {
-                    void deleteEdge(opt.edgeId);
-                  }}
-                  color="red"
-                >
-                  {opt.label}
+              {INSERTABLE_NODE_TYPES.map(item => (
+                <DropdownMenu.Item key={item.type} onClick={() => handleInsert(item.type, 'after')}>
+                  {item.label}
                 </DropdownMenu.Item>
               ))}
             </DropdownMenu.SubContent>
           </DropdownMenu.Sub>
-        </>
-      )}
 
-      {!hideAddNode && (
-        <>
-          <DropdownMenu.Separator/>
-          {hasOutgoingEdges ? (
-            <>
-              <DropdownMenu.Sub>
-                <DropdownMenu.SubTrigger>
-                  <PlusIcon style={{ marginRight: 8 }}/> Insert Node After
-                </DropdownMenu.SubTrigger>
-                <DropdownMenu.SubContent>
-                  {INSERTABLE_NODE_TYPES.map(item => (
-                    <DropdownMenu.Item key={item.type} onClick={() => handleInsert(item.type, 'after')}>
-                      {item.label}
-                    </DropdownMenu.Item>
-                  ))}
-                </DropdownMenu.SubContent>
-              </DropdownMenu.Sub>
-
-              <DropdownMenu.Sub>
-                <DropdownMenu.SubTrigger>
-                  Delete Outgoing Edge
-                </DropdownMenu.SubTrigger>
-                <DropdownMenu.SubContent>
-                  {outgoingEdgeOptions.map(opt => (
-                    <DropdownMenu.Item
-                      key={opt.edgeId}
-                      onClick={() => {
-                        void deleteEdge(opt.edgeId);
-                      }}
-                      color="red"
-                    >
-                      {opt.label}
-                    </DropdownMenu.Item>
-                  ))}
-                </DropdownMenu.SubContent>
-              </DropdownMenu.Sub>
-            </>
-          ) : (
+          {hasOutgoingEdges && (
             <DropdownMenu.Sub>
               <DropdownMenu.SubTrigger>
-                <PlusIcon style={{ marginRight: 8 }}/> Add Node
+                Delete Outgoing Edge
               </DropdownMenu.SubTrigger>
               <DropdownMenu.SubContent>
-                {INSERTABLE_NODE_TYPES.map(item => (
-                  <DropdownMenu.Item key={item.type} onClick={() => handleAddConnectedNode(item.type)}>
-                    {item.label}
+                {outgoingEdgeOptions.map(opt => (
+                  <DropdownMenu.Item
+                    key={opt.edgeId}
+                    onClick={() => {
+                      void deleteEdge(opt.edgeId);
+                    }}
+                    color="red"
+                  >
+                    {opt.label}
                   </DropdownMenu.Item>
                 ))}
               </DropdownMenu.SubContent>

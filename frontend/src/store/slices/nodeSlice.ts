@@ -29,37 +29,7 @@ export const createNodeSlice: StateCreator<
       };
     });
   },
-
-  addConnectedNode: async (expressionId, nodeType) => {
-    const { graphId } = get();
-    if (!graphId) return;
-
-    await updateFlowState(set, get, (state) => {
-      const { appNode, defaultExprs } = createNewNode(graphId, nodeType, state.nodes);
-      const toExprId = getPrimaryInputExprId(defaultExprs);
-
-      const newEdgeId = crypto.randomUUID();
-      const fromNodeId = state.expressions.find(e => e.id === expressionId)?.node_id || '';
-
-      const newEdge: AppFlowEdge = {
-        id: newEdgeId,
-        source: fromNodeId,
-        target: appNode.id,
-        sourceHandle: expressionId,
-        targetHandle: toExprId,
-        type: 'custom',
-        animated: true,
-        style: { opacity: 0 }
-      };
-
-      return {
-        nodes: [...state.nodes, appNode],
-        edges: [...state.edges, newEdge],
-        expressions: [...state.expressions, ...defaultExprs],
-      };
-    });
-  },
-
+  
   insertNode: async (expressionId, nodeType, direction) => {
     const { graphId } = get();
     if (!graphId) return;

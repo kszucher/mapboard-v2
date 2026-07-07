@@ -33,7 +33,6 @@ export interface FlowSlice {
 
 export interface NodeSlice {
   addNode: (nodeType: NodeType) => Promise<void>;
-  addConnectedNode: (expressionId: string, nodeType: NodeType) => Promise<void>;
   insertNode: (expressionId: string, nodeType: NodeType, direction: 'before' | 'after') => Promise<void>;
   deleteNode: (nodeId: string) => Promise<void>;
   shortcircuitNode: (nodeId: string) => Promise<void>;
