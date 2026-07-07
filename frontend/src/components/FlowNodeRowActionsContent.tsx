@@ -12,6 +12,15 @@ import {
 } from '../utils/flowUtils';
 import type { InsertableNodeType } from './types';
 
+const INSERTABLE_NODE_TYPES: { type: InsertableNodeType; label: string }[] = [
+  { type: 'LOGIC', label: 'Logic' },
+  { type: 'AGENT', label: 'Agent' },
+  { type: 'LOGICAL_SWITCH', label: 'Logical Switch' },
+  { type: 'AGENTIC_SWITCH', label: 'Agentic Switch' },
+  { type: 'LOGICAL_JOIN', label: 'Logical Join' },
+  { type: 'AGENTIC_JOIN', label: 'Agentic Join' },
+];
+
 export interface ExpressionActionsContentProps {
   expressionId: string;
 }
@@ -24,8 +33,7 @@ export const FlowNodeRowActionsContent = ({
   const updateExpression = useGraphStore(state => state.updateExpression);
   const moveExpression = useGraphStore(state => state.moveExpression);
   const addConnectedNode = useGraphStore(state => state.addConnectedNode);
-  const insertNodeAfter = useGraphStore(state => state.insertNodeAfter);
-  const insertNodeBefore = useGraphStore(state => state.insertNodeBefore);
+  const insertNode = useGraphStore(state => state.insertNode);
   const deleteEdge = useGraphStore(state => state.deleteEdge);
 
   const expressions = useGraphStore(useShallow(state => state.expressions));
@@ -86,18 +94,11 @@ export const FlowNodeRowActionsContent = ({
     [addConnectedNode, expressionId]
   );
 
-  const handleInsertAfter = useCallback(
-    (nodeType: InsertableNodeType) => {
-      void insertNodeAfter(expressionId, nodeType);
+  const handleInsert = useCallback(
+    (nodeType: InsertableNodeType, direction: 'before' | 'after') => {
+      void insertNode(expressionId, nodeType, direction);
     },
-    [insertNodeAfter, expressionId]
-  );
-
-  const handleInsertBefore = useCallback(
-    (nodeType: InsertableNodeType) => {
-      void insertNodeBefore(expressionId, nodeType);
-    },
-    [insertNodeBefore, expressionId]
+    [insertNode, expressionId]
   );
 
   const handleUpdateConnection = useCallback((isInputVal: boolean, isOutputVal: boolean) => {
@@ -186,16 +187,11 @@ export const FlowNodeRowActionsContent = ({
               <PlusIcon style={{ marginRight: 8 }}/> Insert Node Before
             </DropdownMenu.SubTrigger>
             <DropdownMenu.SubContent>
-              <DropdownMenu.Item onClick={() => handleInsertBefore('LOGIC')}>{'Logic'}</DropdownMenu.Item>
-              <DropdownMenu.Item onClick={() => handleInsertBefore('AGENT')}>{'Agent'}</DropdownMenu.Item>
-              <DropdownMenu.Item
-                onClick={() => handleInsertBefore('LOGICAL_SWITCH')}>{'Logical Switch'}</DropdownMenu.Item>
-              <DropdownMenu.Item
-                onClick={() => handleInsertBefore('AGENTIC_SWITCH')}>{'Agentic Switch'}</DropdownMenu.Item>
-              <DropdownMenu.Item
-                onClick={() => handleInsertBefore('LOGICAL_JOIN')}>{'Logical Join'}</DropdownMenu.Item>
-              <DropdownMenu.Item
-                onClick={() => handleInsertBefore('AGENTIC_JOIN')}>{'Agentic Join'}</DropdownMenu.Item>
+              {INSERTABLE_NODE_TYPES.map(item => (
+                <DropdownMenu.Item key={item.type} onClick={() => handleInsert(item.type, 'before')}>
+                  {item.label}
+                </DropdownMenu.Item>
+              ))}
             </DropdownMenu.SubContent>
           </DropdownMenu.Sub>
 
@@ -230,16 +226,11 @@ export const FlowNodeRowActionsContent = ({
                   <PlusIcon style={{ marginRight: 8 }}/> Insert Node After
                 </DropdownMenu.SubTrigger>
                 <DropdownMenu.SubContent>
-                  <DropdownMenu.Item onClick={() => handleInsertAfter('LOGIC')}>{'Logic'}</DropdownMenu.Item>
-                  <DropdownMenu.Item onClick={() => handleInsertAfter('AGENT')}>{'Agent'}</DropdownMenu.Item>
-                  <DropdownMenu.Item
-                    onClick={() => handleInsertAfter('LOGICAL_SWITCH')}>{'Logical Switch'}</DropdownMenu.Item>
-                  <DropdownMenu.Item
-                    onClick={() => handleInsertAfter('AGENTIC_SWITCH')}>{'Agentic Switch'}</DropdownMenu.Item>
-                  <DropdownMenu.Item
-                    onClick={() => handleInsertAfter('LOGICAL_JOIN')}>{'Logical Join'}</DropdownMenu.Item>
-                  <DropdownMenu.Item
-                    onClick={() => handleInsertAfter('AGENTIC_JOIN')}>{'Agentic Join'}</DropdownMenu.Item>
+                  {INSERTABLE_NODE_TYPES.map(item => (
+                    <DropdownMenu.Item key={item.type} onClick={() => handleInsert(item.type, 'after')}>
+                      {item.label}
+                    </DropdownMenu.Item>
+                  ))}
                 </DropdownMenu.SubContent>
               </DropdownMenu.Sub>
 
@@ -268,16 +259,11 @@ export const FlowNodeRowActionsContent = ({
                 <PlusIcon style={{ marginRight: 8 }}/> Add Node
               </DropdownMenu.SubTrigger>
               <DropdownMenu.SubContent>
-                <DropdownMenu.Item onClick={() => handleAddConnectedNode('LOGIC')}>{'Logic'}</DropdownMenu.Item>
-                <DropdownMenu.Item onClick={() => handleAddConnectedNode('AGENT')}>{'Agent'}</DropdownMenu.Item>
-                <DropdownMenu.Item
-                  onClick={() => handleAddConnectedNode('LOGICAL_SWITCH')}>{'Logical Switch'}</DropdownMenu.Item>
-                <DropdownMenu.Item
-                  onClick={() => handleAddConnectedNode('AGENTIC_SWITCH')}>{'Agentic Switch'}</DropdownMenu.Item>
-                <DropdownMenu.Item
-                  onClick={() => handleAddConnectedNode('LOGICAL_JOIN')}>{'Logical Join'}</DropdownMenu.Item>
-                <DropdownMenu.Item
-                  onClick={() => handleAddConnectedNode('AGENTIC_JOIN')}>{'Agentic Join'}</DropdownMenu.Item>
+                {INSERTABLE_NODE_TYPES.map(item => (
+                  <DropdownMenu.Item key={item.type} onClick={() => handleAddConnectedNode(item.type)}>
+                    {item.label}
+                  </DropdownMenu.Item>
+                ))}
               </DropdownMenu.SubContent>
             </DropdownMenu.Sub>
           )}
