@@ -6,7 +6,7 @@ import { memo, useCallback, useEffect, useMemo } from 'react';
 import { useShallow } from 'zustand/shallow';
 import { useGraphStore } from '../store/useGraphStore';
 import { canShortcircuitNode, getAvailableConversions } from '../utils/flowUtils';
-import { FlowNodeExpressionRow } from './FlowNodeExpressionRow.tsx';
+import { FlowNodeRow } from './FlowNodeRow.tsx';
 import { NODE_PADDING } from './layout.ts';
 import { type AppFlowNode, type NodeType } from './types.ts';
 
@@ -129,7 +129,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
         const disabled = isStart || isEnd;
 
         return (
-          <FlowNodeExpressionRow
+          <FlowNodeRow
             key={expr.id}
             expressionId={expr.id}
             disabled={disabled}

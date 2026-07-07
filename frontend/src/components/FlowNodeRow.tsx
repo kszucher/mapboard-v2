@@ -6,19 +6,19 @@ import { FlowNodeExpressionActions } from './FlowNodeExpressionActions.tsx';
 import { FlowNodeExpressionEditor } from './FlowNodeExpressionEditor.tsx';
 import { NODE_PADDING } from './layout.ts';
 
-interface FlowNodeExpressionRowProps {
+interface FlowNodeRowProps {
   expressionId: string;
   disabled: boolean;
   isStart: boolean;
   isEnd: boolean;
 }
 
-const FlowNodeExpressionRowComponent = ({
+export const FlowNodeRow = memo(({
   expressionId,
   disabled,
   isStart,
   isEnd,
-}: FlowNodeExpressionRowProps) => {
+}: FlowNodeRowProps) => {
   // Subscribe to only this specific expression
   const expr = useGraphStore(
     useCallback(
@@ -88,6 +88,5 @@ const FlowNodeExpressionRowComponent = ({
       )}
     </Flex>
   );
-};
+});
 
-export const FlowNodeExpressionRow = memo(FlowNodeExpressionRowComponent);
