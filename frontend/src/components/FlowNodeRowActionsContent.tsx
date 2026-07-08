@@ -174,25 +174,18 @@ export const FlowNodeRowActionsContent = ({
 
   return (
     <>
-      <DropdownMenu.Sub>
-        <DropdownMenu.SubTrigger>
-          Connection
-        </DropdownMenu.SubTrigger>
-        <DropdownMenu.SubContent>
-          <DropdownMenu.Item onClick={() => handleUpdateConnection(true, true)}>
-            {isInput && isOutput ? '✓ Input And Output' : '  Input And Output'}
-          </DropdownMenu.Item>
-          <DropdownMenu.Item onClick={() => handleUpdateConnection(true, false)}>
-            {isInput && !isOutput ? '✓ Input Only' : '  Input Only'}
-          </DropdownMenu.Item>
-          <DropdownMenu.Item onClick={() => handleUpdateConnection(false, true)}>
-            {!isInput && isOutput ? '✓ Output Only' : '  Output Only'}
-          </DropdownMenu.Item>
-          <DropdownMenu.Item onClick={() => handleUpdateConnection(false, false)}>
-            {!isInput && !isOutput ? '✓ None' : '  None'}
-          </DropdownMenu.Item>
-        </DropdownMenu.SubContent>
-      </DropdownMenu.Sub>
+      <DropdownMenu.Item onClick={() => handleUpdateConnection(true, true)}>
+        {isInput && isOutput ? '✓ Input And Output' : '  Input And Output'}
+      </DropdownMenu.Item>
+      <DropdownMenu.Item onClick={() => handleUpdateConnection(true, false)}>
+        {isInput && !isOutput ? '✓ Input Only' : '  Input Only'}
+      </DropdownMenu.Item>
+      <DropdownMenu.Item onClick={() => handleUpdateConnection(false, true)}>
+        {!isInput && isOutput ? '✓ Output Only' : '  Output Only'}
+      </DropdownMenu.Item>
+      <DropdownMenu.Item onClick={() => handleUpdateConnection(false, false)}>
+        {!isInput && !isOutput ? '✓ None' : '  None'}
+      </DropdownMenu.Item>
       <DropdownMenu.Separator/>
 
       <DropdownMenu.Item onClick={handleAddAbove}>
