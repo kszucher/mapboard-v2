@@ -37,7 +37,6 @@ export const createNodeSlice: StateCreator<
     await updateFlowState(set, get, (state) => {
       const isAfter = direction === 'after';
       const oldEdges = state.edges.filter(e => isAfter ? e.sourceHandle === expressionId : e.targetHandle === expressionId);
-      if (oldEdges.length === 0) return state;
 
       const { appNode, defaultExprs } = createNewNode(graphId, nodeType, state.nodes);
       const toExprId = getPrimaryInputExprId(defaultExprs);
