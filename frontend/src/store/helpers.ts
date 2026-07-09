@@ -1,6 +1,6 @@
 import type { StoreApi } from 'zustand';
 import { apiClient, getClientId } from '../api/client';
-import type { AppFlowEdge, AppFlowNode, Variable, FunctionEntity } from '../components/types';
+import type { AppFlowEdge, AppFlowNode, FunctionEntity, Variable } from '../components/types';
 import { runLayout } from '../utils/flowUtils';
 import type { GraphStoreState } from './types';
 
@@ -20,18 +20,18 @@ export const serializeFlowState = (
     nodes: state.nodes.map(n => ({
       id: n.data.node.id,
       node_type: n.data.node.node_type,
-      expressions: n.data.node.expressions.map(e => ({
-        id: e.id,
-        is_input: e.is_input,
-        is_output: e.is_output,
-        raw_string: e.raw_string,
-        function_id: e.function_id,
+      slots: n.data.node.slots.map(s => ({
+        id: s.id,
+        is_input: s.is_input,
+        is_output: s.is_output,
+        raw_string: s.raw_string,
+        function_id: s.function_id,
       })),
     })),
     edges: state.edges.map(e => ({
       id: e.id,
-      from_expression_id: e.sourceHandle || '',
-      to_expression_id: e.targetHandle || '',
+      from_slot_id: e.sourceHandle || '',
+      to_slot_id: e.targetHandle || '',
     })),
     variables: state.variables.map(v => ({
       id: v.id,
@@ -128,13 +128,13 @@ export const updateFlowState = async (
   const variables = updated.variables ?? current.variables;
   const functions = updated.functions ?? current.functions;
 
-  // Auto-detect if any node had expressions added or deleted
+  // Auto-detect if any node had slots added or deleted
   let skipLayout = options.skipLayout;
 
   const nodeWithCountChange = updated.nodes.find(node => {
     const prevNode = current.nodes.find(n => n.id === node.id);
-    const prevCount = prevNode ? prevNode.data.node.expressions.length : 0;
-    const nextCount = node.data.node.expressions.length;
+    const prevCount = prevNode ? prevNode.data.node.slots.length : 0;
+    const nextCount = node.data.node.slots.length;
     return prevCount !== nextCount;
   });
 

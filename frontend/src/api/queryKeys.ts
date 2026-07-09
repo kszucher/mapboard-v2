@@ -29,9 +29,9 @@ export const queryKeys = {
     byGraph: (graphId: string) => [...queryKeys.edges.all, graphId] as const,
   },
 
-  // Expression queries
-  expressions: {
-    all: ['expressions'] as const,
-    byGraph: (graphId: string) => [...queryKeys.expressions.all, graphId] as const,
+  // Slot queries
+  slots: {
+    all: ['slots'] as const,
+    byGraph: (graphId: string) => [...queryKeys.slots.all, graphId] as const,
   },
 } as const;

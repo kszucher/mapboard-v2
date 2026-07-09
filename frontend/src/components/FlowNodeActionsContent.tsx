@@ -17,7 +17,7 @@ export const FlowNodeActionsContent = ({ nodeId }: FlowNodeActionsContentProps) 
     useCallback(state => state.nodes.find(n => n.id === nodeId)?.data?.node, [nodeId])
   );
 
-  const myExpressions = nodeData?.expressions ?? [];
+  const mySlots = nodeData?.slots ?? [];
 
   const handleDelete = useCallback(() => {
     if (nodeData) void deleteNode(nodeData.id);
@@ -40,7 +40,7 @@ export const FlowNodeActionsContent = ({ nodeId }: FlowNodeActionsContentProps) 
   const isStart = nodeData.node_type === 'START';
   const isEnd = nodeData.node_type === 'END';
 
-  const canShortcircuit = canShortcircuitNode(myExpressions);
+  const canShortcircuit = canShortcircuitNode(mySlots);
 
   return (
     <>

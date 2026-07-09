@@ -1,6 +1,6 @@
 import type { Connection, EdgeChange, NodeChange } from '@xyflow/react';
 import type { components } from '../api/generated/schema';
-import type { AppFlowEdge, AppFlowNode, NodeType, Variable, FunctionEntity } from '../components/types';
+import type { AppFlowEdge, AppFlowNode, FunctionEntity, NodeType, Variable } from '../components/types';
 
 export type GraphFlowRead = components['schemas']['GraphFlowRead'];
 
@@ -39,23 +39,23 @@ export interface FlowSlice {
 
 export interface NodeSlice {
   addNode: (nodeType: NodeType) => Promise<void>;
-  insertNode: (expressionId: string, nodeType: NodeType, direction: 'before' | 'after') => Promise<void>;
+  insertNode: (slotId: string, nodeType: NodeType, direction: 'before' | 'after') => Promise<void>;
   deleteNode: (nodeId: string) => Promise<void>;
   shortcircuitNode: (nodeId: string) => Promise<void>;
   convertNode: (nodeId: string, targetType: NodeType) => Promise<void>;
   deleteEdge: (edgeId: string) => Promise<void>;
 }
 
-export interface ExpressionSlice {
-  createExpression: (nodeId: string, isInput: boolean, isOutput: boolean, idx: number) => Promise<void>;
-  deleteExpression: (expressionId: string) => Promise<void>;
-  updateExpression: (expressionId: string, updates: {
+export interface SlotSlice {
+  createSlot: (nodeId: string, isInput: boolean, isOutput: boolean, idx: number) => Promise<void>;
+  deleteSlot: (slotId: string) => Promise<void>;
+  updateSlot: (slotId: string, updates: {
     raw_string?: string;
     is_input?: boolean;
     is_output?: boolean;
     function_id?: string | null;
   }) => Promise<void>;
-  moveExpression: (expressionId: string, direction: 'up' | 'down' | 'top' | 'bottom') => Promise<void>;
+  moveSlot: (slotId: string, direction: 'up' | 'down' | 'top' | 'bottom') => Promise<void>;
 }
 
 export interface HistorySlice {
@@ -69,5 +69,5 @@ export type GraphStoreState = BaseState &
   InitSlice &
   FlowSlice &
   NodeSlice &
-  ExpressionSlice &
+  SlotSlice &
   HistorySlice;

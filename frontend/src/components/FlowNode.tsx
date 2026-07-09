@@ -5,7 +5,7 @@ import { memo, useCallback, useEffect, useMemo } from 'react';
 import { useGraphStore } from '../store/useGraphStore';
 import { computeTraversalIndices } from '../utils/flowUtils';
 import { FlowNodeActions } from './FlowNodeActions.tsx';
-import { FlowNodeRow } from './FlowNodeRow.tsx';
+import { FlowNodeSlot } from './FlowNodeSlot.tsx';
 import { NODE_PADDING } from './layout.ts';
 import { type AppFlowNode, type NodeType } from './types.ts';
 
@@ -21,7 +21,7 @@ const NODE_COLORS: Record<NodeType, BadgeProps['color']> = {
 const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   const updateNodeInternals = useUpdateNodeInternals();
 
-  const myExpressions = data.node.expressions;
+  const mySlots = data.node.slots;
   const isLoading = useGraphStore(state => state.isLoading);
   const traversalIndex = useGraphStore(
     useCallback(state => {
@@ -30,13 +30,13 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
     }, [id])
   );
 
-  const myExpressionsHash = useMemo(() => {
-    return myExpressions.map((e, index) => `${e.id}:${index}:${e.is_input}:${e.is_output}`).join(',');
-  }, [myExpressions]);
+  const mySlotsHash = useMemo(() => {
+    return mySlots.map((s, index) => `${s.id}:${index}:${s.is_input}:${s.is_output}`).join(',');
+  }, [mySlots]);
 
   useEffect(() => {
     updateNodeInternals(id);
-  }, [myExpressionsHash, data.node.node_type, id, updateNodeInternals]);
+  }, [mySlotsHash, data.node.node_type, id, updateNodeInternals]);
 
   const { node } = data;
   const isStart = node.node_type === 'START';
@@ -72,13 +72,13 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
         </div>
       </Flex>
 
-      {myExpressions.map((expr) => {
+      {mySlots.map((slot) => {
         const disabled = isStart || isEnd;
 
         return (
-          <FlowNodeRow
-            key={expr.id}
-            expressionId={expr.id}
+          <FlowNodeSlot
+            key={slot.id}
+            slotId={slot.id}
             disabled={disabled}
             isStart={isStart}
             isEnd={isEnd}

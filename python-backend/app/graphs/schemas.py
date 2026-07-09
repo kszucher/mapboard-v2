@@ -21,7 +21,7 @@ class GraphRead(OrmModel):
     user_id: uuid.UUID
 
 
-class ExpressionRead(BaseModel):
+class SlotRead(BaseModel):
     id: uuid.UUID
     is_input: bool = False
     is_output: bool = False
@@ -32,13 +32,13 @@ class ExpressionRead(BaseModel):
 class NodeRead(BaseModel):
     id: uuid.UUID
     node_type: NodeType
-    expressions: list[ExpressionRead]
+    slots: list[SlotRead]
 
 
 class EdgeRead(BaseModel):
     id: uuid.UUID
-    from_expression_id: uuid.UUID
-    to_expression_id: uuid.UUID
+    from_slot_id: uuid.UUID
+    to_slot_id: uuid.UUID
 
 
 class VariableRead(BaseModel):

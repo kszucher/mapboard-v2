@@ -1,33 +1,33 @@
 import type { StateCreator } from 'zustand';
-import type { ApiExpression } from '../../components/types';
+import type { ApiSlot } from '../../components/types';
 import { updateFlowState } from '../helpers';
-import type { ExpressionSlice, GraphStoreState } from '../types';
+import type { GraphStoreState, SlotSlice } from '../types';
 
-export const createExpressionSlice: StateCreator<
+export const createSlotSlice: StateCreator<
   GraphStoreState,
   [],
   [],
-  ExpressionSlice
+  SlotSlice
 > = (set, get) => ({
-  createExpression: async (nodeId, isInput, isOutput, idx) => {
+  createSlot: async (nodeId, isInput, isOutput, idx) => {
     await updateFlowState(set, get, (state) => {
       const nextNodes = state.nodes.map(n => {
         if (n.id !== nodeId) return n;
-        const expressions = [...n.data.node.expressions];
-        const newExpr: ApiExpression = {
+        const slots = [...n.data.node.slots];
+        const newSlot: ApiSlot = {
           id: crypto.randomUUID(),
           is_input: isInput,
           is_output: isOutput,
           raw_string: '',
         };
-        expressions.splice(idx, 0, newExpr);
+        slots.splice(idx, 0, newSlot);
         return {
           ...n,
           data: {
             ...n.data,
             node: {
               ...n.data.node,
-              expressions,
+              slots,
             }
           }
         };
@@ -40,31 +40,31 @@ export const createExpressionSlice: StateCreator<
     });
   },
 
-  deleteExpression: async (expressionId) => {
-    const node = get().nodes.find(n => n.data.node.expressions.some(e => e.id === expressionId));
+  deleteSlot: async (slotId) => {
+    const node = get().nodes.find(n => n.data.node.slots.some(s => s.id === slotId));
     if (!node) return;
 
-    if (node.data.node.expressions.length <= 1) {
-      set({ errorMessage: 'Cannot delete the last remaining expression of this node.' });
+    if (node.data.node.slots.length <= 1) {
+      set({ errorMessage: 'Cannot delete the last remaining slot of this node.' });
       return;
     }
 
     await updateFlowState(set, get, (state) => {
       const nextNodes = state.nodes.map(n => {
-        if (!n.data.node.expressions.some(e => e.id === expressionId)) return n;
+        if (!n.data.node.slots.some(s => s.id === slotId)) return n;
         return {
           ...n,
           data: {
             ...n.data,
             node: {
               ...n.data.node,
-              expressions: n.data.node.expressions.filter(e => e.id !== expressionId),
+              slots: n.data.node.slots.filter(s => s.id !== slotId),
             }
           }
         };
       });
 
-      const nextEdges = state.edges.filter(e => e.sourceHandle !== expressionId && e.targetHandle !== expressionId);
+      const nextEdges = state.edges.filter(e => e.sourceHandle !== slotId && e.targetHandle !== slotId);
 
       return {
         nodes: nextNodes,
@@ -73,14 +73,14 @@ export const createExpressionSlice: StateCreator<
     });
   },
 
-  updateExpression: async (expressionId, updates) => {
-    const node = get().nodes.find(n => n.data.node.expressions.some(e => e.id === expressionId));
+  updateSlot: async (slotId, updates) => {
+    const node = get().nodes.find(n => n.data.node.slots.some(s => s.id === slotId));
     if (!node) return;
-    const currentExpr = node.data.node.expressions.find(e => e.id === expressionId);
-    if (!currentExpr) return;
+    const currentSlot = node.data.node.slots.find(s => s.id === slotId);
+    if (!currentSlot) return;
 
     const hasChanges = Object.entries(updates).some(
-      ([key, value]) => currentExpr[key as keyof ApiExpression] !== value
+      ([key, value]) => currentSlot[key as keyof ApiSlot] !== value
     );
     if (!hasChanges) {
       return;
@@ -90,15 +90,15 @@ export const createExpressionSlice: StateCreator<
 
     await updateFlowState(set, get, (state) => {
       const nextNodes = state.nodes.map(n => {
-        if (!n.data.node.expressions.some(e => e.id === expressionId)) return n;
+        if (!n.data.node.slots.some(s => s.id === slotId)) return n;
         return {
           ...n,
           data: {
             ...n.data,
             node: {
               ...n.data.node,
-              expressions: n.data.node.expressions.map(e =>
-                e.id === expressionId ? { ...e, ...updates } : e
+              slots: n.data.node.slots.map(s =>
+                s.id === slotId ? { ...s, ...updates } : s
               ),
             }
           }
@@ -107,10 +107,10 @@ export const createExpressionSlice: StateCreator<
 
       let nextEdges = state.edges;
       if (updates.is_input === false) {
-        nextEdges = nextEdges.filter(e => e.targetHandle !== expressionId);
+        nextEdges = nextEdges.filter(e => e.targetHandle !== slotId);
       }
       if (updates.is_output === false) {
-        nextEdges = nextEdges.filter(e => e.sourceHandle !== expressionId);
+        nextEdges = nextEdges.filter(e => e.sourceHandle !== slotId);
       }
 
       return {
@@ -120,35 +120,35 @@ export const createExpressionSlice: StateCreator<
     }, { skipHistory: shouldSkipHistory });
   },
 
-  moveExpression: async (expressionId, direction) => {
-    const node = get().nodes.find(n => n.data.node.expressions.some(e => e.id === expressionId));
+  moveSlot: async (slotId, direction) => {
+    const node = get().nodes.find(n => n.data.node.slots.some(s => s.id === slotId));
     if (!node) return;
 
-    const expressions = [...node.data.node.expressions];
-    const currentIndex = expressions.findIndex(e => e.id === expressionId);
+    const slots = [...node.data.node.slots];
+    const currentIndex = slots.findIndex(s => s.id === slotId);
     if (currentIndex === -1) return;
 
     let targetIndex = -1;
     if (direction === 'up' && currentIndex > 0) targetIndex = currentIndex - 1;
-    else if (direction === 'down' && currentIndex < expressions.length - 1) targetIndex = currentIndex + 1;
+    else if (direction === 'down' && currentIndex < slots.length - 1) targetIndex = currentIndex + 1;
     else if (direction === 'top' && currentIndex > 0) targetIndex = 0;
-    else if (direction === 'bottom' && currentIndex < expressions.length - 1) targetIndex = expressions.length - 1;
+    else if (direction === 'bottom' && currentIndex < slots.length - 1) targetIndex = slots.length - 1;
 
     if (targetIndex === -1 || targetIndex === currentIndex) return;
 
     await updateFlowState(set, get, (state) => {
       const nextNodes = state.nodes.map(n => {
         if (n.id !== node.id) return n;
-        const exprs = [...n.data.node.expressions];
-        const [moved] = exprs.splice(currentIndex, 1);
-        exprs.splice(targetIndex, 0, moved);
+        const slts = [...n.data.node.slots];
+        const [moved] = slts.splice(currentIndex, 1);
+        slts.splice(targetIndex, 0, moved);
         return {
           ...n,
           data: {
             ...n.data,
             node: {
               ...n.data.node,
-              expressions: exprs,
+              slots: slts,
             }
           }
         };

@@ -5,7 +5,7 @@ import type { components } from '../api/generated/schema';
 export type ApiNode = components['schemas']['NodeRead'] & {
   traversalIndex?: number;
 };
-export type ApiExpression = components['schemas']['ExpressionRead'];
+export type ApiSlot = components['schemas']['SlotRead'];
 export type NodeType = components['schemas']['NodeType'];
 export type InsertableNodeType = Exclude<NodeType, 'START' | 'END'>;
 

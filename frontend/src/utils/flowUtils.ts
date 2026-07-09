@@ -1,6 +1,6 @@
 import type { components } from '../api/generated/schema';
 import { getLayoutedElements } from '../components/layout';
-import type { ApiExpression, ApiNode, AppFlowEdge, AppFlowNode, NodeType } from '../components/types';
+import type { ApiNode, ApiSlot, AppFlowEdge, AppFlowNode, NodeType } from '../components/types';
 
 type ApiEdge = components['schemas']['EdgeRead'];
 
@@ -31,9 +31,9 @@ export const getAvailableConversions = (
     }));
 };
 
-export const createDefaultExpressionsForNode = (
+export const createDefaultSlotsForNode = (
   nodeType: NodeType
-): ApiExpression[] => {
+): ApiSlot[] => {
   const baseId = crypto.randomUUID();
   const subId = crypto.randomUUID();
 
@@ -78,10 +78,10 @@ export const mapToReactFlowElements = (
   positions: Record<string, { x: number; y: number }> = {},
   defaultTransition = 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1)'
 ): { nodes: AppFlowNode[]; edges: AppFlowEdge[] } => {
-  const exprToNodeId: Record<string, string> = {};
+  const slotToNodeId: Record<string, string> = {};
   nodes.forEach(n => {
-    n.expressions.forEach(e => {
-      exprToNodeId[e.id] = n.id;
+    n.slots.forEach(s => {
+      slotToNodeId[s.id] = n.id;
     });
   });
 
@@ -101,14 +101,14 @@ export const mapToReactFlowElements = (
   });
 
   const rfEdges = edges
-    .filter(edge => exprToNodeId[edge.from_expression_id] && exprToNodeId[edge.to_expression_id])
+    .filter(edge => slotToNodeId[edge.from_slot_id] && slotToNodeId[edge.to_slot_id])
     .map(edge => {
       return {
         id: edge.id,
-        source: exprToNodeId[edge.from_expression_id],
-        target: exprToNodeId[edge.to_expression_id],
-        sourceHandle: edge.from_expression_id,
-        targetHandle: edge.to_expression_id,
+        source: slotToNodeId[edge.from_slot_id],
+        target: slotToNodeId[edge.to_slot_id],
+        sourceHandle: edge.from_slot_id,
+        targetHandle: edge.to_slot_id,
         type: 'custom' as const,
         animated: true,
         data: {
@@ -172,12 +172,12 @@ export const createNewNode = (
   nodeType: NodeType
 ): AppFlowNode => {
   const newNodeId = crypto.randomUUID();
-  const defaultExprs = createDefaultExpressionsForNode(nodeType);
+  const defaultSlots = createDefaultSlotsForNode(nodeType);
 
   const newNode: ApiNode = {
     id: newNodeId,
     node_type: nodeType,
-    expressions: defaultExprs,
+    slots: defaultSlots,
   };
 
   return {
@@ -193,28 +193,28 @@ export const createNewNode = (
   };
 };
 
-export const canShortcircuitNode = (expressions: ApiExpression[]): boolean => {
-  const inputs = expressions.filter(e => e.is_input);
-  const outputs = expressions.filter(e => e.is_output);
+export const canShortcircuitNode = (slots: ApiSlot[]): boolean => {
+  const inputs = slots.filter(s => s.is_input);
+  const outputs = slots.filter(s => s.is_output);
   return inputs.length === 1 && outputs.length === 1;
 };
 
-export const canMoveExpressionUp = (index: number): boolean => {
+export const canMoveSlotUp = (index: number): boolean => {
   return index > 0;
 };
 
-export const canMoveExpressionDown = (index: number, totalCount: number): boolean => {
+export const canMoveSlotDown = (index: number, totalCount: number): boolean => {
   return index < totalCount - 1;
 };
 
-export const getPrimaryInputExprId = (expressions: ApiExpression[]): string => {
-  const inputExpr = expressions.find(e => e.is_input);
-  return inputExpr ? inputExpr.id : '';
+export const getPrimaryInputSlotId = (slots: ApiSlot[]): string => {
+  const inputSlot = slots.find(s => s.is_input);
+  return inputSlot ? inputSlot.id : '';
 };
 
-export const getPrimaryOutputExprId = (expressions: ApiExpression[]): string => {
-  const outputExpr = expressions.find(e => e.is_output);
-  return outputExpr ? outputExpr.id : '';
+export const getPrimaryOutputSlotId = (slots: ApiSlot[]): string => {
+  const outputSlot = slots.find(s => s.is_output);
+  return outputSlot ? outputSlot.id : '';
 };
 
 export const updateNodeNodeType = (node: AppFlowNode, targetType: NodeType): AppFlowNode => {
@@ -276,13 +276,13 @@ export const computeTraversalIndices = (
   return Object.fromEntries(sortedNodeIds.map((id, index) => [id, index + 1]));
 };
 
-export const formatExpressionLabel = (
+export const formatSlotLabel = (
   nodeId: string | undefined,
   traversalIndexMap: Record<string, number>,
-  exprIdx: number
+  slotIdx: number
 ): string => {
   const index = nodeId ? traversalIndexMap[nodeId] : undefined;
-  return index !== undefined ? `N${index}-${exprIdx}` : `?-${exprIdx}`;
+  return index !== undefined ? `N${index}-${slotIdx}` : `?-${slotIdx}`;
 };
 
 export interface EdgeOption {
@@ -291,35 +291,35 @@ export interface EdgeOption {
 }
 
 export const getOutgoingEdgeOptions = (
-  expressionId: string,
+  slotId: string,
   edges: AppFlowEdge[],
   nodes: AppFlowNode[],
   traversalIndexMap: Record<string, number>
 ): EdgeOption[] => {
-  const outgoingEdges = edges.filter(e => e.sourceHandle === expressionId);
+  const outgoingEdges = edges.filter(e => e.sourceHandle === slotId);
   return outgoingEdges.map(edge => {
     const targetNode = nodes.find(n => n.id === edge.target);
-    const targetExprIdx = targetNode ? targetNode.data.node.expressions.findIndex(e => e.id === edge.targetHandle) : 0;
+    const targetSlotIdx = targetNode ? targetNode.data.node.slots.findIndex(s => s.id === edge.targetHandle) : 0;
     return {
       edgeId: edge.id,
-      label: formatExpressionLabel(targetNode?.id, traversalIndexMap, targetExprIdx >= 0 ? targetExprIdx : 0),
+      label: formatSlotLabel(targetNode?.id, traversalIndexMap, targetSlotIdx >= 0 ? targetSlotIdx : 0),
     };
   });
 };
 
 export const getIncomingEdgeOptions = (
-  expressionId: string,
+  slotId: string,
   edges: AppFlowEdge[],
   nodes: AppFlowNode[],
   traversalIndexMap: Record<string, number>
 ): EdgeOption[] => {
-  const incomingEdges = edges.filter(e => e.targetHandle === expressionId);
+  const incomingEdges = edges.filter(e => e.targetHandle === slotId);
   return incomingEdges.map(edge => {
     const sourceNode = nodes.find(n => n.id === edge.source);
-    const sourceExprIdx = sourceNode ? sourceNode.data.node.expressions.findIndex(e => e.id === edge.sourceHandle) : 0;
+    const sourceSlotIdx = sourceNode ? sourceNode.data.node.slots.findIndex(s => s.id === edge.sourceHandle) : 0;
     return {
       edgeId: edge.id,
-      label: formatExpressionLabel(sourceNode?.id, traversalIndexMap, sourceExprIdx >= 0 ? sourceExprIdx : 0),
+      label: formatSlotLabel(sourceNode?.id, traversalIndexMap, sourceSlotIdx >= 0 ? sourceSlotIdx : 0),
     };
   });
 };

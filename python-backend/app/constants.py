@@ -10,9 +10,9 @@ class EventName(str, Enum):
     EDGE_CREATED = "edge_created"
     EDGE_DELETED = "edge_deleted"
     EDGES_UPDATED = "edges_updated"
-    EXPRESSION_CREATED = "expression_created"
-    EXPRESSION_UPDATED = "expression_updated"
-    EXPRESSION_DELETED = "expression_deleted"
+    SLOT_CREATED = "slot_created"
+    SLOT_UPDATED = "slot_updated"
+    SLOT_DELETED = "slot_deleted"
 
 
 class NodeType(str, Enum):
@@ -23,7 +23,7 @@ class NodeType(str, Enum):
     MERGE = "MERGE"
 
 
-class ExpressionType(str, Enum):
+class SlotType(str, Enum):
     BASE_INPUT = "BASE_INPUT"
     SUB_INPUT = "SUB_INPUT"
     SUB_UNCONNECTED = "SUB_UNCONNECTED"

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
 import { Box, Button, Flex, Select, Text, TextField } from '@radix-ui/themes';
+import { useEffect, useState } from 'react';
 import { useGraphStore } from '../store/useGraphStore';
 
 interface SidebarProps {
@@ -36,7 +36,8 @@ export const Sidebar = ({ isSidebarOpen, isGraphSelected }: SidebarProps) => {
           {/* List Variables */}
           <Flex direction="column" gap="1" mb="2">
             {variables.map(v => (
-              <Flex key={v.id} justify="between" align="center" style={{ backgroundColor: 'var(--gray-3)', padding: '4px 8px', borderRadius: '4px' }}>
+              <Flex key={v.id} justify="between" align="center"
+                    style={{ backgroundColor: 'var(--gray-3)', padding: '4px 8px', borderRadius: '4px' }}>
                 <Text size="1" weight="medium">{v.name}</Text>
                 <Text size="1" color="gray">{v.type}</Text>
               </Flex>
@@ -47,7 +48,7 @@ export const Sidebar = ({ isSidebarOpen, isGraphSelected }: SidebarProps) => {
           </Flex>
 
           {/* Add Variable Form */}
-          <VariableForm isGraphSelected={isGraphSelected} />
+          <VariableForm isGraphSelected={isGraphSelected}/>
         </Flex>
 
         {/* Functions Section */}
@@ -60,7 +61,8 @@ export const Sidebar = ({ isSidebarOpen, isGraphSelected }: SidebarProps) => {
               const inputVar = f.input_variable ? (variables.find(v => v.id === f.input_variable)?.name ?? 'unknown') : 'None';
               const outputVar = f.output_variable ? (variables.find(v => v.id === f.output_variable)?.name ?? 'unknown') : 'None';
               return (
-                <Flex key={f.id} justify="between" align="center" style={{ backgroundColor: 'var(--gray-3)', padding: '4px 8px', borderRadius: '4px' }}>
+                <Flex key={f.id} justify="between" align="center"
+                      style={{ backgroundColor: 'var(--gray-3)', padding: '4px 8px', borderRadius: '4px' }}>
                   <Text size="1" weight="medium">{f.name}</Text>
                   <Text size="1" color="gray">{inputVar} → {outputVar}</Text>
                 </Flex>
@@ -72,7 +74,7 @@ export const Sidebar = ({ isSidebarOpen, isGraphSelected }: SidebarProps) => {
           </Flex>
 
           {/* Add Function Form */}
-          <FunctionForm isGraphSelected={isGraphSelected} />
+          <FunctionForm isGraphSelected={isGraphSelected}/>
         </Flex>
       </Flex>
     </Box>
@@ -103,7 +105,7 @@ const VariableForm = ({ isGraphSelected }: { isGraphSelected: boolean }) => {
         onValueChange={(val) => setType(val as 'boolean' | 'string' | 'number')}
         disabled={!isGraphSelected}
       >
-        <Select.Trigger style={{ width: '100%' }} />
+        <Select.Trigger style={{ width: '100%' }}/>
         <Select.Content>
           <Select.Item value="string">string</Select.Item>
           <Select.Item value="boolean">boolean</Select.Item>
@@ -166,7 +168,7 @@ const FunctionForm = ({ isGraphSelected }: { isGraphSelected: boolean }) => {
           onValueChange={setInputVar}
           disabled={!isGraphSelected}
         >
-          <Select.Trigger style={{ width: '100%' }} />
+          <Select.Trigger style={{ width: '100%' }}/>
           <Select.Content>
             <Select.Item value="none">None</Select.Item>
             {variables.map(v => (
@@ -183,7 +185,7 @@ const FunctionForm = ({ isGraphSelected }: { isGraphSelected: boolean }) => {
           onValueChange={setOutputVar}
           disabled={!isGraphSelected}
         >
-          <Select.Trigger style={{ width: '100%' }} />
+          <Select.Trigger style={{ width: '100%' }}/>
           <Select.Content>
             <Select.Item value="none">None</Select.Item>
             {variables.map(v => (

@@ -3,68 +3,68 @@ import { Handle, Position } from '@xyflow/react';
 import { memo, useCallback } from 'react';
 import { useGraphStore } from '../store/useGraphStore';
 import { Editor } from './Editor.tsx';
-import { FlowNodeRowActions } from './FlowNodeRowActions.tsx';
+import { FlowNodeSlotActions } from './FlowNodeSlotActions.tsx';
 import { NODE_PADDING } from './layout.ts';
 
-interface FlowNodeRowProps {
-  expressionId: string;
+interface FlowNodeSlotProps {
+  slotId: string;
   disabled: boolean;
   isStart: boolean;
   isEnd: boolean;
 }
 
-export const FlowNodeRow = memo(({
-  expressionId,
+export const FlowNodeSlot = memo(({
+  slotId,
   disabled,
   isStart,
   isEnd,
-}: FlowNodeRowProps) => {
-  // Subscribe to only this specific expression
-  const expr = useGraphStore(
+}: FlowNodeSlotProps) => {
+  // Subscribe to only this specific slot
+  const slot = useGraphStore(
     useCallback(
       (state) => {
         for (const n of state.nodes) {
-          const found = n.data.node.expressions.find((e) => e.id === expressionId);
+          const found = n.data.node.slots.find((s) => s.id === slotId);
           if (found) return found;
         }
         return undefined;
       },
-      [expressionId]
+      [slotId]
     )
   );
 
   const functions = useGraphStore((state) => state.functions);
-  const updateExpression = useGraphStore((state) => state.updateExpression);
+  const updateSlot = useGraphStore((state) => state.updateSlot);
 
   const handleUpdateItem = useCallback(
     (newValue: string) => {
-      void updateExpression(expressionId, { raw_string: newValue });
+      void updateSlot(slotId, { raw_string: newValue });
     },
-    [expressionId, updateExpression]
+    [slotId, updateSlot]
   );
 
-  if (!expr) return null;
+  if (!slot) return null;
 
-  const leftHandle = expr.is_input;
-  const rightHandle = expr.is_output;
+  const leftHandle = slot.is_input;
+  const rightHandle = slot.is_output;
 
   const pl = leftHandle ? undefined : '5';
   const pr = rightHandle ? undefined : '5';
 
   const actions = !disabled ? (
-    <FlowNodeRowActions
-      expressionId={expr.id}
+    <FlowNodeSlotActions
+      slotId={slot.id}
     />
   ) : undefined;
 
   const initialValue = (() => {
-    if (expr.function_id) {
-      const func = functions.find(f => f.id === expr.function_id);
+    if (slot.function_id) {
+      const func = functions.find(f => f.id === slot.function_id);
       return func ? func.name : 'Unknown Function';
     }
-    if (isStart) return expr.raw_string || 'Start Node (Output)';
-    if (isEnd) return expr.raw_string || 'End Node (Input)';
-    return expr.raw_string;
+    if (isStart) return slot.raw_string || 'Start Node (Output)';
+    if (isEnd) return slot.raw_string || 'End Node (Input)';
+    return slot.raw_string;
   })();
 
   return (
@@ -72,7 +72,7 @@ export const FlowNodeRow = memo(({
       {leftHandle && (
         <Handle
           type="target"
-          id={expr.id}
+          id={slot.id}
           position={Position.Left}
           style={{ left: -NODE_PADDING }}
         />
@@ -81,7 +81,7 @@ export const FlowNodeRow = memo(({
         <Editor
           initialValue={initialValue}
           onSave={handleUpdateItem}
-          disabled={disabled || !!expr.function_id}
+          disabled={disabled || !!slot.function_id}
         />
       </Flex>
       {actions && (
@@ -92,7 +92,7 @@ export const FlowNodeRow = memo(({
       {rightHandle && (
         <Handle
           type="source"
-          id={expr.id}
+          id={slot.id}
           position={Position.Right}
           style={{ right: -NODE_PADDING }}
         />

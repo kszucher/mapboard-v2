@@ -4,8 +4,8 @@ import { useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useGraphStore } from '../store/useGraphStore';
 import {
-  canMoveExpressionDown,
-  canMoveExpressionUp,
+  canMoveSlotDown,
+  canMoveSlotUp,
   computeTraversalIndices,
   getIncomingEdgeOptions,
   getOutgoingEdgeOptions
@@ -18,18 +18,18 @@ const INSERTABLE_NODE_TYPES: { type: InsertableNodeType; label: string }[] = [
   { type: 'MERGE', label: 'Merge' },
 ];
 
-export interface ExpressionActionsContentProps {
-  expressionId: string;
+export interface SlotActionsContentProps {
+  slotId: string;
 }
 
-export const FlowNodeRowActionsContent = ({
-  expressionId,
-}: ExpressionActionsContentProps) => {
+export const FlowNodeSlotActionsContent = ({
+  slotId,
+}: SlotActionsContentProps) => {
   const functions = useGraphStore(state => state.functions);
-  const createExpression = useGraphStore(state => state.createExpression);
-  const deleteExpression = useGraphStore(state => state.deleteExpression);
-  const updateExpression = useGraphStore(state => state.updateExpression);
-  const moveExpression = useGraphStore(state => state.moveExpression);
+  const createSlot = useGraphStore(state => state.createSlot);
+  const deleteSlot = useGraphStore(state => state.deleteSlot);
+  const updateSlot = useGraphStore(state => state.updateSlot);
+  const moveSlot = useGraphStore(state => state.moveSlot);
   const insertNode = useGraphStore(state => state.insertNode);
   const deleteEdge = useGraphStore(state => state.deleteEdge);
 
@@ -37,99 +37,99 @@ export const FlowNodeRowActionsContent = ({
   const nodes = useGraphStore(useShallow(state => state.nodes));
 
   const node = useMemo(() => {
-    return nodes.find(n => n.data.node.expressions.some(e => e.id === expressionId));
-  }, [nodes, expressionId]);
+    return nodes.find(n => n.data.node.slots.some(s => s.id === slotId));
+  }, [nodes, slotId]);
 
-  const expr = useMemo(() => {
-    return node?.data.node.expressions.find(e => e.id === expressionId);
-  }, [node, expressionId]);
+  const slot = useMemo(() => {
+    return node?.data.node.slots.find(s => s.id === slotId);
+  }, [node, slotId]);
 
-  const isInput = expr?.is_input ?? false;
-  const isOutput = expr?.is_output ?? false;
+  const isInput = slot?.is_input ?? false;
+  const isOutput = slot?.is_output ?? false;
 
-  const myExpressions = useMemo(() => {
-    return node ? node.data.node.expressions : [];
+  const mySlots = useMemo(() => {
+    return node ? node.data.node.slots : [];
   }, [node]);
 
   const indexInNode = useMemo(() => {
-    if (!expr) return -1;
-    return myExpressions.findIndex(e => e.id === expressionId);
-  }, [myExpressions, expressionId, expr]);
+    if (!slot) return -1;
+    return mySlots.findIndex(s => s.id === slotId);
+  }, [mySlots, slotId, slot]);
 
   const canMoveUp = useMemo(() => {
     if (indexInNode === -1) return false;
-    return canMoveExpressionUp(indexInNode);
+    return canMoveSlotUp(indexInNode);
   }, [indexInNode]);
 
   const canMoveDown = useMemo(() => {
     if (indexInNode === -1) return false;
-    return canMoveExpressionDown(indexInNode, myExpressions.length);
-  }, [indexInNode, myExpressions.length]);
+    return canMoveSlotDown(indexInNode, mySlots.length);
+  }, [indexInNode, mySlots.length]);
 
   const canDelete = useMemo(() => {
-    return myExpressions.length > 1;
-  }, [myExpressions]);
+    return mySlots.length > 1;
+  }, [mySlots]);
 
   const traversalIndexMap = useMemo(() => {
     return computeTraversalIndices(nodes);
   }, [nodes]);
 
   const outgoingEdgeOptions = useMemo(() => {
-    return getOutgoingEdgeOptions(expressionId, edges, nodes, traversalIndexMap);
-  }, [expressionId, edges, nodes, traversalIndexMap]);
+    return getOutgoingEdgeOptions(slotId, edges, nodes, traversalIndexMap);
+  }, [slotId, edges, nodes, traversalIndexMap]);
 
   const incomingEdgeOptions = useMemo(() => {
-    return getIncomingEdgeOptions(expressionId, edges, nodes, traversalIndexMap);
-  }, [expressionId, edges, nodes, traversalIndexMap]);
+    return getIncomingEdgeOptions(slotId, edges, nodes, traversalIndexMap);
+  }, [slotId, edges, nodes, traversalIndexMap]);
 
   const hasOutgoingEdges = useMemo(() => {
-    return edges.some(e => e.sourceHandle === expressionId);
-  }, [edges, expressionId]);
+    return edges.some(e => e.sourceHandle === slotId);
+  }, [edges, slotId]);
 
   const hasIncomingEdges = useMemo(() => {
-    return edges.some(e => e.targetHandle === expressionId);
-  }, [edges, expressionId]);
+    return edges.some(e => e.targetHandle === slotId);
+  }, [edges, slotId]);
 
   const handleInsert = useCallback(
     (nodeType: InsertableNodeType, direction: 'before' | 'after') => {
-      void insertNode(expressionId, nodeType, direction);
+      void insertNode(slotId, nodeType, direction);
     },
-    [insertNode, expressionId]
+    [insertNode, slotId]
   );
 
   const handleUpdateConnection = useCallback((isInputVal: boolean, isOutputVal: boolean) => {
-    void updateExpression(expressionId, { is_input: isInputVal, is_output: isOutputVal });
-  }, [expressionId, updateExpression]);
+    void updateSlot(slotId, { is_input: isInputVal, is_output: isOutputVal });
+  }, [slotId, updateSlot]);
 
   const handleMoveTop = useCallback(() => {
-    void moveExpression(expressionId, 'top');
-  }, [expressionId, moveExpression]);
+    void moveSlot(slotId, 'top');
+  }, [slotId, moveSlot]);
 
   const handleMoveUp = useCallback(() => {
-    void moveExpression(expressionId, 'up');
-  }, [expressionId, moveExpression]);
+    void moveSlot(slotId, 'up');
+  }, [slotId, moveSlot]);
 
   const handleMoveDown = useCallback(() => {
-    void moveExpression(expressionId, 'down');
-  }, [expressionId, moveExpression]);
+    void moveSlot(slotId, 'down');
+  }, [slotId, moveSlot]);
 
   const handleMoveBottom = useCallback(() => {
-    void moveExpression(expressionId, 'bottom');
-  }, [expressionId, moveExpression]);
+    void moveSlot(slotId, 'bottom');
+  }, [slotId, moveSlot]);
 
   const handleDeleteItem = useCallback(() => {
-    void deleteExpression(expressionId);
-  }, [expressionId, deleteExpression]);
+    void deleteSlot(slotId);
+  }, [slotId, deleteSlot]);
 
   const handleAddAbove = useCallback(() => {
-    if (!expr || !node) return;
-    void createExpression(node.id, expr.is_input, expr.is_output, indexInNode);
-  }, [createExpression, node, expr, indexInNode]);
+    if (!slot || !node) return;
+    void createSlot(node.id, slot.is_input, slot.is_output, indexInNode);
+  }, [createSlot, node, slot, indexInNode]);
 
   const handleAddBelow = useCallback(() => {
-    if (!expr || !node) return;
-    void createExpression(node.id, expr.is_input, expr.is_output, indexInNode + 1);
-  }, [createExpression, node, expr, indexInNode]);
+    if (!slot || !node) return;
+    void createSlot(node.id, slot.is_input, slot.is_output, indexInNode + 1);
+  }, [createSlot, node, slot, indexInNode]);
 
   const renderInsertSubmenu = (direction: 'before' | 'after') => {
     const isAfter = direction === 'after';
@@ -199,16 +199,16 @@ export const FlowNodeRowActionsContent = ({
           {'Link Function'}
         </DropdownMenu.SubTrigger>
         <DropdownMenu.SubContent>
-          <DropdownMenu.Item onClick={() => void updateExpression(expressionId, { function_id: null })}>
-            {expr?.function_id === null || expr?.function_id === undefined ? '✓ None (Unlink)' : '  None (Unlink)'}
+          <DropdownMenu.Item onClick={() => void updateSlot(slotId, { function_id: null })}>
+            {slot?.function_id === null || slot?.function_id === undefined ? '✓ None (Unlink)' : '  None (Unlink)'}
           </DropdownMenu.Item>
-          <DropdownMenu.Separator />
+          <DropdownMenu.Separator/>
           {functions.map(f => (
             <DropdownMenu.Item
               key={f.id}
-              onClick={() => void updateExpression(expressionId, { function_id: f.id })}
+              onClick={() => void updateSlot(slotId, { function_id: f.id })}
             >
-              {f.id === expr?.function_id ? `✓ ${f.name}` : `  ${f.name}`}
+              {f.id === slot?.function_id ? `✓ ${f.name}` : `  ${f.name}`}
             </DropdownMenu.Item>
           ))}
         </DropdownMenu.SubContent>
@@ -216,10 +216,10 @@ export const FlowNodeRowActionsContent = ({
       <DropdownMenu.Separator/>
 
       <DropdownMenu.Item onClick={handleAddAbove}>
-        <PlusIcon style={{ marginRight: 8 }}/> Add Expression Above
+        <PlusIcon style={{ marginRight: 8 }}/> Add Slot Above
       </DropdownMenu.Item>
       <DropdownMenu.Item onClick={handleAddBelow}>
-        <PlusIcon style={{ marginRight: 8 }}/> Add Expression Below
+        <PlusIcon style={{ marginRight: 8 }}/> Add Slot Below
       </DropdownMenu.Item>
       <DropdownMenu.Separator/>
 
@@ -246,7 +246,7 @@ export const FlowNodeRowActionsContent = ({
 
       <DropdownMenu.Separator/>
       <DropdownMenu.Item onClick={handleDeleteItem} color="red" disabled={!canDelete}>
-        <TrashIcon style={{ marginRight: 8 }}/> Delete Expression
+        <TrashIcon style={{ marginRight: 8 }}/> Delete Slot
       </DropdownMenu.Item>
     </>
   );

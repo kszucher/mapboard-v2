@@ -3,11 +3,11 @@ import { create } from 'zustand';
 import type { AppFlowEdge, AppFlowNode } from '../components/types';
 import { runLayout } from '../utils/flowUtils';
 import { setOnSaveStateChange, triggerSave, updateFlowState } from './helpers';
-import { createExpressionSlice } from './slices/expressionSlice';
 import { createFlowSlice } from './slices/flowSlice';
 import { createHistorySlice } from './slices/historySlice';
 import { createInitSlice } from './slices/initSlice';
 import { createNodeSlice } from './slices/nodeSlice';
+import { createSlotSlice } from './slices/slotSlice';
 import type { GraphStoreState } from './types';
 
 export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
@@ -140,7 +140,7 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
   },
 
   ...createNodeSlice(set, get, store),
-  ...createExpressionSlice(set, get, store),
+  ...createSlotSlice(set, get, store),
   ...createHistorySlice(set, get, store),
 }));
 

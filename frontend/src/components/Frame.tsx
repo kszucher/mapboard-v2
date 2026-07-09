@@ -1,5 +1,4 @@
-
-import { CaretDownIcon, CheckIcon, MixIcon, PlayIcon, ResetIcon, ReaderIcon } from '@radix-ui/react-icons';
+import { CaretDownIcon, CheckIcon, MixIcon, PlayIcon, ReaderIcon, ResetIcon } from '@radix-ui/react-icons';
 import { AlertDialog, Box, Button, DropdownMenu, Flex, IconButton, Text } from '@radix-ui/themes';
 import { ReactFlowProvider } from '@xyflow/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -97,7 +96,7 @@ export const Frame = () => {
               onClick={() => setIsSidebarOpen(prev => !prev)}
               aria-label="Toggle Sidebar"
             >
-              <ReaderIcon width="18" height="18" />
+              <ReaderIcon width="18" height="18"/>
             </IconButton>
             <Text size="2" weight="bold" color="gray">
               graphboard
@@ -195,7 +194,7 @@ export const Frame = () => {
         }}
       >
         {/* Sidebar Component */}
-        <Sidebar isSidebarOpen={isSidebarOpen} isGraphSelected={isGraphSelected} />
+        <Sidebar isSidebarOpen={isSidebarOpen} isGraphSelected={isGraphSelected}/>
 
         {/* Flow Canvas Container */}
         <Box

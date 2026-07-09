@@ -1,17 +1,17 @@
 import { DotsHorizontalIcon } from '@radix-ui/react-icons';
 import { DropdownMenu, IconButton } from '@radix-ui/themes';
 import { memo, useState } from 'react';
-import { FlowNodeRowActionsContent } from './FlowNodeRowActionsContent.tsx';
+import { FlowNodeSlotActionsContent } from './FlowNodeSlotActionsContent.tsx';
 
-interface ExpressionActionsDropdownProps {
-  expressionId: string;
+interface SlotActionsDropdownProps {
+  slotId: string;
   triggerStyle?: React.CSSProperties;
 }
 
-export const FlowNodeRowActions = memo(({
-  expressionId,
+export const FlowNodeSlotActions = memo(({
+  slotId,
   triggerStyle,
-}: ExpressionActionsDropdownProps) => {
+}: SlotActionsDropdownProps) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   return (
@@ -22,15 +22,15 @@ export const FlowNodeRowActions = memo(({
           variant="ghost"
           color="gray"
           style={{ pointerEvents: 'auto', cursor: 'pointer', ...triggerStyle }}
-          title="Expression Actions"
+          title="Slot Actions"
         >
           <DotsHorizontalIcon/>
         </IconButton>
       </DropdownMenu.Trigger>
       <DropdownMenu.Content onCloseAutoFocus={(e) => e.preventDefault()}>
         {dropdownOpen && (
-          <FlowNodeRowActionsContent
-            expressionId={expressionId}
+          <FlowNodeSlotActionsContent
+            slotId={slotId}
           />
         )}
       </DropdownMenu.Content>

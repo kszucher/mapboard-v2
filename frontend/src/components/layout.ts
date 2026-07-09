@@ -59,20 +59,20 @@ const buildElkNodes = (
 
   return nodes.map((node) => {
     const nodeType = node.data?.node?.node_type ?? '';
-    const nodeExpressions = node.data?.node?.expressions ?? [];
+    const nodeSlots = node.data?.node?.slots ?? [];
     const isStart = nodeType === 'START';
     const isEnd = nodeType === 'END';
 
     const nodeWidth = node.measured?.width ?? node.width ?? 150;
-    const nodeHeight = node.measured?.height ?? node.height ?? (ROW_HEIGHT * (1 + nodeExpressions.length) + NODE_PADDING);
+    const nodeHeight = node.measured?.height ?? node.height ?? (ROW_HEIGHT * (1 + nodeSlots.length) + NODE_PADDING);
 
     const ports: ElkPort[] = [];
 
     // WEST ports (incoming)
     getUniqueHandles(incomingMap[node.id] ?? [], 'targetHandle')
       .forEach((handleId) => {
-        const exprIdx = nodeExpressions.findIndex((e) => e.id === handleId);
-        const rowIdx = exprIdx !== -1 ? 1 + exprIdx : 1;
+        const slotIdx = nodeSlots.findIndex((s) => s.id === handleId);
+        const rowIdx = slotIdx !== -1 ? 1 + slotIdx : 1;
         ports.push({
           id: `${node.id}-target-${handleId}`,
           x: -NODE_PADDING,
@@ -86,8 +86,8 @@ const buildElkNodes = (
     // EAST ports (outgoing)
     getUniqueHandles(outgoingMap[node.id] ?? [], 'sourceHandle')
       .forEach((handleId) => {
-        const exprIdx = nodeExpressions.findIndex((e) => e.id === handleId);
-        const rowIdx = exprIdx !== -1 ? 1 + exprIdx : 1;
+        const slotIdx = nodeSlots.findIndex((s) => s.id === handleId);
+        const rowIdx = slotIdx !== -1 ? 1 + slotIdx : 1;
         ports.push({
           id: `${node.id}-source-${handleId}`,
           x: nodeWidth + NODE_PADDING,

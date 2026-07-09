@@ -176,40 +176,15 @@ export interface components {
        */
       id: string;
       /**
-       * From Expression Id
+       * From Slot Id
        * Format: uuid
        */
-      from_expression_id: string;
+      from_slot_id: string;
       /**
-       * To Expression Id
+       * To Slot Id
        * Format: uuid
        */
-      to_expression_id: string;
-    };
-    /** ExpressionRead */
-    ExpressionRead: {
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /**
-       * Is Input
-       * @default false
-       */
-      is_input: boolean;
-      /**
-       * Is Output
-       * @default false
-       */
-      is_output: boolean;
-      /** Raw String */
-      raw_string: string;
-      /**
-       * Function Id
-       * Format: uuid
-       */
-      function_id?: string | null;
+      to_slot_id: string;
     };
     /** FunctionRead */
     FunctionRead: {
@@ -220,16 +195,10 @@ export interface components {
       id: string;
       /** Name */
       name: string;
-      /**
-       * Input Variable
-       * Format: uuid
-       */
-      input_variable: string | null;
-      /**
-       * Output Variable
-       * Format: uuid
-       */
-      output_variable: string | null;
+      /** Input Variable */
+      input_variable?: string | null;
+      /** Output Variable */
+      output_variable?: string | null;
       /** Raw String */
       raw_string: string;
     };
@@ -305,8 +274,8 @@ export interface components {
        */
       id: string;
       node_type: components["schemas"]["NodeType"];
-      /** Expressions */
-      expressions: components["schemas"]["ExpressionRead"][];
+      /** Slots */
+      slots: components["schemas"]["SlotRead"][];
     };
     /**
      * NodeType
@@ -325,6 +294,28 @@ export interface components {
        * Format: uuid
        */
       graph_id: string;
+    };
+    /** SlotRead */
+    SlotRead: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Is Input
+       * @default false
+       */
+      is_input: boolean;
+      /**
+       * Is Output
+       * @default false
+       */
+      is_output: boolean;
+      /** Raw String */
+      raw_string: string;
+      /** Function Id */
+      function_id?: string | null;
     };
     /** UserCreate */
     UserCreate: {

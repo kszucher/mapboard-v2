@@ -2,8 +2,8 @@ import type { StateCreator } from 'zustand';
 import type { AppFlowEdge } from '../../components/types';
 import {
   createNewNode,
-  getPrimaryInputExprId,
-  getPrimaryOutputExprId,
+  getPrimaryInputSlotId,
+  getPrimaryOutputSlotId,
   updateNodeNodeType,
 } from '../../utils/flowUtils';
 import { updateFlowState } from '../helpers';
@@ -26,25 +26,25 @@ export const createNodeSlice: StateCreator<
     });
   },
 
-  insertNode: async (expressionId, nodeType, direction) => {
+  insertNode: async (slotId, nodeType, direction) => {
     await updateFlowState(set, get, (state) => {
       const isAfter = direction === 'after';
-      const oldEdges = state.edges.filter(e => isAfter ? e.sourceHandle === expressionId : e.targetHandle === expressionId);
+      const oldEdges = state.edges.filter(e => isAfter ? e.sourceHandle === slotId : e.targetHandle === slotId);
 
       const appNode = createNewNode(nodeType);
-      const defaultExprs = appNode.data.node.expressions;
-      const toExprId = getPrimaryInputExprId(defaultExprs);
-      const fromExprId = getPrimaryOutputExprId(defaultExprs);
+      const defaultSlots = appNode.data.node.slots;
+      const toSlotId = getPrimaryInputSlotId(defaultSlots);
+      const fromSlotId = getPrimaryOutputSlotId(defaultSlots);
 
-      const targetOrSourceNode = state.nodes.find(n => n.data.node.expressions.some(e => e.id === expressionId));
+      const targetOrSourceNode = state.nodes.find(n => n.data.node.slots.some(s => s.id === slotId));
       const targetOrSourceNodeId = targetOrSourceNode ? targetOrSourceNode.id : '';
 
       const newEdge: AppFlowEdge = {
         id: crypto.randomUUID(),
         source: isAfter ? targetOrSourceNodeId : appNode.id,
         target: isAfter ? appNode.id : targetOrSourceNodeId,
-        sourceHandle: isAfter ? expressionId : fromExprId,
-        targetHandle: isAfter ? toExprId : expressionId,
+        sourceHandle: isAfter ? slotId : fromSlotId,
+        targetHandle: isAfter ? toSlotId : slotId,
         type: 'custom',
         animated: true,
         style: { opacity: 0 }
@@ -54,10 +54,10 @@ export const createNodeSlice: StateCreator<
         ...oldEdge,
         ...(isAfter ? {
           source: appNode.id,
-          sourceHandle: fromExprId,
+          sourceHandle: fromSlotId,
         } : {
           target: appNode.id,
-          targetHandle: toExprId,
+          targetHandle: toSlotId,
         })
       }));
 
@@ -76,13 +76,13 @@ export const createNodeSlice: StateCreator<
   deleteNode: async (nodeId) => {
     await updateFlowState(set, get, (state) => {
       const node = state.nodes.find(n => n.id === nodeId);
-      const exprIds = new Set(node ? node.data.node.expressions.map(e => e.id) : []);
+      const slotIds = new Set(node ? node.data.node.slots.map(s => s.id) : []);
       const nextNodes = state.nodes.filter(n => n.id !== nodeId);
       const nextEdges = state.edges.filter(e =>
         e.source !== nodeId &&
         e.target !== nodeId &&
-        !exprIds.has(e.sourceHandle || '') &&
-        !exprIds.has(e.targetHandle || '')
+        !slotIds.has(e.sourceHandle || '') &&
+        !slotIds.has(e.targetHandle || '')
       );
 
       return {
@@ -99,20 +99,20 @@ export const createNodeSlice: StateCreator<
     const nodeType = node.data?.node?.node_type;
     if (!nodeType || nodeType === 'START' || nodeType === 'END') return;
 
-    const nodeExprs = node.data.node.expressions;
-    const inputs = nodeExprs.filter(e => e.is_input);
-    const outputs = nodeExprs.filter(e => e.is_output);
+    const nodeSlots = node.data.node.slots;
+    const inputs = nodeSlots.filter(s => s.is_input);
+    const outputs = nodeSlots.filter(s => s.is_output);
     if (inputs.length !== 1 || outputs.length !== 1) {
-      set({ errorMessage: 'Can only shortcircuit nodes with exactly one input and one output expression.' });
+      set({ errorMessage: 'Can only shortcircuit nodes with exactly one input and one output slot.' });
       return;
     }
 
     await updateFlowState(set, get, (state) => {
-      const nodeExprIds = new Set(nodeExprs.map(e => e.id));
-      const incoming = state.edges.filter(e => nodeExprIds.has(e.targetHandle || ''));
-      const outgoing = state.edges.filter(e => nodeExprIds.has(e.sourceHandle || ''));
+      const nodeSlotIds = new Set(nodeSlots.map(s => s.id));
+      const incoming = state.edges.filter(e => nodeSlotIds.has(e.targetHandle || ''));
+      const outgoing = state.edges.filter(e => nodeSlotIds.has(e.sourceHandle || ''));
 
-      let nextEdges = state.edges.filter(e => !nodeExprIds.has(e.sourceHandle || '') && !nodeExprIds.has(e.targetHandle || ''));
+      let nextEdges = state.edges.filter(e => !nodeSlotIds.has(e.sourceHandle || '') && !nodeSlotIds.has(e.targetHandle || ''));
 
       if (incoming.length > 0 && outgoing.length > 0) {
         const sortedOutgoing = [...outgoing].sort((a, b) => a.id.localeCompare(b.id));
