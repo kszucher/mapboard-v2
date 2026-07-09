@@ -22,7 +22,6 @@ class GraphRead(OrmModel):
 
 class ExpressionRead(BaseModel):
     id: uuid.UUID
-    type: str | None = None
     is_input: bool = False
     is_output: bool = False
     raw_string: str

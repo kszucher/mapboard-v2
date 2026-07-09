@@ -23,7 +23,6 @@ export const serializeFlowState = (
       node_type: n.data.node.node_type,
       expressions: n.data.node.expressions.map(e => ({
         id: e.id,
-        type: e.type,
         is_input: e.is_input,
         is_output: e.is_output,
         raw_string: e.raw_string,

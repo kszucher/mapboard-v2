@@ -193,8 +193,6 @@ export interface components {
        * Format: uuid
        */
       id: string;
-      /** Type */
-      type?: string | null;
       /**
        * Is Input
        * @default false

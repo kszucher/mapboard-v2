@@ -28,7 +28,6 @@ async def create_graph(
                 "expressions": [
                     {
                         "id": str(start_expr_id),
-                        "type": "BASE_OUTPUT",
                         "is_input": False,
                         "is_output": True,
                         "raw_string": "",
