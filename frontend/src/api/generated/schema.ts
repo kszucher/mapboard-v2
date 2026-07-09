@@ -205,11 +205,6 @@ export interface components {
       is_output: boolean;
       /** Raw String */
       raw_string: string;
-      /**
-       * Function Id
-       * Format: uuid
-       */
-      function_id?: string | null;
     };
     /** FunctionRead */
     FunctionRead: {

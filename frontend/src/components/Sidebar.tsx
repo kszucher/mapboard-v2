@@ -55,19 +55,14 @@ export const Sidebar = ({ isSidebarOpen, isGraphSelected }: SidebarProps) => {
           <Text size="2" weight="bold">Functions</Text>
 
           {/* List Functions */}
-          <Flex direction="column" gap="2" mb="2">
+          <Flex direction="column" gap="1" mb="2">
             {functions.map(f => {
               const inputVar = f.input_variable ? (variables.find(v => v.id === f.input_variable)?.name ?? 'unknown') : 'None';
               const outputVar = f.output_variable ? (variables.find(v => v.id === f.output_variable)?.name ?? 'unknown') : 'None';
               return (
-                <Flex key={f.id} direction="column" gap="1" style={{ backgroundColor: 'var(--gray-3)', padding: '6px 8px', borderRadius: '4px' }}>
-                  <Flex justify="between" align="center">
-                    <Text size="1" weight="bold">{f.name}</Text>
-                  </Flex>
-                  <Text size="1" color="gray">Input: {inputVar} → Output: {outputVar}</Text>
-                  <Text size="1" style={{ fontFamily: 'monospace', backgroundColor: 'var(--gray-4)', padding: '2px 4px', borderRadius: '2px', wordBreak: 'break-all' }}>
-                    {f.raw_string || 'no code'}
-                  </Text>
+                <Flex key={f.id} justify="between" align="center" style={{ backgroundColor: 'var(--gray-3)', padding: '4px 8px', borderRadius: '4px' }}>
+                  <Text size="1" weight="medium">{f.name}</Text>
+                  <Text size="1" color="gray">{inputVar} → {outputVar}</Text>
                 </Flex>
               );
             })}
