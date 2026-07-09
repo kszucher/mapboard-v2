@@ -74,6 +74,19 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
             edges: laidOut.edges,
             isLoading: false,
           });
+
+          window.setTimeout(() => {
+            set((state) => ({
+              nodes: state.nodes.map(node => ({
+                ...node,
+                style: {
+                  ...node.style,
+                  transition: 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1)',
+                }
+              }))
+            }));
+          }, 50);
+
           triggerSave({
             graphId,
             nodes: laidOut.nodes,

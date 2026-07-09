@@ -25,6 +25,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   const myExpressions = useGraphStore(
     useShallow(state => state.expressions.filter(e => e.node_id === id))
   );
+  const isLoading = useGraphStore(state => state.isLoading);
 
   const myExpressionsHash = useMemo(() => {
     return myExpressions.map(e => `${e.id}:${e.idx}:${e.is_input}:${e.is_output}`).join(',');
@@ -49,7 +50,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
         borderRadius: 'var(--radius-3)',
         padding: NODE_PADDING,
         gap: NODE_PADDING,
-        opacity: 1,
+        opacity: isLoading ? 0 : 1,
         transition: 'opacity 0.2s ease-in-out',
       }}
     >

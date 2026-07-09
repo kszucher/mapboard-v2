@@ -26,7 +26,6 @@ class NodeRead(BaseModel):
     iid: int
     is_processing: bool
     node_type: NodeType
-    position: dict | None = None
 
 
 class ExpressionRead(BaseModel):

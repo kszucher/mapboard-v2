@@ -19,15 +19,8 @@ export const createInitSlice: StateCreator<
       if ('error' in res) throw res.error;
       const data = res.data;
       if (data) {
-        const positions: Record<string, { x: number; y: number }> = {};
-        data.nodes.forEach(n => {
-          if (n.position) {
-            positions[n.id] = n.position as { x: number; y: number };
-          }
-        });
-
         const normalizedExprs = normalizeExpressions(data.expressions);
-        const mapped = mapToReactFlowElements(data.nodes, data.edges, normalizedExprs, positions);
+        const mapped = mapToReactFlowElements(data.nodes, data.edges, normalizedExprs, {}, 'none');
 
         set({
           nodes: mapped.nodes,
@@ -58,12 +51,6 @@ export const createInitSlice: StateCreator<
     const positions: Record<string, { x: number; y: number }> = {};
     nodes.forEach((n) => {
       positions[n.id] = n.position;
-    });
-
-    flow.nodes.forEach(n => {
-      if (n.position) {
-        positions[n.id] = n.position as { x: number; y: number };
-      }
     });
 
     const normalizedExprs = normalizeExpressions(flow.expressions);

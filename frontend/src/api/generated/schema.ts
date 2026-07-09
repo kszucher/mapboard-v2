@@ -300,10 +300,6 @@ export interface components {
       /** Is Processing */
       is_processing: boolean;
       node_type: components["schemas"]["NodeType"];
-      /** Position */
-      position?: {
-        [key: string]: unknown;
-      } | null;
     };
     /**
      * NodeType

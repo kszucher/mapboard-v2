@@ -112,20 +112,21 @@ export const mapToReactFlowElements = (
   nodes: ApiNode[],
   edges: ApiEdge[],
   expressions: ApiExpression[],
-  positions: Record<string, { x: number; y: number }> = {}
+  positions: Record<string, { x: number; y: number }> = {},
+  defaultTransition = 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1)'
 ): { nodes: AppFlowNode[]; edges: AppFlowEdge[] } => {
   const nodeIds = new Set(nodes.map(n => n.id));
   const normalizedExprs = normalizeExpressions(expressions);
   const expressionIds = new Set(normalizedExprs.map(e => e.id));
 
   const rfNodes = nodes.map(n => {
-    const position = (n.position as { x: number; y: number } | null) || positions[n.id] || { x: 0, y: 0 };
+    const position = positions[n.id] || { x: 0, y: 0 };
     return {
       id: n.id,
       type: 'custom' as const,
       position,
       style: {
-        transition: 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: defaultTransition,
       },
       data: {
         node: n,
