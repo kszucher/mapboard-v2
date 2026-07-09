@@ -23,24 +23,20 @@ async def create_graph(
         "nodes": [
             {
                 "id": str(start_node_id),
-                "graph_id": str(graph.id),
                 "iid": 1,
                 "node_type": "START",
+                "expressions": [
+                    {
+                        "id": str(start_expr_id),
+                        "type": "BASE_OUTPUT",
+                        "is_input": False,
+                        "is_output": True,
+                        "raw_string": "",
+                    }
+                ],
             }
         ],
         "edges": [],
-        "expressions": [
-            {
-                "id": str(start_expr_id),
-                "node_id": str(start_node_id),
-                "graph_id": str(graph.id),
-                "idx": 0,
-                "type": "BASE_OUTPUT",
-                "is_input": False,
-                "is_output": True,
-                "raw_string": "",
-            }
-        ],
     }
     graph.flow_json = initial_flow
     await uow.session.flush()

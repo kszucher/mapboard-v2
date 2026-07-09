@@ -16,33 +16,28 @@ export const createNodeSlice: StateCreator<
   NodeSlice
 > = (set, get) => ({
   addNode: async (nodeType) => {
-    const { graphId } = get();
-    if (!graphId) return;
-
     await updateFlowState(set, get, (state) => {
-      const { appNode, defaultExprs } = createNewNode(graphId, nodeType, state.nodes);
+      const appNode = createNewNode(nodeType, state.nodes);
 
       return {
         nodes: [...state.nodes, appNode],
         edges: state.edges,
-        expressions: [...state.expressions, ...defaultExprs],
       };
     });
   },
 
   insertNode: async (expressionId, nodeType, direction) => {
-    const { graphId } = get();
-    if (!graphId) return;
-
     await updateFlowState(set, get, (state) => {
       const isAfter = direction === 'after';
       const oldEdges = state.edges.filter(e => isAfter ? e.sourceHandle === expressionId : e.targetHandle === expressionId);
 
-      const { appNode, defaultExprs } = createNewNode(graphId, nodeType, state.nodes);
+      const appNode = createNewNode(nodeType, state.nodes);
+      const defaultExprs = appNode.data.node.expressions;
       const toExprId = getPrimaryInputExprId(defaultExprs);
       const fromExprId = getPrimaryOutputExprId(defaultExprs);
 
-      const targetOrSourceNodeId = state.expressions.find(e => e.id === expressionId)?.node_id || '';
+      const targetOrSourceNode = state.nodes.find(n => n.data.node.expressions.some(e => e.id === expressionId));
+      const targetOrSourceNodeId = targetOrSourceNode ? targetOrSourceNode.id : '';
 
       const newEdge: AppFlowEdge = {
         id: crypto.randomUUID(),
@@ -74,14 +69,14 @@ export const createNodeSlice: StateCreator<
       return {
         nodes: [...state.nodes, appNode],
         edges: nextEdges,
-        expressions: [...state.expressions, ...defaultExprs],
       };
     });
   },
 
   deleteNode: async (nodeId) => {
     await updateFlowState(set, get, (state) => {
-      const exprIds = new Set(state.expressions.filter(e => e.node_id === nodeId).map(e => e.id));
+      const node = state.nodes.find(n => n.id === nodeId);
+      const exprIds = new Set(node ? node.data.node.expressions.map(e => e.id) : []);
       const nextNodes = state.nodes.filter(n => n.id !== nodeId);
       const nextEdges = state.edges.filter(e =>
         e.source !== nodeId &&
@@ -89,12 +84,10 @@ export const createNodeSlice: StateCreator<
         !exprIds.has(e.sourceHandle || '') &&
         !exprIds.has(e.targetHandle || '')
       );
-      const nextExpressions = state.expressions.filter(e => e.node_id !== nodeId);
 
       return {
         nodes: nextNodes,
         edges: nextEdges,
-        expressions: nextExpressions,
       };
     });
   },
@@ -106,7 +99,7 @@ export const createNodeSlice: StateCreator<
     const nodeType = node.data?.node?.node_type;
     if (!nodeType || nodeType === 'START' || nodeType === 'END') return;
 
-    const nodeExprs = get().expressions.filter(e => e.node_id === nodeId);
+    const nodeExprs = node.data.node.expressions;
     const inputs = nodeExprs.filter(e => e.is_input);
     const outputs = nodeExprs.filter(e => e.is_output);
     if (inputs.length !== 1 || outputs.length !== 1) {
@@ -138,7 +131,6 @@ export const createNodeSlice: StateCreator<
       return {
         nodes: state.nodes.filter(n => n.id !== nodeId),
         edges: nextEdges,
-        expressions: state.expressions.filter(e => e.node_id !== nodeId),
       };
     });
   },
@@ -158,7 +150,6 @@ export const createNodeSlice: StateCreator<
       return {
         nodes: nextNodes,
         edges: state.edges,
-        expressions: state.expressions,
       };
     });
   },
@@ -169,7 +160,6 @@ export const createNodeSlice: StateCreator<
       return {
         nodes: state.nodes,
         edges: nextEdges,
-        expressions: state.expressions,
       };
     });
   },

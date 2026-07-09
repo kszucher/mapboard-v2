@@ -22,7 +22,13 @@ export const FlowNodeRow = memo(({
   // Subscribe to only this specific expression
   const expr = useGraphStore(
     useCallback(
-      (state) => state.expressions.find((e) => e.id === expressionId),
+      (state) => {
+        for (const n of state.nodes) {
+          const found = n.data.node.expressions.find((e) => e.id === expressionId);
+          if (found) return found;
+        }
+        return undefined;
+      },
       [expressionId]
     )
   );

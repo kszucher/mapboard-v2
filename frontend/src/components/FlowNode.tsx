@@ -2,7 +2,6 @@ import type { BadgeProps } from '@radix-ui/themes';
 import { Badge, Flex } from '@radix-ui/themes';
 import { type NodeProps, useUpdateNodeInternals } from '@xyflow/react';
 import { memo, useEffect, useMemo } from 'react';
-import { useShallow } from 'zustand/shallow';
 import { useGraphStore } from '../store/useGraphStore';
 import { FlowNodeActions } from './FlowNodeActions.tsx';
 import { FlowNodeRow } from './FlowNodeRow.tsx';
@@ -22,13 +21,11 @@ const NODE_COLORS: Record<NodeType, BadgeProps['color']> = {
 const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   const updateNodeInternals = useUpdateNodeInternals();
 
-  const myExpressions = useGraphStore(
-    useShallow(state => state.expressions.filter(e => e.node_id === id))
-  );
+  const myExpressions = data.node.expressions;
   const isLoading = useGraphStore(state => state.isLoading);
 
   const myExpressionsHash = useMemo(() => {
-    return myExpressions.map(e => `${e.id}:${e.idx}:${e.is_input}:${e.is_output}`).join(',');
+    return myExpressions.map((e, index) => `${e.id}:${index}:${e.is_input}:${e.is_output}`).join(',');
   }, [myExpressions]);
 
   useEffect(() => {

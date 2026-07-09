@@ -20,40 +20,32 @@ class GraphRead(OrmModel):
     user_id: uuid.UUID
 
 
-class NodeRead(BaseModel):
-    id: uuid.UUID
-    graph_id: uuid.UUID
-    iid: int
-    node_type: NodeType
-
-
 class ExpressionRead(BaseModel):
     id: uuid.UUID
-    node_id: uuid.UUID
-    graph_id: uuid.UUID
-    idx: int
     type: str | None = None
     is_input: bool = False
     is_output: bool = False
     raw_string: str
 
 
+class NodeRead(BaseModel):
+    id: uuid.UUID
+    iid: int
+    node_type: NodeType
+    expressions: list[ExpressionRead]
+
+
 class EdgeRead(BaseModel):
     id: uuid.UUID
-    graph_id: uuid.UUID
     from_expression_id: uuid.UUID
     to_expression_id: uuid.UUID
-    from_node_id: uuid.UUID
-    to_node_id: uuid.UUID
 
 
 class GraphFlowRead(BaseModel):
     nodes: list[NodeRead]
     edges: list[EdgeRead]
-    expressions: list[ExpressionRead]
 
 
 class GraphSyncPayload(BaseModel):
     nodes: list[NodeRead]
     edges: list[EdgeRead]
-    expressions: list[ExpressionRead]

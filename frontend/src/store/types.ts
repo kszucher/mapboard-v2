@@ -1,6 +1,6 @@
 import type { Connection, EdgeChange, NodeChange } from '@xyflow/react';
 import type { components } from '../api/generated/schema';
-import type { ApiExpression, AppFlowEdge, AppFlowNode, NodeType } from '../components/types';
+import type { AppFlowEdge, AppFlowNode, NodeType } from '../components/types';
 
 export type GraphFlowRead = components['schemas']['GraphFlowRead'];
 
@@ -8,9 +8,8 @@ export interface BaseState {
   graphId: string | null;
   nodes: AppFlowNode[];
   edges: AppFlowEdge[];
-  expressions: ApiExpression[];
-  past: Array<{ nodes: AppFlowNode[]; edges: AppFlowEdge[]; expressions: ApiExpression[] }>;
-  future: Array<{ nodes: AppFlowNode[]; edges: AppFlowEdge[]; expressions: ApiExpression[] }>;
+  past: Array<{ nodes: AppFlowNode[]; edges: AppFlowEdge[] }>;
+  future: Array<{ nodes: AppFlowNode[]; edges: AppFlowEdge[] }>;
   isLoading: boolean;
   isSaving: boolean;
   errorMessage: string | null;

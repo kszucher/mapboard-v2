@@ -7,8 +7,7 @@ import {
   canMoveExpressionDown,
   canMoveExpressionUp,
   getIncomingEdgeOptions,
-  getOutgoingEdgeOptions,
-  getSortedNodeExpressions
+  getOutgoingEdgeOptions
 } from '../utils/flowUtils';
 import type { InsertableNodeType } from './types';
 
@@ -33,19 +32,23 @@ export const FlowNodeRowActionsContent = ({
   const insertNode = useGraphStore(state => state.insertNode);
   const deleteEdge = useGraphStore(state => state.deleteEdge);
 
-  const expressions = useGraphStore(useShallow(state => state.expressions));
   const edges = useGraphStore(useShallow(state => state.edges));
   const nodes = useGraphStore(useShallow(state => state.nodes));
 
-  const expr = useMemo(() => expressions.find(e => e.id === expressionId), [expressions, expressionId]);
+  const node = useMemo(() => {
+    return nodes.find(n => n.data.node.expressions.some(e => e.id === expressionId));
+  }, [nodes, expressionId]);
+
+  const expr = useMemo(() => {
+    return node?.data.node.expressions.find(e => e.id === expressionId);
+  }, [node, expressionId]);
 
   const isInput = expr?.is_input ?? false;
   const isOutput = expr?.is_output ?? false;
 
   const myExpressions = useMemo(() => {
-    if (!expr) return [];
-    return getSortedNodeExpressions(expressions, expr.node_id);
-  }, [expressions, expr]);
+    return node ? node.data.node.expressions : [];
+  }, [node]);
 
   const indexInNode = useMemo(() => {
     if (!expr) return -1;
@@ -67,12 +70,12 @@ export const FlowNodeRowActionsContent = ({
   }, [myExpressions]);
 
   const outgoingEdgeOptions = useMemo(() => {
-    return getOutgoingEdgeOptions(expressionId, edges, expressions, nodes);
-  }, [expressionId, edges, expressions, nodes]);
+    return getOutgoingEdgeOptions(expressionId, edges, nodes);
+  }, [expressionId, edges, nodes]);
 
   const incomingEdgeOptions = useMemo(() => {
-    return getIncomingEdgeOptions(expressionId, edges, expressions, nodes);
-  }, [expressionId, edges, expressions, nodes]);
+    return getIncomingEdgeOptions(expressionId, edges, nodes);
+  }, [expressionId, edges, nodes]);
 
   const hasOutgoingEdges = useMemo(() => {
     return edges.some(e => e.sourceHandle === expressionId);
@@ -114,14 +117,14 @@ export const FlowNodeRowActionsContent = ({
   }, [expressionId, deleteExpression]);
 
   const handleAddAbove = useCallback(() => {
-    if (!expr) return;
-    void createExpression(expr.node_id, expr.is_input, expr.is_output, expr.idx);
-  }, [createExpression, expr]);
+    if (!expr || !node) return;
+    void createExpression(node.id, expr.is_input, expr.is_output, indexInNode);
+  }, [createExpression, node, expr, indexInNode]);
 
   const handleAddBelow = useCallback(() => {
-    if (!expr) return;
-    void createExpression(expr.node_id, expr.is_input, expr.is_output, expr.idx + 1);
-  }, [createExpression, expr]);
+    if (!expr || !node) return;
+    void createExpression(node.id, expr.is_input, expr.is_output, indexInNode + 1);
+  }, [createExpression, node, expr, indexInNode]);
 
   const renderInsertSubmenu = (direction: 'before' | 'after') => {
     const isAfter = direction === 'after';

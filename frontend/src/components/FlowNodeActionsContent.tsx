@@ -1,6 +1,5 @@
 import { DropdownMenu } from '@radix-ui/themes';
 import { useCallback, useMemo } from 'react';
-import { useShallow } from 'zustand/react/shallow';
 import { useGraphStore } from '../store/useGraphStore';
 import { canShortcircuitNode, getAvailableConversions } from '../utils/flowUtils';
 import type { NodeType } from './types';
@@ -18,9 +17,7 @@ export const FlowNodeActionsContent = ({ nodeId }: FlowNodeActionsContentProps) 
     useCallback(state => state.nodes.find(n => n.id === nodeId)?.data?.node, [nodeId])
   );
 
-  const myExpressions = useGraphStore(
-    useShallow(state => state.expressions.filter(e => e.node_id === nodeId))
-  );
+  const myExpressions = nodeData?.expressions ?? [];
 
   const handleDelete = useCallback(() => {
     if (nodeData) void deleteNode(nodeData.id);

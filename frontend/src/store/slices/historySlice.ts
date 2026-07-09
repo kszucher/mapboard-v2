@@ -10,12 +10,12 @@ export const createHistorySlice: StateCreator<
   HistorySlice
 > = (set, get) => ({
   undo: () => {
-    const { past, future, nodes, edges, expressions, graphId } = get();
+    const { past, future, nodes, edges, graphId } = get();
     if (past.length === 0) return;
 
     const previous = past[past.length - 1];
     const newPast = past.slice(0, -1);
-    const currentSnapshot = takeSnapshot({ nodes, edges, expressions });
+    const currentSnapshot = takeSnapshot({ nodes, edges });
 
     const currentPositions = Object.fromEntries(nodes.map(n => [n.id, n.position]));
     const nodesAtCurrentPositions = previous.nodes.map(n => ({
@@ -23,11 +23,10 @@ export const createHistorySlice: StateCreator<
       position: currentPositions[n.id] ?? n.position,
     }));
 
-    runLayout(nodesAtCurrentPositions, previous.edges, previous.expressions).then((laidOut) => {
+    runLayout(nodesAtCurrentPositions, previous.edges).then((laidOut) => {
       set({
         nodes: laidOut.nodes,
         edges: laidOut.edges,
-        expressions: previous.expressions,
         past: newPast,
         future: [currentSnapshot, ...future],
       });
@@ -36,18 +35,17 @@ export const createHistorySlice: StateCreator<
         graphId,
         nodes: laidOut.nodes,
         edges: laidOut.edges,
-        expressions: previous.expressions,
       });
     });
   },
 
   redo: () => {
-    const { past, future, nodes, edges, expressions, graphId } = get();
+    const { past, future, nodes, edges, graphId } = get();
     if (future.length === 0) return;
 
     const next = future[0];
     const newFuture = future.slice(1);
-    const currentSnapshot = takeSnapshot({ nodes, edges, expressions });
+    const currentSnapshot = takeSnapshot({ nodes, edges });
 
     const currentPositions = Object.fromEntries(nodes.map(n => [n.id, n.position]));
     const nodesAtCurrentPositions = next.nodes.map(n => ({
@@ -55,11 +53,10 @@ export const createHistorySlice: StateCreator<
       position: currentPositions[n.id] ?? n.position,
     }));
 
-    runLayout(nodesAtCurrentPositions, next.edges, next.expressions).then((laidOut) => {
+    runLayout(nodesAtCurrentPositions, next.edges).then((laidOut) => {
       set({
         nodes: laidOut.nodes,
         edges: laidOut.edges,
-        expressions: next.expressions,
         past: [...past, currentSnapshot],
         future: newFuture,
       });
@@ -68,7 +65,6 @@ export const createHistorySlice: StateCreator<
         graphId,
         nodes: laidOut.nodes,
         edges: laidOut.edges,
-        expressions: next.expressions,
       });
     });
   },

@@ -28,7 +28,6 @@ export const createFlowSlice: StateCreator<
       return {
         nodes: state.nodes,
         edges: [...state.edges, newEdge],
-        expressions: state.expressions,
       };
     });
   },
@@ -39,7 +38,6 @@ export const createFlowSlice: StateCreator<
       return {
         nodes: state.nodes,
         edges: state.edges.filter(e => !deleteIds.has(e.id)),
-        expressions: state.expressions,
       };
     });
   },
@@ -61,7 +59,6 @@ export const createFlowSlice: StateCreator<
       return {
         nodes: state.nodes,
         edges: nextEdges,
-        expressions: state.expressions,
       };
     });
   },

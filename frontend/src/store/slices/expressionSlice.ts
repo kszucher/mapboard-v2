@@ -11,72 +11,74 @@ export const createExpressionSlice: StateCreator<
 > = (set, get) => ({
   createExpression: async (nodeId, isInput, isOutput, idx) => {
     await updateFlowState(set, get, (state) => {
-      const { graphId } = get();
-      if (!graphId) return state;
-
-      const newExprId = crypto.randomUUID();
-      const newExpr: ApiExpression = {
-        id: newExprId,
-        node_id: nodeId,
-        graph_id: graphId,
-        idx,
-        is_input: isInput,
-        is_output: isOutput,
-        raw_string: '',
-      };
-
-      const nextExpressions = state.expressions.map(e => {
-        if (e.node_id === nodeId && e.idx >= idx) {
-          return { ...e, idx: e.idx + 1 };
-        }
-        return e;
+      const nextNodes = state.nodes.map(n => {
+        if (n.id !== nodeId) return n;
+        const expressions = [...n.data.node.expressions];
+        const newExpr: ApiExpression = {
+          id: crypto.randomUUID(),
+          is_input: isInput,
+          is_output: isOutput,
+          raw_string: '',
+        };
+        expressions.splice(idx, 0, newExpr);
+        return {
+          ...n,
+          data: {
+            ...n.data,
+            node: {
+              ...n.data.node,
+              expressions,
+            }
+          }
+        };
       });
-      nextExpressions.push(newExpr);
 
       return {
-        nodes: state.nodes,
+        nodes: nextNodes,
         edges: state.edges,
-        expressions: nextExpressions,
       };
     });
   },
 
   deleteExpression: async (expressionId) => {
-    const expr = get().expressions.find(e => e.id === expressionId);
-    if (!expr) return;
+    const node = get().nodes.find(n => n.data.node.expressions.some(e => e.id === expressionId));
+    if (!node) return;
 
-    const nodeExprs = get().expressions.filter(e => e.node_id === expr.node_id);
-    if (nodeExprs.length <= 1) {
+    if (node.data.node.expressions.length <= 1) {
       set({ errorMessage: 'Cannot delete the last remaining expression of this node.' });
       return;
     }
 
     await updateFlowState(set, get, (state) => {
-      const deletedIdx = expr.idx;
-
-      let nextExpressions = state.expressions.filter(e => e.id !== expressionId);
-      nextExpressions = nextExpressions.map(e => {
-        if (e.node_id === expr.node_id && e.idx > deletedIdx) {
-          return { ...e, idx: e.idx - 1 };
-        }
-        return e;
+      const nextNodes = state.nodes.map(n => {
+        if (!n.data.node.expressions.some(e => e.id === expressionId)) return n;
+        return {
+          ...n,
+          data: {
+            ...n.data,
+            node: {
+              ...n.data.node,
+              expressions: n.data.node.expressions.filter(e => e.id !== expressionId),
+            }
+          }
+        };
       });
 
       const nextEdges = state.edges.filter(e => e.sourceHandle !== expressionId && e.targetHandle !== expressionId);
 
       return {
-        nodes: state.nodes,
+        nodes: nextNodes,
         edges: nextEdges,
-        expressions: nextExpressions,
       };
     });
   },
 
   updateExpression: async (expressionId, updates) => {
-    const currentExpr = get().expressions.find(e => e.id === expressionId);
+    const node = get().nodes.find(n => n.data.node.expressions.some(e => e.id === expressionId));
+    if (!node) return;
+    const currentExpr = node.data.node.expressions.find(e => e.id === expressionId);
     if (!currentExpr) return;
 
-    // Check for changes across all updated fields
     const hasChanges = Object.entries(updates).some(
       ([key, value]) => currentExpr[key as keyof ApiExpression] !== value
     );
@@ -87,9 +89,21 @@ export const createExpressionSlice: StateCreator<
     const shouldSkipHistory = !('is_input' in updates || 'is_output' in updates);
 
     await updateFlowState(set, get, (state) => {
-      const nextExpressions = state.expressions.map((e) =>
-        e.id === expressionId ? { ...e, ...updates } : e
-      );
+      const nextNodes = state.nodes.map(n => {
+        if (!n.data.node.expressions.some(e => e.id === expressionId)) return n;
+        return {
+          ...n,
+          data: {
+            ...n.data,
+            node: {
+              ...n.data.node,
+              expressions: n.data.node.expressions.map(e =>
+                e.id === expressionId ? { ...e, ...updates } : e
+              ),
+            }
+          }
+        };
+      });
 
       let nextEdges = state.edges;
       if (updates.is_input === false) {
@@ -100,87 +114,49 @@ export const createExpressionSlice: StateCreator<
       }
 
       return {
-        nodes: state.nodes,
+        nodes: nextNodes,
         edges: nextEdges,
-        expressions: nextExpressions,
       };
     }, { skipHistory: shouldSkipHistory });
   },
 
   moveExpression: async (expressionId, direction) => {
-    const expr = get().expressions.find(e => e.id === expressionId);
-    if (!expr) return;
+    const node = get().nodes.find(n => n.data.node.expressions.some(e => e.id === expressionId));
+    if (!node) return;
 
-    const nodeExprs = get().expressions
-      .filter(e => e.node_id === expr.node_id)
-      .sort((a, b) => a.idx - b.idx);
-
-    const currentIndex = nodeExprs.findIndex(e => e.id === expressionId);
+    const expressions = [...node.data.node.expressions];
+    const currentIndex = expressions.findIndex(e => e.id === expressionId);
     if (currentIndex === -1) return;
 
-    if (direction === 'up' || direction === 'down') {
-      let targetIndex = -1;
-      if (direction === 'up' && currentIndex > 0) targetIndex = currentIndex - 1;
-      else if (direction === 'down' && currentIndex < nodeExprs.length - 1) targetIndex = currentIndex + 1;
+    let targetIndex = -1;
+    if (direction === 'up' && currentIndex > 0) targetIndex = currentIndex - 1;
+    else if (direction === 'down' && currentIndex < expressions.length - 1) targetIndex = currentIndex + 1;
+    else if (direction === 'top' && currentIndex > 0) targetIndex = 0;
+    else if (direction === 'bottom' && currentIndex < expressions.length - 1) targetIndex = expressions.length - 1;
 
-      if (targetIndex === -1) return;
-      const otherExpr = nodeExprs[targetIndex];
+    if (targetIndex === -1 || targetIndex === currentIndex) return;
 
-      await updateFlowState(set, get, (state) => {
-        const nextExpressions = state.expressions.map(e => {
-          if (e.id === expr.id) {
-            return { ...e, idx: otherExpr.idx };
-          }
-          if (e.id === otherExpr.id) {
-            return { ...e, idx: expr.idx };
-          }
-          return e;
-        });
-
+    await updateFlowState(set, get, (state) => {
+      const nextNodes = state.nodes.map(n => {
+        if (n.id !== node.id) return n;
+        const exprs = [...n.data.node.expressions];
+        const [moved] = exprs.splice(currentIndex, 1);
+        exprs.splice(targetIndex, 0, moved);
         return {
-          nodes: state.nodes,
-          edges: state.edges,
-          expressions: nextExpressions,
+          ...n,
+          data: {
+            ...n.data,
+            node: {
+              ...n.data.node,
+              expressions: exprs,
+            }
+          }
         };
       });
-    } else if (direction === 'top') {
-      if (currentIndex === 0) return;
-      await updateFlowState(set, get, (state) => {
-        const nextExpressions = state.expressions.map(e => {
-          if (e.node_id !== expr.node_id) return e;
-          if (e.id === expr.id) {
-            return { ...e, idx: 0 };
-          }
-          if (e.idx < currentIndex) {
-            return { ...e, idx: e.idx + 1 };
-          }
-          return e;
-        });
-        return {
-          nodes: state.nodes,
-          edges: state.edges,
-          expressions: nextExpressions,
-        };
-      });
-    } else if (direction === 'bottom') {
-      if (currentIndex === nodeExprs.length - 1) return;
-      await updateFlowState(set, get, (state) => {
-        const nextExpressions = state.expressions.map(e => {
-          if (e.node_id !== expr.node_id) return e;
-          if (e.id === expr.id) {
-            return { ...e, idx: nodeExprs.length - 1 };
-          }
-          if (e.idx > currentIndex) {
-            return { ...e, idx: e.idx - 1 };
-          }
-          return e;
-        });
-        return {
-          nodes: state.nodes,
-          edges: state.edges,
-          expressions: nextExpressions,
-        };
-      });
-    }
+      return {
+        nodes: nextNodes,
+        edges: state.edges,
+      };
+    });
   },
 });

@@ -14,7 +14,6 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
   graphId: null,
   nodes: [],
   edges: [],
-  expressions: [],
   past: [],
   future: [],
   isLoading: false,
@@ -39,7 +38,7 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
       return { nodes: newNodes as AppFlowNode[] };
     });
 
-    const { nodes, edges, graphId, isLoading, expressions, pendingLayoutNodeId } = get();
+    const { nodes, edges, graphId, isLoading, pendingLayoutNodeId } = get();
     const hasDimensionsChange = meaningfulChanges.some(c => c.type === 'dimensions');
 
     if (hasDimensionsChange && pendingLayoutNodeId) {
@@ -48,7 +47,7 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
       );
       if (hasTargetNodeDimensionChange) {
         set({ pendingLayoutNodeId: null });
-        void runLayout(nodes, edges, expressions).then((laidOut) => {
+        void runLayout(nodes, edges).then((laidOut) => {
           set({
             nodes: laidOut.nodes,
             edges: laidOut.edges,
@@ -57,7 +56,6 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
             graphId,
             nodes: laidOut.nodes,
             edges: laidOut.edges,
-            expressions,
           });
         });
       }
@@ -68,7 +66,7 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
         n => n.measured?.width !== undefined && n.measured?.height !== undefined
       );
       if (allMeasured) {
-        void runLayout(nodes, edges, expressions).then((laidOut) => {
+        void runLayout(nodes, edges).then((laidOut) => {
           set({
             nodes: laidOut.nodes,
             edges: laidOut.edges,
@@ -91,7 +89,6 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
             graphId,
             nodes: laidOut.nodes,
             edges: laidOut.edges,
-            expressions,
           });
         });
       }

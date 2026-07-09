@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand';
 import { apiClient } from '../../api/client';
-import { mapToReactFlowElements, normalizeExpressions, runLayout } from '../../utils/flowUtils';
+import { mapToReactFlowElements, runLayout } from '../../utils/flowUtils';
 import { resetLastSavedState } from '../helpers';
 import type { GraphStoreState, InitSlice } from '../types';
 
@@ -19,13 +19,11 @@ export const createInitSlice: StateCreator<
       if ('error' in res) throw res.error;
       const data = res.data;
       if (data) {
-        const normalizedExprs = normalizeExpressions(data.expressions);
-        const mapped = mapToReactFlowElements(data.nodes, data.edges, normalizedExprs, {}, 'none');
+        const mapped = mapToReactFlowElements(data.nodes, data.edges, {}, 'none');
 
         set({
           nodes: mapped.nodes,
           edges: mapped.edges,
-          expressions: normalizedExprs,
           isLoading: mapped.nodes.length > 0,
         });
 
@@ -33,7 +31,6 @@ export const createInitSlice: StateCreator<
           graphId,
           nodes: mapped.nodes,
           edges: mapped.edges,
-          expressions: normalizedExprs,
         });
       } else {
         set({ isLoading: false });
@@ -53,14 +50,12 @@ export const createInitSlice: StateCreator<
       positions[n.id] = n.position;
     });
 
-    const normalizedExprs = normalizeExpressions(flow.expressions);
-    const mapped = mapToReactFlowElements(flow.nodes, flow.edges, normalizedExprs, positions);
+    const mapped = mapToReactFlowElements(flow.nodes, flow.edges, positions);
 
-    runLayout(mapped.nodes, mapped.edges, normalizedExprs).then(laidOut => {
+    runLayout(mapped.nodes, mapped.edges).then(laidOut => {
       set({
         nodes: laidOut.nodes,
         edges: laidOut.edges,
-        expressions: normalizedExprs,
       });
     });
   },

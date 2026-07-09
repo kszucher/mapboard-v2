@@ -33,32 +33,7 @@ export const getAvailableConversions = (
     }));
 };
 
-export const normalizeExpressions = (expressions: ApiExpression[]): ApiExpression[] => {
-  const groups: Record<string, ApiExpression[]> = {};
-  expressions.forEach(e => {
-    (groups[e.node_id] ??= []).push(e);
-  });
-
-  const result: ApiExpression[] = [];
-  Object.keys(groups).forEach(nodeId => {
-    const sorted = [...groups[nodeId]].sort((a, b) => {
-      if (a.idx !== b.idx) return a.idx - b.idx;
-      return a.id.localeCompare(b.id);
-    });
-
-    sorted.forEach((e, idx) => {
-      // Keep the same reference when idx is already correct — this is what
-      // lets useShallow in CustomNode skip re-rendering unaffected nodes.
-      result.push(e.idx === idx ? e : { ...e, idx });
-    });
-  });
-
-  return result;
-};
-
 export const createDefaultExpressionsForNode = (
-  nodeId: string,
-  graphId: string,
   nodeType: NodeType
 ): ApiExpression[] => {
   const baseId = crypto.randomUUID();
@@ -67,9 +42,6 @@ export const createDefaultExpressionsForNode = (
   if (nodeType === 'START') {
     return [{
       id: baseId,
-      node_id: nodeId,
-      graph_id: graphId,
-      idx: 0,
       is_input: false,
       is_output: true,
       raw_string: ''
@@ -77,9 +49,6 @@ export const createDefaultExpressionsForNode = (
   } else if (nodeType === 'END') {
     return [{
       id: baseId,
-      node_id: nodeId,
-      graph_id: graphId,
-      idx: 0,
       is_input: true,
       is_output: false,
       raw_string: ''
@@ -87,22 +56,19 @@ export const createDefaultExpressionsForNode = (
   } else if (nodeType === 'FUNCTION' || nodeType === 'AGENT') {
     return [{
       id: baseId,
-      node_id: nodeId,
-      graph_id: graphId,
-      idx: 0,
       is_input: true,
       is_output: true,
       raw_string: ''
     }];
   } else if (nodeType === 'SWITCH') {
     return [
-      { id: baseId, node_id: nodeId, graph_id: graphId, idx: 0, is_input: true, is_output: false, raw_string: '' },
-      { id: subId, node_id: nodeId, graph_id: graphId, idx: 1, is_input: false, is_output: true, raw_string: '' }
+      { id: baseId, is_input: true, is_output: false, raw_string: '' },
+      { id: subId, is_input: false, is_output: true, raw_string: '' }
     ];
   } else if (nodeType === 'REDUCE') {
     return [
-      { id: subId, node_id: nodeId, graph_id: graphId, idx: 0, is_input: true, is_output: false, raw_string: '' },
-      { id: baseId, node_id: nodeId, graph_id: graphId, idx: 1, is_input: false, is_output: true, raw_string: '' }
+      { id: subId, is_input: true, is_output: false, raw_string: '' },
+      { id: baseId, is_input: false, is_output: true, raw_string: '' }
     ];
   }
   return [];
@@ -111,13 +77,15 @@ export const createDefaultExpressionsForNode = (
 export const mapToReactFlowElements = (
   nodes: ApiNode[],
   edges: ApiEdge[],
-  expressions: ApiExpression[],
   positions: Record<string, { x: number; y: number }> = {},
   defaultTransition = 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1)'
 ): { nodes: AppFlowNode[]; edges: AppFlowEdge[] } => {
-  const nodeIds = new Set(nodes.map(n => n.id));
-  const normalizedExprs = normalizeExpressions(expressions);
-  const expressionIds = new Set(normalizedExprs.map(e => e.id));
+  const exprToNodeId: Record<string, string> = {};
+  nodes.forEach(n => {
+    n.expressions.forEach(e => {
+      exprToNodeId[e.id] = n.id;
+    });
+  });
 
   const rfNodes = nodes.map(n => {
     const position = positions[n.id] || { x: 0, y: 0 };
@@ -135,16 +103,12 @@ export const mapToReactFlowElements = (
   });
 
   const rfEdges = edges
-    .filter(edge => {
-      if (!nodeIds.has(edge.from_node_id) || !nodeIds.has(edge.to_node_id)) return false;
-      if (edge.from_expression_id && !expressionIds.has(edge.from_expression_id)) return false;
-      return true;
-    })
+    .filter(edge => exprToNodeId[edge.from_expression_id] && exprToNodeId[edge.to_expression_id])
     .map(edge => {
       return {
         id: edge.id,
-        source: edge.from_node_id,
-        target: edge.to_node_id,
+        source: exprToNodeId[edge.from_expression_id],
+        target: exprToNodeId[edge.to_expression_id],
         sourceHandle: edge.from_expression_id,
         targetHandle: edge.to_expression_id,
         type: 'custom' as const,
@@ -160,12 +124,11 @@ export const mapToReactFlowElements = (
 
 export const runLayout = async (
   nodes: AppFlowNode[],
-  edges: AppFlowEdge[],
-  expressions: ApiExpression[]
+  edges: AppFlowEdge[]
 ): Promise<{ nodes: AppFlowNode[]; edges: AppFlowEdge[] }> => {
   if (nodes.length === 0) return { nodes, edges };
   try {
-    const layout = await getLayoutedElements(nodes, edges, expressions);
+    const layout = await getLayoutedElements(nodes, edges);
 
     const updatedNodes = nodes.map(n => {
       const newPos = layout.positions[n.id] || n.position;
@@ -208,23 +171,21 @@ export const runLayout = async (
 };
 
 export const createNewNode = (
-  graphId: string,
   nodeType: NodeType,
   existingNodes: AppFlowNode[]
-): { appNode: AppFlowNode; defaultExprs: ApiExpression[] } => {
+): AppFlowNode => {
   const newNodeId = crypto.randomUUID();
   const nextIid = Math.max(...existingNodes.map(n => n.data?.node?.iid ?? 0), 0) + 1;
+  const defaultExprs = createDefaultExpressionsForNode(nodeType);
 
   const newNode: ApiNode = {
     id: newNodeId,
-    graph_id: graphId,
     iid: nextIid,
     node_type: nodeType,
+    expressions: defaultExprs,
   };
 
-  const defaultExprs = createDefaultExpressionsForNode(newNodeId, graphId, nodeType);
-
-  const appNode: AppFlowNode = {
+  return {
     id: newNodeId,
     type: 'custom',
     position: { x: 0, y: 0 },
@@ -235,8 +196,6 @@ export const createNewNode = (
       node: newNode,
     }
   };
-
-  return { appNode, defaultExprs };
 };
 
 export const canShortcircuitNode = (expressions: ApiExpression[]): boolean => {
@@ -254,14 +213,12 @@ export const canMoveExpressionDown = (index: number, totalCount: number): boolea
 };
 
 export const getPrimaryInputExprId = (expressions: ApiExpression[]): string => {
-  const sorted = [...expressions].sort((a, b) => a.idx - b.idx);
-  const inputExpr = sorted.find(e => e.is_input);
+  const inputExpr = expressions.find(e => e.is_input);
   return inputExpr ? inputExpr.id : '';
 };
 
 export const getPrimaryOutputExprId = (expressions: ApiExpression[]): string => {
-  const sorted = [...expressions].sort((a, b) => a.idx - b.idx);
-  const outputExpr = sorted.find(e => e.is_output);
+  const outputExpr = expressions.find(e => e.is_output);
   return outputExpr ? outputExpr.id : '';
 };
 
@@ -294,16 +251,15 @@ export interface EdgeOption {
 export const getOutgoingEdgeOptions = (
   expressionId: string,
   edges: AppFlowEdge[],
-  expressions: ApiExpression[],
   nodes: AppFlowNode[]
 ): EdgeOption[] => {
   const outgoingEdges = edges.filter(e => e.sourceHandle === expressionId);
   return outgoingEdges.map(edge => {
-    const targetExpr = expressions.find(e => e.id === edge.targetHandle);
     const targetNode = nodes.find(n => n.id === edge.target);
+    const targetExprIdx = targetNode ? targetNode.data.node.expressions.findIndex(e => e.id === edge.targetHandle) : 0;
     return {
       edgeId: edge.id,
-      label: formatExpressionLabel(targetNode, targetExpr?.idx ?? 0),
+      label: formatExpressionLabel(targetNode, targetExprIdx >= 0 ? targetExprIdx : 0),
     };
   });
 };
@@ -311,25 +267,15 @@ export const getOutgoingEdgeOptions = (
 export const getIncomingEdgeOptions = (
   expressionId: string,
   edges: AppFlowEdge[],
-  expressions: ApiExpression[],
   nodes: AppFlowNode[]
 ): EdgeOption[] => {
   const incomingEdges = edges.filter(e => e.targetHandle === expressionId);
   return incomingEdges.map(edge => {
-    const sourceExpr = expressions.find(e => e.id === edge.sourceHandle);
     const sourceNode = nodes.find(n => n.id === edge.source);
+    const sourceExprIdx = sourceNode ? sourceNode.data.node.expressions.findIndex(e => e.id === edge.sourceHandle) : 0;
     return {
       edgeId: edge.id,
-      label: formatExpressionLabel(sourceNode, sourceExpr?.idx ?? 0),
+      label: formatExpressionLabel(sourceNode, sourceExprIdx >= 0 ? sourceExprIdx : 0),
     };
   });
-};
-
-export const getSortedNodeExpressions = (
-  expressions: ApiExpression[],
-  nodeId: string
-): ApiExpression[] => {
-  return expressions
-    .filter(e => e.node_id === nodeId)
-    .sort((a, b) => a.idx - b.idx);
 };

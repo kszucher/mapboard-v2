@@ -1,7 +1,7 @@
 import type { StoreApi } from 'zustand';
 import { apiClient, getClientId } from '../api/client';
-import type { ApiExpression, AppFlowEdge, AppFlowNode } from '../components/types';
-import { normalizeExpressions, runLayout } from '../utils/flowUtils';
+import type { AppFlowEdge, AppFlowNode } from '../components/types';
+import { runLayout } from '../utils/flowUtils';
 import type { GraphStoreState } from './types';
 
 let onSaveStateChange: ((isSaving: boolean) => void) | null = null;
@@ -14,30 +14,31 @@ const saveTimeoutsByGraph = new Map<string, number>();
 const lastSavedStateByGraph = new Map<string, string>();
 
 export const serializeFlowState = (
-  state: Pick<GraphStoreState, 'graphId' | 'nodes' | 'edges' | 'expressions'>
+  state: Pick<GraphStoreState, 'graphId' | 'nodes' | 'edges'>
 ) => {
-  const graphId = state.graphId || '';
   return {
     nodes: state.nodes.map(n => ({
       id: n.data.node.id,
-      graph_id: n.data.node.graph_id,
       iid: n.data.node.iid,
       node_type: n.data.node.node_type,
+      expressions: n.data.node.expressions.map(e => ({
+        id: e.id,
+        type: e.type,
+        is_input: e.is_input,
+        is_output: e.is_output,
+        raw_string: e.raw_string,
+      })),
     })),
     edges: state.edges.map(e => ({
       id: e.id,
-      graph_id: graphId,
       from_expression_id: e.sourceHandle || '',
       to_expression_id: e.targetHandle || '',
-      from_node_id: e.source,
-      to_node_id: e.target,
     })),
-    expressions: state.expressions,
   };
 };
 
 export const triggerSave = (
-  state: Pick<GraphStoreState, 'graphId' | 'nodes' | 'edges' | 'expressions'>
+  state: Pick<GraphStoreState, 'graphId' | 'nodes' | 'edges'>
 ) => {
   const graphId = state.graphId;
   if (!graphId) return;
@@ -76,18 +77,17 @@ export const triggerSave = (
 };
 
 export const resetLastSavedState = (
-  state: Pick<GraphStoreState, 'graphId' | 'nodes' | 'edges' | 'expressions'>
+  state: Pick<GraphStoreState, 'graphId' | 'nodes' | 'edges'>
 ) => {
   if (!state.graphId) return;
   const payload = serializeFlowState(state);
   lastSavedStateByGraph.set(state.graphId, JSON.stringify(payload));
 };
 
-export const takeSnapshot = (state: Pick<GraphStoreState, 'nodes' | 'edges' | 'expressions'>) => {
+export const takeSnapshot = (state: Pick<GraphStoreState, 'nodes' | 'edges'>) => {
   return structuredClone({
     nodes: state.nodes,
     edges: state.edges,
-    expressions: state.expressions,
   });
 };
 
@@ -97,11 +97,9 @@ export const updateFlowState = async (
   updateFn: (state: {
     nodes: AppFlowNode[];
     edges: AppFlowEdge[];
-    expressions: ApiExpression[];
   }) => {
     nodes: AppFlowNode[];
     edges: AppFlowEdge[];
-    expressions: ApiExpression[];
   },
   options: { skipHistory?: boolean; skipLayout?: boolean } = {}
 ) => {
@@ -109,16 +107,13 @@ export const updateFlowState = async (
   const snapshot = options.skipHistory ? null : takeSnapshot(current);
   const updated = updateFn(current);
 
-  const normalizedExprs = normalizeExpressions(updated.expressions);
-
   // Auto-detect if any node had expressions added or deleted
   let skipLayout = options.skipLayout;
-  const currentExprs = current.expressions;
-  const nextExprs = normalizedExprs;
 
   const nodeWithCountChange = updated.nodes.find(node => {
-    const prevCount = currentExprs.filter(e => e.node_id === node.id).length;
-    const nextCount = nextExprs.filter(e => e.node_id === node.id).length;
+    const prevNode = current.nodes.find(n => n.id === node.id);
+    const prevCount = prevNode ? prevNode.data.node.expressions.length : 0;
+    const nextCount = node.data.node.expressions.length;
     return prevCount !== nextCount;
   });
 
@@ -131,7 +126,6 @@ export const updateFlowState = async (
     set((state) => ({
       nodes: updated.nodes,
       edges: updated.edges,
-      expressions: normalizedExprs,
       ...(!options.skipHistory && snapshot
         ? { past: [...state.past, snapshot], future: [] }
         : {}),
@@ -139,16 +133,11 @@ export const updateFlowState = async (
     return;
   }
 
-  if (options.skipHistory) {
-    set({ expressions: normalizedExprs });
-  }
-
-  const laidOut = await runLayout(updated.nodes, updated.edges, normalizedExprs);
+  const laidOut = await runLayout(updated.nodes, updated.edges);
 
   set((state) => ({
     nodes: laidOut.nodes,
     edges: laidOut.edges,
-    expressions: normalizedExprs,
     ...(!options.skipHistory && snapshot
       ? { past: [...state.past, snapshot], future: [] }
       : {}),
@@ -158,6 +147,5 @@ export const updateFlowState = async (
     graphId: current.graphId,
     nodes: laidOut.nodes,
     edges: laidOut.edges,
-    expressions: normalizedExprs,
   });
 };

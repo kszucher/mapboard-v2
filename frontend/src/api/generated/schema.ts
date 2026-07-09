@@ -176,11 +176,6 @@ export interface components {
        */
       id: string;
       /**
-       * Graph Id
-       * Format: uuid
-       */
-      graph_id: string;
-      /**
        * From Expression Id
        * Format: uuid
        */
@@ -190,16 +185,6 @@ export interface components {
        * Format: uuid
        */
       to_expression_id: string;
-      /**
-       * From Node Id
-       * Format: uuid
-       */
-      from_node_id: string;
-      /**
-       * To Node Id
-       * Format: uuid
-       */
-      to_node_id: string;
     };
     /** ExpressionRead */
     ExpressionRead: {
@@ -208,18 +193,6 @@ export interface components {
        * Format: uuid
        */
       id: string;
-      /**
-       * Node Id
-       * Format: uuid
-       */
-      node_id: string;
-      /**
-       * Graph Id
-       * Format: uuid
-       */
-      graph_id: string;
-      /** Idx */
-      idx: number;
       /** Type */
       type?: string | null;
       /**
@@ -251,8 +224,6 @@ export interface components {
       nodes: components["schemas"]["NodeRead"][];
       /** Edges */
       edges: components["schemas"]["EdgeRead"][];
-      /** Expressions */
-      expressions: components["schemas"]["ExpressionRead"][];
     };
     /** GraphRead */
     GraphRead: {
@@ -275,8 +246,6 @@ export interface components {
       nodes: components["schemas"]["NodeRead"][];
       /** Edges */
       edges: components["schemas"]["EdgeRead"][];
-      /** Expressions */
-      expressions: components["schemas"]["ExpressionRead"][];
     };
     /** HTTPValidationError */
     HTTPValidationError: {
@@ -290,14 +259,11 @@ export interface components {
        * Format: uuid
        */
       id: string;
-      /**
-       * Graph Id
-       * Format: uuid
-       */
-      graph_id: string;
       /** Iid */
       iid: number;
       node_type: components["schemas"]["NodeType"];
+      /** Expressions */
+      expressions: components["schemas"]["ExpressionRead"][];
     };
     /**
      * NodeType

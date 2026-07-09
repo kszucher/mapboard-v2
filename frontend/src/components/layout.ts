@@ -1,6 +1,6 @@
 import type { ElkExtendedEdge, ElkNode, ElkPort, LayoutOptions } from 'elkjs';
 import ELK from 'elkjs/lib/elk-api.js';
-import { type ApiExpression, type AppFlowEdge, type AppFlowNode } from './types';
+import { type AppFlowEdge, type AppFlowNode } from './types';
 
 const elk = new ELK({
   workerFactory: () =>
@@ -48,8 +48,7 @@ const getUniqueHandles = (
 
 const buildElkNodes = (
   nodes: AppFlowNode[],
-  edges: AppFlowEdge[],
-  expressions: ApiExpression[]
+  edges: AppFlowEdge[]
 ): ElkNode[] => {
   const incomingMap: Record<string, AppFlowEdge[]> = {};
   const outgoingMap: Record<string, AppFlowEdge[]> = {};
@@ -60,7 +59,7 @@ const buildElkNodes = (
 
   return nodes.map((node) => {
     const nodeType = node.data?.node?.node_type ?? '';
-    const nodeExpressions = expressions.filter((e) => e.node_id === node.id);
+    const nodeExpressions = node.data?.node?.expressions ?? [];
     const isStart = nodeType === 'START';
     const isEnd = nodeType === 'END';
 
@@ -116,8 +115,7 @@ const buildElkEdges = (edges: AppFlowEdge[]): ElkExtendedEdge[] =>
 
 export const getLayoutedElements = async (
   nodes: AppFlowNode[],
-  edges: AppFlowEdge[],
-  expressions: ApiExpression[]
+  edges: AppFlowEdge[]
 ): Promise<{
   positions: Record<string, { x: number; y: number }>;
   edgeSections: Record<string, ElkExtendedEdge>;
@@ -126,7 +124,7 @@ export const getLayoutedElements = async (
   const layoutedGraph = await elk.layout({
     id: 'root',
     layoutOptions: ELK_LAYOUT_OPTIONS,
-    children: buildElkNodes(nodes, edges, expressions),
+    children: buildElkNodes(nodes, edges),
     edges: buildElkEdges(edges),
   });
   const duration = performance.now() - startTime;
