@@ -1,4 +1,5 @@
 import uuid
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -39,11 +40,31 @@ class EdgeRead(BaseModel):
     to_expression_id: uuid.UUID
 
 
+class VariableRead(BaseModel):
+    id: uuid.UUID
+    name: str
+    type: Literal["boolean", "string", "number"]
+    value: Any = None
+
+
+class FunctionRead(BaseModel):
+    id: uuid.UUID
+    name: str
+    input_variable: uuid.UUID
+    output_variable: uuid.UUID
+    raw_string: str
+
+
 class GraphFlowRead(BaseModel):
     nodes: list[NodeRead]
     edges: list[EdgeRead]
+    variables: list[VariableRead] = []
+    functions: list[FunctionRead] = []
 
 
 class GraphSyncPayload(BaseModel):
     nodes: list[NodeRead]
     edges: list[EdgeRead]
+    variables: list[VariableRead] = []
+    functions: list[FunctionRead] = []
+

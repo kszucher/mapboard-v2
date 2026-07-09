@@ -35,6 +35,8 @@ async def create_graph(
             }
         ],
         "edges": [],
+        "variables": [],
+        "functions": [],
     }
     graph.flow_json = initial_flow
     await uow.session.flush()

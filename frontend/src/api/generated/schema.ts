@@ -206,6 +206,28 @@ export interface components {
       /** Raw String */
       raw_string: string;
     };
+    /** FunctionRead */
+    FunctionRead: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Name */
+      name: string;
+      /**
+       * Input Variable
+       * Format: uuid
+       */
+      input_variable: string;
+      /**
+       * Output Variable
+       * Format: uuid
+       */
+      output_variable: string;
+      /** Raw String */
+      raw_string: string;
+    };
     /** GraphCreate */
     GraphCreate: {
       /**
@@ -222,6 +244,16 @@ export interface components {
       nodes: components["schemas"]["NodeRead"][];
       /** Edges */
       edges: components["schemas"]["EdgeRead"][];
+      /**
+       * Variables
+       * @default []
+       */
+      variables: components["schemas"]["VariableRead"][];
+      /**
+       * Functions
+       * @default []
+       */
+      functions: components["schemas"]["FunctionRead"][];
     };
     /** GraphRead */
     GraphRead: {
@@ -244,6 +276,16 @@ export interface components {
       nodes: components["schemas"]["NodeRead"][];
       /** Edges */
       edges: components["schemas"]["EdgeRead"][];
+      /**
+       * Variables
+       * @default []
+       */
+      variables: components["schemas"]["VariableRead"][];
+      /**
+       * Functions
+       * @default []
+       */
+      functions: components["schemas"]["FunctionRead"][];
     };
     /** HTTPValidationError */
     HTTPValidationError: {
@@ -292,6 +334,23 @@ export interface components {
       msg: string;
       /** Error Type */
       type: string;
+    };
+    /** VariableRead */
+    VariableRead: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Name */
+      name: string;
+      /**
+       * Type
+       * @enum {string}
+       */
+      type: "boolean" | "string" | "number";
+      /** Value */
+      value?: unknown;
     };
   };
   responses: never;

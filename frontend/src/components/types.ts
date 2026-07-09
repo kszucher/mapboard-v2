@@ -9,6 +9,9 @@ export type ApiExpression = components['schemas']['ExpressionRead'];
 export type NodeType = components['schemas']['NodeType'];
 export type InsertableNodeType = Exclude<NodeType, 'START' | 'END'>;
 
+export type Variable = components['schemas']['VariableRead'];
+export type FunctionEntity = components['schemas']['FunctionRead'];
+
 export type AppFlowNode = Node<{
   node: ApiNode;
 }, 'custom'>;

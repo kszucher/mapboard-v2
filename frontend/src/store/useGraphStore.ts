@@ -2,7 +2,7 @@ import { applyEdgeChanges, applyNodeChanges, } from '@xyflow/react';
 import { create } from 'zustand';
 import type { AppFlowEdge, AppFlowNode } from '../components/types';
 import { runLayout } from '../utils/flowUtils';
-import { setOnSaveStateChange, triggerSave } from './helpers';
+import { setOnSaveStateChange, triggerSave, updateFlowState } from './helpers';
 import { createExpressionSlice } from './slices/expressionSlice';
 import { createFlowSlice } from './slices/flowSlice';
 import { createHistorySlice } from './slices/historySlice';
@@ -14,6 +14,8 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
   graphId: null,
   nodes: [],
   edges: [],
+  variables: [],
+  functions: [],
   past: [],
   future: [],
   isLoading: false,
@@ -21,6 +23,37 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
   errorMessage: null,
   clearErrorMessage: () => set({ errorMessage: null }),
   pendingLayoutNodeId: null,
+
+  addVariable: async (name, type) => {
+    await updateFlowState(set, get, (state) => {
+      const newVar = {
+        id: crypto.randomUUID(),
+        name,
+        type,
+        value: null,
+      };
+      return {
+        ...state,
+        variables: [...state.variables, newVar],
+      };
+    });
+  },
+
+  addFunction: async (name, inputVariableId, outputVariableId, rawString) => {
+    await updateFlowState(set, get, (state) => {
+      const newFunc = {
+        id: crypto.randomUUID(),
+        name,
+        input_variable: inputVariableId,
+        output_variable: outputVariableId,
+        raw_string: rawString,
+      };
+      return {
+        ...state,
+        functions: [...state.functions, newFunc],
+      };
+    });
+  },
 
   ...createInitSlice(set, get, store),
   ...createFlowSlice(set, get, store),
@@ -56,6 +89,8 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
             graphId,
             nodes: laidOut.nodes,
             edges: laidOut.edges,
+            variables: get().variables,
+            functions: get().functions,
           });
         });
       }
@@ -89,6 +124,8 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
             graphId,
             nodes: laidOut.nodes,
             edges: laidOut.edges,
+            variables: get().variables,
+            functions: get().functions,
           });
         });
       }

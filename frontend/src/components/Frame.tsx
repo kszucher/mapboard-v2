@@ -7,6 +7,7 @@ import { useCreateGraph, useSetActiveGraph } from '../api/mutations';
 import { useActiveGraphId, useUserGraphs, useUserId } from '../api/queries';
 import { useGraphStore } from '../store/useGraphStore';
 import { Flow } from './Flow.tsx';
+import { Sidebar } from './Sidebar.tsx';
 import type { NodeType } from './types';
 
 const NODE_TYPES: NodeType[] = [
@@ -193,44 +194,8 @@ export const Frame = () => {
           backgroundColor: 'var(--gray-1)',
         }}
       >
-        {/* Sidebar */}
-        <Box
-          style={{
-            width: isSidebarOpen ? '260px' : '0px',
-            minWidth: isSidebarOpen ? '260px' : '0px',
-            height: '100%',
-            borderRight: isSidebarOpen ? '1px solid var(--gray-4)' : 'none',
-            backgroundColor: 'var(--gray-2)',
-            transition: 'width 0.2s ease-in-out, min-width 0.2s ease-in-out',
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          <Flex direction="column" gap="4" p="4" style={{ width: '260px' }}>
-            <Text size="3" weight="bold">Sidebar</Text>
-            <Text size="2" color="gray">
-              Graph properties and node actions can be managed here. Toggle the sidebar with the button in the top left.
-            </Text>
-
-            <Flex direction="column" gap="2">
-              <Text size="2" weight="bold">Add Nodes</Text>
-              <Flex gap="2" wrap="wrap">
-                {NODE_TYPES.map((nodeType) => (
-                  <Button
-                    key={nodeType}
-                    variant="soft"
-                    size="1"
-                    disabled={!isGraphSelected}
-                    onClick={() => handleCreateNode(nodeType)}
-                  >
-                    + {nodeType}
-                  </Button>
-                ))}
-              </Flex>
-            </Flex>
-          </Flex>
-        </Box>
+        {/* Sidebar Component */}
+        <Sidebar isSidebarOpen={isSidebarOpen} isGraphSelected={isGraphSelected} />
 
         {/* Flow Canvas Container */}
         <Box
@@ -270,4 +235,5 @@ export const Frame = () => {
     </>
   );
 };
+
 

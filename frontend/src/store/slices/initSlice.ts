@@ -24,6 +24,8 @@ export const createInitSlice: StateCreator<
         set({
           nodes: mapped.nodes,
           edges: mapped.edges,
+          variables: data.variables || [],
+          functions: data.functions || [],
           isLoading: mapped.nodes.length > 0,
         });
 
@@ -31,6 +33,8 @@ export const createInitSlice: StateCreator<
           graphId,
           nodes: mapped.nodes,
           edges: mapped.edges,
+          variables: data.variables || [],
+          functions: data.functions || [],
         });
       } else {
         set({ isLoading: false });
@@ -56,6 +60,8 @@ export const createInitSlice: StateCreator<
       set({
         nodes: laidOut.nodes,
         edges: laidOut.edges,
+        variables: flow.variables || [],
+        functions: flow.functions || [],
       });
     });
   },

@@ -1,6 +1,6 @@
 import type { Connection, EdgeChange, NodeChange } from '@xyflow/react';
 import type { components } from '../api/generated/schema';
-import type { AppFlowEdge, AppFlowNode, NodeType } from '../components/types';
+import type { AppFlowEdge, AppFlowNode, NodeType, Variable, FunctionEntity } from '../components/types';
 
 export type GraphFlowRead = components['schemas']['GraphFlowRead'];
 
@@ -8,8 +8,10 @@ export interface BaseState {
   graphId: string | null;
   nodes: AppFlowNode[];
   edges: AppFlowEdge[];
-  past: Array<{ nodes: AppFlowNode[]; edges: AppFlowEdge[] }>;
-  future: Array<{ nodes: AppFlowNode[]; edges: AppFlowEdge[] }>;
+  variables: Variable[];
+  functions: FunctionEntity[];
+  past: Array<{ nodes: AppFlowNode[]; edges: AppFlowEdge[]; variables: Variable[]; functions: FunctionEntity[] }>;
+  future: Array<{ nodes: AppFlowNode[]; edges: AppFlowEdge[]; variables: Variable[]; functions: FunctionEntity[] }>;
   isLoading: boolean;
   isSaving: boolean;
   errorMessage: string | null;
@@ -18,6 +20,10 @@ export interface BaseState {
   pendingLayoutNodeId: string | null;
   onNodesChange: (changes: NodeChange[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;
+
+  // Variables and functions actions
+  addVariable: (name: string, type: 'boolean' | 'string' | 'number') => Promise<void>;
+  addFunction: (name: string, inputVariableId: string, outputVariableId: string, rawString: string) => Promise<void>;
 }
 
 export interface InitSlice {
