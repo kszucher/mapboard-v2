@@ -251,7 +251,7 @@ export const computeTraversalIndices = (
   let currentColumnMaxRight = -Infinity;
 
   for (const node of sortedByX) {
-    const width = node.measured?.width ?? 200; // Default width estimate before render
+    const width = node.measured?.width ?? 0;
     const left = node.position.x;
     const right = left + width;
 
