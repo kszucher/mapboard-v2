@@ -219,12 +219,12 @@ export interface components {
        * Input Variable
        * Format: uuid
        */
-      input_variable: string;
+      input_variable: string | null;
       /**
        * Output Variable
        * Format: uuid
        */
-      output_variable: string;
+      output_variable: string | null;
       /** Raw String */
       raw_string: string;
     };

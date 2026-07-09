@@ -23,7 +23,7 @@ export interface BaseState {
 
   // Variables and functions actions
   addVariable: (name: string, type: 'boolean' | 'string' | 'number') => Promise<void>;
-  addFunction: (name: string, inputVariableId: string, outputVariableId: string, rawString: string) => Promise<void>;
+  addFunction: (name: string, inputVariableId: string | null, outputVariableId: string | null, rawString: string) => Promise<void>;
 }
 
 export interface InitSlice {

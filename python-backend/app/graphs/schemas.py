@@ -50,8 +50,8 @@ class VariableRead(BaseModel):
 class FunctionRead(BaseModel):
     id: uuid.UUID
     name: str
-    input_variable: uuid.UUID
-    output_variable: uuid.UUID
+    input_variable: uuid.UUID | None = None
+    output_variable: uuid.UUID | None = None
     raw_string: str
 
 

@@ -57,8 +57,8 @@ export const Sidebar = ({ isSidebarOpen, isGraphSelected }: SidebarProps) => {
           {/* List Functions */}
           <Flex direction="column" gap="2" mb="2">
             {functions.map(f => {
-              const inputVar = variables.find(v => v.id === f.input_variable)?.name ?? 'unknown';
-              const outputVar = variables.find(v => v.id === f.output_variable)?.name ?? 'unknown';
+              const inputVar = f.input_variable ? (variables.find(v => v.id === f.input_variable)?.name ?? 'unknown') : 'None';
+              const outputVar = f.output_variable ? (variables.find(v => v.id === f.output_variable)?.name ?? 'unknown') : 'None';
               return (
                 <Flex key={f.id} direction="column" gap="1" style={{ backgroundColor: 'var(--gray-3)', padding: '6px 8px', borderRadius: '4px' }}>
                   <Flex justify="between" align="center">
@@ -127,28 +127,30 @@ const FunctionForm = ({ isGraphSelected }: { isGraphSelected: boolean }) => {
   const addFunction = useGraphStore(state => state.addFunction);
 
   const [name, setName] = useState('');
-  const [inputVar, setInputVar] = useState('');
-  const [outputVar, setOutputVar] = useState('');
+  const [inputVar, setInputVar] = useState('none');
+  const [outputVar, setOutputVar] = useState('none');
   const [rawString, setRawString] = useState('');
 
-  // Automatically select first variable if variables exist
+  // Reset selected variable if it is deleted
   useEffect(() => {
     if (variables.length > 0) {
-      if (!inputVar || !variables.some(v => v.id === inputVar)) {
-        setInputVar(variables[0].id);
+      if (inputVar !== 'none' && !variables.some(v => v.id === inputVar)) {
+        setInputVar('none');
       }
-      if (!outputVar || !variables.some(v => v.id === outputVar)) {
-        setOutputVar(variables[0].id);
+      if (outputVar !== 'none' && !variables.some(v => v.id === outputVar)) {
+        setOutputVar('none');
       }
     } else {
-      setInputVar('');
-      setOutputVar('');
+      setInputVar('none');
+      setOutputVar('none');
     }
   }, [variables, inputVar, outputVar]);
 
   const handleAdd = () => {
-    if (!name.trim() || !inputVar || !outputVar) return;
-    void addFunction(name.trim(), inputVar, outputVar, rawString);
+    if (!name.trim()) return;
+    const finalInputVar = inputVar === 'none' || !inputVar ? null : inputVar;
+    const finalOutputVar = outputVar === 'none' || !outputVar ? null : outputVar;
+    void addFunction(name.trim(), finalInputVar, finalOutputVar, rawString);
     setName('');
     setRawString('');
   };
@@ -159,7 +161,7 @@ const FunctionForm = ({ isGraphSelected }: { isGraphSelected: boolean }) => {
         placeholder="Function Name"
         value={name}
         onChange={e => setName(e.target.value)}
-        disabled={!isGraphSelected || variables.length === 0}
+        disabled={!isGraphSelected}
       />
 
       <Flex direction="column" gap="1">
@@ -167,10 +169,11 @@ const FunctionForm = ({ isGraphSelected }: { isGraphSelected: boolean }) => {
         <Select.Root
           value={inputVar}
           onValueChange={setInputVar}
-          disabled={!isGraphSelected || variables.length === 0}
+          disabled={!isGraphSelected}
         >
           <Select.Trigger style={{ width: '100%' }} />
           <Select.Content>
+            <Select.Item value="none">None</Select.Item>
             {variables.map(v => (
               <Select.Item key={v.id} value={v.id}>{v.name}</Select.Item>
             ))}
@@ -183,10 +186,11 @@ const FunctionForm = ({ isGraphSelected }: { isGraphSelected: boolean }) => {
         <Select.Root
           value={outputVar}
           onValueChange={setOutputVar}
-          disabled={!isGraphSelected || variables.length === 0}
+          disabled={!isGraphSelected}
         >
           <Select.Trigger style={{ width: '100%' }} />
           <Select.Content>
+            <Select.Item value="none">None</Select.Item>
             {variables.map(v => (
               <Select.Item key={v.id} value={v.id}>{v.name}</Select.Item>
             ))}
@@ -198,14 +202,14 @@ const FunctionForm = ({ isGraphSelected }: { isGraphSelected: boolean }) => {
         placeholder="raw_string"
         value={rawString}
         onChange={e => setRawString(e.target.value)}
-        disabled={!isGraphSelected || variables.length === 0}
+        disabled={!isGraphSelected}
         style={{
           fontFamily: 'monospace',
           minHeight: '60px',
         }}
       />
 
-      <Button size="1" onClick={handleAdd} disabled={!isGraphSelected || !name.trim() || !inputVar || !outputVar}>
+      <Button size="1" onClick={handleAdd} disabled={!isGraphSelected || !name.trim()}>
         Add Function
       </Button>
     </Flex>
