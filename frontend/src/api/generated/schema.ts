@@ -257,8 +257,6 @@ export interface components {
        * Format: uuid
        */
       id: string;
-      /** Iid */
-      iid: number;
       node_type: components["schemas"]["NodeType"];
       /** Expressions */
       expressions: components["schemas"]["ExpressionRead"][];

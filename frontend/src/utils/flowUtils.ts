@@ -171,16 +171,13 @@ export const runLayout = async (
 };
 
 export const createNewNode = (
-  nodeType: NodeType,
-  existingNodes: AppFlowNode[]
+  nodeType: NodeType
 ): AppFlowNode => {
   const newNodeId = crypto.randomUUID();
-  const nextIid = Math.max(...existingNodes.map(n => n.data?.node?.iid ?? 0), 0) + 1;
   const defaultExprs = createDefaultExpressionsForNode(nodeType);
 
   const newNode: ApiNode = {
     id: newNodeId,
-    iid: nextIid,
     node_type: nodeType,
     expressions: defaultExprs,
   };
@@ -236,11 +233,58 @@ export const updateNodeNodeType = (node: AppFlowNode, targetType: NodeType): App
   };
 };
 
+export const computeTraversalIndices = (
+  nodes: AppFlowNode[]
+): Record<string, number> => {
+  const startNode = nodes.find(n => n.data?.node?.node_type === 'START');
+  const otherNodes = nodes.filter(n => n.data?.node?.node_type !== 'START');
+
+  if (otherNodes.length === 0) {
+    return startNode ? { [startNode.id]: 1 } : {};
+  }
+
+  // 1. Sort by starting x coordinate
+  const sortedByX = [...otherNodes].sort((a, b) => a.position.x - b.position.x);
+
+  // 2. Group overlapping horizontal intervals into columns
+  const columns: AppFlowNode[][] = [];
+  let currentColumnMaxRight = -Infinity;
+
+  for (const node of sortedByX) {
+    const width = node.measured?.width ?? 200; // Default width estimate before render
+    const left = node.position.x;
+    const right = left + width;
+
+    const lastCol = columns[columns.length - 1];
+    if (!lastCol || left > currentColumnMaxRight) {
+      // No overlap: start a new column
+      columns.push([node]);
+      currentColumnMaxRight = right;
+    } else {
+      // Overlap: add to the current column and update max right boundary
+      lastCol.push(node);
+      currentColumnMaxRight = Math.max(currentColumnMaxRight, right);
+    }
+  }
+
+  // 3. Sort each column top-to-bottom by y coordinate
+  for (const col of columns) {
+    col.sort((a, b) => a.position.y - b.position.y);
+  }
+
+  // 4. Prepend START node
+  const sortedNodeIds = startNode ? [startNode.id, ...columns.flat().map(n => n.id)] : columns.flat().map(n => n.id);
+
+  return Object.fromEntries(sortedNodeIds.map((id, index) => [id, index + 1]));
+};
+
 export const formatExpressionLabel = (
-  node: AppFlowNode | undefined,
+  nodeId: string | undefined,
+  traversalIndexMap: Record<string, number>,
   exprIdx: number
 ): string => {
-  return node ? `N${node.data.node.iid}-${exprIdx}` : `?-${exprIdx}`;
+  const index = nodeId ? traversalIndexMap[nodeId] : undefined;
+  return index !== undefined ? `N${index}-${exprIdx}` : `?-${exprIdx}`;
 };
 
 export interface EdgeOption {
@@ -251,7 +295,8 @@ export interface EdgeOption {
 export const getOutgoingEdgeOptions = (
   expressionId: string,
   edges: AppFlowEdge[],
-  nodes: AppFlowNode[]
+  nodes: AppFlowNode[],
+  traversalIndexMap: Record<string, number>
 ): EdgeOption[] => {
   const outgoingEdges = edges.filter(e => e.sourceHandle === expressionId);
   return outgoingEdges.map(edge => {
@@ -259,7 +304,7 @@ export const getOutgoingEdgeOptions = (
     const targetExprIdx = targetNode ? targetNode.data.node.expressions.findIndex(e => e.id === edge.targetHandle) : 0;
     return {
       edgeId: edge.id,
-      label: formatExpressionLabel(targetNode, targetExprIdx >= 0 ? targetExprIdx : 0),
+      label: formatExpressionLabel(targetNode?.id, traversalIndexMap, targetExprIdx >= 0 ? targetExprIdx : 0),
     };
   });
 };
@@ -267,7 +312,8 @@ export const getOutgoingEdgeOptions = (
 export const getIncomingEdgeOptions = (
   expressionId: string,
   edges: AppFlowEdge[],
-  nodes: AppFlowNode[]
+  nodes: AppFlowNode[],
+  traversalIndexMap: Record<string, number>
 ): EdgeOption[] => {
   const incomingEdges = edges.filter(e => e.targetHandle === expressionId);
   return incomingEdges.map(edge => {
@@ -275,7 +321,7 @@ export const getIncomingEdgeOptions = (
     const sourceExprIdx = sourceNode ? sourceNode.data.node.expressions.findIndex(e => e.id === edge.sourceHandle) : 0;
     return {
       edgeId: edge.id,
-      label: formatExpressionLabel(sourceNode, sourceExprIdx >= 0 ? sourceExprIdx : 0),
+      label: formatExpressionLabel(sourceNode?.id, traversalIndexMap, sourceExprIdx >= 0 ? sourceExprIdx : 0),
     };
   });
 };

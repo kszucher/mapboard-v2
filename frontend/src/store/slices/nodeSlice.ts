@@ -17,7 +17,7 @@ export const createNodeSlice: StateCreator<
 > = (set, get) => ({
   addNode: async (nodeType) => {
     await updateFlowState(set, get, (state) => {
-      const appNode = createNewNode(nodeType, state.nodes);
+      const appNode = createNewNode(nodeType);
 
       return {
         nodes: [...state.nodes, appNode],
@@ -31,7 +31,7 @@ export const createNodeSlice: StateCreator<
       const isAfter = direction === 'after';
       const oldEdges = state.edges.filter(e => isAfter ? e.sourceHandle === expressionId : e.targetHandle === expressionId);
 
-      const appNode = createNewNode(nodeType, state.nodes);
+      const appNode = createNewNode(nodeType);
       const defaultExprs = appNode.data.node.expressions;
       const toExprId = getPrimaryInputExprId(defaultExprs);
       const fromExprId = getPrimaryOutputExprId(defaultExprs);

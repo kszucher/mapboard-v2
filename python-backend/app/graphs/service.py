@@ -23,7 +23,6 @@ async def create_graph(
         "nodes": [
             {
                 "id": str(start_node_id),
-                "iid": 1,
                 "node_type": "START",
                 "expressions": [
                     {

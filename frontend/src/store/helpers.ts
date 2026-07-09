@@ -19,7 +19,6 @@ export const serializeFlowState = (
   return {
     nodes: state.nodes.map(n => ({
       id: n.data.node.id,
-      iid: n.data.node.iid,
       node_type: n.data.node.node_type,
       expressions: n.data.node.expressions.map(e => ({
         id: e.id,

@@ -6,6 +6,7 @@ import { useGraphStore } from '../store/useGraphStore';
 import {
   canMoveExpressionDown,
   canMoveExpressionUp,
+  computeTraversalIndices,
   getIncomingEdgeOptions,
   getOutgoingEdgeOptions
 } from '../utils/flowUtils';
@@ -69,13 +70,17 @@ export const FlowNodeRowActionsContent = ({
     return myExpressions.length > 1;
   }, [myExpressions]);
 
+  const traversalIndexMap = useMemo(() => {
+    return computeTraversalIndices(nodes);
+  }, [nodes]);
+
   const outgoingEdgeOptions = useMemo(() => {
-    return getOutgoingEdgeOptions(expressionId, edges, nodes);
-  }, [expressionId, edges, nodes]);
+    return getOutgoingEdgeOptions(expressionId, edges, nodes, traversalIndexMap);
+  }, [expressionId, edges, nodes, traversalIndexMap]);
 
   const incomingEdgeOptions = useMemo(() => {
-    return getIncomingEdgeOptions(expressionId, edges, nodes);
-  }, [expressionId, edges, nodes]);
+    return getIncomingEdgeOptions(expressionId, edges, nodes, traversalIndexMap);
+  }, [expressionId, edges, nodes, traversalIndexMap]);
 
   const hasOutgoingEdges = useMemo(() => {
     return edges.some(e => e.sourceHandle === expressionId);

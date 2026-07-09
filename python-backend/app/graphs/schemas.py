@@ -29,7 +29,6 @@ class ExpressionRead(BaseModel):
 
 class NodeRead(BaseModel):
     id: uuid.UUID
-    iid: int
     node_type: NodeType
     expressions: list[ExpressionRead]
 
