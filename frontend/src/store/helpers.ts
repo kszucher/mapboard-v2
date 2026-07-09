@@ -25,6 +25,7 @@ export const serializeFlowState = (
         is_input: e.is_input,
         is_output: e.is_output,
         raw_string: e.raw_string,
+        function_id: e.function_id,
       })),
     })),
     edges: state.edges.map(e => ({

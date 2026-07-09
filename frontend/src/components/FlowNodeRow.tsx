@@ -33,6 +33,7 @@ export const FlowNodeRow = memo(({
     )
   );
 
+  const functions = useGraphStore((state) => state.functions);
   const updateExpression = useGraphStore((state) => state.updateExpression);
 
   const handleUpdateItem = useCallback(
@@ -57,6 +58,10 @@ export const FlowNodeRow = memo(({
   ) : undefined;
 
   const initialValue = (() => {
+    if (expr.function_id) {
+      const func = functions.find(f => f.id === expr.function_id);
+      return func ? func.name : 'Unknown Function';
+    }
     if (isStart) return expr.raw_string || 'Start Node (Output)';
     if (isEnd) return expr.raw_string || 'End Node (Input)';
     return expr.raw_string;
@@ -76,7 +81,7 @@ export const FlowNodeRow = memo(({
         <Editor
           initialValue={initialValue}
           onSave={handleUpdateItem}
-          disabled={disabled}
+          disabled={disabled || !!expr.function_id}
         />
       </Flex>
       {actions && (

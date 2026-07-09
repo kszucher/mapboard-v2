@@ -52,7 +52,8 @@ export interface ExpressionSlice {
   updateExpression: (expressionId: string, updates: {
     raw_string?: string;
     is_input?: boolean;
-    is_output?: boolean
+    is_output?: boolean;
+    function_id?: string | null;
   }) => Promise<void>;
   moveExpression: (expressionId: string, direction: 'up' | 'down' | 'top' | 'bottom') => Promise<void>;
 }

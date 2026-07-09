@@ -25,6 +25,7 @@ export interface ExpressionActionsContentProps {
 export const FlowNodeRowActionsContent = ({
   expressionId,
 }: ExpressionActionsContentProps) => {
+  const functions = useGraphStore(state => state.functions);
   const createExpression = useGraphStore(state => state.createExpression);
   const deleteExpression = useGraphStore(state => state.deleteExpression);
   const updateExpression = useGraphStore(state => state.updateExpression);
@@ -191,6 +192,27 @@ export const FlowNodeRowActionsContent = ({
       <DropdownMenu.Item onClick={() => handleUpdateConnection(false, false)}>
         {!isInput && !isOutput ? '✓ None' : '  None'}
       </DropdownMenu.Item>
+      <DropdownMenu.Separator/>
+
+      <DropdownMenu.Sub>
+        <DropdownMenu.SubTrigger disabled={functions.length === 0}>
+          {'Link Function'}
+        </DropdownMenu.SubTrigger>
+        <DropdownMenu.SubContent>
+          <DropdownMenu.Item onClick={() => void updateExpression(expressionId, { function_id: null })}>
+            {expr?.function_id === null || expr?.function_id === undefined ? '✓ None (Unlink)' : '  None (Unlink)'}
+          </DropdownMenu.Item>
+          <DropdownMenu.Separator />
+          {functions.map(f => (
+            <DropdownMenu.Item
+              key={f.id}
+              onClick={() => void updateExpression(expressionId, { function_id: f.id })}
+            >
+              {f.id === expr?.function_id ? `✓ ${f.name}` : `  ${f.name}`}
+            </DropdownMenu.Item>
+          ))}
+        </DropdownMenu.SubContent>
+      </DropdownMenu.Sub>
       <DropdownMenu.Separator/>
 
       <DropdownMenu.Item onClick={handleAddAbove}>
