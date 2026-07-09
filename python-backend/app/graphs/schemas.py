@@ -26,6 +26,7 @@ class ExpressionRead(BaseModel):
     is_input: bool = False
     is_output: bool = False
     raw_string: str
+    function_id: uuid.UUID | None = None
 
 
 class NodeRead(BaseModel):
@@ -67,4 +68,3 @@ class GraphSyncPayload(BaseModel):
     edges: list[EdgeRead]
     variables: list[VariableRead] = []
     functions: list[FunctionRead] = []
-

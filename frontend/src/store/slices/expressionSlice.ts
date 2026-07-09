@@ -9,7 +9,7 @@ export const createExpressionSlice: StateCreator<
   [],
   ExpressionSlice
 > = (set, get) => ({
-  createExpression: async (nodeId, isInput, isOutput, idx) => {
+  createExpression: async (nodeId, isInput, isOutput, idx, functionId = null) => {
     await updateFlowState(set, get, (state) => {
       const nextNodes = state.nodes.map(n => {
         if (n.id !== nodeId) return n;
@@ -19,6 +19,7 @@ export const createExpressionSlice: StateCreator<
           is_input: isInput,
           is_output: isOutput,
           raw_string: '',
+          function_id: functionId,
         };
         expressions.splice(idx, 0, newExpr);
         return {
