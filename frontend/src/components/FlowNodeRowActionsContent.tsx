@@ -13,12 +13,10 @@ import {
 import type { InsertableNodeType } from './types';
 
 const INSERTABLE_NODE_TYPES: { type: InsertableNodeType; label: string }[] = [
-  { type: 'LOGIC', label: 'Logic' },
+  { type: 'FUNCTION', label: 'Function' },
   { type: 'AGENT', label: 'Agent' },
-  { type: 'LOGICAL_SWITCH', label: 'Logical Switch' },
-  { type: 'AGENTIC_SWITCH', label: 'Agentic Switch' },
-  { type: 'LOGICAL_JOIN', label: 'Logical Join' },
-  { type: 'AGENTIC_JOIN', label: 'Agentic Join' },
+  { type: 'SWITCH', label: 'Switch' },
+  { type: 'REDUCE', label: 'Reduce' },
 ];
 
 export interface ExpressionActionsContentProps {

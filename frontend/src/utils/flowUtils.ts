@@ -7,12 +7,10 @@ type ApiEdge = components['schemas']['EdgeRead'];
 export const NODE_LABELS: Record<NodeType, string> = {
   START: 'Start',
   END: 'End',
-  LOGIC: 'Logic',
+  FUNCTION: 'Function',
   AGENT: 'Agent',
-  LOGICAL_SWITCH: 'Logical Switch',
-  AGENTIC_SWITCH: 'Agentic Switch',
-  LOGICAL_JOIN: 'Logical Join',
-  AGENTIC_JOIN: 'Agentic Join',
+  SWITCH: 'Switch',
+  REDUCE: 'Reduce',
 };
 
 export const getAvailableConversions = (
@@ -22,12 +20,10 @@ export const getAvailableConversions = (
     return [];
   }
   const allTypes: NodeType[] = [
-    'LOGIC',
+    'FUNCTION',
     'AGENT',
-    'LOGICAL_SWITCH',
-    'AGENTIC_SWITCH',
-    'LOGICAL_JOIN',
-    'AGENTIC_JOIN',
+    'SWITCH',
+    'REDUCE',
   ];
   return allTypes
     .filter(t => t !== currentType)
@@ -88,7 +84,7 @@ export const createDefaultExpressionsForNode = (
       is_output: false,
       raw_string: ''
     }];
-  } else if (nodeType === 'LOGIC' || nodeType === 'AGENT') {
+  } else if (nodeType === 'FUNCTION' || nodeType === 'AGENT') {
     return [{
       id: baseId,
       node_id: nodeId,
@@ -98,12 +94,12 @@ export const createDefaultExpressionsForNode = (
       is_output: true,
       raw_string: ''
     }];
-  } else if (nodeType === 'LOGICAL_SWITCH' || nodeType === 'AGENTIC_SWITCH') {
+  } else if (nodeType === 'SWITCH') {
     return [
       { id: baseId, node_id: nodeId, graph_id: graphId, idx: 0, is_input: true, is_output: false, raw_string: '' },
       { id: subId, node_id: nodeId, graph_id: graphId, idx: 1, is_input: false, is_output: true, raw_string: '' }
     ];
-  } else if (nodeType === 'LOGICAL_JOIN' || nodeType === 'AGENTIC_JOIN') {
+  } else if (nodeType === 'REDUCE') {
     return [
       { id: subId, node_id: nodeId, graph_id: graphId, idx: 0, is_input: true, is_output: false, raw_string: '' },
       { id: baseId, node_id: nodeId, graph_id: graphId, idx: 1, is_input: false, is_output: true, raw_string: '' }
@@ -217,13 +213,11 @@ export const createNewNode = (
 ): { appNode: AppFlowNode; defaultExprs: ApiExpression[] } => {
   const newNodeId = crypto.randomUUID();
   const nextIid = Math.max(...existingNodes.map(n => n.data?.node?.iid ?? 0), 0) + 1;
-  const label = NODE_LABELS[nodeType];
 
   const newNode: ApiNode = {
     id: newNodeId,
     graph_id: graphId,
     iid: nextIid,
-    label,
     is_processing: false,
     node_type: nodeType,
   };
@@ -280,7 +274,6 @@ export const updateNodeNodeType = (node: AppFlowNode, targetType: NodeType): App
       node: {
         ...node.data.node,
         node_type: targetType,
-        label: NODE_LABELS[targetType],
       }
     }
   };

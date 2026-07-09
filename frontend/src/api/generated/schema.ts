@@ -220,9 +220,17 @@ export interface components {
       graph_id: string;
       /** Idx */
       idx: number;
-      /** Is Input */
+      /** Type */
+      type?: string | null;
+      /**
+       * Is Input
+       * @default false
+       */
       is_input: boolean;
-      /** Is Output */
+      /**
+       * Is Output
+       * @default false
+       */
       is_output: boolean;
       /** Raw String */
       raw_string: string;
@@ -289,8 +297,6 @@ export interface components {
       graph_id: string;
       /** Iid */
       iid: number;
-      /** Label */
-      label: string;
       /** Is Processing */
       is_processing: boolean;
       node_type: components["schemas"]["NodeType"];
@@ -303,7 +309,7 @@ export interface components {
      * NodeType
      * @enum {string}
      */
-    NodeType: "START" | "END" | "LOGIC" | "AGENT" | "LOGICAL_SWITCH" | "AGENTIC_SWITCH" | "LOGICAL_JOIN" | "AGENTIC_JOIN";
+    NodeType: "START" | "END" | "FUNCTION" | "AGENT" | "SWITCH" | "REDUCE";
     /** SetActiveGraph */
     SetActiveGraph: {
       /**

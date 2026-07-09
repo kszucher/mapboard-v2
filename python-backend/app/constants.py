@@ -18,12 +18,10 @@ class EventName(str, Enum):
 class NodeType(str, Enum):
     START = "START"
     END = "END"
-    LOGIC = "LOGIC"
+    FUNCTION = "FUNCTION"
     AGENT = "AGENT"
-    LOGICAL_SWITCH = "LOGICAL_SWITCH"
-    AGENTIC_SWITCH = "AGENTIC_SWITCH"
-    LOGICAL_JOIN = "LOGICAL_JOIN"
-    AGENTIC_JOIN = "AGENTIC_JOIN"
+    SWITCH = "SWITCH"
+    REDUCE = "REDUCE"
 
 
 class ExpressionType(str, Enum):

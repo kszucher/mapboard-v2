@@ -9,14 +9,10 @@ import { Flow } from './Flow.tsx';
 import type { NodeType } from './types';
 
 const NODE_TYPES: NodeType[] = [
-  'START',
-  'END',
-  'LOGIC',
+  'FUNCTION',
   'AGENT',
-  'LOGICAL_SWITCH',
-  'AGENTIC_SWITCH',
-  'LOGICAL_JOIN',
-  'AGENTIC_JOIN',
+  'SWITCH',
+  'REDUCE',
 ];
 
 export const Frame = () => {

@@ -25,7 +25,6 @@ async def create_graph(
                 "id": str(start_node_id),
                 "graph_id": str(graph.id),
                 "iid": 1,
-                "label": "Start",
                 "is_processing": False,
                 "node_type": "START",
             }

@@ -13,12 +13,10 @@ import { type AppFlowNode, type NodeType } from './types.ts';
 const NODE_COLORS: Record<NodeType, BadgeProps['color']> = {
   START: 'gray',
   END: 'gray',
-  LOGIC: 'purple',
+  FUNCTION: 'purple',
   AGENT: 'blue',
-  LOGICAL_SWITCH: 'amber',
-  AGENTIC_SWITCH: 'grass',
-  LOGICAL_JOIN: 'teal',
-  AGENTIC_JOIN: 'indigo',
+  SWITCH: 'amber',
+  REDUCE: 'teal',
 };
 
 const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
@@ -61,7 +59,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
             {'N' + data.node.iid}
           </Badge>
           <Badge color={NODE_COLORS[data.node.node_type]} size="1" style={{ height: 'var(--space-5)' }}>
-            {data.node.label}
+            {data.node.node_type.charAt(0) + data.node.node_type.slice(1).toLowerCase()}
           </Badge>
         </Flex>
 
