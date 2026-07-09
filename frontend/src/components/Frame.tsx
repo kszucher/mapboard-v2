@@ -1,7 +1,8 @@
-import { CaretDownIcon, CheckIcon, MixIcon, PlayIcon, ResetIcon } from '@radix-ui/react-icons';
+
+import { CaretDownIcon, CheckIcon, MixIcon, PlayIcon, ResetIcon, ReaderIcon } from '@radix-ui/react-icons';
 import { AlertDialog, Box, Button, DropdownMenu, Flex, IconButton, Text } from '@radix-ui/themes';
 import { ReactFlowProvider } from '@xyflow/react';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useCreateGraph, useSetActiveGraph } from '../api/mutations';
 import { useActiveGraphId, useUserGraphs, useUserId } from '../api/queries';
 import { useGraphStore } from '../store/useGraphStore';
@@ -18,6 +19,8 @@ export const Frame = () => {
   const { data: userId } = useUserId();
   const { data: selectedGraphId } = useActiveGraphId(userId ?? null);
   const { data: graphs } = useUserGraphs(userId ?? null);
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const undo = useGraphStore(state => state.undo);
   const redo = useGraphStore(state => state.redo);
@@ -86,6 +89,15 @@ export const Frame = () => {
         <Flex direction="row" align="center" justify="between" height="100%">
           {/* Left */}
           <Flex align="center" gap="2" width={'192px'}>
+            <IconButton
+              variant="ghost"
+              color="gray"
+              radius="full"
+              onClick={() => setIsSidebarOpen(prev => !prev)}
+              aria-label="Toggle Sidebar"
+            >
+              <ReaderIcon width="18" height="18" />
+            </IconButton>
             <Text size="2" weight="bold" color="gray">
               graphboard
             </Text>
@@ -170,14 +182,72 @@ export const Frame = () => {
         </Flex>
       </Box>
 
-      {/* Flow */}
-      {isGraphSelected && (
-        <Box width="100vw" height="100vh">
-          <ReactFlowProvider>
-            <Flow selectedGraphId={selectedGraphId}/>
-          </ReactFlowProvider>
+      {/* Main Workspace (Sidebar + Canvas) */}
+      <Flex
+        style={{
+          width: '100vw',
+          height: '100vh',
+          paddingTop: '40px',
+          boxSizing: 'border-box',
+          overflow: 'hidden',
+          backgroundColor: 'var(--gray-1)',
+        }}
+      >
+        {/* Sidebar */}
+        <Box
+          style={{
+            width: isSidebarOpen ? '260px' : '0px',
+            minWidth: isSidebarOpen ? '260px' : '0px',
+            height: '100%',
+            borderRight: isSidebarOpen ? '1px solid var(--gray-4)' : 'none',
+            backgroundColor: 'var(--gray-2)',
+            transition: 'width 0.2s ease-in-out, min-width 0.2s ease-in-out',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <Flex direction="column" gap="4" p="4" style={{ width: '260px' }}>
+            <Text size="3" weight="bold">Sidebar</Text>
+            <Text size="2" color="gray">
+              Graph properties and node actions can be managed here. Toggle the sidebar with the button in the top left.
+            </Text>
+
+            <Flex direction="column" gap="2">
+              <Text size="2" weight="bold">Add Nodes</Text>
+              <Flex gap="2" wrap="wrap">
+                {NODE_TYPES.map((nodeType) => (
+                  <Button
+                    key={nodeType}
+                    variant="soft"
+                    size="1"
+                    disabled={!isGraphSelected}
+                    onClick={() => handleCreateNode(nodeType)}
+                  >
+                    + {nodeType}
+                  </Button>
+                ))}
+              </Flex>
+            </Flex>
+          </Flex>
         </Box>
-      )}
+
+        {/* Flow Canvas Container */}
+        <Box
+          style={{
+            flexGrow: 1,
+            height: '100%',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          {isGraphSelected && (
+            <ReactFlowProvider>
+              <Flow selectedGraphId={selectedGraphId}/>
+            </ReactFlowProvider>
+          )}
+        </Box>
+      </Flex>
 
       {/* Error Message Modal */}
       <AlertDialog.Root open={!!errorMessage} onOpenChange={(open) => {
@@ -200,3 +270,4 @@ export const Frame = () => {
     </>
   );
 };
+
