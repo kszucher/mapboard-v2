@@ -24,7 +24,6 @@ class NodeRead(BaseModel):
     id: uuid.UUID
     graph_id: uuid.UUID
     iid: int
-    is_processing: bool
     node_type: NodeType
 
 

@@ -19,7 +19,10 @@ export const serializeFlowState = (
   const graphId = state.graphId || '';
   return {
     nodes: state.nodes.map(n => ({
-      ...n.data.node,
+      id: n.data.node.id,
+      graph_id: n.data.node.graph_id,
+      iid: n.data.node.iid,
+      node_type: n.data.node.node_type,
     })),
     edges: state.edges.map(e => ({
       id: e.id,

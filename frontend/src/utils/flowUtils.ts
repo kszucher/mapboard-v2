@@ -219,7 +219,6 @@ export const createNewNode = (
     id: newNodeId,
     graph_id: graphId,
     iid: nextIid,
-    is_processing: false,
     node_type: nodeType,
   };
 

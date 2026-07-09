@@ -297,8 +297,6 @@ export interface components {
       graph_id: string;
       /** Iid */
       iid: number;
-      /** Is Processing */
-      is_processing: boolean;
       node_type: components["schemas"]["NodeType"];
     };
     /**
