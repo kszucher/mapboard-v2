@@ -7,10 +7,9 @@ type ApiEdge = components['schemas']['EdgeRead'];
 export const NODE_LABELS: Record<NodeType, string> = {
   START: 'Start',
   END: 'End',
-  FUNCTION: 'Function',
-  AGENT: 'Agent',
-  SWITCH: 'Switch',
-  REDUCE: 'Reduce',
+  STEP: 'Step',
+  BRANCH: 'Branch',
+  MERGE: 'Merge',
 };
 
 export const getAvailableConversions = (
@@ -20,10 +19,9 @@ export const getAvailableConversions = (
     return [];
   }
   const allTypes: NodeType[] = [
-    'FUNCTION',
-    'AGENT',
-    'SWITCH',
-    'REDUCE',
+    'STEP',
+    'BRANCH',
+    'MERGE',
   ];
   return allTypes
     .filter(t => t !== currentType)
@@ -53,19 +51,19 @@ export const createDefaultExpressionsForNode = (
       is_output: false,
       raw_string: ''
     }];
-  } else if (nodeType === 'FUNCTION' || nodeType === 'AGENT') {
+  } else if (nodeType === 'STEP') {
     return [{
       id: baseId,
       is_input: true,
       is_output: true,
       raw_string: ''
     }];
-  } else if (nodeType === 'SWITCH') {
+  } else if (nodeType === 'BRANCH') {
     return [
       { id: baseId, is_input: true, is_output: false, raw_string: '' },
       { id: subId, is_input: false, is_output: true, raw_string: '' }
     ];
-  } else if (nodeType === 'REDUCE') {
+  } else if (nodeType === 'MERGE') {
     return [
       { id: subId, is_input: true, is_output: false, raw_string: '' },
       { id: baseId, is_input: false, is_output: true, raw_string: '' }

@@ -13,10 +13,9 @@ import {
 import type { InsertableNodeType } from './types';
 
 const INSERTABLE_NODE_TYPES: { type: InsertableNodeType; label: string }[] = [
-  { type: 'FUNCTION', label: 'Function' },
-  { type: 'AGENT', label: 'Agent' },
-  { type: 'SWITCH', label: 'Switch' },
-  { type: 'REDUCE', label: 'Reduce' },
+  { type: 'STEP', label: 'Step' },
+  { type: 'BRANCH', label: 'Branch' },
+  { type: 'MERGE', label: 'Merge' },
 ];
 
 export interface ExpressionActionsContentProps {

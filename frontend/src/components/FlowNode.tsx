@@ -13,10 +13,9 @@ import { type AppFlowNode, type NodeType } from './types.ts';
 const NODE_COLORS: Record<NodeType, BadgeProps['color']> = {
   START: 'gray',
   END: 'gray',
-  FUNCTION: 'purple',
-  AGENT: 'blue',
-  SWITCH: 'amber',
-  REDUCE: 'teal',
+  STEP: 'purple',
+  BRANCH: 'amber',
+  MERGE: 'teal',
 };
 
 const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {

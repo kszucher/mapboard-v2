@@ -265,7 +265,7 @@ export interface components {
      * NodeType
      * @enum {string}
      */
-    NodeType: "START" | "END" | "FUNCTION" | "AGENT" | "SWITCH" | "REDUCE";
+    NodeType: "START" | "END" | "STEP" | "BRANCH" | "MERGE";
     /** SetActiveGraph */
     SetActiveGraph: {
       /**

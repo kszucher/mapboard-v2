@@ -18,10 +18,9 @@ class EventName(str, Enum):
 class NodeType(str, Enum):
     START = "START"
     END = "END"
-    FUNCTION = "FUNCTION"
-    AGENT = "AGENT"
-    SWITCH = "SWITCH"
-    REDUCE = "REDUCE"
+    STEP = "STEP"
+    BRANCH = "BRANCH"
+    MERGE = "MERGE"
 
 
 class ExpressionType(str, Enum):
