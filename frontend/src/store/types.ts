@@ -21,9 +21,9 @@ export interface BaseState {
   onNodesChange: (changes: NodeChange[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;
 
-  // Variables and functions actions
   addVariable: (name: string, type: 'boolean' | 'string' | 'number') => Promise<void>;
   addFunction: (name: string, inputVariableId: string | null, outputVariableId: string | null, rawString: string) => Promise<void>;
+  deleteFunction: (functionId: string) => Promise<void>;
 }
 
 export interface InitSlice {

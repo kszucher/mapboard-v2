@@ -1,4 +1,5 @@
-import { Box, Button, Flex, Select, Text, TextField } from '@radix-ui/themes';
+import { Box, Button, Flex, IconButton, Select, Text, TextField } from '@radix-ui/themes';
+import { TrashIcon } from '@radix-ui/react-icons';
 import { useEffect, useState } from 'react';
 import { useGraphStore } from '../store/useGraphStore';
 
@@ -10,6 +11,7 @@ interface SidebarProps {
 export const Sidebar = ({ isSidebarOpen, isGraphSelected }: SidebarProps) => {
   const variables = useGraphStore(state => state.variables);
   const functions = useGraphStore(state => state.functions);
+  const deleteFunction = useGraphStore(state => state.deleteFunction);
 
   return (
     <Box
@@ -62,9 +64,21 @@ export const Sidebar = ({ isSidebarOpen, isGraphSelected }: SidebarProps) => {
               const outputVar = f.output_variable ? (variables.find(v => v.id === f.output_variable)?.name ?? 'unknown') : 'None';
               return (
                 <Flex key={f.id} justify="between" align="center"
-                      style={{ backgroundColor: 'var(--gray-3)', padding: '4px 8px', borderRadius: '4px' }}>
-                  <Text size="1" weight="medium">{f.name}</Text>
-                  <Text size="1" color="gray">{inputVar} → {outputVar}</Text>
+                      style={{ backgroundColor: 'var(--gray-3)', padding: '4px 8px', borderRadius: '4px', gap: '8px' }}>
+                  <Flex align="center" gap="1" style={{ flexGrow: 1, minWidth: 0 }}>
+                    <Text size="1" weight="medium" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</Text>
+                    <Text size="1" color="gray" style={{ whiteSpace: 'nowrap' }}>({inputVar} → {outputVar})</Text>
+                  </Flex>
+                  <IconButton
+                    size="1"
+                    variant="ghost"
+                    color="red"
+                    onClick={() => void deleteFunction(f.id)}
+                    disabled={!isGraphSelected}
+                    style={{ cursor: 'pointer', flexShrink: 0 }}
+                  >
+                    <TrashIcon width="14" height="14" />
+                  </IconButton>
                 </Flex>
               );
             })}
