@@ -67,7 +67,7 @@ export const FlowNodeSlot = memo(({
   const handleIncreaseIndent = useCallback(() => {
     if (!slot) return;
     const currentIndent = slot.indent ?? 0;
-    if (currentIndent < 2) {
+    if (currentIndent < 3) {
       void updateSlot(slotId, { indent: currentIndent + 1 });
     }
   }, [slot, slotId, updateSlot]);
@@ -149,7 +149,7 @@ export const FlowNodeSlot = memo(({
         align="center"
         height="100%"
         style={{
-          paddingLeft: slot.indent === 1 ? '24px' : slot.indent === 2 ? '48px' : '0px',
+          paddingLeft: `${(slot.indent ?? 0) * 24}px`,
         }}
       >
         <Editor
