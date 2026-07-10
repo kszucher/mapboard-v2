@@ -11,16 +11,12 @@ export const Editor = ({
   onSave,
   disabled = false,
 }: PlainEditorProps) => {
-  const elementRef = useRef<HTMLSpanElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const [value, setValue] = useState(initialValue);
   const [isEditing, setIsEditing] = useState(false);
   const [isSelected, setIsSelected] = useState(false);
-
-  // Sync internal text with initialValue, but only when not currently typing/focused
-  useEffect(() => {
-    if (elementRef.current && document.activeElement !== elementRef.current) {
-      elementRef.current.innerText = initialValue;
-    }
-  }, [initialValue]);
 
   const onSaveRef = useRef(onSave);
   useEffect(() => {
@@ -29,13 +25,8 @@ export const Editor = ({
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleInput = (e: React.FormEvent<HTMLSpanElement>) => {
-    const newValue = e.currentTarget.innerText.replace(/[\r\n]/g, '');
-
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-
+  const scheduleSave = (newValue: string) => {
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     debounceTimerRef.current = setTimeout(() => {
       onSaveRef.current(newValue);
     }, 1000);
@@ -47,51 +38,38 @@ export const Editor = ({
     };
   }, []);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLSpanElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      elementRef.current?.blur();
-    }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setValue(newValue);
+    scheduleSave(newValue);
   };
 
-  // Focus and place caret at the end when editing starts
-  useEffect(() => {
-    if (isEditing && elementRef.current) {
-      elementRef.current.focus();
-      const range = document.createRange();
-      range.selectNodeContents(elementRef.current);
-      range.collapse(false);
-      const sel = window.getSelection();
-      sel?.removeAllRanges();
-      sel?.addRange(range);
-    }
-  }, [isEditing]);
-
-  const handleBlur = () => {
+  const commitAndExit = () => {
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    onSaveRef.current(value);
     setIsEditing(false);
     setIsSelected(false);
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-    if (elementRef.current) {
-      const finalValue = elementRef.current.innerText.replace(/[\r\n]/g, '');
-      onSaveRef.current(finalValue);
-    }
-    // Clear selection on blur
-    window.getSelection()?.removeAllRanges();
   };
+
+  // Focus and select-to-end when editing starts (native input handles caret placement)
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      const el = inputRef.current;
+      el.focus();
+      const end = el.value.length;
+      el.setSelectionRange(end, end);
+    }
+  }, [isEditing]);
 
   // Clear selection / state when clicking outside the editor
   useEffect(() => {
     if (!isSelected) return;
     const handleDocumentClick = (e: MouseEvent) => {
-      if (elementRef.current && !elementRef.current.contains(e.target as Node)) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
         setIsSelected(false);
         setIsEditing(false);
-        window.getSelection()?.removeAllRanges();
       }
     };
-    // Use capture phase so we get the click event even if someone else stopPropagation's it
     document.addEventListener('click', handleDocumentClick, true);
     return () => document.removeEventListener('click', handleDocumentClick, true);
   }, [isSelected]);
@@ -104,25 +82,34 @@ export const Editor = ({
       e.stopPropagation();
       setIsSelected(true);
     } else if (!isEditing) {
-      // Second click: enter edit mode
+      // Second click: enter edit mode, seeding the edit buffer from the latest prop value
       e.stopPropagation();
+      setValue(initialValue);
       setIsEditing(true);
     }
   };
 
+  const textStyle: React.CSSProperties = {
+    fontFamily: 'Consolas, Menlo, Monaco, "Courier New", monospace',
+    fontSize: '13px',
+    lineHeight: '18px',
+    minWidth: '50px',
+    width: '100%',
+    color: 'var(--gray-12)',
+    boxSizing: 'border-box',
+    margin: 0,
+  };
+
   return (
     <div
-      className={isSelected ? "nodrag nopan" : undefined}
+      ref={wrapperRef}
+      className={isSelected ? 'nodrag nopan' : undefined}
       onDoubleClick={(e) => e.stopPropagation()}
       onMouseDown={(e) => {
-        if (isSelected) {
-          e.stopPropagation();
-        }
+        if (isSelected) e.stopPropagation();
       }}
       onPointerDown={(e) => {
-        if (isSelected) {
-          e.stopPropagation();
-        }
+        if (isSelected) e.stopPropagation();
       }}
       style={{
         display: 'flex',
@@ -144,28 +131,53 @@ export const Editor = ({
           minWidth: '120px',
           outline: isSelected ? '1px solid var(--accent-8)' : 'none',
           boxShadow: isSelected ? '0 0 0 1px var(--accent-8)' : 'none',
-          cursor: disabled ? 'default' : (isSelected ? 'text' : 'pointer'),
+          cursor: disabled ? 'default' : isSelected ? 'text' : 'pointer',
         }}
       >
-        <span
-          ref={elementRef}
-          contentEditable={!disabled && isEditing}
-          suppressContentEditableWarning
-          onInput={handleInput}
-          onKeyDown={handleKeyDown}
-          onBlur={handleBlur}
-          style={{
-            fontFamily: 'Consolas, Menlo, Monaco, "Courier New", monospace',
-            fontSize: '13px',
-            outline: 'none',
-            minWidth: '50px',
-            whiteSpace: 'pre',
-            width: '100%',
-            userSelect: isEditing ? 'text' : 'none',
-            opacity: disabled ? 0.7 : 1,
-            color: 'var(--gray-12)',
-          }}
-        />
+        {isEditing ? (
+          <input
+            ref={inputRef}
+            value={value}
+            onChange={handleChange}
+            onBlur={commitAndExit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                inputRef.current?.blur();
+              }
+            }}
+            style={
+              {
+                ...textStyle,
+                border: 'none',
+                outline: 'none',
+                background: 'transparent',
+                padding: 0,
+                width: 'auto',
+                appearance: 'none',
+                WebkitAppearance: 'none',
+                verticalAlign: 'top',
+                // Makes the input grow/shrink with its content, like contentEditable did.
+                // Supported in current versions of all major browsers (Baseline as of June 2026);
+                // older browsers just fall back to a fixed width instead of breaking.
+                fieldSizing: 'content',
+              } as React.CSSProperties
+            }
+          />
+        ) : (
+          <span
+            style={{
+              ...textStyle,
+              whiteSpace: 'pre',
+              userSelect: 'none',
+              opacity: disabled ? 0.7 : 1,
+              display: 'inline-block',
+              verticalAlign: 'top',
+            }}
+          >
+            {initialValue}
+          </span>
+        )}
       </div>
     </div>
   );
