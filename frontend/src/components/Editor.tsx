@@ -15,6 +15,8 @@ interface PlainEditorProps {
   onAddAbove?: () => void;
   onAddBelow?: () => void;
   onDelete?: () => void;
+  onToggleInput?: () => void;
+  onToggleOutput?: () => void;
 }
 
 export const Editor = ({
@@ -32,6 +34,8 @@ export const Editor = ({
   onAddAbove,
   onAddBelow,
   onDelete,
+  onToggleInput,
+  onToggleOutput,
 }: PlainEditorProps) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -157,6 +161,18 @@ export const Editor = ({
           e.stopPropagation();
           onDelete();
         }
+      } else if (e.key === 'i' || e.key === 'I') {
+        if (e.ctrlKey && onToggleInput) {
+          e.preventDefault();
+          e.stopPropagation();
+          onToggleInput();
+        }
+      } else if (e.key === 'o' || e.key === 'O') {
+        if (e.ctrlKey && onToggleOutput) {
+          e.preventDefault();
+          e.stopPropagation();
+          onToggleOutput();
+        }
       }
     };
 
@@ -164,7 +180,7 @@ export const Editor = ({
     return () => {
       window.removeEventListener('keydown', handleKeyDown, true);
     };
-  }, [isSelected, onIncreaseIndent, onDecreaseIndent, onMoveUp, onMoveDown, onNavigate, onAddAbove, onAddBelow, onDelete, isEditing, readOnly, initialValue]);
+  }, [isSelected, onIncreaseIndent, onDecreaseIndent, onMoveUp, onMoveDown, onNavigate, onAddAbove, onAddBelow, onDelete, onToggleInput, onToggleOutput, isEditing, readOnly, initialValue]);
 
   const handleWrapperClick = (e: React.MouseEvent) => {
     if (disabled) return;

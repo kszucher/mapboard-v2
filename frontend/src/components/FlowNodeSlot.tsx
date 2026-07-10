@@ -102,6 +102,16 @@ export const FlowNodeSlot = memo(({
     void deleteSlot(slotId);
   }, [slotId, deleteSlot]);
 
+  const handleToggleInput = useCallback(() => {
+    if (!slot) return;
+    void updateSlot(slotId, { is_input: !slot.is_input });
+  }, [slot, slotId, updateSlot]);
+
+  const handleToggleOutput = useCallback(() => {
+    if (!slot) return;
+    void updateSlot(slotId, { is_output: !slot.is_output });
+  }, [slot, slotId, updateSlot]);
+
   if (!slot) return null;
 
   const leftHandle = slot.is_input;
@@ -167,6 +177,8 @@ export const FlowNodeSlot = memo(({
           onAddAbove={handleAddAbove}
           onAddBelow={handleAddBelow}
           onDelete={handleDeleteSlot}
+          onToggleInput={handleToggleInput}
+          onToggleOutput={handleToggleOutput}
         />
       </Flex>
       {actions}
