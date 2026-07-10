@@ -123,12 +123,12 @@ export const FlowNodeSlotActionsContent = ({
 
   const handleAddAbove = useCallback(() => {
     if (!slot || !node) return;
-    void createSlot(node.id, slot.is_input, slot.is_output, indexInNode, slot.indent ?? 0);
+    void createSlot(node.id, false, false, indexInNode, slot.indent ?? 0);
   }, [createSlot, node, slot, indexInNode]);
 
   const handleAddBelow = useCallback(() => {
     if (!slot || !node) return;
-    void createSlot(node.id, slot.is_input, slot.is_output, indexInNode + 1, slot.indent ?? 0);
+    void createSlot(node.id, false, false, indexInNode + 1, slot.indent ?? 0);
   }, [createSlot, node, slot, indexInNode]);
 
   const renderInsertSubmenu = (direction: 'before' | 'after') => {

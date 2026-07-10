@@ -100,17 +100,13 @@ export const Editor = ({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isEditing) return;
 
-      if (e.key === 'ArrowRight') {
-        if (e.ctrlKey && onIncreaseIndent) {
-          e.preventDefault();
-          e.stopPropagation();
-          onIncreaseIndent();
-        }
-      } else if (e.key === 'ArrowLeft') {
-        if (e.ctrlKey && onDecreaseIndent) {
-          e.preventDefault();
-          e.stopPropagation();
-          onDecreaseIndent();
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.shiftKey) {
+          if (onDecreaseIndent) onDecreaseIndent();
+        } else {
+          if (onIncreaseIndent) onIncreaseIndent();
         }
       } else if (e.key === 'ArrowUp') {
         if (e.ctrlKey) {
