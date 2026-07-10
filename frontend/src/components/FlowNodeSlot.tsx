@@ -11,6 +11,10 @@ interface FlowNodeSlotProps {
   disabled: boolean;
   isStart: boolean;
   isEnd: boolean;
+  isSelected: boolean;
+  onSelect: () => void;
+  onClearSelect: () => void;
+  onNavigate: (direction: 'up' | 'down') => void;
 }
 
 export const FlowNodeSlot = memo(({
@@ -18,6 +22,10 @@ export const FlowNodeSlot = memo(({
   disabled,
   isStart,
   isEnd,
+  isSelected,
+  onSelect,
+  onClearSelect,
+  onNavigate,
 }: FlowNodeSlotProps) => {
   // Subscribe to only this specific slot
   const slot = useGraphStore(
@@ -35,6 +43,7 @@ export const FlowNodeSlot = memo(({
 
   const functions = useGraphStore((state) => state.functions);
   const updateSlot = useGraphStore((state) => state.updateSlot);
+  const moveSlot = useGraphStore((state) => state.moveSlot);
 
   const handleUpdateItem = useCallback(
     (newValue: string) => {
@@ -42,6 +51,30 @@ export const FlowNodeSlot = memo(({
     },
     [slotId, updateSlot]
   );
+
+  const handleIncreaseIndent = useCallback(() => {
+    if (!slot) return;
+    const currentIndent = slot.indent ?? 0;
+    if (currentIndent < 2) {
+      void updateSlot(slotId, { indent: currentIndent + 1 });
+    }
+  }, [slot, slotId, updateSlot]);
+
+  const handleDecreaseIndent = useCallback(() => {
+    if (!slot) return;
+    const currentIndent = slot.indent ?? 0;
+    if (currentIndent > 0) {
+      void updateSlot(slotId, { indent: currentIndent - 1 });
+    }
+  }, [slot, slotId, updateSlot]);
+
+  const handleMoveUp = useCallback(() => {
+    void moveSlot(slotId, 'up');
+  }, [slotId, moveSlot]);
+
+  const handleMoveDown = useCallback(() => {
+    void moveSlot(slotId, 'down');
+  }, [slotId, moveSlot]);
 
   if (!slot) return null;
 
@@ -87,6 +120,14 @@ export const FlowNodeSlot = memo(({
           initialValue={initialValue}
           onSave={handleUpdateItem}
           disabled={disabled || !!slot.function_id}
+          isSelected={isSelected}
+          onSelect={onSelect}
+          onClearSelect={onClearSelect}
+          onIncreaseIndent={handleIncreaseIndent}
+          onDecreaseIndent={handleDecreaseIndent}
+          onMoveUp={handleMoveUp}
+          onMoveDown={handleMoveDown}
+          onNavigate={onNavigate}
         />
       </Flex>
       {actions && (

@@ -4,19 +4,34 @@ interface PlainEditorProps {
   initialValue: string;
   onSave: (value: string) => void;
   disabled?: boolean;
+  isSelected: boolean;
+  onSelect: () => void;
+  onClearSelect: () => void;
+  onIncreaseIndent?: () => void;
+  onDecreaseIndent?: () => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  onNavigate?: (direction: 'up' | 'down') => void;
 }
 
 export const Editor = ({
   initialValue,
   onSave,
   disabled = false,
+  isSelected,
+  onSelect,
+  onClearSelect,
+  onIncreaseIndent,
+  onDecreaseIndent,
+  onMoveUp,
+  onMoveDown,
+  onNavigate,
 }: PlainEditorProps) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [value, setValue] = useState(initialValue);
   const [isEditing, setIsEditing] = useState(false);
-  const [isSelected, setIsSelected] = useState(false);
 
   const onSaveRef = useRef(onSave);
   useEffect(() => {
@@ -48,7 +63,7 @@ export const Editor = ({
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     onSaveRef.current(value);
     setIsEditing(false);
-    setIsSelected(false);
+    onClearSelect();
   };
 
   // Focus and select-to-end when editing starts (native input handles caret placement)
@@ -61,18 +76,79 @@ export const Editor = ({
     }
   }, [isEditing]);
 
+  // If isSelected becomes false, exit edit mode
+  useEffect(() => {
+    if (!isSelected) {
+      setIsEditing(false);
+    }
+  }, [isSelected]);
+
   // Clear selection / state when clicking outside the editor
   useEffect(() => {
     if (!isSelected) return;
     const handleDocumentClick = (e: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
-        setIsSelected(false);
+        onClearSelect();
         setIsEditing(false);
       }
     };
     document.addEventListener('click', handleDocumentClick, true);
     return () => document.removeEventListener('click', handleDocumentClick, true);
-  }, [isSelected]);
+  }, [isSelected, onClearSelect]);
+
+  // Handle keyboard shortcuts when selected
+  useEffect(() => {
+    if (!isSelected) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') {
+        if (e.ctrlKey && onIncreaseIndent) {
+          e.preventDefault();
+          e.stopPropagation();
+          onIncreaseIndent();
+        }
+      } else if (e.key === 'ArrowLeft') {
+        if (e.ctrlKey && onDecreaseIndent) {
+          e.preventDefault();
+          e.stopPropagation();
+          onDecreaseIndent();
+        }
+      } else if (e.key === 'ArrowUp') {
+        if (e.ctrlKey) {
+          if (onMoveUp) {
+            e.preventDefault();
+            e.stopPropagation();
+            onMoveUp();
+          }
+        } else {
+          if (onNavigate) {
+            e.preventDefault();
+            e.stopPropagation();
+            onNavigate('up');
+          }
+        }
+      } else if (e.key === 'ArrowDown') {
+        if (e.ctrlKey) {
+          if (onMoveDown) {
+            e.preventDefault();
+            e.stopPropagation();
+            onMoveDown();
+          }
+        } else {
+          if (onNavigate) {
+            e.preventDefault();
+            e.stopPropagation();
+            onNavigate('down');
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, true);
+    };
+  }, [isSelected, onIncreaseIndent, onDecreaseIndent, onMoveUp, onMoveDown, onNavigate]);
 
   const handleWrapperClick = (e: React.MouseEvent) => {
     if (disabled) return;
@@ -80,7 +156,7 @@ export const Editor = ({
     if (!isSelected) {
       // First click: select the slot item (visualized by border)
       e.stopPropagation();
-      setIsSelected(true);
+      onSelect();
     } else if (!isEditing) {
       // Second click: enter edit mode, seeding the edit buffer from the latest prop value
       e.stopPropagation();
@@ -131,7 +207,7 @@ export const Editor = ({
           minWidth: '120px',
           outline: isSelected ? '1px solid var(--accent-8)' : 'none',
           boxShadow: isSelected ? '0 0 0 1px var(--accent-8)' : 'none',
-          cursor: disabled ? 'default' : isSelected ? 'text' : 'pointer',
+          cursor: disabled ? 'default' : isEditing ? 'text' : 'pointer',
         }}
       >
         {isEditing ? (
