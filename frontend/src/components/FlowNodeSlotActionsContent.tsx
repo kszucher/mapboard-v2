@@ -180,18 +180,25 @@ export const FlowNodeSlotActionsContent = ({
 
   return (
     <>
-      <DropdownMenu.Item onClick={() => handleUpdateConnection(true, true)}>
-        {isInput && isOutput ? '✓ Input And Output' : '  Input And Output'}
-      </DropdownMenu.Item>
-      <DropdownMenu.Item onClick={() => handleUpdateConnection(true, false)}>
-        {isInput && !isOutput ? '✓ Input Only' : '  Input Only'}
-      </DropdownMenu.Item>
-      <DropdownMenu.Item onClick={() => handleUpdateConnection(false, true)}>
-        {!isInput && isOutput ? '✓ Output Only' : '  Output Only'}
-      </DropdownMenu.Item>
-      <DropdownMenu.Item onClick={() => handleUpdateConnection(false, false)}>
-        {!isInput && !isOutput ? '✓ None' : '  None'}
-      </DropdownMenu.Item>
+      <DropdownMenu.Sub>
+        <DropdownMenu.SubTrigger>
+          {'Type'}
+        </DropdownMenu.SubTrigger>
+        <DropdownMenu.SubContent>
+          <DropdownMenu.Item onClick={() => handleUpdateConnection(true, true)}>
+            {isInput && isOutput ? '✓ Input And Output' : '  Input And Output'}
+          </DropdownMenu.Item>
+          <DropdownMenu.Item onClick={() => handleUpdateConnection(true, false)}>
+            {isInput && !isOutput ? '✓ Input Only' : '  Input Only'}
+          </DropdownMenu.Item>
+          <DropdownMenu.Item onClick={() => handleUpdateConnection(false, true)}>
+            {!isInput && isOutput ? '✓ Output Only' : '  Output Only'}
+          </DropdownMenu.Item>
+          <DropdownMenu.Item onClick={() => handleUpdateConnection(false, false)}>
+            {!isInput && !isOutput ? '✓ None' : '  None'}
+          </DropdownMenu.Item>
+        </DropdownMenu.SubContent>
+      </DropdownMenu.Sub>
       <DropdownMenu.Separator/>
 
       <DropdownMenu.Sub>
@@ -241,18 +248,25 @@ export const FlowNodeSlotActionsContent = ({
       </DropdownMenu.Item>
       <DropdownMenu.Separator/>
 
-      <DropdownMenu.Item onClick={handleMoveTop} disabled={!canMoveUp}>
-        <ArrowUpIcon style={{ marginRight: 8 }}/> Move to Top
-      </DropdownMenu.Item>
-      <DropdownMenu.Item onClick={handleMoveUp} disabled={!canMoveUp}>
-        <ArrowUpIcon style={{ marginRight: 8 }}/> Move Up
-      </DropdownMenu.Item>
-      <DropdownMenu.Item onClick={handleMoveDown} disabled={!canMoveDown}>
-        <ArrowDownIcon style={{ marginRight: 8 }}/> Move Down
-      </DropdownMenu.Item>
-      <DropdownMenu.Item onClick={handleMoveBottom} disabled={!canMoveDown}>
-        <ArrowDownIcon style={{ marginRight: 8 }}/> Move to Bottom
-      </DropdownMenu.Item>
+      <DropdownMenu.Sub>
+        <DropdownMenu.SubTrigger>
+          {'Move'}
+        </DropdownMenu.SubTrigger>
+        <DropdownMenu.SubContent>
+          <DropdownMenu.Item onClick={handleMoveTop} disabled={!canMoveUp}>
+            <ArrowUpIcon style={{ marginRight: 8 }}/> Move to Top
+          </DropdownMenu.Item>
+          <DropdownMenu.Item onClick={handleMoveUp} disabled={!canMoveUp}>
+            <ArrowUpIcon style={{ marginRight: 8 }}/> Move Up
+          </DropdownMenu.Item>
+          <DropdownMenu.Item onClick={handleMoveDown} disabled={!canMoveDown}>
+            <ArrowDownIcon style={{ marginRight: 8 }}/> Move Down
+          </DropdownMenu.Item>
+          <DropdownMenu.Item onClick={handleMoveBottom} disabled={!canMoveDown}>
+            <ArrowDownIcon style={{ marginRight: 8 }}/> Move to Bottom
+          </DropdownMenu.Item>
+        </DropdownMenu.SubContent>
+      </DropdownMenu.Sub>
 
       <DropdownMenu.Separator/>
       {renderInsertSubmenu('after')}
