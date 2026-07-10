@@ -12,7 +12,8 @@ export const Editor = ({
   disabled = false,
 }: PlainEditorProps) => {
   const elementRef = useRef<HTMLSpanElement>(null);
-  const [isFocused, setIsFocused] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSelected, setIsSelected] = useState(false);
 
   // Sync internal text with initialValue, but only when not currently typing/focused
   useEffect(() => {
@@ -53,12 +54,22 @@ export const Editor = ({
     }
   };
 
-  const handleFocus = () => {
-    setIsFocused(true);
-  };
+  // Focus and place caret at the end when editing starts
+  useEffect(() => {
+    if (isEditing && elementRef.current) {
+      elementRef.current.focus();
+      const range = document.createRange();
+      range.selectNodeContents(elementRef.current);
+      range.collapse(false);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    }
+  }, [isEditing]);
 
   const handleBlur = () => {
-    setIsFocused(false);
+    setIsEditing(false);
+    setIsSelected(false);
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
@@ -66,14 +77,53 @@ export const Editor = ({
       const finalValue = elementRef.current.innerText.replace(/[\r\n]/g, '');
       onSaveRef.current(finalValue);
     }
+    // Clear selection on blur
+    window.getSelection()?.removeAllRanges();
+  };
+
+  // Clear selection / state when clicking outside the editor
+  useEffect(() => {
+    if (!isSelected) return;
+    const handleDocumentClick = (e: MouseEvent) => {
+      if (elementRef.current && !elementRef.current.contains(e.target as Node)) {
+        setIsSelected(false);
+        setIsEditing(false);
+        window.getSelection()?.removeAllRanges();
+      }
+    };
+    // Use capture phase so we get the click event even if someone else stopPropagation's it
+    document.addEventListener('click', handleDocumentClick, true);
+    return () => document.removeEventListener('click', handleDocumentClick, true);
+  }, [isSelected]);
+
+  const handleWrapperClick = (e: React.MouseEvent) => {
+    if (disabled) return;
+
+    if (!isSelected) {
+      // First click: select the slot item (visualized by border)
+      e.stopPropagation();
+      setIsSelected(true);
+    } else if (!isEditing) {
+      // Second click: enter edit mode
+      e.stopPropagation();
+      setIsEditing(true);
+    }
   };
 
   return (
     <div
-      className="nodrag nopan"
+      className={isSelected ? "nodrag nopan" : undefined}
       onDoubleClick={(e) => e.stopPropagation()}
-      onMouseDown={(e) => e.stopPropagation()}
-      onPointerDown={(e) => e.stopPropagation()}
+      onMouseDown={(e) => {
+        if (isSelected) {
+          e.stopPropagation();
+        }
+      }}
+      onPointerDown={(e) => {
+        if (isSelected) {
+          e.stopPropagation();
+        }
+      }}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -81,12 +131,7 @@ export const Editor = ({
       }}
     >
       <div
-        // 1. Trigger focus on the span when clicking the wrapper div
-        onClick={() => {
-          if (!disabled) {
-            elementRef.current?.focus();
-          }
-        }}
+        onClick={handleWrapperClick}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -97,33 +142,30 @@ export const Editor = ({
           minHeight: '24px',
           flexGrow: 1,
           minWidth: '120px',
-          outline: isFocused ? '1px solid var(--accent-8)' : 'none',
-          boxShadow: isFocused ? '0 0 0 1px var(--accent-8)' : 'none',
-          // 2. Move the cursor behavior here
-          cursor: disabled ? 'default' : 'text',
+          outline: isSelected ? '1px solid var(--accent-8)' : 'none',
+          boxShadow: isSelected ? '0 0 0 1px var(--accent-8)' : 'none',
+          cursor: disabled ? 'default' : (isSelected ? 'text' : 'pointer'),
         }}
       >
-      <span
-        ref={elementRef}
-        contentEditable={!disabled}
-        suppressContentEditableWarning
-        onInput={handleInput}
-        onKeyDown={handleKeyDown}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        style={{
-          fontFamily: 'Consolas, Menlo, Monaco, "Courier New", monospace',
-          fontSize: '13px',
-          outline: 'none',
-          minWidth: '50px',
-          whiteSpace: 'pre',
-          // 3. Keep width 100% so the text hit-box fills the space
-          width: '100%',
-          userSelect: disabled ? 'none' : 'text',
-          opacity: disabled ? 0.7 : 1,
-          color: 'var(--gray-12)',
-        }}
-      />
+        <span
+          ref={elementRef}
+          contentEditable={!disabled && isEditing}
+          suppressContentEditableWarning
+          onInput={handleInput}
+          onKeyDown={handleKeyDown}
+          onBlur={handleBlur}
+          style={{
+            fontFamily: 'Consolas, Menlo, Monaco, "Courier New", monospace',
+            fontSize: '13px',
+            outline: 'none',
+            minWidth: '50px',
+            whiteSpace: 'pre',
+            width: '100%',
+            userSelect: isEditing ? 'text' : 'none',
+            opacity: disabled ? 0.7 : 1,
+            color: 'var(--gray-12)',
+          }}
+        />
       </div>
     </div>
   );
