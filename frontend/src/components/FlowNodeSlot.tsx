@@ -67,7 +67,7 @@ export const FlowNodeSlot = memo(({
   const handleIncreaseIndent = useCallback(() => {
     if (!slot) return;
     const currentIndent = slot.indent ?? 0;
-    if (currentIndent < 3) {
+    if (currentIndent < 4) {
       void updateSlot(slotId, { indent: currentIndent + 1 });
     }
   }, [slot, slotId, updateSlot]);

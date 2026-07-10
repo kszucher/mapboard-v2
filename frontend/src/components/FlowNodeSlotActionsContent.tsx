@@ -218,6 +218,9 @@ export const FlowNodeSlotActionsContent = ({
           <DropdownMenu.Item onClick={() => void updateSlot(slotId, { indent: 3 })}>
             {slot?.indent === 3 ? '✓ 3' : '  3'}
           </DropdownMenu.Item>
+          <DropdownMenu.Item onClick={() => void updateSlot(slotId, { indent: 4 })}>
+            {slot?.indent === 4 ? '✓ 4' : '  4'}
+          </DropdownMenu.Item>
         </DropdownMenu.SubContent>
       </DropdownMenu.Sub>
       <DropdownMenu.Separator/>
