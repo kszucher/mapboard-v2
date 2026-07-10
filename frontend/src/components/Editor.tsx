@@ -83,18 +83,6 @@ export const Editor = ({
     }
   }, [isSelected]);
 
-  // Clear selection / state when clicking outside the editor
-  useEffect(() => {
-    if (!isSelected) return;
-    const handleDocumentClick = (e: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
-        onClearSelect();
-        setIsEditing(false);
-      }
-    };
-    document.addEventListener('click', handleDocumentClick, true);
-    return () => document.removeEventListener('click', handleDocumentClick, true);
-  }, [isSelected, onClearSelect]);
 
   // Handle keyboard shortcuts when selected
   useEffect(() => {
@@ -179,7 +167,7 @@ export const Editor = ({
   return (
     <div
       ref={wrapperRef}
-      className={isSelected ? 'nodrag nopan' : undefined}
+      className={isSelected ? 'nodrag nopan slot-editor-wrapper' : 'slot-editor-wrapper'}
       onDoubleClick={(e) => e.stopPropagation()}
       onMouseDown={(e) => {
         if (isSelected) e.stopPropagation();

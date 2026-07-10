@@ -1,7 +1,7 @@
 import type { BadgeProps } from '@radix-ui/themes';
 import { Badge, Flex } from '@radix-ui/themes';
 import { type NodeProps, useUpdateNodeInternals } from '@xyflow/react';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo } from 'react';
 import { useGraphStore } from '../store/useGraphStore';
 import { computeTraversalIndices } from '../utils/flowUtils';
 import { FlowNodeActions } from './FlowNodeActions.tsx';
@@ -20,7 +20,7 @@ const NODE_COLORS: Record<NodeType, BadgeProps['color']> = {
 
 const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   const updateNodeInternals = useUpdateNodeInternals();
-  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  const updateSlot = useGraphStore(state => state.updateSlot);
 
   const mySlots = data.node.slots;
   const isLoading = useGraphStore(state => state.isLoading);
@@ -32,7 +32,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   );
 
   const mySlotsHash = useMemo(() => {
-    return mySlots.map((s, index) => `${s.id}:${index}:${s.is_input}:${s.is_output}`).join(',');
+    return mySlots.map((s, index) => `${s.id}:${index}:${s.is_input}:${s.is_output}:${s.selected}`).join(',');
   }, [mySlots]);
 
   useEffect(() => {
@@ -51,9 +51,9 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
     }
 
     if (targetIndex !== currentIndex) {
-      setSelectedSlotId(mySlots[targetIndex].id);
+      void updateSlot(mySlots[targetIndex].id, { selected: true });
     }
-  }, [mySlots]);
+  }, [mySlots, updateSlot]);
 
   const { node } = data;
   const isStart = node.node_type === 'START';
@@ -99,9 +99,9 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
             disabled={disabled}
             isStart={isStart}
             isEnd={isEnd}
-            isSelected={selectedSlotId === slot.id}
-            onSelect={() => setSelectedSlotId(slot.id)}
-            onClearSelect={() => setSelectedSlotId(null)}
+            isSelected={!!slot.selected}
+            onSelect={() => void updateSlot(slot.id, { selected: true })}
+            onClearSelect={() => void updateSlot(slot.id, { selected: false })}
             onNavigate={(direction) => handleNavigateSlot(slot.id, direction)}
           />
         );

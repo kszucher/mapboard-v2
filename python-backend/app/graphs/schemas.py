@@ -28,6 +28,7 @@ class SlotRead(BaseModel):
     raw_string: str
     function_id: uuid.UUID | None = None
     indent: int = 0
+    selected: bool = False
 
 
 class NodeRead(BaseModel):

@@ -24,6 +24,7 @@ const FlowContent = ({
   const onConnect = useGraphStore(state => state.onConnect);
   const onEdgesDelete = useGraphStore(state => state.onEdgesDelete);
   const onReconnect = useGraphStore(state => state.onReconnect);
+  const clearSlotSelection = useGraphStore(state => state.clearSlotSelection);
 
   const { fitView } = useReactFlow();
 
@@ -48,6 +49,10 @@ const FlowContent = ({
     }
     console.warn(message);
   }, []);
+
+  const handlePaneClick = useCallback(() => {
+    void clearSlotSelection();
+  }, [clearSlotSelection]);
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -75,6 +80,7 @@ const FlowContent = ({
           zoomOnDoubleClick={false}
           panOnScroll={false}
           onDoubleClick={handleDoubleClick}
+          onPaneClick={handlePaneClick}
           onError={handleError}
         >
           <Controls/>

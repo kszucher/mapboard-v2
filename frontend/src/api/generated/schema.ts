@@ -321,6 +321,11 @@ export interface components {
        * @default 0
        */
       indent?: number;
+      /**
+       * Selected
+       * @default false
+       */
+      selected: boolean;
     };
     /** UserCreate */
     UserCreate: {

@@ -55,8 +55,10 @@ export interface SlotSlice {
     is_output?: boolean;
     function_id?: string | null;
     indent?: number;
+    selected?: boolean;
   }) => Promise<void>;
   moveSlot: (slotId: string, direction: 'up' | 'down' | 'top' | 'bottom') => Promise<void>;
+  clearSlotSelection: () => Promise<void>;
 }
 
 export interface HistorySlice {

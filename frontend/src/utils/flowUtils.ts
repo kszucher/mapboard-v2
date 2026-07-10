@@ -42,31 +42,34 @@ export const createDefaultSlotsForNode = (
       id: baseId,
       is_input: false,
       is_output: true,
-      raw_string: ''
+      raw_string: '',
+      selected: false
     }];
   } else if (nodeType === 'END') {
     return [{
       id: baseId,
       is_input: true,
       is_output: false,
-      raw_string: ''
+      raw_string: '',
+      selected: false
     }];
   } else if (nodeType === 'STEP') {
     return [{
       id: baseId,
       is_input: true,
       is_output: true,
-      raw_string: ''
+      raw_string: '',
+      selected: false
     }];
   } else if (nodeType === 'BRANCH') {
     return [
-      { id: baseId, is_input: true, is_output: false, raw_string: '' },
-      { id: subId, is_input: false, is_output: true, raw_string: '' }
+      { id: baseId, is_input: true, is_output: false, raw_string: '', selected: false },
+      { id: subId, is_input: false, is_output: true, raw_string: '', selected: false }
     ];
   } else if (nodeType === 'MERGE') {
     return [
-      { id: subId, is_input: true, is_output: false, raw_string: '' },
-      { id: baseId, is_input: false, is_output: true, raw_string: '' }
+      { id: subId, is_input: true, is_output: false, raw_string: '', selected: false },
+      { id: baseId, is_input: false, is_output: true, raw_string: '', selected: false }
     ];
   }
   return [];

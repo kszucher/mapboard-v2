@@ -27,6 +27,7 @@ export const serializeFlowState = (
         raw_string: s.raw_string,
         function_id: s.function_id,
         indent: s.indent ?? 0,
+        selected: s.selected ?? false,
       })),
     })),
     edges: state.edges.map(e => ({
@@ -154,6 +155,13 @@ export const updateFlowState = async (
         ? { past: [...state.past, snapshot], future: [] }
         : {}),
     }));
+    triggerSave({
+      graphId: current.graphId,
+      nodes: updated.nodes,
+      edges: updated.edges,
+      variables,
+      functions,
+    });
     return;
   }
 

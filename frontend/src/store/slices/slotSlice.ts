@@ -20,6 +20,7 @@ export const createSlotSlice: StateCreator<
           is_output: isOutput,
           raw_string: '',
           indent: 0,
+          selected: false,
         };
         slots.splice(idx, 0, newSlot);
         return {
@@ -87,20 +88,42 @@ export const createSlotSlice: StateCreator<
       return;
     }
 
-    const shouldSkipHistory = !('is_input' in updates || 'is_output' in updates);
+    const shouldSkipHistory = !('is_input' in updates || 'is_output' in updates || 'selected' in updates);
+    const shouldSkipLayout = 'selected' in updates && Object.keys(updates).length === 1;
+
+    const prevSelectedNode = get().nodes.find(n => n.data.node.slots.some(s => s.selected));
 
     await updateFlowState(set, get, (state) => {
+      const shouldClearOthers = updates.selected === true;
       const nextNodes = state.nodes.map(n => {
-        if (!n.data.node.slots.some(s => s.id === slotId)) return n;
+        const isTargetNode = n.id === node.id;
+        const isPrevSelectedNode = shouldClearOthers && prevSelectedNode && n.id === prevSelectedNode.id;
+
+        if (!isTargetNode && !isPrevSelectedNode) {
+          return n;
+        }
+
+        const slots = n.data.node.slots.map(s => {
+          if (s.id === slotId) {
+            return { ...s, ...updates };
+          } else if (shouldClearOthers && s.selected) {
+            return { ...s, selected: false };
+          }
+          return s;
+        });
+
+        const hasSlotChanges = slots.some((s, idx) => s !== n.data.node.slots[idx]);
+        if (!hasSlotChanges) {
+          return n;
+        }
+
         return {
           ...n,
           data: {
             ...n.data,
             node: {
               ...n.data.node,
-              slots: n.data.node.slots.map(s =>
-                s.id === slotId ? { ...s, ...updates } : s
-              ),
+              slots,
             }
           }
         };
@@ -118,7 +141,7 @@ export const createSlotSlice: StateCreator<
         nodes: nextNodes,
         edges: nextEdges,
       };
-    }, { skipHistory: shouldSkipHistory });
+    }, { skipHistory: shouldSkipHistory, skipLayout: shouldSkipLayout });
   },
 
   moveSlot: async (slotId, direction) => {
@@ -159,5 +182,33 @@ export const createSlotSlice: StateCreator<
         edges: state.edges,
       };
     });
+  },
+
+  clearSlotSelection: async () => {
+    const hasAnySelected = get().nodes.some(n => n.data.node.slots.some(s => s.selected));
+    if (!hasAnySelected) return;
+
+    await updateFlowState(set, get, (state) => {
+      const nextNodes = state.nodes.map(n => {
+        const hasSelected = n.data.node.slots.some(s => s.selected);
+        if (!hasSelected) return n;
+
+        return {
+          ...n,
+          data: {
+            ...n.data,
+            node: {
+              ...n.data.node,
+              slots: n.data.node.slots.map(s => s.selected ? { ...s, selected: false } : s),
+            }
+          }
+        };
+      });
+
+      return {
+        nodes: nextNodes,
+        edges: state.edges,
+      };
+    }, { skipHistory: false, skipLayout: true });
   },
 });

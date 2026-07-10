@@ -82,10 +82,20 @@ export const FlowNodeSlot = memo(({
   const rightHandle = slot.is_output;
 
   const actions = !disabled ? (
-    <FlowNodeSlotActions
-      slotId={slot.id}
-    />
-  ) : undefined;
+    <div
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        flexShrink: 0,
+        paddingRight: '2px',
+        visibility: isSelected ? 'visible' : 'hidden',
+      }}
+    >
+      <FlowNodeSlotActions
+        slotId={slot.id}
+      />
+    </div>
+  ) : null;
 
   const initialValue = (() => {
     if (slot.function_id) {
@@ -130,11 +140,7 @@ export const FlowNodeSlot = memo(({
           onNavigate={onNavigate}
         />
       </Flex>
-      {actions && (
-        <div style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0, paddingRight: '2px' }}>
-          {actions}
-        </div>
-      )}
+      {actions}
       {rightHandle && (
         <Handle
           type="source"
