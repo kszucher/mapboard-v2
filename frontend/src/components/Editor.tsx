@@ -4,28 +4,34 @@ interface PlainEditorProps {
   initialValue: string;
   onSave: (value: string) => void;
   disabled?: boolean;
+  readOnly?: boolean;
   isSelected: boolean;
   onSelect: () => void;
-  onClearSelect: () => void;
   onIncreaseIndent?: () => void;
   onDecreaseIndent?: () => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   onNavigate?: (direction: 'up' | 'down') => void;
+  onAddAbove?: () => void;
+  onAddBelow?: () => void;
+  onDelete?: () => void;
 }
 
 export const Editor = ({
   initialValue,
   onSave,
   disabled = false,
+  readOnly = false,
   isSelected,
   onSelect,
-  onClearSelect,
   onIncreaseIndent,
   onDecreaseIndent,
   onMoveUp,
   onMoveDown,
   onNavigate,
+  onAddAbove,
+  onAddBelow,
+  onDelete,
 }: PlainEditorProps) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -63,7 +69,6 @@ export const Editor = ({
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     onSaveRef.current(value);
     setIsEditing(false);
-    onClearSelect();
   };
 
   // Focus and select-to-end when editing starts (native input handles caret placement)
@@ -129,6 +134,27 @@ export const Editor = ({
             onNavigate('down');
           }
         }
+      } else if (e.key === 'Insert') {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.shiftKey) {
+          if (onAddAbove) onAddAbove();
+        } else {
+          if (onAddBelow) onAddBelow();
+        }
+      } else if (e.key === 'F2') {
+        if (!isEditing && !readOnly) {
+          e.preventDefault();
+          e.stopPropagation();
+          setValue(initialValue);
+          setIsEditing(true);
+        }
+      } else if (e.key === 'Delete') {
+        if (!isEditing && onDelete) {
+          e.preventDefault();
+          e.stopPropagation();
+          onDelete();
+        }
       }
     };
 
@@ -136,7 +162,7 @@ export const Editor = ({
     return () => {
       window.removeEventListener('keydown', handleKeyDown, true);
     };
-  }, [isSelected, onIncreaseIndent, onDecreaseIndent, onMoveUp, onMoveDown, onNavigate]);
+  }, [isSelected, onIncreaseIndent, onDecreaseIndent, onMoveUp, onMoveDown, onNavigate, onAddAbove, onAddBelow, onDelete, isEditing, readOnly, initialValue]);
 
   const handleWrapperClick = (e: React.MouseEvent) => {
     if (disabled) return;
@@ -145,7 +171,7 @@ export const Editor = ({
       // First click: select the slot item (visualized by border)
       e.stopPropagation();
       onSelect();
-    } else if (!isEditing) {
+    } else if (!isEditing && !readOnly) {
       // Second click: enter edit mode, seeding the edit buffer from the latest prop value
       e.stopPropagation();
       setValue(initialValue);
@@ -159,7 +185,7 @@ export const Editor = ({
     lineHeight: '18px',
     minWidth: '50px',
     width: '100%',
-    color: 'var(--gray-12)',
+    color: readOnly ? 'var(--gray-10)' : 'var(--gray-12)',
     boxSizing: 'border-box',
     margin: 0,
   };

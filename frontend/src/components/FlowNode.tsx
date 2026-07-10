@@ -101,7 +101,6 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
             isEnd={isEnd}
             isSelected={!!slot.selected}
             onSelect={() => void updateSlot(slot.id, { selected: true })}
-            onClearSelect={() => void updateSlot(slot.id, { selected: false })}
             onNavigate={(direction) => handleNavigateSlot(slot.id, direction)}
           />
         );

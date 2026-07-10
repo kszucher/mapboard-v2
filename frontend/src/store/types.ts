@@ -47,7 +47,7 @@ export interface NodeSlice {
 }
 
 export interface SlotSlice {
-  createSlot: (nodeId: string, isInput: boolean, isOutput: boolean, idx: number) => Promise<void>;
+  createSlot: (nodeId: string, isInput: boolean, isOutput: boolean, idx: number, indent?: number) => Promise<void>;
   deleteSlot: (slotId: string) => Promise<void>;
   updateSlot: (slotId: string, updates: {
     raw_string?: string;

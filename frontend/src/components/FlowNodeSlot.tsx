@@ -1,6 +1,6 @@
 import { Flex } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { useGraphStore } from '../store/useGraphStore';
 import { Editor } from './Editor.tsx';
 import { FlowNodeSlotActions } from './FlowNodeSlotActions.tsx';
@@ -13,7 +13,6 @@ interface FlowNodeSlotProps {
   isEnd: boolean;
   isSelected: boolean;
   onSelect: () => void;
-  onClearSelect: () => void;
   onNavigate: (direction: 'up' | 'down') => void;
 }
 
@@ -24,7 +23,6 @@ export const FlowNodeSlot = memo(({
   isEnd,
   isSelected,
   onSelect,
-  onClearSelect,
   onNavigate,
 }: FlowNodeSlotProps) => {
   // Subscribe to only this specific slot
@@ -44,6 +42,20 @@ export const FlowNodeSlot = memo(({
   const functions = useGraphStore((state) => state.functions);
   const updateSlot = useGraphStore((state) => state.updateSlot);
   const moveSlot = useGraphStore((state) => state.moveSlot);
+  const createSlot = useGraphStore((state) => state.createSlot);
+  const deleteSlot = useGraphStore((state) => state.deleteSlot);
+
+  const node = useGraphStore(
+    useCallback(
+      (state) => state.nodes.find((n) => n.data.node.slots.some((s) => s.id === slotId)),
+      [slotId]
+    )
+  );
+
+  const indexInNode = useMemo(() => {
+    if (!node) return -1;
+    return node.data.node.slots.findIndex((s) => s.id === slotId);
+  }, [node, slotId]);
 
   const handleUpdateItem = useCallback(
     (newValue: string) => {
@@ -75,6 +87,20 @@ export const FlowNodeSlot = memo(({
   const handleMoveDown = useCallback(() => {
     void moveSlot(slotId, 'down');
   }, [slotId, moveSlot]);
+
+  const handleAddAbove = useCallback(() => {
+    if (!slot || !node || indexInNode === -1) return;
+    void createSlot(node.id, slot.is_input, slot.is_output, indexInNode, slot.indent ?? 0);
+  }, [createSlot, node, slot, indexInNode]);
+
+  const handleAddBelow = useCallback(() => {
+    if (!slot || !node || indexInNode === -1) return;
+    void createSlot(node.id, slot.is_input, slot.is_output, indexInNode + 1, slot.indent ?? 0);
+  }, [createSlot, node, slot, indexInNode]);
+
+  const handleDeleteSlot = useCallback(() => {
+    void deleteSlot(slotId);
+  }, [slotId, deleteSlot]);
 
   if (!slot) return null;
 
@@ -129,15 +155,18 @@ export const FlowNodeSlot = memo(({
         <Editor
           initialValue={initialValue}
           onSave={handleUpdateItem}
-          disabled={disabled || !!slot.function_id}
+          disabled={disabled}
+          readOnly={!!slot.function_id}
           isSelected={isSelected}
           onSelect={onSelect}
-          onClearSelect={onClearSelect}
           onIncreaseIndent={handleIncreaseIndent}
           onDecreaseIndent={handleDecreaseIndent}
           onMoveUp={handleMoveUp}
           onMoveDown={handleMoveDown}
           onNavigate={onNavigate}
+          onAddAbove={handleAddAbove}
+          onAddBelow={handleAddBelow}
+          onDelete={handleDeleteSlot}
         />
       </Flex>
       {actions}

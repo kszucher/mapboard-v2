@@ -9,20 +9,37 @@ export const createSlotSlice: StateCreator<
   [],
   SlotSlice
 > = (set, get) => ({
-  createSlot: async (nodeId, isInput, isOutput, idx) => {
+  createSlot: async (nodeId, isInput, isOutput, idx, indent = 0) => {
     await updateFlowState(set, get, (state) => {
       const nextNodes = state.nodes.map(n => {
-        if (n.id !== nodeId) return n;
-        const slots = [...n.data.node.slots];
-        const newSlot: ApiSlot = {
-          id: crypto.randomUUID(),
-          is_input: isInput,
-          is_output: isOutput,
-          raw_string: '',
-          indent: 0,
-          selected: false,
-        };
-        slots.splice(idx, 0, newSlot);
+        const isTargetNode = n.id === nodeId;
+        const slots = n.data.node.slots.map(s => ({ ...s, selected: false }));
+
+        if (isTargetNode) {
+          const newSlot: ApiSlot = {
+            id: crypto.randomUUID(),
+            is_input: isInput,
+            is_output: isOutput,
+            raw_string: '',
+            indent: indent,
+            selected: true,
+          };
+          slots.splice(idx, 0, newSlot);
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              node: {
+                ...n.data.node,
+                slots,
+              }
+            }
+          };
+        }
+
+        const hadSelection = n.data.node.slots.some(s => s.selected);
+        if (!hadSelection) return n;
+
         return {
           ...n,
           data: {
@@ -51,16 +68,43 @@ export const createSlotSlice: StateCreator<
       return;
     }
 
+    const currentIndex = node.data.node.slots.findIndex(s => s.id === slotId);
+    const targetSelectSlotId = currentIndex > 0 ? node.data.node.slots[currentIndex - 1].id : null;
+
     await updateFlowState(set, get, (state) => {
       const nextNodes = state.nodes.map(n => {
-        if (!n.data.node.slots.some(s => s.id === slotId)) return n;
+        const isTargetNode = n.id === node.id;
+
+        if (isTargetNode) {
+          const nextSlots = n.data.node.slots
+            .filter(s => s.id !== slotId)
+            .map(s => ({
+              ...s,
+              selected: s.id === targetSelectSlotId,
+            }));
+
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              node: {
+                ...n.data.node,
+                slots: nextSlots,
+              }
+            }
+          };
+        }
+
+        const hadSelection = n.data.node.slots.some(s => s.selected);
+        if (!hadSelection) return n;
+
         return {
           ...n,
           data: {
             ...n.data,
             node: {
               ...n.data.node,
-              slots: n.data.node.slots.filter(s => s.id !== slotId),
+              slots: n.data.node.slots.map(s => ({ ...s, selected: false })),
             }
           }
         };
