@@ -94,6 +94,8 @@ export const Editor = ({
     if (!isSelected) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (isEditing) return;
+
       if (e.key === 'ArrowRight') {
         if (e.ctrlKey && onIncreaseIndent) {
           e.preventDefault();
