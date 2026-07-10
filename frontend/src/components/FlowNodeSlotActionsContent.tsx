@@ -195,6 +195,24 @@ export const FlowNodeSlotActionsContent = ({
       <DropdownMenu.Separator/>
 
       <DropdownMenu.Sub>
+        <DropdownMenu.SubTrigger>
+          {'Indent'}
+        </DropdownMenu.SubTrigger>
+        <DropdownMenu.SubContent>
+          <DropdownMenu.Item onClick={() => void updateSlot(slotId, { indent: 0 })}>
+            {slot?.indent === 0 || slot?.indent === undefined ? '✓ 0' : '  0'}
+          </DropdownMenu.Item>
+          <DropdownMenu.Item onClick={() => void updateSlot(slotId, { indent: 1 })}>
+            {slot?.indent === 1 ? '✓ 1' : '  1'}
+          </DropdownMenu.Item>
+          <DropdownMenu.Item onClick={() => void updateSlot(slotId, { indent: 2 })}>
+            {slot?.indent === 2 ? '✓ 2' : '  2'}
+          </DropdownMenu.Item>
+        </DropdownMenu.SubContent>
+      </DropdownMenu.Sub>
+      <DropdownMenu.Separator/>
+
+      <DropdownMenu.Sub>
         <DropdownMenu.SubTrigger disabled={functions.length === 0}>
           {'Link Function'}
         </DropdownMenu.SubTrigger>

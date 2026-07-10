@@ -48,9 +48,6 @@ export const FlowNodeSlot = memo(({
   const leftHandle = slot.is_input;
   const rightHandle = slot.is_output;
 
-  const pl = leftHandle ? undefined : '5';
-  const pr = rightHandle ? undefined : '5';
-
   const actions = !disabled ? (
     <FlowNodeSlotActions
       slotId={slot.id}
@@ -77,7 +74,15 @@ export const FlowNodeSlot = memo(({
           style={{ left: -NODE_PADDING }}
         />
       )}
-      <Flex className="nodrag nopan" flexGrow="1" align="center" height="100%" pl={pl} pr={pr}>
+      <Flex
+        className="nodrag nopan"
+        flexGrow="1"
+        align="center"
+        height="100%"
+        style={{
+          paddingLeft: slot.indent === 1 ? '24px' : slot.indent === 2 ? '48px' : '0px',
+        }}
+      >
         <Editor
           initialValue={initialValue}
           onSave={handleUpdateItem}

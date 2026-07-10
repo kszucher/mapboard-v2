@@ -19,6 +19,7 @@ export const createSlotSlice: StateCreator<
           is_input: isInput,
           is_output: isOutput,
           raw_string: '',
+          indent: 0,
         };
         slots.splice(idx, 0, newSlot);
         return {

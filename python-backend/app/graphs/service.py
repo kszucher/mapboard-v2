@@ -30,6 +30,7 @@ async def create_graph(
                         "is_input": False,
                         "is_output": True,
                         "raw_string": "",
+                        "indent": 0,
                     }
                 ],
             }

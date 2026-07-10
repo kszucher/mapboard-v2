@@ -27,6 +27,7 @@ class SlotRead(BaseModel):
     is_output: bool = False
     raw_string: str
     function_id: uuid.UUID | None = None
+    indent: int = 0
 
 
 class NodeRead(BaseModel):
