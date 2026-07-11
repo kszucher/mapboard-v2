@@ -7,8 +7,6 @@ interface PlainEditorProps {
   readOnly?: boolean;
   isSelected: boolean;
   onSelect: () => void;
-  onIncreaseIndent?: () => void;
-  onDecreaseIndent?: () => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   onNavigate?: (direction: 'up' | 'down') => void;
@@ -26,8 +24,6 @@ export const Editor = ({
   readOnly = false,
   isSelected,
   onSelect,
-  onIncreaseIndent,
-  onDecreaseIndent,
   onMoveUp,
   onMoveDown,
   onNavigate,
@@ -100,15 +96,7 @@ export const Editor = ({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isEditing) return;
 
-      if (e.key === 'Tab') {
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.shiftKey) {
-          if (onDecreaseIndent) onDecreaseIndent();
-        } else {
-          if (onIncreaseIndent) onIncreaseIndent();
-        }
-      } else if (e.key === 'ArrowUp') {
+      if (e.key === 'ArrowUp') {
         if (e.ctrlKey) {
           if (onMoveUp) {
             e.preventDefault();
@@ -176,7 +164,7 @@ export const Editor = ({
     return () => {
       window.removeEventListener('keydown', handleKeyDown, true);
     };
-  }, [isSelected, onIncreaseIndent, onDecreaseIndent, onMoveUp, onMoveDown, onNavigate, onAddAbove, onAddBelow, onDelete, onToggleInput, onToggleOutput, isEditing, readOnly, initialValue]);
+  }, [isSelected, onMoveUp, onMoveDown, onNavigate, onAddAbove, onAddBelow, onDelete, onToggleInput, onToggleOutput, isEditing, readOnly, initialValue]);
 
   const handleWrapperClick = (e: React.MouseEvent) => {
     if (disabled) return;

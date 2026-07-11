@@ -123,12 +123,12 @@ export const FlowNodeSlotActionsContent = ({
 
   const handleAddAbove = useCallback(() => {
     if (!slot || !node) return;
-    void createSlot(node.id, false, false, indexInNode, slot.indent ?? 0);
+    void createSlot(node.id, false, false, indexInNode);
   }, [createSlot, node, slot, indexInNode]);
 
   const handleAddBelow = useCallback(() => {
     if (!slot || !node) return;
-    void createSlot(node.id, false, false, indexInNode + 1, slot.indent ?? 0);
+    void createSlot(node.id, false, false, indexInNode + 1);
   }, [createSlot, node, slot, indexInNode]);
 
   const renderInsertSubmenu = (direction: 'before' | 'after') => {
@@ -196,30 +196,6 @@ export const FlowNodeSlotActionsContent = ({
           </DropdownMenu.Item>
           <DropdownMenu.Item onClick={() => handleUpdateConnection(false, false)}>
             {!isInput && !isOutput ? '✓ None' : '  None'}
-          </DropdownMenu.Item>
-        </DropdownMenu.SubContent>
-      </DropdownMenu.Sub>
-      <DropdownMenu.Separator/>
-
-      <DropdownMenu.Sub>
-        <DropdownMenu.SubTrigger>
-          {'Indent'}
-        </DropdownMenu.SubTrigger>
-        <DropdownMenu.SubContent>
-          <DropdownMenu.Item onClick={() => void updateSlot(slotId, { indent: 0 })}>
-            {slot?.indent === 0 || slot?.indent === undefined ? '✓ 0' : '  0'}
-          </DropdownMenu.Item>
-          <DropdownMenu.Item onClick={() => void updateSlot(slotId, { indent: 1 })}>
-            {slot?.indent === 1 ? '✓ 1' : '  1'}
-          </DropdownMenu.Item>
-          <DropdownMenu.Item onClick={() => void updateSlot(slotId, { indent: 2 })}>
-            {slot?.indent === 2 ? '✓ 2' : '  2'}
-          </DropdownMenu.Item>
-          <DropdownMenu.Item onClick={() => void updateSlot(slotId, { indent: 3 })}>
-            {slot?.indent === 3 ? '✓ 3' : '  3'}
-          </DropdownMenu.Item>
-          <DropdownMenu.Item onClick={() => void updateSlot(slotId, { indent: 4 })}>
-            {slot?.indent === 4 ? '✓ 4' : '  4'}
           </DropdownMenu.Item>
         </DropdownMenu.SubContent>
       </DropdownMenu.Sub>

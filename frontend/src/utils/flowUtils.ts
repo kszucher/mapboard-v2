@@ -47,18 +47,17 @@ export const createDefaultSlotsForNode = (
       is_input: true,
       is_output: true,
       raw_string: '',
-      indent: 0,
       selected: false
     }];
   } else if (nodeType === 'SWITCH') {
     return [
-      { id: baseId, is_input: true, is_output: false, raw_string: '', indent: 0, selected: false },
-      { id: subId, is_input: false, is_output: true, raw_string: '', indent: 0, selected: false }
+      { id: baseId, is_input: true, is_output: false, raw_string: '', selected: false },
+      { id: subId, is_input: false, is_output: true, raw_string: '', selected: false }
     ];
   } else if (nodeType === 'JOIN') {
     return [
-      { id: subId, is_input: true, is_output: false, raw_string: '', indent: 0, selected: false },
-      { id: baseId, is_input: false, is_output: true, raw_string: '', indent: 0, selected: false }
+      { id: subId, is_input: true, is_output: false, raw_string: '', selected: false },
+      { id: baseId, is_input: false, is_output: true, raw_string: '', selected: false }
     ];
   }
   return [];

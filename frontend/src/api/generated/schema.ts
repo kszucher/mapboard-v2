@@ -324,11 +324,7 @@ export interface components {
       raw_string: string;
       /** Function Id */
       function_id?: string | null;
-      /**
-       * Indent
-       * @default 0
-       */
-      indent: number;
+
       /**
        * Selected
        * @default false

@@ -64,22 +64,6 @@ export const FlowNodeSlot = memo(({
     [slotId, updateSlot]
   );
 
-  const handleIncreaseIndent = useCallback(() => {
-    if (!slot) return;
-    const currentIndent = slot.indent ?? 0;
-    if (currentIndent < 4) {
-      void updateSlot(slotId, { indent: currentIndent + 1 });
-    }
-  }, [slot, slotId, updateSlot]);
-
-  const handleDecreaseIndent = useCallback(() => {
-    if (!slot) return;
-    const currentIndent = slot.indent ?? 0;
-    if (currentIndent > 0) {
-      void updateSlot(slotId, { indent: currentIndent - 1 });
-    }
-  }, [slot, slotId, updateSlot]);
-
   const handleMoveUp = useCallback(() => {
     void moveSlot(slotId, 'up');
   }, [slotId, moveSlot]);
@@ -90,12 +74,12 @@ export const FlowNodeSlot = memo(({
 
   const handleAddAbove = useCallback(() => {
     if (!slot || !node || indexInNode === -1) return;
-    void createSlot(node.id, false, false, indexInNode, slot.indent ?? 0);
+    void createSlot(node.id, false, false, indexInNode);
   }, [createSlot, node, slot, indexInNode]);
 
   const handleAddBelow = useCallback(() => {
     if (!slot || !node || indexInNode === -1) return;
-    void createSlot(node.id, false, false, indexInNode + 1, slot.indent ?? 0);
+    void createSlot(node.id, false, false, indexInNode + 1);
   }, [createSlot, node, slot, indexInNode]);
 
   const handleDeleteSlot = useCallback(() => {
@@ -158,9 +142,6 @@ export const FlowNodeSlot = memo(({
         flexGrow="1"
         align="center"
         height="100%"
-        style={{
-          paddingLeft: `${(slot.indent ?? 0) * 24}px`,
-        }}
       >
         <Editor
           initialValue={initialValue}
@@ -169,8 +150,6 @@ export const FlowNodeSlot = memo(({
           readOnly={!!slot.function_id}
           isSelected={isSelected}
           onSelect={onSelect}
-          onIncreaseIndent={handleIncreaseIndent}
-          onDecreaseIndent={handleDecreaseIndent}
           onMoveUp={handleMoveUp}
           onMoveDown={handleMoveDown}
           onNavigate={onNavigate}

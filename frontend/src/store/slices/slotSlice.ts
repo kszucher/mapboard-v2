@@ -9,7 +9,7 @@ export const createSlotSlice: StateCreator<
   [],
   SlotSlice
 > = (set, get) => ({
-  createSlot: async (nodeId, isInput, isOutput, idx, indent = 0) => {
+  createSlot: async (nodeId, isInput, isOutput, idx) => {
     await updateFlowState(set, get, (state) => {
       const nextNodes = state.nodes.map(n => {
         const isTargetNode = n.id === nodeId;
@@ -21,7 +21,6 @@ export const createSlotSlice: StateCreator<
             is_input: isInput,
             is_output: isOutput,
             raw_string: '',
-            indent: indent,
             selected: true,
           };
           slots.splice(idx, 0, newSlot);

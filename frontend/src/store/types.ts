@@ -48,14 +48,13 @@ export interface NodeSlice {
 }
 
 export interface SlotSlice {
-  createSlot: (nodeId: string, isInput: boolean, isOutput: boolean, idx: number, indent?: number) => Promise<void>;
+  createSlot: (nodeId: string, isInput: boolean, isOutput: boolean, idx: number) => Promise<void>;
   deleteSlot: (slotId: string) => Promise<void>;
   updateSlot: (slotId: string, updates: {
     raw_string?: string;
     is_input?: boolean;
     is_output?: boolean;
     function_id?: string | null;
-    indent?: number;
     selected?: boolean;
   }) => Promise<void>;
   moveSlot: (slotId: string, direction: 'up' | 'down' | 'top' | 'bottom') => Promise<void>;
