@@ -26,7 +26,6 @@ class SlotRead(BaseModel):
     is_input: bool = False
     is_output: bool = False
     raw_string: str
-    function_id: uuid.UUID | None = None
     selected: bool = False
 
 

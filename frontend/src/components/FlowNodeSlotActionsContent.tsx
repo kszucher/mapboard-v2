@@ -25,7 +25,6 @@ export interface SlotActionsContentProps {
 export const FlowNodeSlotActionsContent = ({
   slotId,
 }: SlotActionsContentProps) => {
-  const functions = useGraphStore(state => state.functions);
   const createSlot = useGraphStore(state => state.createSlot);
   const deleteSlot = useGraphStore(state => state.deleteSlot);
   const updateSlot = useGraphStore(state => state.updateSlot);
@@ -197,27 +196,6 @@ export const FlowNodeSlotActionsContent = ({
           <DropdownMenu.Item onClick={() => handleUpdateConnection(false, false)}>
             {!isInput && !isOutput ? '✓ None' : '  None'}
           </DropdownMenu.Item>
-        </DropdownMenu.SubContent>
-      </DropdownMenu.Sub>
-      <DropdownMenu.Separator/>
-
-      <DropdownMenu.Sub>
-        <DropdownMenu.SubTrigger disabled={functions.length === 0}>
-          {'Link Function'}
-        </DropdownMenu.SubTrigger>
-        <DropdownMenu.SubContent>
-          <DropdownMenu.Item onClick={() => void updateSlot(slotId, { function_id: null })}>
-            {slot?.function_id === null || slot?.function_id === undefined ? '✓ None (Unlink)' : '  None (Unlink)'}
-          </DropdownMenu.Item>
-          <DropdownMenu.Separator/>
-          {functions.map(f => (
-            <DropdownMenu.Item
-              key={f.id}
-              onClick={() => void updateSlot(slotId, { function_id: f.id })}
-            >
-              {f.id === slot?.function_id ? `✓ ${f.name}` : `  ${f.name}`}
-            </DropdownMenu.Item>
-          ))}
         </DropdownMenu.SubContent>
       </DropdownMenu.Sub>
       <DropdownMenu.Separator/>

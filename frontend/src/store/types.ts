@@ -54,7 +54,6 @@ export interface SlotSlice {
     raw_string?: string;
     is_input?: boolean;
     is_output?: boolean;
-    function_id?: string | null;
     selected?: boolean;
   }) => Promise<void>;
   moveSlot: (slotId: string, direction: 'up' | 'down' | 'top' | 'bottom') => Promise<void>;

@@ -27,7 +27,6 @@ export const serializeFlowState = (
         is_input: s.is_input,
         is_output: s.is_output,
         raw_string: s.raw_string,
-        function_id: s.function_id,
         selected: s.selected ?? false,
       })),
     })),

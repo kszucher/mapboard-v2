@@ -322,9 +322,6 @@ export interface components {
       is_output: boolean;
       /** Raw String */
       raw_string: string;
-      /** Function Id */
-      function_id?: string | null;
-
       /**
        * Selected
        * @default false

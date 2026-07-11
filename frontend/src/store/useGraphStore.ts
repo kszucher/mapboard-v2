@@ -58,28 +58,10 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
   deleteFunction: async (functionId) => {
     await updateFlowState(set, get, (state) => {
       const nextFunctions = state.functions.filter(f => f.id !== functionId);
-      const nextNodes = state.nodes.map(node => {
-        const hasLinkedSlot = node.data.node.slots.some(s => s.function_id === functionId);
-        if (!hasLinkedSlot) return node;
-
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            node: {
-              ...node.data.node,
-              slots: node.data.node.slots.map(s =>
-                s.function_id === functionId ? { ...s, function_id: null } : s
-              ),
-            },
-          },
-        };
-      });
 
       return {
         ...state,
         functions: nextFunctions,
-        nodes: nextNodes,
       };
     });
   },

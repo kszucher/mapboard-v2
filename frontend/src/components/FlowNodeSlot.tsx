@@ -39,7 +39,6 @@ export const FlowNodeSlot = memo(({
     )
   );
 
-  const functions = useGraphStore((state) => state.functions);
   const updateSlot = useGraphStore((state) => state.updateSlot);
   const moveSlot = useGraphStore((state) => state.moveSlot);
   const createSlot = useGraphStore((state) => state.createSlot);
@@ -118,10 +117,6 @@ export const FlowNodeSlot = memo(({
   ) : null;
 
   const initialValue = (() => {
-    if (slot.function_id) {
-      const func = functions.find(f => f.id === slot.function_id);
-      return func ? func.name : 'Unknown Function';
-    }
     if (isStart) return slot.raw_string || 'Start Node (Output)';
     if (isEnd) return slot.raw_string || 'End Node (Input)';
     return slot.raw_string;
@@ -147,7 +142,6 @@ export const FlowNodeSlot = memo(({
           initialValue={initialValue}
           onSave={handleUpdateItem}
           disabled={disabled}
-          readOnly={!!slot.function_id}
           isSelected={isSelected}
           onSelect={onSelect}
           onMoveUp={handleMoveUp}
