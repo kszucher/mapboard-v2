@@ -18,22 +18,14 @@ async def create_graph(
     graph = await uow.graphs.create(user_id=user_id, name=graph_name)
 
     start_node_id = uuid.uuid4()
-    start_slot_id = uuid.uuid4()
     initial_flow = {
         "nodes": [
             {
                 "id": str(start_node_id),
                 "node_type": "START",
-                "slots": [
-                    {
-                        "id": str(start_slot_id),
-                        "is_input": False,
-                        "is_output": True,
-                        "raw_string": "",
-                        "indent": 0,
-                        "selected": False,
-                    }
-                ],
+                "is_input": False,
+                "is_output": True,
+                "slots": [],
             }
         ],
         "edges": [],

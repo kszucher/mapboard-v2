@@ -38,23 +38,9 @@ export const createDefaultSlotsForNode = (
   const subId = crypto.randomUUID();
 
   if (nodeType === 'START') {
-    return [{
-      id: baseId,
-      is_input: false,
-      is_output: true,
-      raw_string: '',
-      indent: 0,
-      selected: false
-    }];
+    return [];
   } else if (nodeType === 'END') {
-    return [{
-      id: baseId,
-      is_input: true,
-      is_output: false,
-      raw_string: '',
-      indent: 0,
-      selected: false
-    }];
+    return [];
   } else if (nodeType === 'STEP') {
     return [{
       id: baseId,
@@ -188,8 +174,8 @@ export const createNewNode = (
   const newNode: ApiNode = {
     id: newNodeId,
     node_type: nodeType,
-    is_input: false,
-    is_output: false,
+    is_input: nodeType === 'END',
+    is_output: nodeType === 'START',
     slots: defaultSlots,
   };
 
