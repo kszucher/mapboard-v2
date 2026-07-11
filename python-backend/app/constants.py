@@ -19,8 +19,8 @@ class NodeType(str, Enum):
     START = "START"
     END = "END"
     STEP = "STEP"
-    BRANCH = "BRANCH"
-    MERGE = "MERGE"
+    SWITCH = "SWITCH"
+    JOIN = "JOIN"
 
 
 class SlotType(str, Enum):

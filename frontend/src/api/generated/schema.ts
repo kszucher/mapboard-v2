@@ -176,15 +176,19 @@ export interface components {
        */
       id: string;
       /**
-       * From Slot Id
+       * Source Id
        * Format: uuid
        */
-      from_slot_id: string;
+      source_id: string;
+      /** Source Type */
+      source_type: "node" | "slot";
       /**
-       * To Slot Id
+       * Target Id
        * Format: uuid
        */
-      to_slot_id: string;
+      target_id: string;
+      /** Target Type */
+      target_type: "node" | "slot";
     };
     /** FunctionRead */
     FunctionRead: {
@@ -274,6 +278,10 @@ export interface components {
        */
       id: string;
       node_type: components["schemas"]["NodeType"];
+      /** Is Input */
+      is_input: boolean;
+      /** Is Output */
+      is_output: boolean;
       /** Slots */
       slots: components["schemas"]["SlotRead"][];
     };
@@ -281,7 +289,7 @@ export interface components {
      * NodeType
      * @enum {string}
      */
-    NodeType: "START" | "END" | "STEP" | "BRANCH" | "MERGE";
+    NodeType: "START" | "END" | "STEP" | "SWITCH" | "JOIN";
     /** SetActiveGraph */
     SetActiveGraph: {
       /**
@@ -320,7 +328,7 @@ export interface components {
        * Indent
        * @default 0
        */
-      indent?: number;
+      indent: number;
       /**
        * Selected
        * @default false

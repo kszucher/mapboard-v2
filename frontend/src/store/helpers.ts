@@ -20,6 +20,8 @@ export const serializeFlowState = (
     nodes: state.nodes.map(n => ({
       id: n.data.node.id,
       node_type: n.data.node.node_type,
+      is_input: n.data.node.is_input ?? false,
+      is_output: n.data.node.is_output ?? false,
       slots: n.data.node.slots.map(s => ({
         id: s.id,
         is_input: s.is_input,
@@ -30,11 +32,17 @@ export const serializeFlowState = (
         selected: s.selected ?? false,
       })),
     })),
-    edges: state.edges.map(e => ({
-      id: e.id,
-      from_slot_id: e.sourceHandle || '',
-      to_slot_id: e.targetHandle || '',
-    })),
+    edges: state.edges.map(e => {
+      const source_type = (e.sourceHandle === e.source ? 'node' : 'slot') as 'node' | 'slot';
+      const target_type = (e.targetHandle === e.target ? 'node' : 'slot') as 'node' | 'slot';
+      return {
+        id: e.id,
+        source_id: e.sourceHandle || '',
+        source_type,
+        target_id: e.targetHandle || '',
+        target_type,
+      };
+    }),
     variables: state.variables.map(v => ({
       id: v.id,
       name: v.name,

@@ -1,5 +1,5 @@
-import { Box, Button, Flex, IconButton, Select, Text, TextField } from '@radix-ui/themes';
 import { TrashIcon } from '@radix-ui/react-icons';
+import { Box, Button, Flex, IconButton, Select, Text, TextField } from '@radix-ui/themes';
 import { useEffect, useState } from 'react';
 import { useGraphStore } from '../store/useGraphStore';
 
@@ -66,7 +66,8 @@ export const Sidebar = ({ isSidebarOpen, isGraphSelected }: SidebarProps) => {
                 <Flex key={f.id} justify="between" align="center"
                       style={{ backgroundColor: 'var(--gray-3)', padding: '4px 8px', borderRadius: '4px', gap: '8px' }}>
                   <Flex align="center" gap="1" style={{ flexGrow: 1, minWidth: 0 }}>
-                    <Text size="1" weight="medium" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</Text>
+                    <Text size="1" weight="medium"
+                          style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</Text>
                     <Text size="1" color="gray" style={{ whiteSpace: 'nowrap' }}>({inputVar} → {outputVar})</Text>
                   </Flex>
                   <IconButton
@@ -77,7 +78,7 @@ export const Sidebar = ({ isSidebarOpen, isGraphSelected }: SidebarProps) => {
                     disabled={!isGraphSelected}
                     style={{ cursor: 'pointer', flexShrink: 0 }}
                   >
-                    <TrashIcon width="14" height="14" />
+                    <TrashIcon width="14" height="14"/>
                   </IconButton>
                 </Flex>
               );

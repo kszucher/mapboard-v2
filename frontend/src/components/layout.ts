@@ -72,7 +72,7 @@ const buildElkNodes = (
     getUniqueHandles(incomingMap[node.id] ?? [], 'targetHandle')
       .forEach((handleId) => {
         const slotIdx = nodeSlots.findIndex((s) => s.id === handleId);
-        const rowIdx = slotIdx !== -1 ? 1 + slotIdx : 1;
+        const rowIdx = handleId === node.id ? 0 : (slotIdx !== -1 ? 1 + slotIdx : 1);
         ports.push({
           id: `${node.id}-target-${handleId}`,
           x: -NODE_PADDING,
@@ -87,7 +87,7 @@ const buildElkNodes = (
     getUniqueHandles(outgoingMap[node.id] ?? [], 'sourceHandle')
       .forEach((handleId) => {
         const slotIdx = nodeSlots.findIndex((s) => s.id === handleId);
-        const rowIdx = slotIdx !== -1 ? 1 + slotIdx : 1;
+        const rowIdx = handleId === node.id ? 0 : (slotIdx !== -1 ? 1 + slotIdx : 1);
         ports.push({
           id: `${node.id}-source-${handleId}`,
           x: nodeWidth + NODE_PADDING,

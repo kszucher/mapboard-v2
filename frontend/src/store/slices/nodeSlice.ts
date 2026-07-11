@@ -26,25 +26,28 @@ export const createNodeSlice: StateCreator<
     });
   },
 
-  insertNode: async (slotId, nodeType, direction) => {
+  insertNode: async (connectorId, nodeType, direction) => {
     await updateFlowState(set, get, (state) => {
       const isAfter = direction === 'after';
-      const oldEdges = state.edges.filter(e => isAfter ? e.sourceHandle === slotId : e.targetHandle === slotId);
+      const oldEdges = state.edges.filter(e => isAfter ? e.sourceHandle === connectorId : e.targetHandle === connectorId);
 
       const appNode = createNewNode(nodeType);
       const defaultSlots = appNode.data.node.slots;
       const toSlotId = getPrimaryInputSlotId(defaultSlots);
       const fromSlotId = getPrimaryOutputSlotId(defaultSlots);
 
-      const targetOrSourceNode = state.nodes.find(n => n.data.node.slots.some(s => s.id === slotId));
+      let targetOrSourceNode = state.nodes.find(n => n.id === connectorId);
+      if (!targetOrSourceNode) {
+        targetOrSourceNode = state.nodes.find(n => n.data.node.slots.some(s => s.id === connectorId));
+      }
       const targetOrSourceNodeId = targetOrSourceNode ? targetOrSourceNode.id : '';
 
       const newEdge: AppFlowEdge = {
         id: crypto.randomUUID(),
         source: isAfter ? targetOrSourceNodeId : appNode.id,
         target: isAfter ? appNode.id : targetOrSourceNodeId,
-        sourceHandle: isAfter ? slotId : fromSlotId,
-        targetHandle: isAfter ? toSlotId : slotId,
+        sourceHandle: isAfter ? connectorId : fromSlotId,
+        targetHandle: isAfter ? toSlotId : connectorId,
         type: 'custom',
         animated: true,
         style: { opacity: 0 }
@@ -159,6 +162,37 @@ export const createNodeSlice: StateCreator<
       const nextEdges = state.edges.filter(e => e.id !== edgeId);
       return {
         nodes: state.nodes,
+        edges: nextEdges,
+      };
+    });
+  },
+
+  updateNode: async (nodeId, updates) => {
+    await updateFlowState(set, get, (state) => {
+      const nextNodes = state.nodes.map(n => {
+        if (n.id !== nodeId) return n;
+        return {
+          ...n,
+          data: {
+            ...n.data,
+            node: {
+              ...n.data.node,
+              ...updates,
+            }
+          }
+        };
+      });
+
+      let nextEdges = state.edges;
+      if (updates.is_input === false) {
+        nextEdges = nextEdges.filter(e => !(e.target === nodeId && e.targetHandle === nodeId));
+      }
+      if (updates.is_output === false) {
+        nextEdges = nextEdges.filter(e => !(e.source === nodeId && e.sourceHandle === nodeId));
+      }
+
+      return {
+        nodes: nextNodes,
         edges: nextEdges,
       };
     });

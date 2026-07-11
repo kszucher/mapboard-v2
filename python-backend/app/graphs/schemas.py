@@ -34,13 +34,17 @@ class SlotRead(BaseModel):
 class NodeRead(BaseModel):
     id: uuid.UUID
     node_type: NodeType
+    is_input: bool = False
+    is_output: bool = False
     slots: list[SlotRead]
 
 
 class EdgeRead(BaseModel):
     id: uuid.UUID
-    from_slot_id: uuid.UUID
-    to_slot_id: uuid.UUID
+    source_id: uuid.UUID
+    source_type: Literal["node", "slot"]
+    target_id: uuid.UUID
+    target_type: Literal["node", "slot"]
 
 
 class VariableRead(BaseModel):

@@ -39,11 +39,12 @@ export interface FlowSlice {
 
 export interface NodeSlice {
   addNode: (nodeType: NodeType) => Promise<void>;
-  insertNode: (slotId: string, nodeType: NodeType, direction: 'before' | 'after') => Promise<void>;
+  insertNode: (connectorId: string, nodeType: NodeType, direction: 'before' | 'after') => Promise<void>;
   deleteNode: (nodeId: string) => Promise<void>;
   shortcircuitNode: (nodeId: string) => Promise<void>;
   convertNode: (nodeId: string, targetType: NodeType) => Promise<void>;
   deleteEdge: (edgeId: string) => Promise<void>;
+  updateNode: (nodeId: string, updates: { is_input?: boolean; is_output?: boolean }) => Promise<void>;
 }
 
 export interface SlotSlice {

@@ -8,8 +8,8 @@ export const NODE_LABELS: Record<NodeType, string> = {
   START: 'Start',
   END: 'End',
   STEP: 'Step',
-  BRANCH: 'Branch',
-  MERGE: 'Merge',
+  SWITCH: 'Switch',
+  JOIN: 'Join',
 };
 
 export const getAvailableConversions = (
@@ -20,8 +20,8 @@ export const getAvailableConversions = (
   }
   const allTypes: NodeType[] = [
     'STEP',
-    'BRANCH',
-    'MERGE',
+    'SWITCH',
+    'JOIN',
   ];
   return allTypes
     .filter(t => t !== currentType)
@@ -43,6 +43,7 @@ export const createDefaultSlotsForNode = (
       is_input: false,
       is_output: true,
       raw_string: '',
+      indent: 0,
       selected: false
     }];
   } else if (nodeType === 'END') {
@@ -51,6 +52,7 @@ export const createDefaultSlotsForNode = (
       is_input: true,
       is_output: false,
       raw_string: '',
+      indent: 0,
       selected: false
     }];
   } else if (nodeType === 'STEP') {
@@ -59,17 +61,18 @@ export const createDefaultSlotsForNode = (
       is_input: true,
       is_output: true,
       raw_string: '',
+      indent: 0,
       selected: false
     }];
-  } else if (nodeType === 'BRANCH') {
+  } else if (nodeType === 'SWITCH') {
     return [
-      { id: baseId, is_input: true, is_output: false, raw_string: '', selected: false },
-      { id: subId, is_input: false, is_output: true, raw_string: '', selected: false }
+      { id: baseId, is_input: true, is_output: false, raw_string: '', indent: 0, selected: false },
+      { id: subId, is_input: false, is_output: true, raw_string: '', indent: 0, selected: false }
     ];
-  } else if (nodeType === 'MERGE') {
+  } else if (nodeType === 'JOIN') {
     return [
-      { id: subId, is_input: true, is_output: false, raw_string: '', selected: false },
-      { id: baseId, is_input: false, is_output: true, raw_string: '', selected: false }
+      { id: subId, is_input: true, is_output: false, raw_string: '', indent: 0, selected: false },
+      { id: baseId, is_input: false, is_output: true, raw_string: '', indent: 0, selected: false }
     ];
   }
   return [];
@@ -104,21 +107,26 @@ export const mapToReactFlowElements = (
   });
 
   const rfEdges = edges
-    .filter(edge => slotToNodeId[edge.from_slot_id] && slotToNodeId[edge.to_slot_id])
     .map(edge => {
+      const sourceNodeId = edge.source_type === 'slot' ? slotToNodeId[edge.source_id] : edge.source_id;
+      const targetNodeId = edge.target_type === 'slot' ? slotToNodeId[edge.target_id] : edge.target_id;
+
+      if (!sourceNodeId || !targetNodeId) return null;
+
       return {
         id: edge.id,
-        source: slotToNodeId[edge.from_slot_id],
-        target: slotToNodeId[edge.to_slot_id],
-        sourceHandle: edge.from_slot_id,
-        targetHandle: edge.to_slot_id,
+        source: sourceNodeId,
+        target: targetNodeId,
+        sourceHandle: edge.source_id,
+        targetHandle: edge.target_id,
         type: 'custom' as const,
         animated: true,
         data: {
           sections: [],
         },
       };
-    });
+    })
+    .filter((e): e is NonNullable<typeof e> => e !== null);
 
   return { nodes: rfNodes, edges: rfEdges };
 };
@@ -180,6 +188,8 @@ export const createNewNode = (
   const newNode: ApiNode = {
     id: newNodeId,
     node_type: nodeType,
+    is_input: false,
+    is_output: false,
     slots: defaultSlots,
   };
 
@@ -294,35 +304,55 @@ export interface EdgeOption {
 }
 
 export const getOutgoingEdgeOptions = (
-  slotId: string,
+  connectorId: string,
   edges: AppFlowEdge[],
   nodes: AppFlowNode[],
   traversalIndexMap: Record<string, number>
 ): EdgeOption[] => {
-  const outgoingEdges = edges.filter(e => e.sourceHandle === slotId);
+  const outgoingEdges = edges.filter(e => e.sourceHandle === connectorId);
   return outgoingEdges.map(edge => {
     const targetNode = nodes.find(n => n.id === edge.target);
-    const targetSlotIdx = targetNode ? targetNode.data.node.slots.findIndex(s => s.id === edge.targetHandle) : 0;
+    const isTargetNode = edge.targetHandle === edge.target;
+    const targetSlotIdx = targetNode ? targetNode.data.node.slots.findIndex(s => s.id === edge.targetHandle) : -1;
+
+    let label = '';
+    if (isTargetNode) {
+      const idx = targetNode ? traversalIndexMap[targetNode.id] : undefined;
+      label = idx !== undefined ? `N${idx}` : `?`;
+    } else {
+      label = formatSlotLabel(targetNode?.id, traversalIndexMap, targetSlotIdx >= 0 ? targetSlotIdx : 0);
+    }
+
     return {
       edgeId: edge.id,
-      label: formatSlotLabel(targetNode?.id, traversalIndexMap, targetSlotIdx >= 0 ? targetSlotIdx : 0),
+      label,
     };
   });
 };
 
 export const getIncomingEdgeOptions = (
-  slotId: string,
+  connectorId: string,
   edges: AppFlowEdge[],
   nodes: AppFlowNode[],
   traversalIndexMap: Record<string, number>
 ): EdgeOption[] => {
-  const incomingEdges = edges.filter(e => e.targetHandle === slotId);
+  const incomingEdges = edges.filter(e => e.targetHandle === connectorId);
   return incomingEdges.map(edge => {
     const sourceNode = nodes.find(n => n.id === edge.source);
-    const sourceSlotIdx = sourceNode ? sourceNode.data.node.slots.findIndex(s => s.id === edge.sourceHandle) : 0;
+    const isSourceNode = edge.sourceHandle === edge.source;
+    const sourceSlotIdx = sourceNode ? sourceNode.data.node.slots.findIndex(s => s.id === edge.sourceHandle) : -1;
+
+    let label = '';
+    if (isSourceNode) {
+      const idx = sourceNode ? traversalIndexMap[sourceNode.id] : undefined;
+      label = idx !== undefined ? `N${idx}` : `?`;
+    } else {
+      label = formatSlotLabel(sourceNode?.id, traversalIndexMap, sourceSlotIdx >= 0 ? sourceSlotIdx : 0);
+    }
+
     return {
       edgeId: edge.id,
-      label: formatSlotLabel(sourceNode?.id, traversalIndexMap, sourceSlotIdx >= 0 ? sourceSlotIdx : 0),
+      label,
     };
   });
 };

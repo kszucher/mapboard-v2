@@ -14,8 +14,8 @@ import type { InsertableNodeType } from './types';
 
 const INSERTABLE_NODE_TYPES: { type: InsertableNodeType; label: string }[] = [
   { type: 'STEP', label: 'Step' },
-  { type: 'BRANCH', label: 'Branch' },
-  { type: 'MERGE', label: 'Merge' },
+  { type: 'SWITCH', label: 'Switch' },
+  { type: 'JOIN', label: 'Join' },
 ];
 
 export interface SlotActionsContentProps {

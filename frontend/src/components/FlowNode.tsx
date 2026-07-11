@@ -1,6 +1,6 @@
 import type { BadgeProps } from '@radix-ui/themes';
 import { Badge, Flex } from '@radix-ui/themes';
-import { type NodeProps, useUpdateNodeInternals } from '@xyflow/react';
+import { Handle, type NodeProps, Position, useUpdateNodeInternals } from '@xyflow/react';
 import { memo, useCallback, useEffect, useMemo } from 'react';
 import { useGraphStore } from '../store/useGraphStore';
 import { computeTraversalIndices } from '../utils/flowUtils';
@@ -14,8 +14,8 @@ const NODE_COLORS: Record<NodeType, BadgeProps['color']> = {
   START: 'gray',
   END: 'gray',
   STEP: 'purple',
-  BRANCH: 'amber',
-  MERGE: 'teal',
+  SWITCH: 'amber',
+  JOIN: 'teal',
 };
 
 const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
@@ -37,7 +37,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
 
   useEffect(() => {
     updateNodeInternals(id);
-  }, [mySlotsHash, data.node.node_type, id, updateNodeInternals]);
+  }, [mySlotsHash, data.node.node_type, data.node.is_input, data.node.is_output, id, updateNodeInternals]);
 
   const handleNavigateSlot = useCallback((currentSlotId: string, direction: 'up' | 'down') => {
     const currentIndex = mySlots.findIndex(s => s.id === currentSlotId);
@@ -75,6 +75,14 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
       }}
     >
       <Flex align="center" width="100%" height="24px" style={{ position: 'relative', gap: '6px' }}>
+        {data.node.is_input && (
+          <Handle
+            type="target"
+            id={id}
+            position={Position.Left}
+            style={{ left: -NODE_PADDING }}
+          />
+        )}
         <Flex direction="row" gap="1" align="center" flexGrow="1">
           <Badge color="gray" size="1" style={{ height: 'var(--space-5)' }}>
             {'N' + traversalIndex}
@@ -87,6 +95,14 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
         <div style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0, paddingRight: '2px' }}>
           <FlowNodeActions nodeId={id}/>
         </div>
+        {data.node.is_output && (
+          <Handle
+            type="source"
+            id={id}
+            position={Position.Right}
+            style={{ right: -NODE_PADDING }}
+          />
+        )}
       </Flex>
 
       {mySlots.map((slot) => {
