@@ -1,7 +1,13 @@
 # Graphboard
 
-Graphboard is a logic-driven graph editor for building agentic workflows. Unlike typical canvas editors, Graphboard enforces **fully programmatic auto-layout** (via ELK) and binds connections to slots.
-This is a vibe-engineered rework of Mapboard, with the following major differences: Python/FastApi backend instead of Nest.js/Node.js, and a LangGraph based executor approach instead of the earlier bespoke custom DAG execution engine.
+Graphboard is a logic-driven graph editor for building agentic workflows. Unlike traditional free-form canvas tools, Graphboard enforces fully programmatic auto-layout using ELK and binds logic explicitly to input/output slots.
+
+### Project Status & Evolution
+This repository serves as a personal, non-commercial R&D exploration and a continuous playground for full-stack AI system design. It builds upon ideas from a previous project (Mapboard) with two fundamental architectural shifts:
+* **Backend Stack:** Migrated from Nest.js/Node.js to a Python/FastAPI ecosystem.
+* **Execution Strategy:** Replaced a bespoke, custom DAG execution engine with an ongoing, active implementation of a LangGraph-based state machine interpreter. 
+
+*As an active work-in-progress experiment, this codebase is primarily dedicated to skill acquisition, showcasing advanced conversational state control, and prototyping dynamic graph translation layer concepts.*
 
 ---
 
