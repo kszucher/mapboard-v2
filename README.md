@@ -1,6 +1,7 @@
 # Graphboard
 
 Graphboard is a logic-driven graph editor for building agentic workflows. Unlike typical canvas editors, Graphboard enforces **fully programmatic auto-layout** (via ELK) and binds connections to slots.
+This is a vibe-engineered rework of Mapboard, currently Work In Progress, with a LangGraph based executor approach.
 
 ---
 
