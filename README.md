@@ -11,6 +11,12 @@ This repository serves as a personal, non-commercial R&D exploration and a conti
 
 ---
 
+Below is a screenshot of the AI workflow of a well-known "Who wants to be a millionaire" game, including handling intent routing, handling retries, and supporting complex state logic e.g. using lifelines. 
+
+<img width="1980" height="1080" alt="Image" src="https://github.com/user-attachments/assets/dc6bf916-0dcb-40ca-aa49-36ea0802aedc" />
+
+---
+
 ## Core System Architecture & Non-Standard Choices
 
 ### 1. Local Zustand Store vs. DB Referential Integrity
