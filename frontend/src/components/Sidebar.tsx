@@ -1,7 +1,8 @@
 import { TrashIcon } from '@radix-ui/react-icons';
 import { Box, Button, Flex, IconButton, Select, Text, TextField } from '@radix-ui/themes';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useGraphStore } from '../store/useGraphStore';
+import { ExpressionEditor } from './ExpressionEditor';
 
 interface SidebarProps {
   isSidebarOpen: boolean;
@@ -12,6 +13,15 @@ export const Sidebar = ({ isSidebarOpen, isGraphSelected }: SidebarProps) => {
   const variables = useGraphStore(state => state.variables);
   const functions = useGraphStore(state => state.functions);
   const deleteFunction = useGraphStore(state => state.deleteFunction);
+  const updateSlot = useGraphStore(state => state.updateSlot);
+
+  const selectedNode = useGraphStore(
+    useCallback((state) => {
+      return state.nodes.find(n => n.data.node.slots.some(s => s.selected)) ?? null;
+    }, [])
+  );
+
+  const selectedSlot = selectedNode?.data.node.slots.find(s => s.selected) ?? null;
 
   return (
     <Box
@@ -90,6 +100,28 @@ export const Sidebar = ({ isSidebarOpen, isGraphSelected }: SidebarProps) => {
 
           {/* Add Function Form */}
           <FunctionForm isGraphSelected={isGraphSelected}/>
+        </Flex>
+
+        {/* Expressions Section */}
+        <Flex direction="column" gap="2" style={{ paddingBottom: '16px' }}>
+          <Text size="2" weight="bold">Expressions</Text>
+          {selectedNode && selectedSlot ? (
+            <Flex direction="column" gap="2">
+              <ExpressionEditor
+                key={selectedSlot.id}
+                initialValue={selectedSlot.raw_string}
+                nodeId={selectedNode.id}
+                slotId={selectedSlot.id}
+                onApprove={(val) => {
+                  void updateSlot(selectedSlot.id, { raw_string: val });
+                }}
+              />
+            </Flex>
+          ) : (
+            <Text size="1" color="gray" style={{ fontStyle: 'italic' }}>
+              Select a slot in the graph to edit its expression.
+            </Text>
+          )}
         </Flex>
       </Flex>
     </Box>

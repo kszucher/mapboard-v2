@@ -94,7 +94,15 @@ export const Editor = ({
     if (!isSelected) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (isEditing) return;
+      const target = e.target as HTMLElement;
+      if (
+        isEditing ||
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      ) {
+        return;
+      }
 
       if (e.key === 'ArrowUp') {
         if (e.ctrlKey) {
