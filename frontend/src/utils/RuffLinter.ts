@@ -1,7 +1,7 @@
 import init, { Workspace, PositionEncoding } from '@astral-sh/ruff-wasm-web';
 import { type Diagnostic } from '@codemirror/lint';
 import { type EditorState } from '@codemirror/state';
-import { type Variable } from '../components/types';
+import { type Variable, type FunctionEntity } from '../components/types';
 
 let initPromise: Promise<void> | null = null;
 
@@ -29,7 +29,7 @@ export function createRuffWorkspace(variableNames: string[], nodeType?: string):
   }, PositionEncoding.Utf16);
 }
 
-export function runTypeCheck(code: string, variables: Variable[], nodeType?: string): Diagnostic[] {
+export function runTypeCheck(code: string, variables: Variable[], functions: FunctionEntity[], nodeType?: string): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
   const lines = code.split('\n');
   let currentOffset = 0;
@@ -56,7 +56,8 @@ export function runTypeCheck(code: string, variables: Variable[], nodeType?: str
           continue;
         }
 
-        const varName = line.substring(0, eqIndex).trim();
+        const isAugmented = prevChar === '+' || prevChar === '-' || prevChar === '*' || prevChar === '/';
+        const varName = line.substring(0, eqIndex - (isAugmented ? 1 : 0)).trim();
         const valueExpr = line.substring(eqIndex + 1).trim();
 
         if (/^[a-zA-Z_]\w*$/.test(varName)) {
@@ -125,15 +126,30 @@ export function runTypeCheck(code: string, variables: Variable[], nodeType?: str
     }
   }
 }
+    
+    // Validate that functions are only used as function calls (with parenthesis)
+    for (const f of functions) {
+      const lineWithoutStrings = line.replace(/"[^"\\]*(?:\\.[^"\\]*)*"|'[^'\\]*(?:\\.[^'\\]*)*'/g, '""');
+      const invalidRegex = new RegExp('\\b' + f.name + '\\b(?!\\s*\\()');
+      if (invalidRegex.test(lineWithoutStrings)) {
+        diagnostics.push({
+          from: currentOffset,
+          to: currentOffset + line.length,
+          severity: 'error',
+          message: `Function '${f.name}' must be called (e.g. '${f.name}()').`,
+        });
+      }
+    }
+
     currentOffset += line.length + 1; // +1 for the newline
   }
 
   return diagnostics;
 }
 
-export function runRuffLint(state: EditorState, workspace: Workspace, variables: Variable[], nodeType?: string): Diagnostic[] {
+export function runRuffLint(state: EditorState, workspace: Workspace, variables: Variable[], functions: FunctionEntity[], nodeType?: string): Diagnostic[] {
   const code = state.doc.toString();
-  const typeDiagnostics = runTypeCheck(code, variables, nodeType);
+  const typeDiagnostics = runTypeCheck(code, variables, functions, nodeType);
 
   if (!code.trim()) {
     return typeDiagnostics;

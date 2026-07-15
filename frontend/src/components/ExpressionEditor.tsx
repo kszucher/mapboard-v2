@@ -48,17 +48,22 @@ export const ExpressionEditor = ({ initialValue, onApprove, nodeId, slotId }: Ex
     };
   }, []);
 
-  // Recreate workspace when variables change, WASM is ready, or nodeType changes
+  // Recreate workspace when variables/functions change, WASM is ready, or nodeType changes
   useEffect(() => {
     if (!isWasmReady) return;
 
-    const ws = createRuffWorkspace(variables.map(v => v.name), nodeType);
+    const builtinNames = [
+      ...variables.map(v => v.name),
+      ...functions.map(f => f.name),
+    ];
+
+    const ws = createRuffWorkspace(builtinNames, nodeType);
     setWorkspace(ws);
 
     return () => {
       ws.free();
     };
-  }, [isWasmReady, variables, nodeType]);
+  }, [isWasmReady, variables, functions, nodeType]);
   // Update editor content when initialValue or slotId changes
   useEffect(() => {
     setCurrentValue(initialValue);
@@ -79,9 +84,9 @@ export const ExpressionEditor = ({ initialValue, onApprove, nodeId, slotId }: Ex
       return;
     }
     const tempState = EditorState.create({ doc: currentValue });
-    const diags = runRuffLint(tempState, workspace, variables, nodeType);
+    const diags = runRuffLint(tempState, workspace, variables, functions, nodeType);
     setDiagnostics(diags);
-  }, [currentValue, workspace, variables, nodeType]);
+  }, [currentValue, workspace, variables, functions, nodeType]);
 
   // Create CodeMirror instance
   useEffect(() => {
