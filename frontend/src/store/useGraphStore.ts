@@ -1,8 +1,9 @@
 import { applyEdgeChanges, applyNodeChanges, } from '@xyflow/react';
 import { create } from 'zustand';
-import type { AppFlowEdge, AppFlowNode } from '../components/types';
+import type { AppFlowEdge, AppFlowNode, ApiNode } from '../components/types';
 import { runLayout } from '../utils/flowUtils';
 import { setOnSaveStateChange, triggerSave, updateFlowState } from './helpers';
+import { apiClient } from '../api/client';
 import { createFlowSlice } from './slices/flowSlice';
 import { createHistorySlice } from './slices/historySlice';
 import { createInitSlice } from './slices/initSlice';
@@ -66,23 +67,71 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
     });
   },
 
+  runGraph: async () => {
+    const { graphId } = get();
+    if (!graphId) return;
+
+    try {
+      set({ isLoading: true });
+      const res = await (apiClient as any).POST('/graphs/{graph_id}/run', {
+        params: { path: { graph_id: graphId } }
+      });
+      if ('error' in res) throw res.error;
+
+      const data = res.data;
+      if (data && data.variables) {
+        set({ variables: data.variables });
+      }
+    } catch (err: any) {
+      console.error('Failed to run graph:', err);
+      set({ errorMessage: err.detail || String(err) });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
   ...createInitSlice(set, get, store),
   ...createFlowSlice(set, get, store),
 
   onNodesChange: (changes) => {
-
-    // Skip 'select' changes: they're a no-op for us but would still create a new
-    // `nodes` reference, which triggers a full edge geometry recompute in xyflow
-    // and resets/stutters every edge's flow animation on click.
+    const hasSelectChange = changes.some(c => c.type === 'select');
     const meaningfulChanges = changes.filter(c => c.type !== 'select');
-    if (meaningfulChanges.length === 0) return; // no-op click: skip the set() entirely
+
+    if (meaningfulChanges.length === 0 && !hasSelectChange) return;
 
     set((state) => {
-      const newNodes = applyNodeChanges(meaningfulChanges, state.nodes);
+      let newNodes = applyNodeChanges(changes, state.nodes);
+      newNodes = newNodes.map(n => {
+        const nodeData = n.data as { node: ApiNode } | undefined;
+        if (nodeData?.node && nodeData.node.selected !== n.selected) {
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              node: {
+                ...nodeData.node,
+                selected: n.selected,
+              }
+            }
+          };
+        }
+        return n;
+      });
       return { nodes: newNodes as AppFlowNode[] };
     });
 
     const { nodes, edges, graphId, isLoading, pendingLayoutNodeId } = get();
+
+    if (hasSelectChange) {
+      triggerSave({
+        graphId,
+        nodes,
+        edges,
+        variables: get().variables,
+        functions: get().functions,
+      });
+    }
+
     const hasDimensionsChange = meaningfulChanges.some(c => c.type === 'dimensions');
 
     if (hasDimensionsChange && pendingLayoutNodeId) {

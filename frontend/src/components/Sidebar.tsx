@@ -3,6 +3,7 @@ import { Box, Button, Flex, IconButton, Select, Text, TextField } from '@radix-u
 import { useEffect, useState, useCallback } from 'react';
 import { useGraphStore } from '../store/useGraphStore';
 import { ExpressionEditor } from './ExpressionEditor';
+import { getTemplateForNode } from '../utils/flowUtils';
 
 interface SidebarProps {
   isSidebarOpen: boolean;
@@ -13,15 +14,14 @@ export const Sidebar = ({ isSidebarOpen, isGraphSelected }: SidebarProps) => {
   const variables = useGraphStore(state => state.variables);
   const functions = useGraphStore(state => state.functions);
   const deleteFunction = useGraphStore(state => state.deleteFunction);
-  const updateSlot = useGraphStore(state => state.updateSlot);
+  const updateNode = useGraphStore(state => state.updateNode);
+  const runGraph = useGraphStore(state => state.runGraph);
 
   const selectedNode = useGraphStore(
     useCallback((state) => {
-      return state.nodes.find(n => n.data.node.slots.some(s => s.selected)) ?? null;
+      return state.nodes.find(n => n.selected) ?? null;
     }, [])
   );
-
-  const selectedSlot = selectedNode?.data.node.slots.find(s => s.selected) ?? null;
 
   return (
     <Box
@@ -102,24 +102,36 @@ export const Sidebar = ({ isSidebarOpen, isGraphSelected }: SidebarProps) => {
           <FunctionForm isGraphSelected={isGraphSelected}/>
         </Flex>
 
-        {/* Expressions Section */}
+        {/* Code Editor Section */}
         <Flex direction="column" gap="2" style={{ paddingBottom: '16px' }}>
-          <Text size="2" weight="bold">Expressions</Text>
-          {selectedNode && selectedSlot ? (
+          <Flex justify="between" align="center">
+            <Text size="2" weight="bold">Code Editor</Text>
+            <Button
+              size="1"
+              variant="solid"
+              color="green"
+              onClick={() => void runGraph()}
+              disabled={!isGraphSelected}
+              style={{ cursor: isGraphSelected ? 'pointer' : 'default' }}
+            >
+              ▶ Run Graph
+            </Button>
+          </Flex>
+          {selectedNode ? (
             <Flex direction="column" gap="2">
               <ExpressionEditor
-                key={selectedSlot.id}
-                initialValue={selectedSlot.raw_string}
+                key={selectedNode.id}
+                initialValue={selectedNode.data.node.code || getTemplateForNode(selectedNode.data.node)}
                 nodeId={selectedNode.id}
-                slotId={selectedSlot.id}
+                slotId={selectedNode.id}
                 onApprove={(val) => {
-                  void updateSlot(selectedSlot.id, { raw_string: val });
+                  void updateNode(selectedNode.id, { code: val });
                 }}
               />
             </Flex>
           ) : (
             <Text size="1" color="gray" style={{ fontStyle: 'italic' }}>
-              Select a slot in the graph to edit its expression.
+              Select a node in the graph to edit its code.
             </Text>
           )}
         </Flex>

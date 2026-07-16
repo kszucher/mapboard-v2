@@ -26,6 +26,7 @@ async def create_graph(
                 "is_input": False,
                 "is_output": True,
                 "slots": [],
+                "code": "",
             }
         ],
         "edges": [],
@@ -60,7 +61,9 @@ async def sync_graph_flow(
 
         raise ValidationError(f"Graph {graph_id} not found")
 
-    graph.flow_json = payload.model_dump(mode="json")
+    flow_data = payload.model_dump(mode="json")
+
+    graph.flow_json = flow_data
     await uow.session.flush()
 
     uow.emit(

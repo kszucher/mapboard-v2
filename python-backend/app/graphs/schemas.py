@@ -35,6 +35,8 @@ class NodeRead(BaseModel):
     is_input: bool = False
     is_output: bool = False
     slots: list[SlotRead]
+    code: str = ""
+    selected: bool = False
 
 
 class EdgeRead(BaseModel):

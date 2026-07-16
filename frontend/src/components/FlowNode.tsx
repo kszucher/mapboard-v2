@@ -18,7 +18,7 @@ const NODE_COLORS: Record<NodeType, BadgeProps['color']> = {
   JOIN: 'teal',
 };
 
-const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
+const CustomNodeComponent = ({ data, id, selected }: NodeProps<AppFlowNode>) => {
   const updateNodeInternals = useUpdateNodeInternals();
   const updateSlot = useGraphStore(state => state.updateSlot);
 
@@ -71,7 +71,9 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
         padding: NODE_PADDING,
         gap: NODE_PADDING,
         opacity: isLoading ? 0 : 1,
-        transition: 'opacity 0.2s ease-in-out',
+        transition: 'opacity 0.2s ease-in-out, outline 0.15s ease-in-out',
+        outline: selected ? '2px solid var(--accent-8)' : '1px solid var(--gray-5)',
+        boxShadow: 'none',
       }}
     >
       <Flex align="center" width="100%" height="24px" style={{ position: 'relative', gap: '6px' }}>

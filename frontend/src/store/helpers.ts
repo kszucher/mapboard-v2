@@ -22,6 +22,8 @@ export const serializeFlowState = (
       node_type: n.data.node.node_type,
       is_input: n.data.node.is_input ?? false,
       is_output: n.data.node.is_output ?? false,
+      code: n.data.node.code ?? "",
+      selected: n.data.node.selected ?? false,
       slots: n.data.node.slots.map(s => ({
         id: s.id,
         is_input: s.is_input,

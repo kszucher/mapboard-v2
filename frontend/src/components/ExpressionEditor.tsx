@@ -84,9 +84,10 @@ export const ExpressionEditor = ({ initialValue, onApprove, nodeId, slotId }: Ex
       return;
     }
     const tempState = EditorState.create({ doc: currentValue });
-    const diags = runRuffLint(tempState, workspace, variables, functions, nodeType);
+    const outputSlotLabels = node?.data.node.slots.filter(s => s.is_output).map(s => s.raw_string) || [];
+    const diags = runRuffLint(tempState, workspace, variables, functions, nodeType, outputSlotLabels);
     setDiagnostics(diags);
-  }, [currentValue, workspace, variables, functions, nodeType]);
+  }, [currentValue, workspace, variables, functions, nodeType, node]);
 
   // Create CodeMirror instance
   useEffect(() => {
@@ -99,10 +100,50 @@ export const ExpressionEditor = ({ initialValue, onApprove, nodeId, slotId }: Ex
       }
     });
 
-
     const autocompleteExtension = autocompletion({
       override: [
         (context) => {
+          // 1. Context-aware autocomplete for state["key"]
+          const stateMatch = context.matchBefore(/state\[\s*["']\w*/);
+          if (stateMatch) {
+            const quoteChar = stateMatch.text.includes('"') ? '"' : "'";
+            const query = stateMatch.text.split(/["']/)[1] || '';
+            const options = variables
+              .filter((v) => v.name.toLowerCase().includes(query.toLowerCase()))
+              .map((v) => ({
+                label: v.name,
+                type: 'property',
+                detail: `(${v.type})`,
+                apply: `state[${quoteChar}${v.name}${quoteChar}]`
+              }));
+            return {
+              from: stateMatch.from,
+              options,
+            };
+          }
+
+          // 2. Context-aware autocomplete for return "slot_label" inside SWITCH nodes
+          if (nodeType === 'SWITCH') {
+            const returnMatch = context.matchBefore(/return\s+["']\w*/);
+            if (returnMatch) {
+              const quoteChar = returnMatch.text.includes('"') ? '"' : "'";
+              const query = returnMatch.text.split(/["']/)[1] || '';
+              const outputSlots = node?.data.node.slots.filter(s => s.is_output) || [];
+              const options = outputSlots
+                .filter((s) => s.raw_string.toLowerCase().includes(query.toLowerCase()))
+                .map((s) => ({
+                  label: s.raw_string,
+                  type: 'keyword',
+                  detail: '(routing slot)',
+                  apply: `return ${quoteChar}${s.raw_string}${quoteChar}`
+                }));
+              return {
+                from: returnMatch.from,
+                options,
+              };
+            }
+          }
+
           const word = context.matchBefore(/\w*/);
           if (!word || (word.from === word.to && !context.explicit)) return null;
 
@@ -227,7 +268,7 @@ export const ExpressionEditor = ({ initialValue, onApprove, nodeId, slotId }: Ex
             border: diagnostics.length === 0 ? '1px solid var(--green-6)' : '1px solid var(--red-6)',
           }}>
             {diagnostics.length === 0 ? (
-              <Text size="1" color="green" weight="bold">✓ Valid expression</Text>
+              <Text size="1" color="green" weight="bold">✓ Valid code</Text>
             ) : (
               <Flex direction="column" gap="1">
                 <Text size="1" color="red" weight="bold">⚠️ Issues detected:</Text>

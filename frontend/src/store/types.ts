@@ -24,6 +24,7 @@ export interface BaseState {
   addVariable: (name: string, type: 'boolean' | 'string' | 'number') => Promise<void>;
   addFunction: (name: string, inputVariableId: string | null, outputVariableId: string | null, rawString: string) => Promise<void>;
   deleteFunction: (functionId: string) => Promise<void>;
+  runGraph: () => Promise<void>;
 }
 
 export interface InitSlice {
@@ -44,7 +45,12 @@ export interface NodeSlice {
   shortcircuitNode: (nodeId: string) => Promise<void>;
   convertNode: (nodeId: string, targetType: NodeType) => Promise<void>;
   deleteEdge: (edgeId: string) => Promise<void>;
-  updateNode: (nodeId: string, updates: { is_input?: boolean; is_output?: boolean }) => Promise<void>;
+  updateNode: (nodeId: string, updates: {
+    is_input?: boolean;
+    is_output?: boolean;
+    code?: string | null;
+    selected?: boolean;
+  }) => Promise<void>;
 }
 
 export interface SlotSlice {

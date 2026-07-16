@@ -173,6 +173,7 @@ export const createNodeSlice: StateCreator<
         if (n.id !== nodeId) return n;
         return {
           ...n,
+          selected: updates.selected !== undefined ? updates.selected : n.selected,
           data: {
             ...n.data,
             node: {

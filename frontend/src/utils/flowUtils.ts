@@ -82,6 +82,7 @@ export const mapToReactFlowElements = (
       id: n.id,
       type: 'custom' as const,
       position,
+      selected: n.selected ?? false,
       style: {
         transition: defaultTransition,
       },
@@ -170,18 +171,32 @@ export const createNewNode = (
   const newNodeId = crypto.randomUUID();
   const defaultSlots = createDefaultSlotsForNode(nodeType);
 
+  let defaultCode = '';
+  if (nodeType === 'STEP') {
+    defaultCode = 'def step_node(state: dict) -> dict:\n    # Write step logic here\n    return {}';
+  } else if (nodeType === 'SWITCH') {
+    defaultCode = 'def switch_node(state: dict) -> str:\n    # Return target slot name (e.g. \'route_a\')\n    return ""';
+  } else if (nodeType === 'JOIN') {
+    defaultCode = 'def join_node(state: dict) -> dict:\n    # Merge parallel branch outputs\n    return {}';
+  } else if (nodeType === 'START' || nodeType === 'END') {
+    defaultCode = '# Read-only node';
+  }
+
   const newNode: ApiNode = {
     id: newNodeId,
     node_type: nodeType,
     is_input: nodeType === 'END',
     is_output: nodeType === 'START',
     slots: defaultSlots,
+    code: defaultCode,
+    selected: false,
   };
 
   return {
     id: newNodeId,
     type: 'custom',
     position: { x: 0, y: 0 },
+    selected: false,
     style: {
       transition: 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1)',
     },
@@ -340,4 +355,30 @@ export const getIncomingEdgeOptions = (
       label,
     };
   });
+};
+
+export const getTemplateForNode = (node: ApiNode): string => {
+  const nodeType = node.node_type;
+  if (nodeType === 'STEP') {
+    return 'def step_node(state: dict) -> dict:\n    # Write step logic here\n    return {}';
+  }
+  if (nodeType === 'SWITCH') {
+    const outputSlots = node.slots.filter(s => s.is_output);
+    if (outputSlots.length === 0) {
+      return `def switch_node(state: dict) -> str:\n    # Add output slots in the UI first\n    return ""`;
+    }
+    if (outputSlots.length === 1) {
+      return `def switch_node(state: dict) -> str:\n    if True:\n        return "${outputSlots[0].raw_string}"\n    return ""`;
+    }
+    if (outputSlots.length === 2) {
+      return `def switch_node(state: dict) -> str:\n    if True:\n        return "${outputSlots[0].raw_string}"\n    else:\n        return "${outputSlots[1].raw_string}"`;
+    }
+    const middleElifs = outputSlots.slice(1, -1).map(s => `    elif True:\n        return "${s.raw_string}"`).join('\n');
+    return `def switch_node(state: dict) -> str:\n    if True:\n        return "${outputSlots[0].raw_string}"\n${middleElifs}\n    else:\n        return "${outputSlots[outputSlots.length - 1].raw_string}"`;
+  }
+  if (nodeType === 'JOIN') {
+    const triggers = node.slots.filter(s => s.is_input).map(s => `    # - "${s.raw_string || 'Slot Label'}"`).join('\n');
+    return `def join_node(state: dict) -> dict:\n    # Merging inputs from:\n${triggers || '    # (Add input slots in the UI first)'}\n    return {}`;
+  }
+  return '# Read-only node';
 };

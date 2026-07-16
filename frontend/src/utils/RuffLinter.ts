@@ -29,127 +29,79 @@ export function createRuffWorkspace(variableNames: string[], nodeType?: string):
   }, PositionEncoding.Utf16);
 }
 
-export function runTypeCheck(code: string, variables: Variable[], functions: FunctionEntity[], nodeType?: string): Diagnostic[] {
-  const diagnostics: Diagnostic[] = [];
-  const lines = code.split('\n');
-  let currentOffset = 0;
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    
-    // Precisely check for assignment operator = (and exclude comparison operators ==, !=, <=, >=)
-    const eqIndex = line.indexOf('=');
-    if (eqIndex !== -1) {
-      const nextChar = line[eqIndex + 1];
-      const prevChar = line[eqIndex - 1];
-      
-      const isComparison = nextChar === '=' || prevChar === '!' || prevChar === '<' || prevChar === '>';
-      if (!isComparison) {
-        if (nodeType === 'SWITCH') {
-          diagnostics.push({
-            from: currentOffset,
-            to: currentOffset + line.length,
-            severity: 'error',
-            message: 'Assignments are not allowed in decision slots.',
-          });
-          currentOffset += line.length + 1;
-          continue;
-        }
-
-        const isAugmented = prevChar === '+' || prevChar === '-' || prevChar === '*' || prevChar === '/';
-        const varName = line.substring(0, eqIndex - (isAugmented ? 1 : 0)).trim();
-        const valueExpr = line.substring(eqIndex + 1).trim();
-
-        if (/^[a-zA-Z_]\w*$/.test(varName)) {
-          const variable = variables.find(v => v.name === varName);
-          if (variable) {
-            const valueIndex = line.indexOf(valueExpr, eqIndex + 1);
-            const from = currentOffset + (valueIndex !== -1 ? valueIndex : eqIndex + 1);
-            const to = currentOffset + line.length;
-
-        let inferredType: 'string' | 'number' | 'boolean' | 'unknown' = 'unknown';
-
-        // 1. String literal
-        if ((valueExpr.startsWith('"') && valueExpr.endsWith('"')) || 
-            (valueExpr.startsWith("'") && valueExpr.endsWith("'"))) {
-          inferredType = 'string';
-        }
-        // 2. Boolean literal
-        else if (valueExpr === 'True' || valueExpr === 'False') {
-          inferredType = 'boolean';
-        }
-        // 3. Number literal (integer or float)
-        else if (/^-?\d+(\.\d+)?$/.test(valueExpr)) {
-          inferredType = 'number';
-        }
-        // 4. Reference to another variable
-        else {
-          const otherVar = variables.find(v => v.name === valueExpr);
-          if (otherVar) {
-            inferredType = otherVar.type;
-          }
-          // 5. Basic binary operations (e.g., mark_cntr + 1)
-          else if (variable.type === 'number') {
-            const binOpMatch = valueExpr.match(/^(\w+)\s*([\+\-\*\/])\s*(.+)$/);
-            if (binOpMatch) {
-              const leftOp = binOpMatch[1];
-              const rightOp = binOpMatch[3].trim();
-              
-              const leftVar = variables.find(v => v.name === leftOp);
-              const leftType = (leftOp === varName) ? 'number' : (leftVar ? leftVar.type : 'unknown');
-              
-              let rightType: 'string' | 'number' | 'boolean' | 'unknown' = 'unknown';
-              if (/^-?\d+(\.\d+)?$/.test(rightOp)) {
-                rightType = 'number';
-              } else {
-                const rightVar = variables.find(v => v.name === rightOp);
-                if (rightVar) rightType = rightVar.type;
-              }
-
-              if (leftType === 'number' && rightType === 'number') {
-                inferredType = 'number';
-              }
-            }
-          }
-        }
-
-        // Emit diagnostic if types do not match
-        if (inferredType !== 'unknown' && inferredType !== variable.type) {
-          diagnostics.push({
-            from,
-            to,
-            severity: 'error',
-            message: `Type mismatch: Cannot assign type '${inferredType}' to variable '${varName}' of type '${variable.type}'`,
-          });
-        }
-      }
-    }
-  }
+export function runTypeCheck(_code: string, _variables: Variable[], _functions: FunctionEntity[], _nodeType?: string): Diagnostic[] {
+  return [];
 }
-    
-    // Validate that functions are only used as function calls (with parenthesis)
-    for (const f of functions) {
-      const lineWithoutStrings = line.replace(/"[^"\\]*(?:\\.[^"\\]*)*"|'[^'\\]*(?:\\.[^'\\]*)*'/g, '""');
-      const invalidRegex = new RegExp('\\b' + f.name + '\\b(?!\\s*\\()');
-      if (invalidRegex.test(lineWithoutStrings)) {
-        diagnostics.push({
-          from: currentOffset,
-          to: currentOffset + line.length,
-          severity: 'error',
-          message: `Function '${f.name}' must be called (e.g. '${f.name}()').`,
-        });
-      }
-    }
 
-    currentOffset += line.length + 1; // +1 for the newline
+export function runStateDiagnostics(code: string, variables: Variable[]): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+  const registeredNames = new Set(variables.map(v => v.name));
+
+  // Regex to match: state["var"] or state['var']
+  const stateAccessRegex = /state\[\s*(["'])(.*?)\1\s*\]/g;
+  let match;
+
+  while ((match = stateAccessRegex.exec(code)) !== null) {
+    const varName = match[2];
+    const fullMatch = match[0];
+    
+    if (!registeredNames.has(varName)) {
+      const from = match.index;
+      const to = match.index + fullMatch.length;
+      
+      diagnostics.push({
+        from,
+        to,
+        severity: 'error',
+        message: `Key '${varName}' does not exist in Graph State.`,
+      });
+    }
   }
 
   return diagnostics;
 }
 
-export function runRuffLint(state: EditorState, workspace: Workspace, variables: Variable[], functions: FunctionEntity[], nodeType?: string): Diagnostic[] {
+export function runSwitchRouteDiagnostics(code: string, outputSlotLabels: string[]): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+  const validLabels = new Set(outputSlotLabels);
+
+  // Regex to match: return "label" or return 'label'
+  const returnRegex = /return\s+(["'])(.*?)\1/g;
+  let match;
+
+  while ((match = returnRegex.exec(code)) !== null) {
+    const returnedValue = match[2];
+    const fullMatch = match[0];
+
+    if (!validLabels.has(returnedValue)) {
+      const from = match.index;
+      const to = match.index + fullMatch.length;
+
+      diagnostics.push({
+        from,
+        to,
+        severity: 'error',
+        message: `Returned route '${returnedValue}' does not match any of the node's outgoing slots.`,
+      });
+    }
+  }
+
+  return diagnostics;
+}
+
+export function runRuffLint(
+  state: EditorState,
+  workspace: Workspace,
+  variables: Variable[],
+  _functions: FunctionEntity[],
+  nodeType?: string,
+  outputSlotLabels: string[] = []
+): Diagnostic[] {
   const code = state.doc.toString();
-  const typeDiagnostics = runTypeCheck(code, variables, functions, nodeType);
+  const typeDiagnostics = [
+    ...runStateDiagnostics(code, variables),
+    ...(nodeType === 'SWITCH' ? runSwitchRouteDiagnostics(code, outputSlotLabels) : [])
+  ];
 
   if (!code.trim()) {
     return typeDiagnostics;

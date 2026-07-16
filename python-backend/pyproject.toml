@@ -13,6 +13,7 @@ dependencies = [
   "psycopg[binary]>=3.2.0",
   "pydantic>=2.8.0",
   "pydantic-settings>=2.4.0",
+  "langgraph>=1.2.9",
 ]
 
 [build-system]
