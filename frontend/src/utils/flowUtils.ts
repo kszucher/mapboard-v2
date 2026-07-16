@@ -347,85 +347,79 @@ export const getTemplateForNode = (node: ApiNode): string => {
     return 'def step_node(state: dict) -> dict:\n    # Write step logic here\n    return {}';
   }
   if (nodeType === 'SWITCH') {
-    const outputSlots = node.slots;
-    if (outputSlots.length === 0) {
+    const slots = node.slots;
+    if (slots.length === 0) {
       return `def switch_node(state: dict) -> str:\n    # Add output slots in the UI first\n    return ""`;
     }
-    if (outputSlots.length === 1) {
-      return `def switch_node(state: dict) -> str:\n    if True:\n        return "${outputSlots[0].raw_string}"\n    return ""`;
-    }
-    if (outputSlots.length === 2) {
-      return `def switch_node(state: dict) -> str:\n    if True:\n        return "${outputSlots[0].raw_string}"\n    else:  # cond: True\n        return "${outputSlots[1].raw_string}"`;
-    }
-    const middleElifs = outputSlots.slice(1, -1).map(s => `    elif True:\n        return "${s.raw_string}"`).join('\n');
-    return `def switch_node(state: dict) -> str:\n    if True:\n        return "${outputSlots[0].raw_string}"\n${middleElifs}\n    else:  # cond: True\n        return "${outputSlots[outputSlots.length - 1].raw_string}"`;
+    const lines = ['def switch_node(state: dict) -> str:'];
+    slots.forEach((s, i) => {
+      lines.push(`    ${i === 0 ? 'if' : 'elif'} True:`);
+      lines.push(`        return "${s.raw_string}"`);
+    });
+    lines.push(`    return ""`);
+    return lines.join('\n');
   }
   return '# Read-only node';
 };
 
+/**
+ * Parses condition expressions from a switch_node function body.
+ * Uses bracket-depth scanning to correctly identify the colon that ends
+ * each if/elif condition — handles state['x'], {k: v}, slices, etc.
+ * The only unsupported edge case is a bare `lambda x: ...` at the top level
+ * of a condition, which is pathological in a routing context.
+ */
+export function parseSwitchConditions(code: string): Record<string, string> {
+  const conditionMap: Record<string, string> = {};
+  const lines = code.split('\n');
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const keywordMatch = line.match(/^    (if|elif) /);
+    if (!keywordMatch) continue;
+
+    const afterKeyword = line.slice(4 + keywordMatch[1].length + 1);
+
+    // Scan for the top-level colon using bracket depth
+    let depth = 0;
+    let conditionEnd = -1;
+    for (let j = 0; j < afterKeyword.length; j++) {
+      const ch = afterKeyword[j];
+      if (ch === '(' || ch === '[' || ch === '{') depth++;
+      else if (ch === ')' || ch === ']' || ch === '}') depth--;
+      else if (ch === ':' && depth === 0) { conditionEnd = j; break; }
+    }
+    if (conditionEnd === -1) continue;
+
+    const condition = afterKeyword.slice(0, conditionEnd).trim();
+    const nextLine = lines[i + 1]?.trim();
+    const returnMatch = nextLine?.match(/^return\s+["']([^"']+)["']$/);
+    if (returnMatch) {
+      conditionMap[returnMatch[1]] = condition;
+    }
+  }
+
+  return conditionMap;
+}
+
 export function syncSwitchCodeWithSlots(code: string, slots: any[]): string {
   if (!code) return '';
 
-  const conditionMap: Record<string, string> = {};
-  
-  // Parse if/elif statements: if <cond>: \n return "label"
-  const ifRegex = /(?:if|elif)\s+([^:]+):\s*\n\s*return\s+["']([^"']+)["']/g;
-  let match;
-  while ((match = ifRegex.exec(code)) !== null) {
-    const condition = match[1].trim();
-    const label = match[2];
-    conditionMap[label] = condition;
-  }
+  const conditionMap = parseSwitchConditions(code);
 
-  // Parse else statements with comment: else: # cond: <cond> \n return "label"
-  const elseRegex = /else:\s*#\s*cond:\s*([^\r\n]+)\s*\n\s*return\s+["']([^"']+)["']/g;
-  while ((match = elseRegex.exec(code)) !== null) {
-    const condition = match[1].trim();
-    const label = match[2];
-    conditionMap[label] = condition;
-  }
-
-  const outputSlots = slots;
-  if (outputSlots.length === 0) {
+  if (slots.length === 0) {
     return `def switch_node(state: dict) -> str:\n    # Add output slots in the UI first\n    return ""`;
   }
 
-  const lines = ["def switch_node(state: dict) -> str:"];
-
-  if (outputSlots.length === 1) {
-    const label = outputSlots[0].raw_string || 'Slot';
+  const lines = ['def switch_node(state: dict) -> str:'];
+  slots.forEach((slot, i) => {
+    const label = slot.raw_string || `Slot ${i + 1}`;
     const cond = conditionMap[label] || 'True';
-    lines.push(`    if ${cond}:`);
+    lines.push(`    ${i === 0 ? 'if' : 'elif'} ${cond}:`);
     lines.push(`        return "${label}"`);
-    lines.push(`    return ""`);
-  } else if (outputSlots.length === 2) {
-    const label1 = outputSlots[0].raw_string || 'Slot 1';
-    const cond1 = conditionMap[label1] || 'True';
-    const label2 = outputSlots[1].raw_string || 'Slot 2';
-    const cond2 = conditionMap[label2] || 'True';
-    
-    lines.push(`    if ${cond1}:`);
-    lines.push(`        return "${label1}"`);
-    lines.push(`    else:  # cond: ${cond2}`);
-    lines.push(`        return "${label2}"`);
-  } else {
-    const firstLabel = outputSlots[0].raw_string || 'Slot 1';
-    const firstCond = conditionMap[firstLabel] || 'True';
-    lines.push(`    if ${firstCond}:`);
-    lines.push(`        return "${firstLabel}"`);
-    
-    for (let i = 1; i < outputSlots.length - 1; i++) {
-      const label = outputSlots[i].raw_string || `Slot ${i + 1}`;
-      const cond = conditionMap[label] || 'True';
-      lines.push(`    elif ${cond}:`);
-      lines.push(`        return "${label}"`);
-    }
-    
-    const lastLabel = outputSlots[outputSlots.length - 1].raw_string || `Slot ${outputSlots.length}`;
-    const lastCond = conditionMap[lastLabel] || 'True';
-    lines.push(`    else:  # cond: ${lastCond}`);
-    lines.push(`        return "${lastLabel}"`);
-  }
+  });
+  lines.push(`    return ""`);
 
   return lines.join('\n');
 }
+
