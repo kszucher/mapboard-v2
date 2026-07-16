@@ -26,7 +26,6 @@ export const FlowNodeSlotActionsContent = ({
 }: SlotActionsContentProps) => {
   const createSlot = useGraphStore(state => state.createSlot);
   const deleteSlot = useGraphStore(state => state.deleteSlot);
-  const updateSlot = useGraphStore(state => state.updateSlot);
   const moveSlot = useGraphStore(state => state.moveSlot);
   const insertNode = useGraphStore(state => state.insertNode);
   const deleteEdge = useGraphStore(state => state.deleteEdge);
@@ -42,8 +41,8 @@ export const FlowNodeSlotActionsContent = ({
     return node?.data.node.slots.find(s => s.id === slotId);
   }, [node, slotId]);
 
-  const isInput = slot?.is_input ?? false;
-  const isOutput = slot?.is_output ?? false;
+  const isInput = false;
+  const isOutput = true;
 
   const mySlots = useMemo(() => {
     return node ? node.data.node.slots : [];
@@ -95,9 +94,7 @@ export const FlowNodeSlotActionsContent = ({
     [insertNode, slotId]
   );
 
-  const handleUpdateConnection = useCallback((isInputVal: boolean, isOutputVal: boolean) => {
-    void updateSlot(slotId, { is_input: isInputVal, is_output: isOutputVal });
-  }, [slotId, updateSlot]);
+
 
   const handleMoveTop = useCallback(() => {
     void moveSlot(slotId, 'top');
@@ -121,12 +118,12 @@ export const FlowNodeSlotActionsContent = ({
 
   const handleAddAbove = useCallback(() => {
     if (!slot || !node) return;
-    void createSlot(node.id, false, false, indexInNode);
+    void createSlot(node.id, indexInNode);
   }, [createSlot, node, slot, indexInNode]);
 
   const handleAddBelow = useCallback(() => {
     if (!slot || !node) return;
-    void createSlot(node.id, false, false, indexInNode + 1);
+    void createSlot(node.id, indexInNode + 1);
   }, [createSlot, node, slot, indexInNode]);
 
   const renderInsertSubmenu = (direction: 'before' | 'after') => {
@@ -178,26 +175,6 @@ export const FlowNodeSlotActionsContent = ({
 
   return (
     <>
-      <DropdownMenu.Sub>
-        <DropdownMenu.SubTrigger>
-          {'Type'}
-        </DropdownMenu.SubTrigger>
-        <DropdownMenu.SubContent>
-          <DropdownMenu.Item onClick={() => handleUpdateConnection(true, true)}>
-            {isInput && isOutput ? '✓ Input And Output' : '  Input And Output'}
-          </DropdownMenu.Item>
-          <DropdownMenu.Item onClick={() => handleUpdateConnection(true, false)}>
-            {isInput && !isOutput ? '✓ Input Only' : '  Input Only'}
-          </DropdownMenu.Item>
-          <DropdownMenu.Item onClick={() => handleUpdateConnection(false, true)}>
-            {!isInput && isOutput ? '✓ Output Only' : '  Output Only'}
-          </DropdownMenu.Item>
-          <DropdownMenu.Item onClick={() => handleUpdateConnection(false, false)}>
-            {!isInput && !isOutput ? '✓ None' : '  None'}
-          </DropdownMenu.Item>
-        </DropdownMenu.SubContent>
-      </DropdownMenu.Sub>
-      <DropdownMenu.Separator/>
 
       <DropdownMenu.Item onClick={handleAddAbove}>
         <PlusIcon style={{ marginRight: 8 }}/> Add Slot Above

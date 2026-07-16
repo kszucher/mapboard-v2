@@ -23,8 +23,6 @@ class GraphRead(OrmModel):
 
 class SlotRead(BaseModel):
     id: uuid.UUID
-    is_input: bool = False
-    is_output: bool = False
     raw_string: str
     selected: bool = False
 

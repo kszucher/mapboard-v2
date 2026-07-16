@@ -84,7 +84,7 @@ export const ExpressionEditor = ({ initialValue, onApprove, nodeId, slotId }: Ex
       return;
     }
     const tempState = EditorState.create({ doc: currentValue });
-    const outputSlotLabels = node?.data.node.slots.filter(s => s.is_output).map(s => s.raw_string) || [];
+    const outputSlotLabels = node?.data.node.slots.map(s => s.raw_string) || [];
     const diags = runRuffLint(tempState, workspace, variables, functions, nodeType, outputSlotLabels);
     setDiagnostics(diags);
   }, [currentValue, workspace, variables, functions, nodeType, node]);
@@ -128,7 +128,7 @@ export const ExpressionEditor = ({ initialValue, onApprove, nodeId, slotId }: Ex
             if (returnMatch) {
               const quoteChar = returnMatch.text.includes('"') ? '"' : "'";
               const query = returnMatch.text.split(/["']/)[1] || '';
-              const outputSlots = node?.data.node.slots.filter(s => s.is_output) || [];
+              const outputSlots = node?.data.node.slots || [];
               const options = outputSlots
                 .filter((s) => s.raw_string.toLowerCase().includes(query.toLowerCase()))
                 .map((s) => ({

@@ -310,16 +310,6 @@ export interface components {
        * Format: uuid
        */
       id: string;
-      /**
-       * Is Input
-       * @default false
-       */
-      is_input: boolean;
-      /**
-       * Is Output
-       * @default false
-       */
-      is_output: boolean;
       /** Raw String */
       raw_string: string;
       /**

@@ -10,24 +10,15 @@ export const createSlotSlice: StateCreator<
   [],
   SlotSlice
 > = (set, get) => ({
-  createSlot: async (nodeId, isInput, isOutput, idx) => {
+  createSlot: async (nodeId, idx) => {
     await updateFlowState(set, get, (state) => {
       const nextNodes = state.nodes.map(n => {
         const isTargetNode = n.id === nodeId;
         const slots = n.data.node.slots.map(s => ({ ...s, selected: false }));
 
         if (isTargetNode) {
-          let finalIsInput = isInput;
-          let finalIsOutput = isOutput;
-          if (n.data.node.node_type === 'SWITCH') {
-            finalIsInput = false;
-            finalIsOutput = true;
-          }
-
           const newSlot: ApiSlot = {
             id: crypto.randomUUID(),
-            is_input: finalIsInput,
-            is_output: finalIsOutput,
             raw_string: '',
             selected: true,
           };
@@ -151,7 +142,7 @@ export const createSlotSlice: StateCreator<
       return;
     }
 
-    const shouldSkipHistory = !('is_input' in updates || 'is_output' in updates || 'selected' in updates);
+    const shouldSkipHistory = !('selected' in updates);
     const shouldSkipLayout = 'selected' in updates && Object.keys(updates).length === 1;
 
     const prevSelectedNode = get().nodes.find(n => n.data.node.slots.some(s => s.selected));
@@ -205,13 +196,7 @@ export const createSlotSlice: StateCreator<
         };
       });
 
-      let nextEdges = state.edges;
-      if (updates.is_input === false) {
-        nextEdges = nextEdges.filter(e => e.targetHandle !== slotId);
-      }
-      if (updates.is_output === false) {
-        nextEdges = nextEdges.filter(e => e.sourceHandle !== slotId);
-      }
+      const nextEdges = state.edges;
 
       return {
         nodes: nextNodes,

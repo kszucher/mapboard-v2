@@ -31,7 +31,7 @@ const CustomNodeComponent = ({ data, id, selected }: NodeProps<AppFlowNode>) => 
   );
 
   const mySlotsHash = useMemo(() => {
-    return mySlots.map((s, index) => `${s.id}:${index}:${s.is_input}:${s.is_output}:${s.selected}`).join(',');
+    return mySlots.map((s, index) => `${s.id}:${index}:${s.selected}`).join(',');
   }, [mySlots]);
 
   useEffect(() => {

@@ -40,17 +40,11 @@ export const createDefaultSlotsForNode = (
   } else if (nodeType === 'END') {
     return [];
   } else if (nodeType === 'STEP') {
-    return [{
-      id: baseId,
-      is_input: true,
-      is_output: true,
-      raw_string: '',
-      selected: false
-    }];
+    return [];
   } else if (nodeType === 'SWITCH') {
     return [
-      { id: baseId, is_input: true, is_output: false, raw_string: '', selected: false },
-      { id: subId, is_input: false, is_output: true, raw_string: '', selected: false }
+      { id: baseId, raw_string: '', selected: false },
+      { id: subId, raw_string: '', selected: false }
     ];
   }
   return [];
@@ -176,8 +170,8 @@ export const createNewNode = (
   const newNode: ApiNode = {
     id: newNodeId,
     node_type: nodeType,
-    is_input: nodeType === 'END',
-    is_output: nodeType === 'START',
+    is_input: nodeType !== 'START',
+    is_output: nodeType === 'START' || nodeType === 'STEP',
     slots: defaultSlots,
     code: defaultCode,
     selected: false,
@@ -197,10 +191,8 @@ export const createNewNode = (
   };
 };
 
-export const canShortcircuitNode = (slots: ApiSlot[]): boolean => {
-  const inputs = slots.filter(s => s.is_input);
-  const outputs = slots.filter(s => s.is_output);
-  return inputs.length === 1 && outputs.length === 1;
+export const canShortcircuitNode = (nodeType: NodeType): boolean => {
+  return nodeType === 'STEP';
 };
 
 export const canMoveSlotUp = (index: number): boolean => {
@@ -211,14 +203,15 @@ export const canMoveSlotDown = (index: number, totalCount: number): boolean => {
   return index < totalCount - 1;
 };
 
-export const getPrimaryInputSlotId = (slots: ApiSlot[]): string => {
-  const inputSlot = slots.find(s => s.is_input);
-  return inputSlot ? inputSlot.id : '';
+export const getPrimaryInputHandleId = (node: ApiNode): string => {
+  return node.id;
 };
 
-export const getPrimaryOutputSlotId = (slots: ApiSlot[]): string => {
-  const outputSlot = slots.find(s => s.is_output);
-  return outputSlot ? outputSlot.id : '';
+export const getPrimaryOutputHandleId = (node: ApiNode): string => {
+  if (node.node_type === 'SWITCH' && node.slots.length > 0) {
+    return node.slots[0].id;
+  }
+  return node.id;
 };
 
 export const updateNodeNodeType = (node: AppFlowNode, targetType: NodeType): AppFlowNode => {
@@ -354,7 +347,7 @@ export const getTemplateForNode = (node: ApiNode): string => {
     return 'def step_node(state: dict) -> dict:\n    # Write step logic here\n    return {}';
   }
   if (nodeType === 'SWITCH') {
-    const outputSlots = node.slots.filter(s => s.is_output);
+    const outputSlots = node.slots;
     if (outputSlots.length === 0) {
       return `def switch_node(state: dict) -> str:\n    # Add output slots in the UI first\n    return ""`;
     }
@@ -384,7 +377,7 @@ export function syncSwitchCodeWithSlots(code: string, slots: any[]): string {
     conditionMap[label] = condition;
   }
 
-  const outputSlots = slots.filter(s => s.is_output);
+  const outputSlots = slots;
   if (outputSlots.length === 0) {
     return `def switch_node(state: dict) -> str:\n    # Add output slots in the UI first\n    return ""`;
   }

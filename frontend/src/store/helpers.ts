@@ -26,8 +26,6 @@ export const serializeFlowState = (
       selected: n.data.node.selected ?? false,
       slots: n.data.node.slots.map(s => ({
         id: s.id,
-        is_input: s.is_input,
-        is_output: s.is_output,
         raw_string: s.raw_string,
         selected: s.selected ?? false,
       })),

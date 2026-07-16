@@ -25,7 +25,6 @@ export const FlowNodeActionsContent = ({ nodeId }: FlowNodeActionsContentProps) 
   const deleteNode = useGraphStore(state => state.deleteNode);
   const shortcircuitNode = useGraphStore(state => state.shortcircuitNode);
   const convertNode = useGraphStore(state => state.convertNode);
-  const updateNode = useGraphStore(state => state.updateNode);
   const insertNode = useGraphStore(state => state.insertNode);
   const deleteEdge = useGraphStore(state => state.deleteEdge);
 
@@ -36,7 +35,6 @@ export const FlowNodeActionsContent = ({ nodeId }: FlowNodeActionsContentProps) 
     return nodes.find(n => n.id === nodeId)?.data?.node;
   }, [nodes, nodeId]);
 
-  const mySlots = nodeData?.slots ?? [];
   const isInput = nodeData?.is_input ?? false;
   const isOutput = nodeData?.is_output ?? false;
 
@@ -76,9 +74,7 @@ export const FlowNodeActionsContent = ({ nodeId }: FlowNodeActionsContentProps) 
     if (nodeData) void convertNode(nodeData.id, targetType);
   }, [nodeData, convertNode]);
 
-  const handleUpdateConnection = useCallback((isInputVal: boolean, isOutputVal: boolean) => {
-    if (nodeData) void updateNode(nodeId, { is_input: isInputVal, is_output: isOutputVal });
-  }, [nodeData, nodeId, updateNode]);
+
 
   const handleInsert = useCallback(
     (nodeType: InsertableNodeType, direction: 'before' | 'after') => {
@@ -92,7 +88,7 @@ export const FlowNodeActionsContent = ({ nodeId }: FlowNodeActionsContentProps) 
   const isStart = nodeData.node_type === 'START';
   const isEnd = nodeData.node_type === 'END';
 
-  const canShortcircuit = canShortcircuitNode(mySlots);
+  const canShortcircuit = nodeData ? canShortcircuitNode(nodeData.node_type) : false;
 
   const renderInsertSubmenu = (direction: 'before' | 'after') => {
     const isAfter = direction === 'after';
@@ -145,27 +141,6 @@ export const FlowNodeActionsContent = ({ nodeId }: FlowNodeActionsContentProps) 
     <>
       {!isStart && !isEnd && (
         <>
-          <DropdownMenu.Sub>
-            <DropdownMenu.SubTrigger>
-              {'Type'}
-            </DropdownMenu.SubTrigger>
-            <DropdownMenu.SubContent>
-              <DropdownMenu.Item onClick={() => handleUpdateConnection(true, true)}>
-                {isInput && isOutput ? '✓ Input And Output' : '  Input And Output'}
-              </DropdownMenu.Item>
-              <DropdownMenu.Item onClick={() => handleUpdateConnection(true, false)}>
-                {isInput && !isOutput ? '✓ Input Only' : '  Input Only'}
-              </DropdownMenu.Item>
-              <DropdownMenu.Item onClick={() => handleUpdateConnection(false, true)}>
-                {!isInput && isOutput ? '✓ Output Only' : '  Output Only'}
-              </DropdownMenu.Item>
-              <DropdownMenu.Item onClick={() => handleUpdateConnection(false, false)}>
-                {!isInput && !isOutput ? '✓ None' : '  None'}
-              </DropdownMenu.Item>
-            </DropdownMenu.SubContent>
-          </DropdownMenu.Sub>
-
-          <DropdownMenu.Separator/>
 
           {renderInsertSubmenu('before')}
           {renderInsertSubmenu('after')}

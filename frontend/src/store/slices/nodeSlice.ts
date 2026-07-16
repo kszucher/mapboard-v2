@@ -2,8 +2,8 @@ import type { StateCreator } from 'zustand';
 import type { AppFlowEdge } from '../../components/types';
 import {
   createNewNode,
-  getPrimaryInputSlotId,
-  getPrimaryOutputSlotId,
+  getPrimaryInputHandleId,
+  getPrimaryOutputHandleId,
   updateNodeNodeType,
 } from '../../utils/flowUtils';
 import { updateFlowState } from '../helpers';
@@ -32,9 +32,8 @@ export const createNodeSlice: StateCreator<
       const oldEdges = state.edges.filter(e => isAfter ? e.sourceHandle === connectorId : e.targetHandle === connectorId);
 
       const appNode = createNewNode(nodeType);
-      const defaultSlots = appNode.data.node.slots;
-      const toSlotId = getPrimaryInputSlotId(defaultSlots);
-      const fromSlotId = getPrimaryOutputSlotId(defaultSlots);
+      const toSlotId = getPrimaryInputHandleId(appNode.data.node);
+      const fromSlotId = getPrimaryOutputHandleId(appNode.data.node);
 
       let targetOrSourceNode = state.nodes.find(n => n.id === connectorId);
       if (!targetOrSourceNode) {
@@ -100,22 +99,16 @@ export const createNodeSlice: StateCreator<
     if (!node) return;
 
     const nodeType = node.data?.node?.node_type;
-    if (!nodeType || nodeType === 'START' || nodeType === 'END') return;
-
-    const nodeSlots = node.data.node.slots;
-    const inputs = nodeSlots.filter(s => s.is_input);
-    const outputs = nodeSlots.filter(s => s.is_output);
-    if (inputs.length !== 1 || outputs.length !== 1) {
-      set({ errorMessage: 'Can only shortcircuit nodes with exactly one input and one output slot.' });
+    if (nodeType !== 'STEP') {
+      set({ errorMessage: 'Can only shortcircuit step nodes.' });
       return;
     }
 
     await updateFlowState(set, get, (state) => {
-      const nodeSlotIds = new Set(nodeSlots.map(s => s.id));
-      const incoming = state.edges.filter(e => nodeSlotIds.has(e.targetHandle || ''));
-      const outgoing = state.edges.filter(e => nodeSlotIds.has(e.sourceHandle || ''));
+      const incoming = state.edges.filter(e => e.target === nodeId);
+      const outgoing = state.edges.filter(e => e.source === nodeId);
 
-      let nextEdges = state.edges.filter(e => !nodeSlotIds.has(e.sourceHandle || '') && !nodeSlotIds.has(e.targetHandle || ''));
+      let nextEdges = state.edges.filter(e => e.source !== nodeId && e.target !== nodeId);
 
       if (incoming.length > 0 && outgoing.length > 0) {
         const sortedOutgoing = [...outgoing].sort((a, b) => a.id.localeCompare(b.id));

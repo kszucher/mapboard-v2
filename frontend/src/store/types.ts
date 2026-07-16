@@ -54,12 +54,10 @@ export interface NodeSlice {
 }
 
 export interface SlotSlice {
-  createSlot: (nodeId: string, isInput: boolean, isOutput: boolean, idx: number) => Promise<void>;
+  createSlot: (nodeId: string, idx: number) => Promise<void>;
   deleteSlot: (slotId: string) => Promise<void>;
   updateSlot: (slotId: string, updates: {
     raw_string?: string;
-    is_input?: boolean;
-    is_output?: boolean;
     selected?: boolean;
   }) => Promise<void>;
   moveSlot: (slotId: string, direction: 'up' | 'down' | 'top' | 'bottom') => Promise<void>;
