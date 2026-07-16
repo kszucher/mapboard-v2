@@ -15,7 +15,6 @@ const NODE_COLORS: Record<NodeType, BadgeProps['color']> = {
   END: 'gray',
   STEP: 'purple',
   SWITCH: 'amber',
-  JOIN: 'teal',
 };
 
 const CustomNodeComponent = ({ data, id, selected }: NodeProps<AppFlowNode>) => {

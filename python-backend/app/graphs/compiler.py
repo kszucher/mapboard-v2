@@ -45,7 +45,7 @@ def compile_flow_with_langgraph(flow_json: dict):
         node_id = node["id"]
         node_type = node["node_type"]
         
-        if node_type in ["STEP", "SWITCH", "JOIN"]:
+        if node_type in ["STEP", "SWITCH"]:
             func = extract_node_function(node.get("code", ""))
             node_functions[node_id] = func
             workflow.add_node(node_id, func)

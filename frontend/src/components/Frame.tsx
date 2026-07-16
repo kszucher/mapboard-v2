@@ -12,7 +12,6 @@ import type { NodeType } from './types';
 const NODE_TYPES: NodeType[] = [
   'STEP',
   'SWITCH',
-  'JOIN',
 ];
 
 export const Frame = () => {

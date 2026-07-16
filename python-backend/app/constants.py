@@ -20,7 +20,6 @@ class NodeType(str, Enum):
     END = "END"
     STEP = "STEP"
     SWITCH = "SWITCH"
-    JOIN = "JOIN"
 
 
 class SlotType(str, Enum):

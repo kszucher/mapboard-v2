@@ -73,7 +73,7 @@ export function runSwitchRouteDiagnostics(code: string, outputSlotLabels: string
     const returnedValue = match[2];
     const fullMatch = match[0];
 
-    if (!validLabels.has(returnedValue)) {
+    if (returnedValue !== "" && !validLabels.has(returnedValue)) {
       const from = match.index;
       const to = match.index + fullMatch.length;
 

@@ -9,7 +9,6 @@ export const NODE_LABELS: Record<NodeType, string> = {
   END: 'End',
   STEP: 'Step',
   SWITCH: 'Switch',
-  JOIN: 'Join',
 };
 
 export const getAvailableConversions = (
@@ -21,7 +20,6 @@ export const getAvailableConversions = (
   const allTypes: NodeType[] = [
     'STEP',
     'SWITCH',
-    'JOIN',
   ];
   return allTypes
     .filter(t => t !== currentType)
@@ -53,11 +51,6 @@ export const createDefaultSlotsForNode = (
     return [
       { id: baseId, is_input: true, is_output: false, raw_string: '', selected: false },
       { id: subId, is_input: false, is_output: true, raw_string: '', selected: false }
-    ];
-  } else if (nodeType === 'JOIN') {
-    return [
-      { id: subId, is_input: true, is_output: false, raw_string: '', selected: false },
-      { id: baseId, is_input: false, is_output: true, raw_string: '', selected: false }
     ];
   }
   return [];
@@ -176,8 +169,6 @@ export const createNewNode = (
     defaultCode = 'def step_node(state: dict) -> dict:\n    # Write step logic here\n    return {}';
   } else if (nodeType === 'SWITCH') {
     defaultCode = 'def switch_node(state: dict) -> str:\n    # Return target slot name (e.g. \'route_a\')\n    return ""';
-  } else if (nodeType === 'JOIN') {
-    defaultCode = 'def join_node(state: dict) -> dict:\n    # Merge parallel branch outputs\n    return {}';
   } else if (nodeType === 'START' || nodeType === 'END') {
     defaultCode = '# Read-only node';
   }
@@ -376,9 +367,62 @@ export const getTemplateForNode = (node: ApiNode): string => {
     const middleElifs = outputSlots.slice(1, -1).map(s => `    elif True:\n        return "${s.raw_string}"`).join('\n');
     return `def switch_node(state: dict) -> str:\n    if True:\n        return "${outputSlots[0].raw_string}"\n${middleElifs}\n    else:\n        return "${outputSlots[outputSlots.length - 1].raw_string}"`;
   }
-  if (nodeType === 'JOIN') {
-    const triggers = node.slots.filter(s => s.is_input).map(s => `    # - "${s.raw_string || 'Slot Label'}"`).join('\n');
-    return `def join_node(state: dict) -> dict:\n    # Merging inputs from:\n${triggers || '    # (Add input slots in the UI first)'}\n    return {}`;
-  }
   return '# Read-only node';
 };
+
+export function syncSwitchCodeWithSlots(code: string, slots: any[]): string {
+  if (!code) return '';
+
+  const conditionMap: Record<string, string> = {};
+  
+  // Parse if/elif statements: if <cond>: \n return "label"
+  const ifRegex = /(?:if|elif)\s+([^:]+):\s*\n\s*return\s+["']([^"']+)["']/g;
+  let match;
+  while ((match = ifRegex.exec(code)) !== null) {
+    const condition = match[1].trim();
+    const label = match[2];
+    conditionMap[label] = condition;
+  }
+
+  const outputSlots = slots.filter(s => s.is_output);
+  if (outputSlots.length === 0) {
+    return `def switch_node(state: dict) -> str:\n    # Add output slots in the UI first\n    return ""`;
+  }
+
+  const lines = ["def switch_node(state: dict) -> str:"];
+
+  if (outputSlots.length === 1) {
+    const label = outputSlots[0].raw_string || 'Slot';
+    const cond = conditionMap[label] || 'True';
+    lines.push(`    if ${cond}:`);
+    lines.push(`        return "${label}"`);
+    lines.push(`    return ""`);
+  } else if (outputSlots.length === 2) {
+    const label1 = outputSlots[0].raw_string || 'Slot 1';
+    const cond1 = conditionMap[label1] || 'True';
+    const label2 = outputSlots[1].raw_string || 'Slot 2';
+    
+    lines.push(`    if ${cond1}:`);
+    lines.push(`        return "${label1}"`);
+    lines.push(`    else:`);
+    lines.push(`        return "${label2}"`);
+  } else {
+    const firstLabel = outputSlots[0].raw_string || 'Slot 1';
+    const firstCond = conditionMap[firstLabel] || 'True';
+    lines.push(`    if ${firstCond}:`);
+    lines.push(`        return "${firstLabel}"`);
+    
+    for (let i = 1; i < outputSlots.length - 1; i++) {
+      const label = outputSlots[i].raw_string || `Slot ${i + 1}`;
+      const cond = conditionMap[label] || 'True';
+      lines.push(`    elif ${cond}:`);
+      lines.push(`        return "${label}"`);
+    }
+    
+    const lastLabel = outputSlots[outputSlots.length - 1].raw_string || `Slot ${outputSlots.length}`;
+    lines.push(`    else:`);
+    lines.push(`        return "${lastLabel}"`);
+  }
+
+  return lines.join('\n');
+}
