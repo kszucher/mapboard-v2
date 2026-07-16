@@ -52,10 +52,10 @@ export const ExpressionEditor = ({ initialValue, onApprove, nodeId, slotId }: Ex
   useEffect(() => {
     if (!isWasmReady) return;
 
-    const builtinNames = [
-      ...variables.map(v => v.name),
-      ...functions.map(f => f.name),
-    ];
+    // Only register function names as Ruff builtins so custom calls like my_func() are not
+    // flagged as undefined. Variable names are intentionally excluded — they are only valid
+    // via state["x"] or state.x access, so bare `x` should be an error.
+    const builtinNames = functions.map(f => f.name);
 
     const ws = createRuffWorkspace(builtinNames, nodeType);
     setWorkspace(ws);
@@ -103,7 +103,7 @@ export const ExpressionEditor = ({ initialValue, onApprove, nodeId, slotId }: Ex
     const autocompleteExtension = autocompletion({
       override: [
         (context) => {
-          // 1. Context-aware autocomplete for state["key"]
+          // 1a. Context-aware autocomplete for state["key"] bracket access
           const stateMatch = context.matchBefore(/state\[\s*["']\w*/);
           if (stateMatch) {
             const quoteChar = stateMatch.text.includes('"') ? '"' : "'";
@@ -118,6 +118,24 @@ export const ExpressionEditor = ({ initialValue, onApprove, nodeId, slotId }: Ex
               }));
             return {
               from: stateMatch.from,
+              options,
+            };
+          }
+
+          // 1b. Context-aware autocomplete for state.varname dot access
+          const stateDotMatch = context.matchBefore(/state\.\w*/);
+          if (stateDotMatch) {
+            const query = stateDotMatch.text.slice('state.'.length);
+            const options = variables
+              .filter((v) => v.name.toLowerCase().includes(query.toLowerCase()))
+              .map((v) => ({
+                label: `state.${v.name}`,
+                type: 'property',
+                detail: `(${v.type})`,
+                apply: `state.${v.name}`,
+              }));
+            return {
+              from: stateDotMatch.from,
               options,
             };
           }

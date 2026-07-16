@@ -58,6 +58,26 @@ export function runStateDiagnostics(code: string, variables: Variable[]): Diagno
     }
   }
 
+  // Regex to match: state.varname dot-access
+  const stateDotAccessRegex = /state\.([A-Za-z_]\w*)/g;
+
+  while ((match = stateDotAccessRegex.exec(code)) !== null) {
+    const varName = match[1];
+    const fullMatch = match[0];
+
+    if (!registeredNames.has(varName)) {
+      const from = match.index;
+      const to = match.index + fullMatch.length;
+
+      diagnostics.push({
+        from,
+        to,
+        severity: 'error',
+        message: `Attribute '${varName}' does not exist in Graph State.`,
+      });
+    }
+  }
+
   return diagnostics;
 }
 

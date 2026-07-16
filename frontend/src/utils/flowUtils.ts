@@ -355,10 +355,10 @@ export const getTemplateForNode = (node: ApiNode): string => {
       return `def switch_node(state: dict) -> str:\n    if True:\n        return "${outputSlots[0].raw_string}"\n    return ""`;
     }
     if (outputSlots.length === 2) {
-      return `def switch_node(state: dict) -> str:\n    if True:\n        return "${outputSlots[0].raw_string}"\n    else:\n        return "${outputSlots[1].raw_string}"`;
+      return `def switch_node(state: dict) -> str:\n    if True:\n        return "${outputSlots[0].raw_string}"\n    else:  # cond: True\n        return "${outputSlots[1].raw_string}"`;
     }
     const middleElifs = outputSlots.slice(1, -1).map(s => `    elif True:\n        return "${s.raw_string}"`).join('\n');
-    return `def switch_node(state: dict) -> str:\n    if True:\n        return "${outputSlots[0].raw_string}"\n${middleElifs}\n    else:\n        return "${outputSlots[outputSlots.length - 1].raw_string}"`;
+    return `def switch_node(state: dict) -> str:\n    if True:\n        return "${outputSlots[0].raw_string}"\n${middleElifs}\n    else:  # cond: True\n        return "${outputSlots[outputSlots.length - 1].raw_string}"`;
   }
   return '# Read-only node';
 };
@@ -372,6 +372,14 @@ export function syncSwitchCodeWithSlots(code: string, slots: any[]): string {
   const ifRegex = /(?:if|elif)\s+([^:]+):\s*\n\s*return\s+["']([^"']+)["']/g;
   let match;
   while ((match = ifRegex.exec(code)) !== null) {
+    const condition = match[1].trim();
+    const label = match[2];
+    conditionMap[label] = condition;
+  }
+
+  // Parse else statements with comment: else: # cond: <cond> \n return "label"
+  const elseRegex = /else:\s*#\s*cond:\s*([^\r\n]+)\s*\n\s*return\s+["']([^"']+)["']/g;
+  while ((match = elseRegex.exec(code)) !== null) {
     const condition = match[1].trim();
     const label = match[2];
     conditionMap[label] = condition;
@@ -394,10 +402,11 @@ export function syncSwitchCodeWithSlots(code: string, slots: any[]): string {
     const label1 = outputSlots[0].raw_string || 'Slot 1';
     const cond1 = conditionMap[label1] || 'True';
     const label2 = outputSlots[1].raw_string || 'Slot 2';
+    const cond2 = conditionMap[label2] || 'True';
     
     lines.push(`    if ${cond1}:`);
     lines.push(`        return "${label1}"`);
-    lines.push(`    else:`);
+    lines.push(`    else:  # cond: ${cond2}`);
     lines.push(`        return "${label2}"`);
   } else {
     const firstLabel = outputSlots[0].raw_string || 'Slot 1';
@@ -413,7 +422,8 @@ export function syncSwitchCodeWithSlots(code: string, slots: any[]): string {
     }
     
     const lastLabel = outputSlots[outputSlots.length - 1].raw_string || `Slot ${outputSlots.length}`;
-    lines.push(`    else:`);
+    const lastCond = conditionMap[lastLabel] || 'True';
+    lines.push(`    else:  # cond: ${lastCond}`);
     lines.push(`        return "${lastLabel}"`);
   }
 
