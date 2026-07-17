@@ -120,7 +120,12 @@ def generate_graph_code(
             pass  # Use fallback default code if existing code can't be parsed
 
     # 1. Generate Imports
-    code_lines = ["from typing import TypedDict", "from langgraph.graph import StateGraph, START, END", ""]
+    code_lines = [
+        "from typing import TypedDict",
+        "",
+        "from langgraph.graph import END, START, StateGraph",
+        "",
+    ]
 
     # 2. Generate State Definition
     code_lines.append("# ----------------------------------------------------")
