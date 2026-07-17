@@ -167,9 +167,7 @@ async def sync_graph_flow(
                 "variables": parsed["variables"],
                 "functions": functions,
             }
-            final_code = generate_graph_code(
-                temp_payload, existing_code=new_code, old_nodes=old_nodes
-            )
+            final_code = generate_graph_code(temp_payload, existing_code=new_code, old_nodes=old_nodes)
 
             flow_data = {
                 "code": final_code,
@@ -184,9 +182,7 @@ async def sync_graph_flow(
             raise HTTPException(status_code=422, detail=str(e))
     else:
         # Visual edit on the canvas (e.g. node created, deleted, connected, slot modified)
-        generated = generate_graph_code(
-            payload_dict, existing_code=existing_code, old_nodes=old_nodes
-        )
+        generated = generate_graph_code(payload_dict, existing_code=existing_code, old_nodes=old_nodes)
 
         parsed = parse_code_to_graph(generated)
 

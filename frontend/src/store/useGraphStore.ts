@@ -5,7 +5,6 @@ import { createHistorySlice } from './slices/historySlice';
 import { createInitSlice } from './slices/initSlice';
 import { createNodeSlice } from './slices/nodeSlice';
 import { createSlotSlice } from './slices/slotSlice';
-import { createVariableFunctionSlice } from './slices/variableFunctionSlice';
 import { setOnSaveStateChange, setOnSyncResponse } from './storeEngine';
 import type { GraphStoreState } from './types';
 
@@ -28,7 +27,6 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
   ...createFlowSlice(set, get, store),
   ...createNodeSlice(set, get, store),
   ...createSlotSlice(set, get, store),
-  ...createVariableFunctionSlice(set, get, store),
   ...createExecutionSlice(set, get, store),
   ...createHistorySlice(set, get, store),
 }));

@@ -70,12 +70,6 @@ export interface SlotSlice {
   clearSlotSelection: () => Promise<void>;
 }
 
-export interface VariableFunctionSlice {
-  addVariable: (name: string, type: 'boolean' | 'string' | 'number') => Promise<void>;
-  addFunction: (name: string, inputVariableId: string | null, outputVariableId: string | null, rawString: string) => Promise<void>;
-  deleteFunction: (functionId: string) => Promise<void>;
-}
-
 export interface ExecutionSlice {
   updateCode: (code: string) => Promise<void>;
   runGraph: () => Promise<void>;
@@ -93,6 +87,5 @@ export type GraphStoreState = BaseState &
   FlowSlice &
   NodeSlice &
   SlotSlice &
-  VariableFunctionSlice &
   ExecutionSlice &
   HistorySlice;

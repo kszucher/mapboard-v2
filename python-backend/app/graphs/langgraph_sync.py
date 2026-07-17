@@ -111,7 +111,7 @@ def generate_graph_code(
             for node in tree.body:
                 if isinstance(node, ast.FunctionDef):
                     existing_funcs[node.name] = "\n".join(lines[node.lineno - 1 : node.end_lineno])
-                    
+
                     # Statically extract conditional router mapping via AST
                     conditions = _extract_switch_conditions(node)
                     if conditions:
@@ -176,7 +176,7 @@ def generate_graph_code(
                 has_any_custom_cond = any(cond != "True" for cond in conditions.values())
                 for i, slot in enumerate(slots):
                     label = slot["raw_string"] or f"Slot {i + 1}"
-                    
+
                     # Try to retrieve condition using the slot's old label (resolves renames)
                     old_label = old_slot_labels.get(slot["id"])
                     cond = "True"
@@ -184,12 +184,12 @@ def generate_graph_code(
                         cond = conditions[old_label]
                     elif label in conditions:
                         cond = conditions[label]
-                        
+
                     # Prefill switch skeletons with state example if no conditions exist
                     if cond == "True" and not has_any_custom_cond and len(slots) >= 2:
                         if i == 0:
                             cond = 'state.get("x", 0) > 0'
-                    code_lines.append(f"    { 'if' if i == 0 else 'elif' } {cond}:")
+                    code_lines.append(f"    {'if' if i == 0 else 'elif'} {cond}:")
                     code_lines.append(f'        return "{label}"')
                 code_lines.append('    return ""')
         elif node_name in existing_funcs:

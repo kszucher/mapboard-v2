@@ -1,11 +1,13 @@
 import { acceptCompletion, autocompletion } from '@codemirror/autocomplete';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { python } from '@codemirror/lang-python';
+import { linter, lintGutter } from '@codemirror/lint';
 import { Annotation, EditorState } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { drawSelection, EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { Box, Button, Card, Flex, Text } from '@radix-ui/themes';
 import { useEffect, useRef, useState } from 'react';
+import { createRuffWorkspace, initRuff, runRuffLint } from '../services/ruffLinter';
 import { useGraphStore } from '../store/useGraphStore';
 
 interface FullCodeEditorProps {
@@ -22,8 +24,23 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
   const updateCode = useGraphStore(state => state.updateCode);
   const errorMessage = useGraphStore(state => state.errorMessage);
   const clearErrorMessage = useGraphStore(state => state.clearErrorMessage);
+  const variables = useGraphStore(state => state.variables);
 
   const [currentValue, setCurrentValue] = useState(code);
+  const [workspace, setWorkspace] = useState<any>(null);
+
+  // Initialize Ruff WASM and Workspace
+  useEffect(() => {
+    let active = true;
+    void initRuff().then(() => {
+      if (!active) return;
+      const ws = createRuffWorkspace(variables.map(v => v.name));
+      setWorkspace(ws);
+    });
+    return () => {
+      active = false;
+    };
+  }, [variables]);
 
   // Update editor content when store code changes (e.g. initial load or visual sync)
   useEffect(() => {
@@ -47,7 +64,6 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
       if (update.docChanged) {
         const val = update.state.doc.toString();
         setCurrentValue(val);
-        // Clear error message when user starts typing again
         clearErrorMessage();
       }
     });
@@ -65,7 +81,52 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
         python(),
         drawSelection(),
         oneDark,
-        autocompletion(),
+        autocompletion({
+          override: [
+            (context) => {
+              // 1a. Context-aware autocomplete for state["key"] bracket access
+              const stateMatch = context.matchBefore(/state\[\s*["']\w*/);
+              if (stateMatch) {
+                const quoteChar = stateMatch.text.includes('"') ? '"' : "'";
+                const query = stateMatch.text.split(/["']/)[1] || '';
+                const options = variables
+                  .filter((v) => v.name.toLowerCase().includes(query.toLowerCase()))
+                  .map((v) => ({
+                    label: v.name,
+                    type: 'property',
+                    detail: `(${v.type})`,
+                    apply: `state[${quoteChar}${v.name}${quoteChar}]`
+                  }));
+                return {
+                  from: stateMatch.from,
+                  options,
+                };
+              }
+
+              // 1b. Context-aware autocomplete for state.varname dot access
+              const stateDotMatch = context.matchBefore(/state\.\w*/);
+              if (stateDotMatch) {
+                const query = stateDotMatch.text.slice('state.'.length);
+                const options = variables
+                  .filter((v) => v.name.toLowerCase().includes(query.toLowerCase()))
+                  .map((v) => ({
+                    label: `state.${v.name}`,
+                    type: 'property',
+                    detail: `(${v.type})`,
+                    apply: `state.${v.name}`,
+                  }));
+                return {
+                  from: stateDotMatch.from,
+                  options,
+                };
+              }
+
+              return null;
+            }
+          ]
+        }),
+        workspace ? linter((view) => runRuffLint(view.state, workspace)) : [],
+        lintGutter(),
         updateListener,
         EditorState.tabSize.of(4),
         EditorState.transactionFilter.of(tr => {
@@ -118,7 +179,7 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
       view.destroy();
       viewRef.current = null;
     };
-  }, []); // Only initialize once
+  }, [workspace]); // Re-create view when workspace updates to reload linter builtin configurations
 
   const isChanged = currentValue !== code;
 
