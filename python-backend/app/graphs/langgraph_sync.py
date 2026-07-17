@@ -15,15 +15,17 @@ def _extract_switch_conditions(node: ast.FunctionDef) -> dict[str, str]:
     conditions = {}
 
     def walk(if_node: ast.AST, conds_map: dict[str, str]) -> None:
-        if isinstance(if_node, ast.If):
-            ret_val = None
-            for sub in if_node.body:
-                if isinstance(sub, ast.Return) and isinstance(sub.value, ast.Constant):
-                    ret_val = sub.value.value
-            if ret_val:
-                conds_map[ret_val] = ast.unparse(if_node.test)
-            for sub in if_node.orelse:
-                walk(sub, conds_map)
+        match if_node:
+            case ast.If(body=body, orelse=orelse, test=test):
+                ret_val = None
+                for sub in body:
+                    match sub:
+                        case ast.Return(value=ast.Constant(value=val)):
+                            ret_val = val
+                if ret_val:
+                    conds_map[ret_val] = ast.unparse(test)
+                for sub in orelse:
+                    walk(sub, conds_map)
 
     for stmt in node.body:
         walk(stmt, conditions)
@@ -48,33 +50,34 @@ def parse_code_to_graph(code: str) -> dict[str, Any]:
     function_sources: dict[str, str] = {}
 
     for node in tree.body:
-        # 1. Parse TypedDict State class
-        if isinstance(node, ast.ClassDef) and node.name == "State":
-            for stmt in node.body:
-                if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name):
-                    var_name = stmt.target.id
-                    type_str = ast.unparse(stmt.annotation)
-                    gb_type = "string"
-                    if type_str in ("int", "float", "number"):
-                        gb_type = "number"
-                    elif type_str in ("bool", "boolean"):
-                        gb_type = "boolean"
-                    elif type_str == "str":
-                        gb_type = "string"
+        match node:
+            # 1. Parse TypedDict State class
+            case ast.ClassDef(name="State", body=body):
+                for stmt in body:
+                    match stmt:
+                        case ast.AnnAssign(target=ast.Name(id=var_name), annotation=ann):
+                            type_str = ast.unparse(ann)
+                            gb_type = "string"
+                            if type_str in ("int", "float", "number"):
+                                gb_type = "number"
+                            elif type_str in ("bool", "boolean"):
+                                gb_type = "boolean"
+                            elif type_str == "str":
+                                gb_type = "string"
 
-                    variables.append(
-                        {
-                            "id": var_name,
-                            "name": var_name,
-                            "type": gb_type,
-                            "value": None,
-                        }
-                    )
+                            variables.append(
+                                {
+                                    "id": var_name,
+                                    "name": var_name,
+                                    "type": gb_type,
+                                    "value": None,
+                                }
+                            )
 
-        # 2. Extract top-level function source codes
-        elif isinstance(node, ast.FunctionDef):
-            func_code = "\n".join(lines[node.lineno - 1 : node.end_lineno])
-            function_sources[node.name] = func_code
+            # 2. Extract top-level function source codes
+            case ast.FunctionDef(name=name, lineno=lineno, end_lineno=end_lineno):
+                func_code = "\n".join(lines[lineno - 1 : end_lineno])
+                function_sources[name] = func_code
 
     return {
         "variables": variables,
