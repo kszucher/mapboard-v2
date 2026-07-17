@@ -78,6 +78,7 @@ def generate_graph_code(payload: dict[str, Any], existing_code: str = "") -> str
     """
     # Parse existing functions to preserve their code bodies/helpers
     existing_funcs = {}
+    switch_conditions = {}
     if existing_code.strip():
         try:
             tree = ast.parse(existing_code)
@@ -85,6 +86,23 @@ def generate_graph_code(payload: dict[str, Any], existing_code: str = "") -> str
             for node in tree.body:
                 if isinstance(node, ast.FunctionDef):
                     existing_funcs[node.name] = "\n".join(lines[node.lineno - 1 : node.end_lineno])
+                    
+                    # Statically extract conditional router mapping via AST
+                    conditions = {}
+                    def walk(if_node, conds_map):
+                        if isinstance(if_node, ast.If):
+                            ret_val = None
+                            for sub in if_node.body:
+                                if isinstance(sub, ast.Return) and isinstance(sub.value, ast.Constant):
+                                    ret_val = sub.value.value
+                            if ret_val:
+                                conds_map[ret_val] = ast.unparse(if_node.test)
+                            for sub in if_node.orelse:
+                                walk(sub, conds_map)
+                    for stmt in node.body:
+                        walk(stmt, conditions)
+                    if conditions:
+                        switch_conditions[node.name] = conditions
         except Exception:
             pass  # Use fallback default code if existing code can't be parsed
 
@@ -133,34 +151,32 @@ def generate_graph_code(payload: dict[str, Any], existing_code: str = "") -> str
 
     for node in logic_nodes:
         node_name = node["id"]
-        if node_name in existing_funcs:
+        if node["node_type"] == "SWITCH":
+            slots = node.get("slots", [])
+            conditions = switch_conditions.get(node_name, {})
+            code_lines.append(f"def {node_name}(state: State) -> str:")
+            if not slots:
+                code_lines.append("    # Add output slots in the UI first")
+                code_lines.append('    return ""')
+            else:
+                # If there were no prior conditions, seed first two with a standard example
+                has_any_custom_cond = any(cond != "True" for cond in conditions.values())
+                for i, slot in enumerate(slots):
+                    label = slot["raw_string"] or f"Slot {i + 1}"
+                    cond = conditions.get(label, "True")
+                    # Prefill switch skeletons with state example if no conditions exist
+                    if cond == "True" and not has_any_custom_cond and len(slots) >= 2:
+                        if i == 0:
+                            cond = 'state.get("x", 0) > 0'
+                    code_lines.append(f"    { 'if' if i == 0 else 'elif' } {cond}:")
+                    code_lines.append(f'        return "{label}"')
+                code_lines.append('    return ""')
+        elif node_name in existing_funcs:
             # Reuse existing function body/code
             code_lines.append(existing_funcs[node_name])
         else:
             # Generate default skeleton
-            if node["node_type"] == "SWITCH":
-                slots = node.get("slots", [])
-                if len(slots) >= 2:
-                    first = slots[0]["raw_string"]
-                    second = slots[1]["raw_string"]
-                    code_lines.append(
-                        f'def {node_name}(state: State) -> str:\n'
-                        f'    if state.get("x", 0) > 0:\n'
-                        f'        return "{first}"\n'
-                        f'    return "{second}"'
-                    )
-                elif slots:
-                    code_lines.append(
-                        f'def {node_name}(state: State) -> str:\n'
-                        f'    return "{slots[0]["raw_string"]}"'
-                    )
-                else:
-                    code_lines.append(
-                        f'def {node_name}(state: State) -> str:\n'
-                        f'    return "default"'
-                    )
-            else:
-                code_lines.append(f"def {node_name}(state: State) -> dict:\n    return {{}}")
+            code_lines.append(f"def {node_name}(state: State) -> dict:\n    return {{}}")
         code_lines.append("")
 
     # 5. Generate Graph Topology
