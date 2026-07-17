@@ -47,17 +47,19 @@ async def run_graph(graph_id: uuid.UUID, uow: Any = Depends(get_uow)) -> dict[st
     if not graph:
         raise HTTPException(status_code=404, detail="Graph not found")
 
+    from app.graphs.schemas import GraphFlowRead
+
     flow_json = (
         dict(graph.flow_json) if graph.flow_json else {"nodes": [], "edges": [], "variables": [], "functions": []}
     )
+    flow = GraphFlowRead.model_validate(flow_json)
 
     try:
-        app = compile_flow_with_langgraph(flow_json)
+        app = compile_flow_with_langgraph(flow)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=f"Compilation Error: {str(e)}")
 
-    variables = flow_json.get("variables", [])
-    initial_input = {v["name"]: v.get("value") for v in variables}
+    initial_input = {v.name: v.value for v in flow.variables}
 
     try:
         final_state = await app.ainvoke(initial_input)
@@ -65,13 +67,13 @@ async def run_graph(graph_id: uuid.UUID, uow: Any = Depends(get_uow)) -> dict[st
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Execution Error: {str(e)}")
 
     updated_variables = []
-    for var in variables:
-        val = final_state.get(var["name"], var.get("value"))
-        var["value"] = val
+    for var in flow.variables:
+        val = final_state.get(var.name, var.value)
+        var.value = val
         updated_variables.append(var)
 
-    flow_json["variables"] = updated_variables
-    graph.flow_json = flow_json
+    flow.variables = updated_variables
+    graph.flow_json = flow.model_dump(mode="json")
     await uow.session.flush()
     await uow.commit()
 
