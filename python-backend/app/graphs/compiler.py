@@ -30,6 +30,25 @@ def extract_node_function(node_code: str) -> callable:
 
 
 def compile_flow_with_langgraph(flow_json: dict):
+    code = flow_json.get("code", "")
+    if code:
+        namespace = {}
+        try:
+            exec(code, {}, namespace)
+        except Exception as e:
+            raise ValueError(f"Execution failed: {str(e)}") from e
+
+        # Find compiled Pregel app or StateGraph
+        from langgraph.pregel import Pregel
+
+        for val in namespace.values():
+            if isinstance(val, Pregel):
+                return val
+            if isinstance(val, StateGraph):
+                return val.compile()
+        raise ValueError("Could not find compiled 'app' or 'workflow' object in python script.")
+
+    # Fallback to visual parsing if no code is present (legacy)
     # 1. Build State TypedDict
     GraphState = build_dynamic_state(flow_json.get("variables", []))
 

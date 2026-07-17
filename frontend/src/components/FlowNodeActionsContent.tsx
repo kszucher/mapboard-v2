@@ -75,7 +75,6 @@ export const FlowNodeActionsContent = ({ nodeId }: FlowNodeActionsContentProps) 
   }, [nodeData, convertNode]);
 
 
-
   const handleInsert = useCallback(
     (nodeType: InsertableNodeType, direction: 'before' | 'after') => {
       void insertNode(nodeId, nodeType, direction);

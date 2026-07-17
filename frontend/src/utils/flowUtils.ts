@@ -387,7 +387,10 @@ export function parseSwitchConditions(code: string): Record<string, string> {
       const ch = afterKeyword[j];
       if (ch === '(' || ch === '[' || ch === '{') depth++;
       else if (ch === ')' || ch === ']' || ch === '}') depth--;
-      else if (ch === ':' && depth === 0) { conditionEnd = j; break; }
+      else if (ch === ':' && depth === 0) {
+        conditionEnd = j;
+        break;
+      }
     }
     if (conditionEnd === -1) continue;
 

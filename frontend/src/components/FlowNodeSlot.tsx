@@ -86,7 +86,6 @@ export const FlowNodeSlot = memo(({
   }, [slotId, deleteSlot]);
 
 
-
   if (!slot) return null;
 
   const leftHandle = false;

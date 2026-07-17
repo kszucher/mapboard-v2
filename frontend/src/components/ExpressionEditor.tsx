@@ -1,15 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
-import { EditorState } from '@codemirror/state';
-import { EditorView, keymap, drawSelection } from '@codemirror/view';
+import { Workspace } from '@astral-sh/ruff-wasm-web';
+import { acceptCompletion, autocompletion } from '@codemirror/autocomplete';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { python } from '@codemirror/lang-python';
 import { type Diagnostic } from '@codemirror/lint';
-import { initRuff, createRuffWorkspace, runRuffLint } from '../utils/RuffLinter';
-import { Workspace } from '@astral-sh/ruff-wasm-web';
-import { Button, Flex, Card, Text } from '@radix-ui/themes';
+import { EditorState } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
-import { autocompletion, acceptCompletion } from '@codemirror/autocomplete';
+import { drawSelection, EditorView, keymap } from '@codemirror/view';
+import { Button, Card, Flex, Text } from '@radix-ui/themes';
+import { useEffect, useRef, useState } from 'react';
 import { useGraphStore } from '../store/useGraphStore';
+import { createRuffWorkspace, initRuff, runRuffLint } from '../utils/RuffLinter';
 
 interface ExpressionEditorProps {
   initialValue: string;
@@ -295,7 +295,8 @@ export const ExpressionEditor = ({ initialValue, onApprove, nodeId, slotId }: Ex
                   try {
                     const tempState = EditorState.create({ doc: currentValue });
                     lineNum = tempState.doc.lineAt(diag.from).number;
-                  } catch (e) {}
+                  } catch (e) {
+                  }
                   return (
                     <Text key={index} size="1" color="red" style={{ fontFamily: 'monospace' }}>
                       Line {lineNum}: {diag.message}

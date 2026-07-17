@@ -95,7 +95,6 @@ export const FlowNodeSlotActionsContent = ({
   );
 
 
-
   const handleMoveTop = useCallback(() => {
     void moveSlot(slotId, 'top');
   }, [slotId, moveSlot]);

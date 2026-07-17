@@ -1,9 +1,9 @@
 import { applyEdgeChanges, applyNodeChanges, } from '@xyflow/react';
 import { create } from 'zustand';
-import type { AppFlowEdge, AppFlowNode, ApiNode } from '../components/types';
-import { runLayout } from '../utils/flowUtils';
-import { setOnSaveStateChange, triggerSave, updateFlowState } from './helpers';
 import { apiClient } from '../api/client';
+import type { ApiNode, AppFlowEdge, AppFlowNode } from '../components/types';
+import { mapToReactFlowElements, runLayout } from '../utils/flowUtils';
+import { setOnSaveStateChange, triggerSave, updateFlowState } from './helpers';
 import { createFlowSlice } from './slices/flowSlice';
 import { createHistorySlice } from './slices/historySlice';
 import { createInitSlice } from './slices/initSlice';
@@ -13,6 +13,7 @@ import type { GraphStoreState } from './types';
 
 export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
   graphId: null,
+  code: '',
   nodes: [],
   edges: [],
   variables: [],
@@ -24,6 +25,53 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
   errorMessage: null,
   clearErrorMessage: () => set({ errorMessage: null }),
   pendingLayoutNodeId: null,
+
+  updateCode: async (newCode) => {
+    const { graphId, nodes } = get();
+    if (!graphId) return;
+
+    try {
+      set({ isLoading: true });
+      const res = await apiClient.PUT('/graphs/{graph_id}/sync', {
+        params: { path: { graph_id: graphId } },
+        body: {
+          code: newCode,
+          nodes: [],
+          edges: [],
+          variables: [],
+          functions: []
+        }
+      });
+      if ('error' in res) throw res.error;
+
+      const data = res.data;
+      if (data) {
+        const positions: Record<string, { x: number; y: number }> = {};
+        nodes.forEach((n) => {
+          positions[n.id] = n.position;
+        });
+
+        const mapped = mapToReactFlowElements(data.nodes, data.edges, positions);
+        const laidOut = await runLayout(mapped.nodes, mapped.edges);
+
+        set({
+          code: data.code || newCode,
+          nodes: laidOut.nodes,
+          edges: laidOut.edges,
+          variables: data.variables || [],
+          functions: data.functions || [],
+          errorMessage: null,
+        });
+      }
+    } catch (err: any) {
+      console.error('Failed to sync code with backend:', err);
+      const detail = err.detail || String(err);
+      set({ errorMessage: detail });
+      throw new Error(detail);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
 
   addVariable: async (name, type) => {
     await updateFlowState(set, get, (state) => {
@@ -125,6 +173,7 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
     if (hasSelectChange) {
       triggerSave({
         graphId,
+        code: get().code,
         nodes,
         edges,
         variables: get().variables,
@@ -147,6 +196,7 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
           });
           triggerSave({
             graphId,
+            code: get().code,
             nodes: laidOut.nodes,
             edges: laidOut.edges,
             variables: get().variables,
@@ -182,6 +232,7 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
 
           triggerSave({
             graphId,
+            code: get().code,
             nodes: laidOut.nodes,
             edges: laidOut.edges,
             variables: get().variables,

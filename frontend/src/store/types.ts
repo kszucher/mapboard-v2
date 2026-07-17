@@ -6,12 +6,25 @@ export type GraphFlowRead = components['schemas']['GraphFlowRead'];
 
 export interface BaseState {
   graphId: string | null;
+  code: string;
   nodes: AppFlowNode[];
   edges: AppFlowEdge[];
   variables: Variable[];
   functions: FunctionEntity[];
-  past: Array<{ nodes: AppFlowNode[]; edges: AppFlowEdge[]; variables: Variable[]; functions: FunctionEntity[] }>;
-  future: Array<{ nodes: AppFlowNode[]; edges: AppFlowEdge[]; variables: Variable[]; functions: FunctionEntity[] }>;
+  past: Array<{
+    code: string;
+    nodes: AppFlowNode[];
+    edges: AppFlowEdge[];
+    variables: Variable[];
+    functions: FunctionEntity[]
+  }>;
+  future: Array<{
+    code: string;
+    nodes: AppFlowNode[];
+    edges: AppFlowEdge[];
+    variables: Variable[];
+    functions: FunctionEntity[]
+  }>;
   isLoading: boolean;
   isSaving: boolean;
   errorMessage: string | null;
@@ -21,6 +34,7 @@ export interface BaseState {
   onNodesChange: (changes: NodeChange[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;
 
+  updateCode: (code: string) => Promise<void>;
   addVariable: (name: string, type: 'boolean' | 'string' | 'number') => Promise<void>;
   addFunction: (name: string, inputVariableId: string | null, outputVariableId: string | null, rawString: string) => Promise<void>;
   deleteFunction: (functionId: string) => Promise<void>;

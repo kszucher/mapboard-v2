@@ -218,6 +218,8 @@ export interface components {
     };
     /** GraphFlowRead */
     GraphFlowRead: {
+      /** Code */
+      code: string;
       /** Nodes */
       nodes: components["schemas"]["NodeRead"][];
       /** Edges */
@@ -250,6 +252,8 @@ export interface components {
     };
     /** GraphSyncPayload */
     GraphSyncPayload: {
+      /** Code */
+      code: string;
       /** Nodes */
       nodes: components["schemas"]["NodeRead"][];
       /** Edges */
@@ -594,11 +598,13 @@ export interface operations {
     };
     responses: {
       /** @description Successful Response */
-      204: {
+      200: {
         headers: {
           [name: string]: unknown;
         };
-        content?: never;
+        content: {
+          "application/json": components["schemas"]["GraphFlowRead"];
+        };
       };
       /** @description Validation Error */
       422: {

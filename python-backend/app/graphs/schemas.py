@@ -61,6 +61,7 @@ class FunctionRead(BaseModel):
 
 
 class GraphFlowRead(BaseModel):
+    code: str = ""
     nodes: list[NodeRead]
     edges: list[EdgeRead]
     variables: list[VariableRead] = []
@@ -68,6 +69,7 @@ class GraphFlowRead(BaseModel):
 
 
 class GraphSyncPayload(BaseModel):
+    code: str = ""
     nodes: list[NodeRead]
     edges: list[EdgeRead]
     variables: list[VariableRead] = []

@@ -1,6 +1,6 @@
 # Graphboard
 
-Graphboard is a logic-driven graph editor for building, compiling, and visualizing **LangGraph** workflows. Unlike traditional free-form canvas tools, Graphboard enforces fully programmatic auto-layout using ELK and binds execution connections directly to structured code templates.
+Graphboard is a code-first, logic-driven graph editor for building, compiling, and visualizing **LangGraph** workflows. Unlike traditional canvas tools, Graphboard keeps visual node arrangements and a single, full-viewport Python script in the sidebar synchronized **bidirectionally** at all times using a Python execution introspection engine.
 
 ### Project Status & Evolution
 This repository serves as a personal, non-commercial R&D exploration and a continuous playground for full-stack AI system design. It builds upon ideas from a previous project (Mapboard) with two fundamental architectural shifts:
@@ -11,7 +11,7 @@ This repository serves as a personal, non-commercial R&D exploration and a conti
 
 ---
 
-Below is a screenshot of the AI workflow of a well-known "Who wants to be a millionaire" game, including handling intent routing, handling retries, and supporting complex state logic e.g. using lifelines. 
+Below is a screenshot of the AI workflow of a well-known "Who wants to be a millionaire" game.
 
 <img width="1980" height="1080" alt="Image" src="https://github.com/user-attachments/assets/dc6bf916-0dcb-40ca-aa49-36ea0802aedc" />
 
@@ -19,25 +19,27 @@ Below is a screenshot of the AI workflow of a well-known "Who wants to be a mill
 
 ## 1. Core Concept & Visual Node Roles
 
-In Graphboard, agentic logic is structured into two fundamental execution node types (in addition to Start/End). Each node maps a specific visual layout element to a corresponding block of Python code:
+In Graphboard, agentic logic is structured into visual execution nodes. Each node maps to a corresponding function or sentinel definition inside the single Python script:
+
+### START Node (Entry point)
+* **Role**: Defines where the workflow execution begins.
+* **Code Representation**: Mapped directly to standard LangGraph sentinels: `workflow.add_edge(START, "first_step")`.
+
+### END Node (Exit point)
+* **Role**: Defines transition out of the state machine.
+* **Code Representation**: Mapped to the `END` sentinel: `workflow.add_edge("last_step", END)` or `{"yes_route": END}`.
 
 ### STEP Node (Sequential Execution)
-* **Role**: Represents an action step that performs modifications, calculations, or triggers external tasks.
-* **Visual Structure**: Has a node-level input handle on the left and a node-level output handle on the right (initialized without slots).
-* **Code Representation**: A sequential block of Python expressions or variable updates (e.g. `x = x + 1` or `status = "processing"`).
-* **Linter Rule**: Restricts against pointless expressions; enforces assignments or valid function calls.
+* **Role**: Represents a task performing updates or calculations.
+* **Code Representation**: A python function registered via `workflow.add_node("name", func)`.
 
 ### SWITCH Node (Decision & Routing)
 * **Role**: Evaluates branching logic to dynamically route control flow to one of several downstream nodes.
-* **Visual Structure**: Has a node-level input handle on the left and multiple output slots (branches) on the right.
-* **Code Representation**: An `if`/`elif`/`else` condition block mapping to target routes.
-* **Linter Rule**: Permits plain comparison expressions (e.g. `mark_cntr > 10`), while strictly forbidding assignments (e.g. `mark_cntr = 1`).
+* **Code Representation**: A python function returned as a router inside `workflow.add_conditional_edges("name", router_func, path_map)`. The output slots on the SWITCH node represent the keys of the path map.
 
 ---
 
 ## 2. Project Progress Tracker (Incremental Status)
-
-To help future AI agents and developers understand the exact state of the codebase, here is the incremental breakdown of what has been implemented so far, followed by the immediate next steps:
 
 ### Phase 1: Core Graph & Layout Foundation (Implemented)
 * **Programmatic Auto-Layout**: Configured React Flow to disable manual node dragging (`nodesDraggable: false`) and delegate all positioning calculations to ELK.
@@ -52,53 +54,47 @@ To help future AI agents and developers understand the exact state of the codeba
 * **UoW Event Buffering**: Configured a FastAPI Unit of Work transaction manager that buffers WebSocket broadcasts until transactions commit successfully.
 
 ### Phase 3: Workspace Editor UI (Implemented)
-* **Sidebar Metadata Controls**: Added a left sidebar panel to manage variables and custom function definitions.
-* **CodeMirror Python Editor**: Integrated a CodeMirror 6 Python slot editor into the sidebar.
-* **Approve/Discard Guards**: Added local state buffers and UI control buttons so users must explicitly save or revert expression changes.
-* **Canvas Interception Prevention**: Disabled global canvas hotkeys when the cursor is focused inside inputs or CodeMirror editors.
+* **Single-File Sidebar Code Editor**: Refactored the left sidebar into a single full-viewport CodeMirror 6 Python editor. All variables, helper functions, and logic nodes are defined in this single file.
+* **Approve/Discard Guards**: Added CodeMirror state buffers so users must explicitly approve code changes to sync them to the canvas, or discard to revert.
+* **Canvas Interception Prevention**: Disabled global canvas hotkeys when the cursor is focused inside CodeMirror.
 
-### Phase 4: Linter & Type-Checking Engine (Implemented)
-* **Ruff WASM Integration**: Dynamically initialized the Ruff linter in the browser using custom variables and functions as recognized python `builtins`.
-* **Augmented Assignment Checking**: Built a custom type checker (`runTypeCheck`) to validate variable assignments, including complex updates like `+=`, `-=`, `*=`, `/=`.
-* **Function Reference Verification**: Added a negative-lookahead check to flag custom functions used without parentheses (e.g., `x` is invalid, `x()` is valid).
-* **Context-Aware Rules**: Tailored lint rules depending on node context (e.g., allowing boolean expressions on `SWITCH` nodes while blocking assignments).
-* **Always-on Status Panel**: Added a dedicated visual diagnostics panel showing clear status and line-by-line syntax or type errors with line numbers.
-* **Autocompletion**: Added autocomplete suggestions for registered variables and custom functions.
+### Phase 4: Linter & Diagnostics Engine (Implemented)
+* **Backend Validation**: Executes code compilation checks on the backend to flag syntax and import errors, surfacing full tracebacks directly inside the editor's diagnostics panel.
+* **Autocompletion**: Integrated autocomplete suggestions inside CodeMirror.
 
-### Phase 5: Code Scaffolding & LangGraph Compilation (Implemented)
-* **Switch Node Control-Flow Templates**: Automatically scaffolded and synchronized `if`/`elif`/`else` structures in CodeMirror based on output slots.
-* **Backend LangGraph DAG Compiler**: Translated the visual node structures, code blocks, and slot-to-node edges into an executable LangGraph state machine using FastAPI.
+### Phase 5: Code Scaffolding & LangGraph Introspection (Implemented)
+* **LangGraph Introspection Engine**: Executes the Python script in a clean namespace on the backend, reading properties from the compiled `workflow` object (e.g. `workflow.nodes`, `workflow.edges`, `workflow.state_schema`) to rebuild the visual graph dynamically.
+* **Visual-to-Code Generator**: Re-generates and formats the Python script using `ruff` and `black` whenever connections, slots, or nodes are added/modified visually on the canvas.
 
 ---
 
-## 3. Immediate Next Steps (Roadmap)
+## 3. Core System Architecture & Design Choices
 
-1. **Auto-Slugification**: Automatically convert human-readable node/slot labels into valid `snake_case` Python identifiers as you type.
+### Bidirectional Mapping Architecture
 
----
+```mermaid
+graph TD
+    Code[Code Editor in Sidebar] -- "On Save / Approve" --> Exec{exec Code Block}
+    Exec -- "Execution/Syntax Error" --> Diags[CodeMirror Diagnostics]
+    Exec -- "Success (Namespace Loaded)" --> Intro[LangGraph Introspection]
+    Intro -- "Extract State & Topology" --> Store[Zustand Store]
+    Store -- "ELK Layout" --> Canvas[Visual React Flow Canvas]
+    Canvas -- "On Canvas Mutations" --> Gen[Backend AST/Code Generator]
+    Gen -- "Format with Black & Ruff" --> Code
+```
 
-## 4. Core System Architecture & Design Choices
-
-### Local Zustand Store vs. DB Referential Integrity
-To keep UI edits and typing latency-free, the frontend implements a local Zustand store updating in memory. Frontend changes are synced asynchronously, relying on UI reconciliation for conflict resolution.
+### Local Zustand Store vs. DB Caching
+To keep UI edits latency-free, the frontend updates a local Zustand store in memory and syncs changes asynchronously. The visual `nodes` and `edges` list are cached in the database's `flow_json` to avoid parsing and executing python code on every read.
 
 ### Auto-Layout ONLY (No Drag-and-Drop)
 React Flow's `nodesDraggable` is set to `false`. Node coordinates `(x, y)` are computed on the fly by ELK in the frontend using node dimensions. Slot edits trigger a debounced (1000ms) ELK recalculation once resizing finishes.
 
-### Node Slot Ports & Handles
-
-* **Step Nodes**: Created without slots, utilizing node-level handles directly for inputs and outputs.
-* **Switch Nodes**: Contain output slots representing routing branches (no input slots).
-* **Hard Links**: Edge connections store specific source/target handles. For Switch nodes, the source is the specific branch slot ID.
-
-### Feedback Loops & Detour Routing
-Connections moving backwards (target node column <= source node column) are feedback loops. They are filtered out before passing the graph to ELK to avoid distorting layout dimensions and manually routed around the bottom of the graph in `edgeUtils.ts`.
-
 ---
 
-## 5. Key Implementation Gotchas
+## 4. Key Implementation Gotchas
 
+* **Fault-Tolerant Code Synchronization**: If the user writes a compilation or syntax error in CodeMirror, the backend rejects the sync payload with a `422 Unprocessable Entity` error. The frontend catches this, displays the traceback in the diagnostics panel, and freezes canvas edits to prevent writing broken states, preserving the last valid visual representation.
 * **Unconditional Layout Transitions**: Visual CSS transitions (`transition: transform 400ms...`) are applied statically to node styles in `flowUtils.ts` when elements are mapped. React Flow forwards this to the outer wrapper, animating all coordinate updates.
 * **Undo/Redo Animation Trigger**: The history snapshots store final layout positions. If loaded directly, React Flow snaps nodes instantly. To trigger slide animations, `historySlice.ts` maps the *current screen positions* onto the history nodes *before* running ELK. Do not bypass this mapping.
-* **Unit of Work (UoW) Event Buffering**: Backend FastAPI mutations are grouped in a Unit of Work transaction (`app/context.py`). WebSocket events are buffered and only broadcast to other clients *after* the database transaction commits successfully.
 * **Custom Handles Lifecycle & `updateNodeInternals`**: When slots are added or removed, React Flow's DOM-cached registry becomes stale. We must compute a stable `slotsHash` in `FlowNode.tsx` and run a `useEffect` triggering `updateNodeInternals(id)` whenever the hash changes to force React Flow to re-query the handles.
+

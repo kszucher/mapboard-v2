@@ -1,7 +1,7 @@
 import type { StateCreator } from 'zustand';
 import type { ApiSlot } from '../../components/types';
-import { updateFlowState } from '../helpers';
 import { syncSwitchCodeWithSlots } from '../../utils/flowUtils';
+import { updateFlowState } from '../helpers';
 import type { GraphStoreState, SlotSlice } from '../types';
 
 export const createSlotSlice: StateCreator<

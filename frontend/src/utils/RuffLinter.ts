@@ -1,7 +1,7 @@
-import init, { Workspace, PositionEncoding } from '@astral-sh/ruff-wasm-web';
+import init, { PositionEncoding, Workspace } from '@astral-sh/ruff-wasm-web';
 import { type Diagnostic } from '@codemirror/lint';
 import { type EditorState } from '@codemirror/state';
-import { type Variable, type FunctionEntity } from '../components/types';
+import { type FunctionEntity, type Variable } from '../components/types';
 
 let initPromise: Promise<void> | null = null;
 
@@ -44,11 +44,11 @@ export function runStateDiagnostics(code: string, variables: Variable[]): Diagno
   while ((match = stateAccessRegex.exec(code)) !== null) {
     const varName = match[2];
     const fullMatch = match[0];
-    
+
     if (!registeredNames.has(varName)) {
       const from = match.index;
       const to = match.index + fullMatch.length;
-      
+
       diagnostics.push({
         from,
         to,

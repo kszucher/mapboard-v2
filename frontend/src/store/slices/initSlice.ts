@@ -22,6 +22,8 @@ export const createInitSlice: StateCreator<
         const mapped = mapToReactFlowElements(data.nodes, data.edges, {}, 'none');
 
         set({
+          graphId,
+          code: data.code || '',
           nodes: mapped.nodes,
           edges: mapped.edges,
           variables: data.variables || [],
@@ -31,6 +33,7 @@ export const createInitSlice: StateCreator<
 
         resetLastSavedState({
           graphId,
+          code: data.code || '',
           nodes: mapped.nodes,
           edges: mapped.edges,
           variables: data.variables || [],
@@ -58,6 +61,7 @@ export const createInitSlice: StateCreator<
 
     runLayout(mapped.nodes, mapped.edges).then(laidOut => {
       set({
+        code: flow.code || '',
         nodes: laidOut.nodes,
         edges: laidOut.edges,
         variables: flow.variables || [],

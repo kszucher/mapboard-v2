@@ -32,10 +32,13 @@ async def get_graph_flow(graph_id: uuid.UUID, uow: Any = Depends(get_uow)) -> Gr
     return GraphFlowRead.model_validate(graph.flow_json)
 
 
-@router.put("/{graph_id}/sync", status_code=status.HTTP_204_NO_CONTENT)
-async def sync_graph_flow_endpoint(graph_id: uuid.UUID, payload: GraphSyncPayload, uow: Any = Depends(get_uow)) -> None:
-    await graph_service.sync_graph_flow(uow, graph_id, payload)
+@router.put("/{graph_id}/sync", response_model=GraphFlowRead)
+async def sync_graph_flow_endpoint(
+    graph_id: uuid.UUID, payload: GraphSyncPayload, uow: Any = Depends(get_uow)
+) -> GraphFlowRead:
+    updated_flow = await graph_service.sync_graph_flow(uow, graph_id, payload)
     await uow.commit()
+    return GraphFlowRead.model_validate(updated_flow)
 
 
 @router.post("/{graph_id}/run", response_model=dict[str, Any])

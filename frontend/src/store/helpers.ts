@@ -14,9 +14,10 @@ const saveTimeoutsByGraph = new Map<string, number>();
 const lastSavedStateByGraph = new Map<string, string>();
 
 export const serializeFlowState = (
-  state: Pick<GraphStoreState, 'graphId' | 'nodes' | 'edges' | 'variables' | 'functions'>
+  state: Pick<GraphStoreState, 'graphId' | 'code' | 'nodes' | 'edges' | 'variables' | 'functions'>
 ) => {
   return {
+    code: state.code,
     nodes: state.nodes.map(n => ({
       id: n.data.node.id,
       node_type: n.data.node.node_type,
@@ -58,7 +59,7 @@ export const serializeFlowState = (
 };
 
 export const triggerSave = (
-  state: Pick<GraphStoreState, 'graphId' | 'nodes' | 'edges' | 'variables' | 'functions'>
+  state: Pick<GraphStoreState, 'graphId' | 'code' | 'nodes' | 'edges' | 'variables' | 'functions'>
 ) => {
   const graphId = state.graphId;
   if (!graphId) return;
@@ -97,15 +98,16 @@ export const triggerSave = (
 };
 
 export const resetLastSavedState = (
-  state: Pick<GraphStoreState, 'graphId' | 'nodes' | 'edges' | 'variables' | 'functions'>
+  state: Pick<GraphStoreState, 'graphId' | 'code' | 'nodes' | 'edges' | 'variables' | 'functions'>
 ) => {
   if (!state.graphId) return;
   const payload = serializeFlowState(state);
   lastSavedStateByGraph.set(state.graphId, JSON.stringify(payload));
 };
 
-export const takeSnapshot = (state: Pick<GraphStoreState, 'nodes' | 'edges' | 'variables' | 'functions'>) => {
+export const takeSnapshot = (state: Pick<GraphStoreState, 'code' | 'nodes' | 'edges' | 'variables' | 'functions'>) => {
   return structuredClone({
+    code: state.code,
     nodes: state.nodes,
     edges: state.edges,
     variables: state.variables,
@@ -117,11 +119,13 @@ export const updateFlowState = async (
   set: StoreApi<GraphStoreState>['setState'],
   get: StoreApi<GraphStoreState>['getState'],
   updateFn: (state: {
+    code: string;
     nodes: AppFlowNode[];
     edges: AppFlowEdge[];
     variables: Variable[];
     functions: FunctionEntity[];
   }) => {
+    code?: string;
     nodes: AppFlowNode[];
     edges: AppFlowEdge[];
     variables?: Variable[];
@@ -133,6 +137,7 @@ export const updateFlowState = async (
   const snapshot = options.skipHistory ? null : takeSnapshot(current);
   const updated = updateFn(current);
 
+  const code = updated.code ?? current.code;
   const variables = updated.variables ?? current.variables;
   const functions = updated.functions ?? current.functions;
 
@@ -153,6 +158,7 @@ export const updateFlowState = async (
 
   if (skipLayout) {
     set((state) => ({
+      code,
       nodes: updated.nodes,
       edges: updated.edges,
       variables,
@@ -163,6 +169,7 @@ export const updateFlowState = async (
     }));
     triggerSave({
       graphId: current.graphId,
+      code,
       nodes: updated.nodes,
       edges: updated.edges,
       variables,
@@ -174,6 +181,7 @@ export const updateFlowState = async (
   const laidOut = await runLayout(updated.nodes, updated.edges);
 
   set((state) => ({
+    code,
     nodes: laidOut.nodes,
     edges: laidOut.edges,
     variables,
@@ -185,6 +193,7 @@ export const updateFlowState = async (
 
   triggerSave({
     graphId: current.graphId,
+    code,
     nodes: laidOut.nodes,
     edges: laidOut.edges,
     variables,
