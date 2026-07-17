@@ -1,10 +1,11 @@
 import { acceptCompletion, autocompletion } from '@codemirror/autocomplete';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { python } from '@codemirror/lang-python';
+import { syntaxTree } from '@codemirror/language';
 import { linter, lintGutter } from '@codemirror/lint';
-import { Annotation, EditorState } from '@codemirror/state';
+import { Annotation, EditorState, StateField } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
-import { drawSelection, EditorView, keymap, lineNumbers } from '@codemirror/view';
+import { drawSelection, EditorView, keymap, lineNumbers, Decoration } from '@codemirror/view';
 import { Box, Button, Card, Flex, Text } from '@radix-ui/themes';
 import { useEffect, useRef, useState } from 'react';
 import { createRuffWorkspace, initRuff, runRuffLint } from '../services/ruffLinter';
@@ -15,6 +16,100 @@ interface FullCodeEditorProps {
 }
 
 const systemUpdate = Annotation.define<boolean>();
+
+// Helper to statically scan AST and find allowed editable ranges
+function getEditableRegions(state: EditorState, switchNodeNames: string[]): { from: number; to: number }[] {
+  const regions: { from: number; to: number }[] = [];
+  const docStr = state.doc.toString();
+
+  syntaxTree(state).iterate({
+    enter(node) {
+      if (node.name === 'ClassDefinition') {
+        const name = node.node.getChild('VariableName');
+        if (name && docStr.slice(name.from, name.to) === 'State') {
+          const body = node.node.getChild('Body');
+          if (body) {
+            regions.push({ from: body.from + 1, to: body.to });
+          }
+        }
+      }
+
+      if (node.name === 'FunctionDefinition') {
+        const nameNode = node.node.getChild('VariableName');
+        const bodyNode = node.node.getChild('Body');
+        if (nameNode && bodyNode) {
+          const fnName = docStr.slice(nameNode.from, nameNode.to);
+          if (!switchNodeNames.includes(fnName)) {
+            // Step function: full body is editable
+            regions.push({ from: bodyNode.from + 1, to: bodyNode.to });
+          } else {
+            // Switch function: only condition expressions are editable
+            const bodyText = docStr.slice(bodyNode.from, bodyNode.to);
+            let currentOffset = bodyNode.from;
+            for (const line of bodyText.split('\n')) {
+              const trimmed = line.trimStart();
+              const match = trimmed.match(/^(?:if|elif)\s+/);
+              if (match) {
+                const start = currentOffset + (line.length - trimmed.length) + match[0].length;
+                const colon = line.indexOf(':');
+                if (colon !== -1) {
+                  regions.push({ from: start, to: currentOffset + colon });
+                }
+              }
+              currentOffset += line.length + 1;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  return regions;
+}
+
+// Build line-bracket decorations for editable areas
+function buildDecorations(state: EditorState) {
+  const switchNodeNames = useGraphStore.getState().nodes
+    .filter((n) => n.data?.node?.node_type === 'SWITCH')
+    .map((n) => n.id);
+  const allowed = getEditableRegions(state, switchNodeNames);
+  const decorations: any[] = [];
+  const docStr = state.doc.toString();
+
+  for (const r of allowed) {
+    let regionFrom = r.from;
+    let regionTo = r.to;
+    const text = docStr.slice(regionFrom, regionTo);
+    const leadingSpaces = text.match(/^\s*/)?.[0].length || 0;
+    const trailingSpaces = text.match(/\s*$/)?.[0].length || 0;
+
+    regionFrom += leadingSpaces;
+    regionTo -= trailingSpaces;
+
+    if (regionTo > regionFrom) {
+      const startLine = state.doc.lineAt(regionFrom).number;
+      const endLine = state.doc.lineAt(regionTo).number;
+      for (let l = startLine; l <= endLine; l++) {
+        const line = state.doc.line(l);
+        const className = startLine === endLine ? 'cm-editable-line-single'
+          : l === startLine ? 'cm-editable-line-start'
+          : l === endLine ? 'cm-editable-line-end'
+          : 'cm-editable-line-middle';
+
+        decorations.push(
+          Decoration.line({ attributes: { class: className } }).range(line.from)
+        );
+      }
+    }
+  }
+  return Decoration.set(decorations, true);
+}
+
+const readOnlyField = StateField.define<any>({
+  create: (state) => buildDecorations(state),
+  update: (value, tr) => tr.docChanged ? buildDecorations(tr.state) : value.map(tr.changes),
+  provide: (f) => EditorView.decorations.from(f),
+});
 
 export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -128,6 +223,7 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
         }),
         workspace ? linter((view) => runRuffLint(view.state, workspace)) : [],
         lintGutter(),
+        readOnlyField,
         updateListener,
         EditorState.tabSize.of(4),
         EditorState.transactionFilter.of(tr => {
@@ -135,19 +231,23 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
             if (tr.annotation(systemUpdate)) {
               return tr;
             }
-            const docStr = tr.startState.doc.toString();
-            const idx = docStr.indexOf('# Graph Definition');
-            if (idx !== -1) {
-              const graphDefIndex = Math.max(0, idx - 55);
-              let isEditingGraphDef = false;
-              tr.changes.iterChanges((_, toA) => {
-                if (toA >= graphDefIndex) {
-                  isEditingGraphDef = true;
-                }
-              });
-              if (isEditingGraphDef) {
-                return [];
+            const switchNodeNames = useGraphStore.getState().nodes
+              .filter((n) => n.data?.node?.node_type === 'SWITCH')
+              .map((n) => n.id);
+            const allowed = getEditableRegions(tr.startState, switchNodeNames);
+
+            let isChangeAllowed = true;
+            tr.changes.iterChanges((fromA, toA) => {
+              const isContained = allowed.some(
+                (range) => fromA >= range.from && toA <= range.to
+              );
+              if (!isContained) {
+                isChangeAllowed = false;
               }
+            });
+
+            if (!isChangeAllowed) {
+              return [];
             }
           }
           return tr;
@@ -164,6 +264,17 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
           '.cm-gutters': {
             backgroundColor: '#1e1e1e !important',
             borderRight: '1px solid var(--gray-5)',
+          },
+          '.cm-editable-line-start, .cm-editable-line-middle, .cm-editable-line-end, .cm-editable-line-single': {
+            borderLeft: '3px solid var(--iris-9)',
+            borderRight: '3px solid var(--iris-9)',
+            backgroundColor: 'rgba(59, 130, 246, 0.015) !important',
+          },
+          '.cm-editable-line-start, .cm-editable-line-single': {
+            borderTop: '1px dashed rgba(99, 102, 241, 0.35)',
+          },
+          '.cm-editable-line-end, .cm-editable-line-single': {
+            borderBottom: '1px dashed rgba(99, 102, 241, 0.35)',
           }
         }),
       ],
