@@ -221,3 +221,49 @@ async def sync_graph_flow(
         payload={},
     )
     return flow_data
+
+
+async def run_graph_flow(uow: UnitOfWork, graph_id: uuid.UUID) -> dict:
+    """
+    Compiles and executes the graph, updating state variables in the database.
+    """
+    graph = await uow.graphs.get(graph_id)
+    if not graph:
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=404, detail="Graph not found")
+
+    from fastapi import HTTPException
+
+    from app.graphs.compiler import compile_flow_with_langgraph
+    from app.graphs.schemas import GraphFlowRead
+
+    flow_json = (
+        dict(graph.flow_json) if graph.flow_json else {"nodes": [], "edges": [], "variables": [], "functions": []}
+    )
+    flow = GraphFlowRead.model_validate(flow_json)
+
+    try:
+        app = compile_flow_with_langgraph(flow)
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=f"Compilation Error: {str(e)}")
+
+    initial_input = {v.name: v.value for v in flow.variables}
+
+    try:
+        final_state = await app.ainvoke(initial_input)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Execution Error: {str(e)}")
+
+    updated_variables = []
+    for var in flow.variables:
+        val = final_state.get(var.name, var.value)
+        var.value = val
+        updated_variables.append(var)
+
+    flow.variables = updated_variables
+    flow_data = flow.model_dump(mode="json")
+    graph.flow_json = flow_data
+    await uow.session.flush()
+
+    return flow_data

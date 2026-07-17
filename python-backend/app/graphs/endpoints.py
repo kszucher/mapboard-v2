@@ -5,7 +5,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.db import get_uow
 from app.graphs import service as graph_service
-from app.graphs.compiler import compile_flow_with_langgraph
 from app.graphs.schemas import GraphCreate, GraphFlowRead, GraphRead, GraphSyncPayload
 
 router = APIRouter(prefix="/graphs", tags=["graphs"])
@@ -43,38 +42,6 @@ async def sync_graph_flow_endpoint(
 
 @router.post("/{graph_id}/run", response_model=dict[str, Any])
 async def run_graph(graph_id: uuid.UUID, uow: Any = Depends(get_uow)) -> dict[str, Any]:
-    graph = await uow.graphs.get(graph_id)
-    if not graph:
-        raise HTTPException(status_code=404, detail="Graph not found")
-
-    from app.graphs.schemas import GraphFlowRead
-
-    flow_json = (
-        dict(graph.flow_json) if graph.flow_json else {"nodes": [], "edges": [], "variables": [], "functions": []}
-    )
-    flow = GraphFlowRead.model_validate(flow_json)
-
-    try:
-        app = compile_flow_with_langgraph(flow)
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=f"Compilation Error: {str(e)}")
-
-    initial_input = {v.name: v.value for v in flow.variables}
-
-    try:
-        final_state = await app.ainvoke(initial_input)
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Execution Error: {str(e)}")
-
-    updated_variables = []
-    for var in flow.variables:
-        val = final_state.get(var.name, var.value)
-        var.value = val
-        updated_variables.append(var)
-
-    flow.variables = updated_variables
-    graph.flow_json = flow.model_dump(mode="json")
-    await uow.session.flush()
+    flow_data = await graph_service.run_graph_flow(uow, graph_id)
     await uow.commit()
-
-    return {"variables": updated_variables}
+    return {"variables": flow_data.get("variables", [])}
