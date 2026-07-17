@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { apiClient } from '../api/client';
 import type { ApiNode, AppFlowEdge, AppFlowNode } from '../components/types';
 import { mapToReactFlowElements, runLayout } from '../utils/flowUtils';
-import { setOnSaveStateChange, triggerSave, updateFlowState } from './helpers';
+import { setOnSaveStateChange, setOnSyncResponse, triggerSave, updateFlowState } from './helpers';
 import { createFlowSlice } from './slices/flowSlice';
 import { createHistorySlice } from './slices/historySlice';
 import { createInitSlice } from './slices/initSlice';
@@ -257,4 +257,10 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
 
 setOnSaveStateChange((isSaving) => {
   useGraphStore.setState({ isSaving });
+});
+
+setOnSyncResponse((data) => {
+  if (data.code !== undefined) {
+    useGraphStore.setState({ code: data.code });
+  }
 });

@@ -198,9 +198,22 @@ export const createSlotSlice: StateCreator<
 
       const nextEdges = state.edges;
 
+      let globalCode = state.code;
+      if (updates.raw_string !== undefined && currentSlot.raw_string) {
+        const oldLabel = currentSlot.raw_string;
+        const newLabel = updates.raw_string;
+        if (oldLabel !== newLabel && globalCode) {
+          const regexReturn = new RegExp(`(return\\s+["'])${oldLabel}(["'])`, 'g');
+          const regexDictKey = new RegExp(`(["'])${oldLabel}(["']\\s*:\\s*)`, 'g');
+          globalCode = globalCode.replace(regexReturn, `$1${newLabel}$2`);
+          globalCode = globalCode.replace(regexDictKey, `$1${newLabel}$2`);
+        }
+      }
+
       return {
         nodes: nextNodes,
         edges: nextEdges,
+        code: globalCode,
       };
     }, { skipHistory: shouldSkipHistory, skipLayout: shouldSkipLayout });
   },

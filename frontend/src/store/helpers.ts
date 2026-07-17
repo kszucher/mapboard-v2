@@ -5,9 +5,14 @@ import { runLayout } from '../utils/flowUtils';
 import type { GraphStoreState } from './types';
 
 let onSaveStateChange: ((isSaving: boolean) => void) | null = null;
+let onSyncResponse: ((data: any) => void) | null = null;
 
 export const setOnSaveStateChange = (callback: (isSaving: boolean) => void) => {
   onSaveStateChange = callback;
+};
+
+export const setOnSyncResponse = (callback: (data: any) => void) => {
+  onSyncResponse = callback;
 };
 
 const saveTimeoutsByGraph = new Map<string, number>();
@@ -87,6 +92,9 @@ export const triggerSave = (
         body: payload,
       });
       if ('error' in res) throw res.error;
+      if (res.data) {
+        onSyncResponse?.(res.data);
+      }
     } catch (err) {
       console.error('Failed to sync graph flow with backend:', err);
     } finally {

@@ -246,8 +246,25 @@ def generate_graph_code(payload: dict[str, Any], existing_code: str = "") -> str
             # Generate default skeleton
             if node["node_type"] == "SWITCH":
                 slots = node.get("slots", [])
-                default_return = f'"{slots[0]["raw_string"]}"' if slots else '"default"'
-                code_lines.append(f"def {node_name}(state: State) -> str:\n    return {default_return}")
+                if len(slots) >= 2:
+                    first = slots[0]["raw_string"]
+                    second = slots[1]["raw_string"]
+                    code_lines.append(
+                        f'def {node_name}(state: State) -> str:\n'
+                        f'    if state.get("x", 0) > 0:\n'
+                        f'        return "{first}"\n'
+                        f'    return "{second}"'
+                    )
+                elif slots:
+                    code_lines.append(
+                        f'def {node_name}(state: State) -> str:\n'
+                        f'    return "{slots[0]["raw_string"]}"'
+                    )
+                else:
+                    code_lines.append(
+                        f'def {node_name}(state: State) -> str:\n'
+                        f'    return "default"'
+                    )
             else:
                 code_lines.append(f"def {node_name}(state: State) -> dict:\n    return {{}}")
         code_lines.append("")

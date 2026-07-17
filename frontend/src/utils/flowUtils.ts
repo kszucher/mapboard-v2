@@ -30,11 +30,9 @@ export const getAvailableConversions = (
 };
 
 export const createDefaultSlotsForNode = (
-  nodeType: NodeType
+  nodeType: NodeType,
+  nodeId: string
 ): ApiSlot[] => {
-  const baseId = crypto.randomUUID();
-  const subId = crypto.randomUUID();
-
   if (nodeType === 'START') {
     return [];
   } else if (nodeType === 'END') {
@@ -43,8 +41,8 @@ export const createDefaultSlotsForNode = (
     return [];
   } else if (nodeType === 'SWITCH') {
     return [
-      { id: baseId, raw_string: '', selected: false },
-      { id: subId, raw_string: '', selected: false }
+      { id: `${nodeId}_option_a`, raw_string: 'option_a', selected: false },
+      { id: `${nodeId}_option_b`, raw_string: 'option_b', selected: false }
     ];
   }
   return [];
@@ -170,13 +168,13 @@ export const createNewNode = (
     newNodeId = `${prefix}_${count}`;
   }
 
-  const defaultSlots = createDefaultSlotsForNode(nodeType);
+  const defaultSlots = createDefaultSlotsForNode(nodeType, newNodeId);
 
   let defaultCode = '';
   if (nodeType === 'STEP') {
     defaultCode = `def ${newNodeId}(state: State) -> dict:\n    return {}`;
   } else if (nodeType === 'SWITCH') {
-    defaultCode = `def ${newNodeId}(state: State) -> str:\n    return ""`;
+    defaultCode = `def ${newNodeId}(state: State) -> str:\n    if state.get("x", 0) > 0:\n        return "option_a"\n    return "option_b"`;
   } else if (nodeType === 'START' || nodeType === 'END') {
     defaultCode = '# Read-only node';
   }
