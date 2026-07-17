@@ -1,6 +1,5 @@
 import type { StateCreator } from 'zustand';
 import type { ApiSlot } from '../../components/types';
-import { syncSwitchCodeWithSlots } from '../../utils/flowUtils';
 import { updateFlowState } from '../helpers';
 import type { GraphStoreState, SlotSlice } from '../types';
 
@@ -23,10 +22,6 @@ export const createSlotSlice: StateCreator<
             selected: true,
           };
           slots.splice(idx, 0, newSlot);
-          let code = n.data.node.code;
-          if (n.data.node.node_type === 'SWITCH') {
-            code = syncSwitchCodeWithSlots(n.data.node.code || '', slots);
-          }
 
           return {
             ...n,
@@ -35,7 +30,6 @@ export const createSlotSlice: StateCreator<
               node: {
                 ...n.data.node,
                 slots,
-                code,
               }
             }
           };
@@ -87,11 +81,6 @@ export const createSlotSlice: StateCreator<
               selected: s.id === targetSelectSlotId,
             }));
 
-          let code = n.data.node.code;
-          if (n.data.node.node_type === 'SWITCH') {
-            code = syncSwitchCodeWithSlots(n.data.node.code || '', nextSlots);
-          }
-
           return {
             ...n,
             data: {
@@ -99,7 +88,6 @@ export const createSlotSlice: StateCreator<
               node: {
                 ...n.data.node,
                 slots: nextSlots,
-                code,
               }
             }
           };
@@ -171,18 +159,6 @@ export const createSlotSlice: StateCreator<
           return n;
         }
 
-        let code = n.data.node.code;
-        if (isTargetNode && updates.raw_string !== undefined && n.data.node.node_type === 'SWITCH') {
-          const oldLabel = currentSlot.raw_string;
-          const newLabel = updates.raw_string;
-          let baseCode = n.data.node.code || '';
-          if (oldLabel && oldLabel !== newLabel && baseCode) {
-            const regex = new RegExp(`(return\\s+["'])${oldLabel}(["'])`, 'g');
-            baseCode = baseCode.replace(regex, `$1${newLabel}$2`);
-          }
-          code = syncSwitchCodeWithSlots(baseCode, slots);
-        }
-
         return {
           ...n,
           data: {
@@ -190,7 +166,6 @@ export const createSlotSlice: StateCreator<
             node: {
               ...n.data.node,
               slots,
-              code,
             }
           }
         };
@@ -198,22 +173,9 @@ export const createSlotSlice: StateCreator<
 
       const nextEdges = state.edges;
 
-      let globalCode = state.code;
-      if (updates.raw_string !== undefined && currentSlot.raw_string) {
-        const oldLabel = currentSlot.raw_string;
-        const newLabel = updates.raw_string;
-        if (oldLabel !== newLabel && globalCode) {
-          const regexReturn = new RegExp(`(return\\s+["'])${oldLabel}(["'])`, 'g');
-          const regexDictKey = new RegExp(`(["'])${oldLabel}(["']\\s*:\\s*)`, 'g');
-          globalCode = globalCode.replace(regexReturn, `$1${newLabel}$2`);
-          globalCode = globalCode.replace(regexDictKey, `$1${newLabel}$2`);
-        }
-      }
-
       return {
         nodes: nextNodes,
         edges: nextEdges,
-        code: globalCode,
       };
     }, { skipHistory: shouldSkipHistory, skipLayout: shouldSkipLayout });
   },
@@ -241,11 +203,6 @@ export const createSlotSlice: StateCreator<
         const [moved] = slts.splice(currentIndex, 1);
         slts.splice(targetIndex, 0, moved);
 
-        let code = n.data.node.code;
-        if (n.data.node.node_type === 'SWITCH') {
-          code = syncSwitchCodeWithSlots(n.data.node.code || '', slts);
-        }
-
         return {
           ...n,
           data: {
@@ -253,7 +210,6 @@ export const createSlotSlice: StateCreator<
             node: {
               ...n.data.node,
               slots: slts,
-              code,
             }
           }
         };

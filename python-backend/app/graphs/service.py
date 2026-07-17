@@ -52,10 +52,6 @@ async def create_graph(
 
     import uuid as py_uuid
 
-    from app.graphs.langgraph_sync import parse_code_to_graph
-
-    parsed = parse_code_to_graph(DEFAULT_STARTER_CODE)
-
     default_nodes = [
         {"id": "start", "node_type": "START", "is_input": False, "is_output": True, "slots": [], "code": ""},
         {
@@ -89,7 +85,7 @@ async def create_graph(
         "code": DEFAULT_STARTER_CODE,
         "nodes": default_nodes,
         "edges": default_edges,
-        "variables": parsed["variables"],
+        "variables": [{"id": "x", "name": "x", "type": "number", "value": None}],
         "functions": [],
     }
     graph.flow_json = initial_flow
@@ -156,7 +152,9 @@ async def sync_graph_flow(
                 "variables": parsed["variables"],
                 "functions": functions,
             }
-            final_code = generate_graph_code(temp_payload, existing_code=new_code)
+            final_code = generate_graph_code(
+                temp_payload, existing_code=new_code, old_nodes=existing_flow.get("nodes", [])
+            )
 
             flow_data = {
                 "code": final_code,
@@ -171,7 +169,9 @@ async def sync_graph_flow(
             raise HTTPException(status_code=422, detail=str(e))
     else:
         # Visual edit on the canvas (e.g. node created, deleted, connected, slot modified)
-        generated = generate_graph_code(payload_dict, existing_code=existing_code)
+        generated = generate_graph_code(
+            payload_dict, existing_code=existing_code, old_nodes=existing_flow.get("nodes", [])
+        )
 
         parsed = parse_code_to_graph(generated)
 

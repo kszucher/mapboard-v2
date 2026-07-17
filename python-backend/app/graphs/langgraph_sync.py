@@ -71,11 +71,20 @@ def parse_code_to_graph(code: str) -> dict[str, Any]:
     }
 
 
-def generate_graph_code(payload: dict[str, Any], existing_code: str = "") -> str:
+def generate_graph_code(
+    payload: dict[str, Any], existing_code: str = "", old_nodes: list[dict[str, Any]] = None
+) -> str:
     """
     Generates a Python script from a visual graph payload.
     Uses existing_code to preserve helper functions and node function bodies if possible.
     """
+    # Map slot IDs to their old labels from the DB to handle slot renames gracefully
+    old_slot_labels = {}
+    if old_nodes:
+        for node in old_nodes:
+            for slot in node.get("slots", []):
+                old_slot_labels[slot["id"]] = slot["raw_string"]
+
     # Parse existing functions to preserve their code bodies/helpers
     existing_funcs = {}
     switch_conditions = {}
@@ -163,7 +172,15 @@ def generate_graph_code(payload: dict[str, Any], existing_code: str = "") -> str
                 has_any_custom_cond = any(cond != "True" for cond in conditions.values())
                 for i, slot in enumerate(slots):
                     label = slot["raw_string"] or f"Slot {i + 1}"
-                    cond = conditions.get(label, "True")
+                    
+                    # Try to retrieve condition using the slot's old label (resolves renames)
+                    old_label = old_slot_labels.get(slot["id"])
+                    cond = "True"
+                    if old_label and old_label in conditions:
+                        cond = conditions[old_label]
+                    elif label in conditions:
+                        cond = conditions[label]
+                        
                     # Prefill switch skeletons with state example if no conditions exist
                     if cond == "True" and not has_any_custom_cond and len(slots) >= 2:
                         if i == 0:
