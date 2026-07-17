@@ -1,7 +1,7 @@
 import { acceptCompletion, autocompletion } from '@codemirror/autocomplete';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { python } from '@codemirror/lang-python';
-import { EditorState } from '@codemirror/state';
+import { EditorState, Annotation } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { drawSelection, EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { Box, Button, Card, Flex, Text } from '@radix-ui/themes';
@@ -11,6 +11,8 @@ import { useGraphStore } from '../store/useGraphStore';
 interface FullCodeEditorProps {
   isGraphSelected: boolean;
 }
+
+const systemUpdate = Annotation.define<boolean>();
 
 export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -31,6 +33,7 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
       if (state.doc.toString() !== code) {
         viewRef.current.dispatch({
           changes: { from: 0, to: state.doc.length, insert: code },
+          annotations: systemUpdate.of(true),
         });
       }
     }
@@ -67,6 +70,9 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
         EditorState.tabSize.of(4),
         EditorState.transactionFilter.of(tr => {
           if (tr.docChanged) {
+            if (tr.annotation(systemUpdate)) {
+              return tr;
+            }
             const docStr = tr.startState.doc.toString();
             const idx = docStr.indexOf('# Graph Definition');
             if (idx !== -1) {
@@ -131,6 +137,7 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
       const state = viewRef.current.state;
       viewRef.current.dispatch({
         changes: { from: 0, to: state.doc.length, insert: code },
+        annotations: systemUpdate.of(true),
       });
     }
   };

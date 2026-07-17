@@ -1,6 +1,6 @@
 # Graphboard
 
-Graphboard is a code-first, logic-driven graph editor for building, compiling, and visualizing **LangGraph** workflows. Unlike traditional canvas tools, Graphboard keeps visual node arrangements and a single, full-viewport Python script in the sidebar synchronized **bidirectionally** at all times using a Python execution introspection engine.
+Graphboard is a code-first, logic-driven graph editor for building, compiling, and visualizing **LangGraph** workflows. Unlike traditional canvas tools, Graphboard keeps visual node arrangements and a single, full-viewport Python script in the sidebar synchronized **bidirectionally** using a static AST compilation engine and a visual-first layout editor.
 
 ### Project Status & Evolution
 This repository serves as a personal, non-commercial R&D exploration and a continuous playground for full-stack AI system design. It builds upon ideas from a previous project (Mapboard) with two fundamental architectural shifts:
@@ -55,6 +55,7 @@ In Graphboard, agentic logic is structured into visual execution nodes. Each nod
 
 ### Phase 3: Workspace Editor UI (Implemented)
 * **Single-File Sidebar Code Editor**: Refactored the left sidebar into a single full-viewport CodeMirror 6 Python editor. All variables, helper functions, and logic nodes are defined in this single file.
+* **CodeMirror Edit Locking**: Locked the `# Graph Definition` section at the bottom of the script using a CodeMirror transaction filter. Users modify logic inside functions in the editor, but must use the canvas UI to edit node connections.
 * **Approve/Discard Guards**: Added CodeMirror state buffers so users must explicitly approve code changes to sync them to the canvas, or discard to revert.
 * **Canvas Interception Prevention**: Disabled global canvas hotkeys when the cursor is focused inside CodeMirror.
 
@@ -62,25 +63,25 @@ In Graphboard, agentic logic is structured into visual execution nodes. Each nod
 * **Backend Validation**: Executes code compilation checks on the backend to flag syntax and import errors, surfacing full tracebacks directly inside the editor's diagnostics panel.
 * **Autocompletion**: Integrated autocomplete suggestions inside CodeMirror.
 
-### Phase 5: Code Scaffolding & LangGraph Introspection (Implemented)
-* **LangGraph Introspection Engine**: Executes the Python script in a clean namespace on the backend, reading properties from the compiled `workflow` object (e.g. `workflow.nodes`, `workflow.edges`, `workflow.state_schema`) to rebuild the visual graph dynamically.
-* **Visual-to-Code Generator**: Re-generates and formats the Python script using `ruff` and `black` whenever connections, slots, or nodes are added/modified visually on the canvas.
+### Phase 5: Code Scaffolding & Static AST Parser (Implemented)
+* **Static AST Parser**: Statically scans the Python script on the backend using python's built-in `ast` module to extract TypedDict annotations and function definitions. This completely avoids executing user code (`exec()`) during parsing, ensuring speed and security.
+* **Visual-to-Code Generator**: Automatically re-generates the Python script (including imports, State, updated function bodies, and compiled Graph Definitions) whenever connections, slots, or nodes are added/modified visually on the canvas.
 
 ---
 
 ## 3. Core System Architecture & Design Choices
 
-### Bidirectional Mapping Architecture
+### Symmetrical Logic Sync Architecture
 
 ```mermaid
 graph TD
-    Code[Code Editor in Sidebar] -- "On Save / Approve" --> Exec{exec Code Block}
-    Exec -- "Execution/Syntax Error" --> Diags[CodeMirror Diagnostics]
-    Exec -- "Success (Namespace Loaded)" --> Intro[LangGraph Introspection]
-    Intro -- "Extract State & Topology" --> Store[Zustand Store]
-    Store -- "ELK Layout" --> Canvas[Visual React Flow Canvas]
-    Canvas -- "On Canvas Mutations" --> Gen[Backend AST/Code Generator]
-    Gen -- "Format with Black & Ruff" --> Code
+    Canvas[Visual React Flow Canvas] -- "On Canvas Mutations" --> Gen[Backend AST/Code Generator]
+    Gen -- "Rebuild Graph Definition" --> Code[Code Editor in Sidebar]
+    Code -- "Non-Editable Section Guard" --> CM[CodeMirror Transaction Filter]
+    Code -- "On Save / Approve Code" --> Parse[Static AST Parser]
+    Parse -- "Extract State & Function Bodies" --> Merge[Merge Logic into Canvas Nodes]
+    Merge --> Canvas
+    Parse -- "Syntax Error" --> Diags[CodeMirror Diagnostics]
 ```
 
 ### Local Zustand Store vs. DB Caching
@@ -93,8 +94,12 @@ React Flow's `nodesDraggable` is set to `false`. Node coordinates `(x, y)` are c
 
 ## 4. Key Implementation Gotchas
 
-* **Fault-Tolerant Code Synchronization**: If the user writes a compilation or syntax error in CodeMirror, the backend rejects the sync payload with a `422 Unprocessable Entity` error. The frontend catches this, displays the traceback in the diagnostics panel, and freezes canvas edits to prevent writing broken states, preserving the last valid visual representation.
+* **CodeMirror Transaction Lock**: We use `EditorState.transactionFilter` inside `FullCodeEditor.tsx` to detect and intercept modifications touching the bottom Graph Definition section (finding `# Graph Definition` string index), blocking the transaction to enforce read-only properties. To allow programmatic updates (like visual slot renaming, node creations, or undo/redo layout updates) to modify this section, we dispatch transactions with a custom `systemUpdate` annotation to bypass the filter.
+* **Fault-Tolerant Code Validation**: If the user writes a syntax or parsing error in CodeMirror, the backend rejects the sync payload with a `422 Unprocessable Entity` error. The frontend catches this, displays the traceback in the diagnostics panel, and freezes canvas edits to preserve the last valid visual representation.
 * **Unconditional Layout Transitions**: Visual CSS transitions (`transition: transform 400ms...`) are applied statically to node styles in `flowUtils.ts` when elements are mapped. React Flow forwards this to the outer wrapper, animating all coordinate updates.
 * **Undo/Redo Animation Trigger**: The history snapshots store final layout positions. If loaded directly, React Flow snaps nodes instantly. To trigger slide animations, `historySlice.ts` maps the *current screen positions* onto the history nodes *before* running ELK. Do not bypass this mapping.
 * **Custom Handles Lifecycle & `updateNodeInternals`**: When slots are added or removed, React Flow's DOM-cached registry becomes stale. We must compute a stable `slotsHash` in `FlowNode.tsx` and run a `useEffect` triggering `updateNodeInternals(id)` whenever the hash changes to force React Flow to re-query the handles.
+* **String-Based Identifiers (UUID Migration)**: Node, slot, and edge IDs are represented as `string` values instead of strict `uuid.UUID` types. This enables user-friendly, readable node names (like `"step_1"`) and slot names (like `"switch_1_option_a"`) to serve directly as the execution keys in the compiled LangGraph workflow.
+
+
 

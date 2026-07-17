@@ -149,11 +149,22 @@ export const updateFlowState = async (
   const variables = updated.variables ?? current.variables;
   const functions = updated.functions ?? current.functions;
 
-  // Auto-detect if any node had slots added or deleted
-  let skipLayout = options.skipLayout;
+  // 1. Commit changes to the store synchronously first
+  set((state) => ({
+    code,
+    nodes: updated.nodes,
+    edges: updated.edges,
+    variables,
+    functions,
+    ...(!options.skipHistory && snapshot
+      ? { past: [...state.past, snapshot], future: [] }
+      : {}),
+  }));
 
+  // 2. Perform layout/save asynchronously in the background
+  let skipLayout = options.skipLayout;
   const nodeWithCountChange = updated.nodes.find(node => {
-    const prevNode = current.nodes.find(n => n.id === node.id);
+    const prevNode = current.nodes.find((n: AppFlowNode) => n.id === node.id);
     const prevCount = prevNode ? prevNode.data.node.slots.length : 0;
     const nextCount = node.data.node.slots.length;
     return prevCount !== nextCount;
@@ -165,16 +176,6 @@ export const updateFlowState = async (
   }
 
   if (skipLayout) {
-    set((state) => ({
-      code,
-      nodes: updated.nodes,
-      edges: updated.edges,
-      variables,
-      functions,
-      ...(!options.skipHistory && snapshot
-        ? { past: [...state.past, snapshot], future: [] }
-        : {}),
-    }));
     triggerSave({
       graphId: current.graphId,
       code,
@@ -186,25 +187,21 @@ export const updateFlowState = async (
     return;
   }
 
-  const laidOut = await runLayout(updated.nodes, updated.edges);
+  void runLayout(updated.nodes, updated.edges).then((laidOut) => {
+    if (get().graphId !== current.graphId) return;
 
-  set((state) => ({
-    code,
-    nodes: laidOut.nodes,
-    edges: laidOut.edges,
-    variables,
-    functions,
-    ...(!options.skipHistory && snapshot
-      ? { past: [...state.past, snapshot], future: [] }
-      : {}),
-  }));
+    set({
+      nodes: laidOut.nodes,
+      edges: laidOut.edges,
+    });
 
-  triggerSave({
-    graphId: current.graphId,
-    code,
-    nodes: laidOut.nodes,
-    edges: laidOut.edges,
-    variables,
-    functions,
+    triggerSave({
+      graphId: current.graphId,
+      code,
+      nodes: laidOut.nodes,
+      edges: laidOut.edges,
+      variables,
+      functions,
+    });
   });
 };
