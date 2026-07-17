@@ -1,7 +1,8 @@
 import type { StoreApi } from 'zustand';
 import { apiClient, getClientId } from '../api/client';
 import type { AppFlowEdge, AppFlowNode, FunctionEntity, Variable } from '../components/types';
-import { runLayout } from '../utils/flowUtils';
+import { runLayout } from './layout';
+import { serializeFlowState } from './mappers';
 import type { GraphStoreState } from './types';
 
 let onSaveStateChange: ((isSaving: boolean) => void) | null = null;
@@ -17,51 +18,6 @@ export const setOnSyncResponse = (callback: (data: any) => void) => {
 
 const saveTimeoutsByGraph = new Map<string, number>();
 const lastSavedStateByGraph = new Map<string, string>();
-
-export const serializeFlowState = (
-  state: Pick<GraphStoreState, 'graphId' | 'code' | 'nodes' | 'edges' | 'variables' | 'functions'>
-) => {
-  return {
-    code: state.code,
-    nodes: state.nodes.map(n => ({
-      id: n.data.node.id,
-      node_type: n.data.node.node_type,
-      is_input: n.data.node.is_input ?? false,
-      is_output: n.data.node.is_output ?? false,
-      code: n.data.node.code ?? "",
-      selected: n.data.node.selected ?? false,
-      slots: n.data.node.slots.map(s => ({
-        id: s.id,
-        raw_string: s.raw_string,
-        selected: s.selected ?? false,
-      })),
-    })),
-    edges: state.edges.map(e => {
-      const source_type = (e.sourceHandle === e.source ? 'node' : 'slot') as 'node' | 'slot';
-      const target_type = (e.targetHandle === e.target ? 'node' : 'slot') as 'node' | 'slot';
-      return {
-        id: e.id,
-        source_id: e.sourceHandle || '',
-        source_type,
-        target_id: e.targetHandle || '',
-        target_type,
-      };
-    }),
-    variables: state.variables.map(v => ({
-      id: v.id,
-      name: v.name,
-      type: v.type,
-      value: v.value,
-    })),
-    functions: state.functions.map(f => ({
-      id: f.id,
-      name: f.name,
-      input_variable: f.input_variable,
-      output_variable: f.output_variable,
-      raw_string: f.raw_string,
-    })),
-  };
-};
 
 export const triggerSave = (
   state: Pick<GraphStoreState, 'graphId' | 'code' | 'nodes' | 'edges' | 'variables' | 'functions'>

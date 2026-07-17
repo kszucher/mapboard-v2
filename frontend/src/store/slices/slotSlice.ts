@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand';
 import type { ApiSlot } from '../../components/types';
-import { updateFlowState } from '../helpers';
+import { updateFlowState } from '../storeEngine';
 import type { GraphStoreState, SlotSlice } from '../types';
 
 export const createSlotSlice: StateCreator<

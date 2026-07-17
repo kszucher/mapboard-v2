@@ -1,6 +1,6 @@
 import type { ElkExtendedEdge, ElkNode, ElkPort, LayoutOptions } from 'elkjs';
 import ELK from 'elkjs/lib/elk-api.js';
-import { type AppFlowEdge, type AppFlowNode } from './types';
+import type { AppFlowEdge, AppFlowNode } from '../components/types';
 
 const elk = new ELK({
   workerFactory: () =>
@@ -11,7 +11,6 @@ const elk = new ELK({
 });
 
 export const NODE_PADDING = 6;
-
 const ROW_HEIGHT = 30;
 
 const ELK_LAYOUT_OPTIONS: LayoutOptions = {
@@ -141,4 +140,52 @@ export const getLayoutedElements = async (
   });
 
   return { positions, edgeSections };
+};
+
+export const runLayout = async (
+  nodes: AppFlowNode[],
+  edges: AppFlowEdge[]
+): Promise<{ nodes: AppFlowNode[]; edges: AppFlowEdge[] }> => {
+  if (nodes.length === 0) return { nodes, edges };
+  try {
+    const layout = await getLayoutedElements(nodes, edges);
+
+    const updatedNodes = nodes.map(n => {
+      const newPos = layout.positions[n.id] || n.position;
+      const posChanged = Math.abs(newPos.x - n.position.x) > 0.01 || Math.abs(newPos.y - n.position.y) > 0.01;
+
+      if (!posChanged) {
+        return n;
+      }
+
+      return {
+        ...n,
+        position: newPos,
+      };
+    });
+
+    const updatedEdges = edges.map(e => {
+      const elkEdge = layout.edgeSections[e.id];
+      const sections = elkEdge?.sections ?? [];
+
+      const sectionsChanged = JSON.stringify(e.data?.sections) !== JSON.stringify(sections);
+
+      if (!sectionsChanged) {
+        return e;
+      }
+
+      return {
+        ...e,
+        data: {
+          ...e.data,
+          sections,
+        },
+      };
+    });
+
+    return { nodes: updatedNodes, edges: updatedEdges };
+  } catch (err) {
+    console.error('Failed to run ELK layout:', err);
+    return { nodes, edges };
+  }
 };

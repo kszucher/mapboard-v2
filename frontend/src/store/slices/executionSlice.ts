@@ -1,6 +1,7 @@
 import type { StateCreator } from 'zustand';
 import { apiClient } from '../../api/client';
-import { mapToReactFlowElements, runLayout } from '../../utils/flowUtils';
+import { runLayout } from '../layout';
+import { mapToReactFlowElements } from '../mappers';
 import type { ExecutionSlice, GraphStoreState } from '../types';
 
 export const createExecutionSlice: StateCreator<

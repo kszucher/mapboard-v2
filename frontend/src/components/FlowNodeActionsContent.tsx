@@ -2,13 +2,9 @@ import { PlusIcon } from '@radix-ui/react-icons';
 import { DropdownMenu } from '@radix-ui/themes';
 import { useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
+import { canShortcircuitNode, getAvailableConversions } from '../domain/graphs/rules';
+import { getIncomingEdgeOptions, getOutgoingEdgeOptions } from '../domain/graphs/traversal';
 import { useGraphStore } from '../store/useGraphStore';
-import {
-  canShortcircuitNode,
-  getAvailableConversions,
-  getIncomingEdgeOptions,
-  getOutgoingEdgeOptions
-} from '../utils/flowUtils';
 import type { InsertableNodeType, NodeType } from './types';
 
 const INSERTABLE_NODE_TYPES: { type: InsertableNodeType; label: string }[] = [

@@ -2,13 +2,8 @@ import { ArrowDownIcon, ArrowUpIcon, PlusIcon, TrashIcon } from '@radix-ui/react
 import { DropdownMenu } from '@radix-ui/themes';
 import { useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
+import { getIncomingEdgeOptions, getOutgoingEdgeOptions } from '../domain/graphs/traversal';
 import { useGraphStore } from '../store/useGraphStore';
-import {
-  canMoveSlotDown,
-  canMoveSlotUp,
-  getIncomingEdgeOptions,
-  getOutgoingEdgeOptions
-} from '../utils/flowUtils';
 import type { InsertableNodeType } from './types';
 
 const INSERTABLE_NODE_TYPES: { type: InsertableNodeType; label: string }[] = [
@@ -54,12 +49,12 @@ export const FlowNodeSlotActionsContent = ({
 
   const canMoveUp = useMemo(() => {
     if (indexInNode === -1) return false;
-    return canMoveSlotUp(indexInNode);
+    return indexInNode > 0;
   }, [indexInNode]);
 
   const canMoveDown = useMemo(() => {
     if (indexInNode === -1) return false;
-    return canMoveSlotDown(indexInNode, mySlots.length);
+    return indexInNode < mySlots.length - 1;
   }, [indexInNode, mySlots.length]);
 
   const canDelete = useMemo(() => {

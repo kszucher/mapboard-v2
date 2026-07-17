@@ -1,10 +1,10 @@
 import { Flex } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
 import { memo, useCallback, useMemo } from 'react';
+import { NODE_PADDING } from '../store/layout';
 import { useGraphStore } from '../store/useGraphStore';
 import { Editor } from './Editor.tsx';
 import { FlowNodeSlotActions } from './FlowNodeSlotActions.tsx';
-import { NODE_PADDING } from './layout.ts';
 
 interface FlowNodeSlotProps {
   slotId: string;

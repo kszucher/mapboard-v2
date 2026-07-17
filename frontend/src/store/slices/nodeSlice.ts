@@ -1,12 +1,7 @@
 import type { StateCreator } from 'zustand';
-import type { AppFlowEdge } from '../../components/types';
-import {
-  createNewNode,
-  getPrimaryInputHandleId,
-  getPrimaryOutputHandleId,
-  updateNodeNodeType,
-} from '../../utils/flowUtils';
-import { updateFlowState } from '../helpers';
+import type { ApiNode, AppFlowEdge, AppFlowNode, NodeType } from '../../components/types';
+import { createDefaultSlotsForNode } from '../../domain/graphs/rules';
+import { updateFlowState } from '../storeEngine';
 import type { GraphStoreState, NodeSlice } from '../types';
 
 export const createNodeSlice: StateCreator<
@@ -32,8 +27,10 @@ export const createNodeSlice: StateCreator<
       const oldEdges = state.edges.filter(e => isAfter ? e.sourceHandle === connectorId : e.targetHandle === connectorId);
 
       const appNode = createNewNode(nodeType, state.nodes);
-      const toSlotId = getPrimaryInputHandleId(appNode.data.node);
-      const fromSlotId = getPrimaryOutputHandleId(appNode.data.node);
+      const toSlotId = appNode.id;
+      const fromSlotId = (nodeType === 'SWITCH' && appNode.data.node.slots.length > 0)
+        ? appNode.data.node.slots[0].id
+        : appNode.id;
 
       let targetOrSourceNode = state.nodes.find(n => n.id === connectorId);
       if (!targetOrSourceNode) {
@@ -192,3 +189,63 @@ export const createNodeSlice: StateCreator<
     });
   },
 });
+
+// Private/Internal slice helper functions
+
+function createNewNode(
+  nodeType: NodeType,
+  existingNodes: AppFlowNode[] = []
+): AppFlowNode {
+  let newNodeId = '';
+  if (nodeType === 'START') {
+    newNodeId = 'start';
+  } else if (nodeType === 'END') {
+    newNodeId = 'end';
+  } else {
+    const prefix = nodeType.toLowerCase();
+    let count = 1;
+    while (existingNodes.some(n => n.id === `${prefix}_${count}`)) {
+      count++;
+    }
+    newNodeId = `${prefix}_${count}`;
+  }
+
+  const defaultSlots = createDefaultSlotsForNode(nodeType, newNodeId);
+
+  const newNode: ApiNode = {
+    id: newNodeId,
+    node_type: nodeType,
+    is_input: nodeType !== 'START',
+    is_output: nodeType === 'START' || nodeType === 'STEP',
+    slots: defaultSlots,
+    code: '',
+    selected: false,
+  };
+
+  return {
+    id: newNodeId,
+    type: 'custom',
+    position: { x: 0, y: 0 },
+    selected: false,
+    style: {
+      transition: 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1)',
+    },
+    data: {
+      node: newNode,
+    }
+  };
+}
+
+function updateNodeNodeType(node: AppFlowNode, targetType: NodeType): AppFlowNode {
+  if (!node.data?.node) return node;
+  return {
+    ...node,
+    data: {
+      ...node.data,
+      node: {
+        ...node.data.node,
+        node_type: targetType,
+      }
+    }
+  };
+}

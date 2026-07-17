@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import { updateFlowState } from '../helpers';
+import { updateFlowState } from '../storeEngine';
 import type { GraphStoreState, VariableFunctionSlice } from '../types';
 
 export const createVariableFunctionSlice: StateCreator<

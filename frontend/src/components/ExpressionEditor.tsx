@@ -8,8 +8,8 @@ import { oneDark } from '@codemirror/theme-one-dark';
 import { drawSelection, EditorView, keymap } from '@codemirror/view';
 import { Button, Card, Flex, Text } from '@radix-ui/themes';
 import { useEffect, useRef, useState } from 'react';
+import { createRuffWorkspace, initRuff, runRuffLint } from '../services/ruffLinter';
 import { useGraphStore } from '../store/useGraphStore';
-import { createRuffWorkspace, initRuff, runRuffLint } from '../utils/RuffLinter';
 
 interface ExpressionEditorProps {
   initialValue: string;

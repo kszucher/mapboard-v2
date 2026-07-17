@@ -1,8 +1,9 @@
 import type { StateCreator } from 'zustand';
-import { runLayout } from '../../utils/flowUtils';
-import { takeSnapshot, triggerSave } from '../helpers';
+import { runLayout } from '../layout';
+import { takeSnapshot, triggerSave } from '../storeEngine';
 import type { GraphStoreState, HistorySlice } from '../types';
-export const createHistorySlice: StateCreator<
+
+export const createHistorySlice: StateCreator<
   GraphStoreState,
   [],
   [],
