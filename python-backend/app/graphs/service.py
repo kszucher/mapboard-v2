@@ -10,39 +10,6 @@ if TYPE_CHECKING:
     from app.context import UnitOfWork
 
 
-DEFAULT_STARTER_CODE = """from typing import TypedDict
-from langgraph.graph import StateGraph, START, END
-
-# ----------------------------------------------------
-# State Definition
-# ----------------------------------------------------
-class State(TypedDict):
-    x: int
-
-# ----------------------------------------------------
-# Nodes
-# ----------------------------------------------------
-def process_step(state: State) -> dict:
-    return {"x": state["x"] + 1}
-
-# ----------------------------------------------------
-# Graph Definition
-# ----------------------------------------------------
-workflow = StateGraph(State)
-
-# Add Step Node
-workflow.add_node("process_step", process_step)
-
-# START -> process_step
-workflow.add_edge(START, "process_step")
-
-# process_step -> END
-workflow.add_edge("process_step", END)
-
-app = workflow.compile()
-"""
-
-
 async def create_graph(
     uow: UnitOfWork,
     user_id: uuid.UUID,
@@ -52,16 +19,24 @@ async def create_graph(
 
     import uuid as py_uuid
 
+    from app.graphs.langgraph_sync import generate_graph_code
+
     default_nodes = [
         {"id": "start", "node_type": "START", "is_input": False, "is_output": True, "slots": [], "code": ""},
+        {"id": "process_step", "node_type": "STEP", "is_input": True, "is_output": True, "slots": [], "code": ""},
         {
-            "id": "process_step",
-            "node_type": "STEP",
+            "id": "switch_step",
+            "node_type": "SWITCH",
             "is_input": True,
-            "is_output": True,
-            "slots": [],
-            "code": 'def process_step(state: State) -> dict:\n    return {"x": state["x"] + 1}',
+            "is_output": False,
+            "slots": [
+                {"id": "switch_step_option_a", "raw_string": "option_a", "selected": False},
+                {"id": "switch_step_option_b", "raw_string": "option_b", "selected": False},
+            ],
+            "code": "",
         },
+        {"id": "step_a", "node_type": "STEP", "is_input": True, "is_output": True, "slots": [], "code": ""},
+        {"id": "step_b", "node_type": "STEP", "is_input": True, "is_output": True, "slots": [], "code": ""},
         {"id": "end", "node_type": "END", "is_input": True, "is_output": False, "slots": [], "code": ""},
     ]
     default_edges = [
@@ -73,19 +48,56 @@ async def create_graph(
             "target_type": "node",
         },
         {
-            "id": str(py_uuid.uuid5(py_uuid.NAMESPACE_DNS, "process_step->end")),
+            "id": str(py_uuid.uuid5(py_uuid.NAMESPACE_DNS, "process_step->switch_step")),
             "source_id": "process_step",
+            "source_type": "node",
+            "target_id": "switch_step",
+            "target_type": "node",
+        },
+        {
+            "id": str(py_uuid.uuid5(py_uuid.NAMESPACE_DNS, "switch_step_option_a->step_a")),
+            "source_id": "switch_step_option_a",
+            "source_type": "slot",
+            "target_id": "step_a",
+            "target_type": "node",
+        },
+        {
+            "id": str(py_uuid.uuid5(py_uuid.NAMESPACE_DNS, "switch_step_option_b->step_b")),
+            "source_id": "switch_step_option_b",
+            "source_type": "slot",
+            "target_id": "step_b",
+            "target_type": "node",
+        },
+        {
+            "id": str(py_uuid.uuid5(py_uuid.NAMESPACE_DNS, "step_a->end")),
+            "source_id": "step_a",
+            "source_type": "node",
+            "target_id": "end",
+            "target_type": "node",
+        },
+        {
+            "id": str(py_uuid.uuid5(py_uuid.NAMESPACE_DNS, "step_b->end")),
+            "source_id": "step_b",
             "source_type": "node",
             "target_id": "end",
             "target_type": "node",
         },
     ]
+    variables = [{"id": "x", "name": "x", "type": "number", "value": None}]
 
-    initial_flow = {
-        "code": DEFAULT_STARTER_CODE,
+    payload = {
         "nodes": default_nodes,
         "edges": default_edges,
-        "variables": [{"id": "x", "name": "x", "type": "number", "value": None}],
+        "variables": variables,
+        "functions": [],
+    }
+    compiled_code = generate_graph_code(payload)
+
+    initial_flow = {
+        "code": compiled_code,
+        "nodes": default_nodes,
+        "edges": default_edges,
+        "variables": variables,
         "functions": [],
     }
     graph.flow_json = initial_flow
