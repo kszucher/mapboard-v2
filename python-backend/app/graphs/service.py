@@ -129,9 +129,12 @@ async def sync_graph_flow(
         raise ValidationError(f"Graph {graph_id} not found")
 
     from app.graphs.langgraph_sync import generate_graph_code, parse_code_to_graph
+    from app.graphs.schemas import NodeRead
 
     existing_flow = graph.flow_json or {}
     existing_code = existing_flow.get("code", "")
+    old_nodes_raw = existing_flow.get("nodes", [])
+    old_nodes = [NodeRead.model_validate(n) for n in old_nodes_raw]
 
     new_code = payload.code
     payload_dict = payload.model_dump(mode="json")
@@ -165,7 +168,7 @@ async def sync_graph_flow(
                 "functions": functions,
             }
             final_code = generate_graph_code(
-                temp_payload, existing_code=new_code, old_nodes=existing_flow.get("nodes", [])
+                temp_payload, existing_code=new_code, old_nodes=old_nodes
             )
 
             flow_data = {
@@ -182,7 +185,7 @@ async def sync_graph_flow(
     else:
         # Visual edit on the canvas (e.g. node created, deleted, connected, slot modified)
         generated = generate_graph_code(
-            payload_dict, existing_code=existing_code, old_nodes=existing_flow.get("nodes", [])
+            payload_dict, existing_code=existing_code, old_nodes=old_nodes
         )
 
         parsed = parse_code_to_graph(generated)

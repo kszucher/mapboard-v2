@@ -1,22 +1,33 @@
 import ast
 from typing import Any
 
-TYPE_MAP_PY_TO_GB = {
-    int: "number",
-    float: "number",
-    str: "string",
-    bool: "boolean",
-    "int": "number",
-    "float": "number",
-    "str": "string",
-    "bool": "boolean",
-}
+from app.graphs.schemas import NodeRead
 
 TYPE_MAP_GB_TO_PY = {
     "number": "int",
     "string": "str",
     "boolean": "bool",
 }
+
+
+def _extract_switch_conditions(node: ast.FunctionDef) -> dict[str, str]:
+    """Statically extracts conditional router mappings (return_label -> condition) from a function AST."""
+    conditions = {}
+
+    def walk(if_node: ast.AST, conds_map: dict[str, str]) -> None:
+        if isinstance(if_node, ast.If):
+            ret_val = None
+            for sub in if_node.body:
+                if isinstance(sub, ast.Return) and isinstance(sub.value, ast.Constant):
+                    ret_val = sub.value.value
+            if ret_val:
+                conds_map[ret_val] = ast.unparse(if_node.test)
+            for sub in if_node.orelse:
+                walk(sub, conds_map)
+
+    for stmt in node.body:
+        walk(stmt, conditions)
+    return conditions
 
 
 def parse_code_to_graph(code: str) -> dict[str, Any]:
@@ -72,7 +83,9 @@ def parse_code_to_graph(code: str) -> dict[str, Any]:
 
 
 def generate_graph_code(
-    payload: dict[str, Any], existing_code: str = "", old_nodes: list[dict[str, Any]] = None
+    payload: dict[str, Any],
+    existing_code: str = "",
+    old_nodes: list[NodeRead] | None = None,
 ) -> str:
     """
     Generates a Python script from a visual graph payload.
@@ -82,8 +95,8 @@ def generate_graph_code(
     old_slot_labels = {}
     if old_nodes:
         for node in old_nodes:
-            for slot in node.get("slots", []):
-                old_slot_labels[slot["id"]] = slot["raw_string"]
+            for slot in node.slots:
+                old_slot_labels[slot.id] = slot.raw_string
 
     # Parse existing functions to preserve their code bodies/helpers
     existing_funcs = {}
@@ -97,19 +110,7 @@ def generate_graph_code(
                     existing_funcs[node.name] = "\n".join(lines[node.lineno - 1 : node.end_lineno])
                     
                     # Statically extract conditional router mapping via AST
-                    conditions = {}
-                    def walk(if_node, conds_map):
-                        if isinstance(if_node, ast.If):
-                            ret_val = None
-                            for sub in if_node.body:
-                                if isinstance(sub, ast.Return) and isinstance(sub.value, ast.Constant):
-                                    ret_val = sub.value.value
-                            if ret_val:
-                                conds_map[ret_val] = ast.unparse(if_node.test)
-                            for sub in if_node.orelse:
-                                walk(sub, conds_map)
-                    for stmt in node.body:
-                        walk(stmt, conditions)
+                    conditions = _extract_switch_conditions(node)
                     if conditions:
                         switch_conditions[node.name] = conditions
         except Exception:
