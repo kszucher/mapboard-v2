@@ -29,16 +29,7 @@ export interface BaseState {
   isSaving: boolean;
   errorMessage: string | null;
   clearErrorMessage: () => void;
-
   pendingLayoutNodeId: string | null;
-  onNodesChange: (changes: NodeChange[]) => void;
-  onEdgesChange: (changes: EdgeChange[]) => void;
-
-  updateCode: (code: string) => Promise<void>;
-  addVariable: (name: string, type: 'boolean' | 'string' | 'number') => Promise<void>;
-  addFunction: (name: string, inputVariableId: string | null, outputVariableId: string | null, rawString: string) => Promise<void>;
-  deleteFunction: (functionId: string) => Promise<void>;
-  runGraph: () => Promise<void>;
 }
 
 export interface InitSlice {
@@ -47,9 +38,13 @@ export interface InitSlice {
 }
 
 export interface FlowSlice {
+  onNodesChange: (changes: NodeChange[]) => void;
+  onEdgesChange: (changes: EdgeChange[]) => void;
   onConnect: (connection: Connection) => Promise<void>;
   onEdgesDelete: (edgesToDelete: AppFlowEdge[]) => Promise<void>;
   onReconnect: (oldEdge: AppFlowEdge, newConnection: Connection) => Promise<void>;
+  updateCode: (code: string) => Promise<void>;
+  runGraph: () => Promise<void>;
 }
 
 export interface NodeSlice {
@@ -78,6 +73,12 @@ export interface SlotSlice {
   clearSlotSelection: () => Promise<void>;
 }
 
+export interface VariableFunctionSlice {
+  addVariable: (name: string, type: 'boolean' | 'string' | 'number') => Promise<void>;
+  addFunction: (name: string, inputVariableId: string | null, outputVariableId: string | null, rawString: string) => Promise<void>;
+  deleteFunction: (functionId: string) => Promise<void>;
+}
+
 export interface HistorySlice {
   undo: () => void;
   redo: () => void;
@@ -90,4 +91,5 @@ export type GraphStoreState = BaseState &
   FlowSlice &
   NodeSlice &
   SlotSlice &
+  VariableFunctionSlice &
   HistorySlice;
