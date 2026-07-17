@@ -144,8 +144,8 @@ async def sync_graph_flow(
         try:
             parsed = parse_code_to_graph(new_code)
 
-            nodes = payload_dict.get("nodes", [])
-            edges = payload_dict.get("edges", [])
+            nodes = payload_dict.get("nodes") or existing_flow.get("nodes", [])
+            edges = payload_dict.get("edges") or existing_flow.get("edges", [])
             functions = []
 
             # Match function sources to the visual nodes, updating their code field

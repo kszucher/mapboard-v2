@@ -1,7 +1,7 @@
 import type { StateCreator } from 'zustand';
 import { apiClient } from '../../api/client';
+import { fromApiPayload, toApiPayload } from '../mappers';
 import { runLayout } from '../layout';
-import { fromApiPayload } from '../mappers';
 import type { ExecutionSlice, GraphStoreState } from '../types';
 
 export const createExecutionSlice: StateCreator<
@@ -16,15 +16,18 @@ export const createExecutionSlice: StateCreator<
 
     try {
       set({ isLoading: true });
+      const payload = toApiPayload({
+        graphId,
+        code: newCode,
+        nodes: get().nodes,
+        edges: get().edges,
+        variables: get().variables,
+        functions: get().functions,
+      });
+
       const res = await apiClient.PUT('/graphs/{graph_id}/sync', {
         params: { path: { graph_id: graphId } },
-        body: {
-          code: newCode,
-          nodes: [],
-          edges: [],
-          variables: [],
-          functions: []
-        }
+        body: payload
       });
       if ('error' in res) throw res.error;
 

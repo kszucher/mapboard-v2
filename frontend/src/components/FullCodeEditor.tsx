@@ -1,5 +1,5 @@
 import { acceptCompletion, autocompletion } from '@codemirror/autocomplete';
-import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
+import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { python } from '@codemirror/lang-python';
 import { linter, lintGutter } from '@codemirror/lint';
 import { Annotation, EditorState } from '@codemirror/state';
@@ -75,6 +75,7 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
         history(),
         keymap.of([
           { key: 'Tab', run: acceptCompletion },
+          indentWithTab,
           ...defaultKeymap,
           ...historyKeymap,
         ]),
