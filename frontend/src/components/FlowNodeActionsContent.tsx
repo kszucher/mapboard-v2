@@ -5,7 +5,6 @@ import { useShallow } from 'zustand/react/shallow';
 import { useGraphStore } from '../store/useGraphStore';
 import {
   canShortcircuitNode,
-  computeTraversalIndices,
   getAvailableConversions,
   getIncomingEdgeOptions,
   getOutgoingEdgeOptions
@@ -38,17 +37,13 @@ export const FlowNodeActionsContent = ({ nodeId }: FlowNodeActionsContentProps) 
   const isInput = nodeData?.is_input ?? false;
   const isOutput = nodeData?.is_output ?? false;
 
-  const traversalIndexMap = useMemo(() => {
-    return computeTraversalIndices(nodes);
-  }, [nodes]);
-
   const outgoingEdgeOptions = useMemo(() => {
-    return getOutgoingEdgeOptions(nodeId, edges, nodes, traversalIndexMap);
-  }, [nodeId, edges, nodes, traversalIndexMap]);
+    return getOutgoingEdgeOptions(nodeId, edges, nodes);
+  }, [nodeId, edges, nodes]);
 
   const incomingEdgeOptions = useMemo(() => {
-    return getIncomingEdgeOptions(nodeId, edges, nodes, traversalIndexMap);
-  }, [nodeId, edges, nodes, traversalIndexMap]);
+    return getIncomingEdgeOptions(nodeId, edges, nodes);
+  }, [nodeId, edges, nodes]);
 
   const hasOutgoingEdges = useMemo(() => {
     return edges.some(e => e.sourceHandle === nodeId);

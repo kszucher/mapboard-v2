@@ -3,7 +3,7 @@ import { Badge, Flex } from '@radix-ui/themes';
 import { Handle, type NodeProps, Position, useUpdateNodeInternals } from '@xyflow/react';
 import { memo, useCallback, useEffect, useMemo } from 'react';
 import { useGraphStore } from '../store/useGraphStore';
-import { computeTraversalIndices } from '../utils/flowUtils';
+
 import { FlowNodeActions } from './FlowNodeActions.tsx';
 import { FlowNodeSlot } from './FlowNodeSlot.tsx';
 import { NODE_PADDING } from './layout.ts';
@@ -23,12 +23,7 @@ const CustomNodeComponent = ({ data, id, selected }: NodeProps<AppFlowNode>) => 
 
   const mySlots = data.node.slots;
   const isLoading = useGraphStore(state => state.isLoading);
-  const traversalIndex = useGraphStore(
-    useCallback(state => {
-      const map = computeTraversalIndices(state.nodes);
-      return map[id] ?? 1;
-    }, [id])
-  );
+
 
   const mySlotsHash = useMemo(() => {
     return mySlots.map((s, index) => `${s.id}:${index}:${s.selected}`).join(',');
@@ -85,9 +80,6 @@ const CustomNodeComponent = ({ data, id, selected }: NodeProps<AppFlowNode>) => 
           />
         )}
         <Flex direction="row" gap="1" align="center" flexGrow="1">
-          <Badge color="gray" size="1" style={{ height: 'var(--space-5)' }}>
-            {'N' + traversalIndex}
-          </Badge>
           <Badge color={NODE_COLORS[data.node.node_type]} size="1" style={{ height: 'var(--space-5)' }}>
             {id}
           </Badge>

@@ -6,7 +6,6 @@ import { useGraphStore } from '../store/useGraphStore';
 import {
   canMoveSlotDown,
   canMoveSlotUp,
-  computeTraversalIndices,
   getIncomingEdgeOptions,
   getOutgoingEdgeOptions
 } from '../utils/flowUtils';
@@ -67,17 +66,13 @@ export const FlowNodeSlotActionsContent = ({
     return mySlots.length > 1;
   }, [mySlots]);
 
-  const traversalIndexMap = useMemo(() => {
-    return computeTraversalIndices(nodes);
-  }, [nodes]);
-
   const outgoingEdgeOptions = useMemo(() => {
-    return getOutgoingEdgeOptions(slotId, edges, nodes, traversalIndexMap);
-  }, [slotId, edges, nodes, traversalIndexMap]);
+    return getOutgoingEdgeOptions(slotId, edges, nodes);
+  }, [slotId, edges, nodes]);
 
   const incomingEdgeOptions = useMemo(() => {
-    return getIncomingEdgeOptions(slotId, edges, nodes, traversalIndexMap);
-  }, [slotId, edges, nodes, traversalIndexMap]);
+    return getIncomingEdgeOptions(slotId, edges, nodes);
+  }, [slotId, edges, nodes]);
 
   const hasOutgoingEdges = useMemo(() => {
     return edges.some(e => e.sourceHandle === slotId);

@@ -170,22 +170,13 @@ export const createNewNode = (
 
   const defaultSlots = createDefaultSlotsForNode(nodeType, newNodeId);
 
-  let defaultCode = '';
-  if (nodeType === 'STEP') {
-    defaultCode = `def ${newNodeId}(state: State) -> dict:\n    return {}`;
-  } else if (nodeType === 'SWITCH') {
-    defaultCode = `def ${newNodeId}(state: State) -> str:\n    if state.get("x", 0) > 0:\n        return "option_a"\n    return "option_b"`;
-  } else if (nodeType === 'START' || nodeType === 'END') {
-    defaultCode = '# Read-only node';
-  }
-
   const newNode: ApiNode = {
     id: newNodeId,
     node_type: nodeType,
     is_input: nodeType !== 'START',
     is_output: nodeType === 'START' || nodeType === 'STEP',
     slots: defaultSlots,
-    code: defaultCode,
+    code: '',
     selected: false,
   };
 
@@ -240,60 +231,6 @@ export const updateNodeNodeType = (node: AppFlowNode, targetType: NodeType): App
   };
 };
 
-export const computeTraversalIndices = (
-  nodes: AppFlowNode[]
-): Record<string, number> => {
-  const startNode = nodes.find(n => n.data?.node?.node_type === 'START');
-  const otherNodes = nodes.filter(n => n.data?.node?.node_type !== 'START');
-
-  if (otherNodes.length === 0) {
-    return startNode ? { [startNode.id]: 1 } : {};
-  }
-
-  // 1. Sort by starting x coordinate
-  const sortedByX = [...otherNodes].sort((a, b) => a.position.x - b.position.x);
-
-  // 2. Group overlapping horizontal intervals into columns
-  const columns: AppFlowNode[][] = [];
-  let currentColumnMaxRight = -Infinity;
-
-  for (const node of sortedByX) {
-    const width = node.measured?.width ?? 0;
-    const left = node.position.x;
-    const right = left + width;
-
-    const lastCol = columns[columns.length - 1];
-    if (!lastCol || left > currentColumnMaxRight) {
-      // No overlap: start a new column
-      columns.push([node]);
-      currentColumnMaxRight = right;
-    } else {
-      // Overlap: add to the current column and update max right boundary
-      lastCol.push(node);
-      currentColumnMaxRight = Math.max(currentColumnMaxRight, right);
-    }
-  }
-
-  // 3. Sort each column top-to-bottom by y coordinate
-  for (const col of columns) {
-    col.sort((a, b) => a.position.y - b.position.y);
-  }
-
-  // 4. Prepend START node
-  const sortedNodeIds = startNode ? [startNode.id, ...columns.flat().map(n => n.id)] : columns.flat().map(n => n.id);
-
-  return Object.fromEntries(sortedNodeIds.map((id, index) => [id, index + 1]));
-};
-
-export const formatSlotLabel = (
-  nodeId: string | undefined,
-  traversalIndexMap: Record<string, number>,
-  slotIdx: number
-): string => {
-  const index = nodeId ? traversalIndexMap[nodeId] : undefined;
-  return index !== undefined ? `N${index}-${slotIdx}` : `?-${slotIdx}`;
-};
-
 export interface EdgeOption {
   edgeId: string;
   label: string;
@@ -302,21 +239,19 @@ export interface EdgeOption {
 export const getOutgoingEdgeOptions = (
   connectorId: string,
   edges: AppFlowEdge[],
-  nodes: AppFlowNode[],
-  traversalIndexMap: Record<string, number>
+  nodes: AppFlowNode[]
 ): EdgeOption[] => {
   const outgoingEdges = edges.filter(e => e.sourceHandle === connectorId);
   return outgoingEdges.map(edge => {
     const targetNode = nodes.find(n => n.id === edge.target);
     const isTargetNode = edge.targetHandle === edge.target;
-    const targetSlotIdx = targetNode ? targetNode.data.node.slots.findIndex(s => s.id === edge.targetHandle) : -1;
+    const targetSlot = targetNode?.data.node.slots.find(s => s.id === edge.targetHandle);
 
     let label = '';
     if (isTargetNode) {
-      const idx = targetNode ? traversalIndexMap[targetNode.id] : undefined;
-      label = idx !== undefined ? `N${idx}` : `?`;
+      label = targetNode ? targetNode.id : '?';
     } else {
-      label = formatSlotLabel(targetNode?.id, traversalIndexMap, targetSlotIdx >= 0 ? targetSlotIdx : 0);
+      label = targetNode && targetSlot ? `${targetNode.id} - ${targetSlot.raw_string}` : '?';
     }
 
     return {
@@ -329,21 +264,19 @@ export const getOutgoingEdgeOptions = (
 export const getIncomingEdgeOptions = (
   connectorId: string,
   edges: AppFlowEdge[],
-  nodes: AppFlowNode[],
-  traversalIndexMap: Record<string, number>
+  nodes: AppFlowNode[]
 ): EdgeOption[] => {
   const incomingEdges = edges.filter(e => e.targetHandle === connectorId);
   return incomingEdges.map(edge => {
     const sourceNode = nodes.find(n => n.id === edge.source);
     const isSourceNode = edge.sourceHandle === edge.source;
-    const sourceSlotIdx = sourceNode ? sourceNode.data.node.slots.findIndex(s => s.id === edge.sourceHandle) : -1;
+    const sourceSlot = sourceNode?.data.node.slots.find(s => s.id === edge.sourceHandle);
 
     let label = '';
     if (isSourceNode) {
-      const idx = sourceNode ? traversalIndexMap[sourceNode.id] : undefined;
-      label = idx !== undefined ? `N${idx}` : `?`;
+      label = sourceNode ? sourceNode.id : '?';
     } else {
-      label = formatSlotLabel(sourceNode?.id, traversalIndexMap, sourceSlotIdx >= 0 ? sourceSlotIdx : 0);
+      label = sourceNode && sourceSlot ? `${sourceNode.id} - ${sourceSlot.raw_string}` : '?';
     }
 
     return {
