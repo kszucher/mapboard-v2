@@ -1,9 +1,5 @@
 import ast
-import traceback
-import uuid
 from typing import Any
-
-from langgraph.graph import StateGraph
 
 TYPE_MAP_PY_TO_GB = {
     int: "number",
@@ -25,155 +21,53 @@ TYPE_MAP_GB_TO_PY = {
 
 def parse_code_to_graph(code: str) -> dict[str, Any]:
     """
-    Parses a single Python script representing a LangGraph workflow.
-    Executes it to introspect the graph, and uses AST to extract function bodies.
+    Statically parses a single Python script to extract State variables and function bodies.
+    Does NOT dynamically execute the script.
     """
     if not code.strip():
         raise ValueError("Code is empty")
 
-    # 1. AST parsing to check for syntax errors and extract raw function source codes
     try:
         tree = ast.parse(code)
     except SyntaxError as e:
         raise ValueError(f"Syntax Error on line {e.lineno}: {e.msg}") from e
 
-    # Extract all top-level function source codes
     lines = code.splitlines()
+    variables = []
     function_sources: dict[str, str] = {}
-    helper_functions: list[dict[str, Any]] = []
 
     for node in tree.body:
-        if isinstance(node, ast.FunctionDef):
-            # Extract function body and signature
+        # 1. Parse TypedDict State class
+        if isinstance(node, ast.ClassDef) and node.name == "State":
+            for stmt in node.body:
+                if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name):
+                    var_name = stmt.target.id
+                    type_str = ast.unparse(stmt.annotation)
+                    gb_type = "string"
+                    if type_str in ("int", "float", "number"):
+                        gb_type = "number"
+                    elif type_str in ("bool", "boolean"):
+                        gb_type = "boolean"
+                    elif type_str == "str":
+                        gb_type = "string"
+
+                    variables.append(
+                        {
+                            "id": var_name,
+                            "name": var_name,
+                            "type": gb_type,
+                            "value": None,
+                        }
+                    )
+
+        # 2. Extract top-level function source codes
+        elif isinstance(node, ast.FunctionDef):
             func_code = "\n".join(lines[node.lineno - 1 : node.end_lineno])
             function_sources[node.name] = func_code
 
-    # 2. Dynamic execution to extract runtime LangGraph topology
-    namespace = {}
-    try:
-        exec(code, {}, namespace)
-    except Exception as e:
-        tb = traceback.extract_tb(e.__traceback__)
-        # Find the line number inside the executed script
-        line_no = None
-        for frame in tb:
-            if frame.filename == "<string>":
-                line_no = frame.lineno
-                break
-        err_msg = f"Runtime Error: {str(e)}"
-        if line_no:
-            err_msg = f"Runtime Error on line {line_no}: {str(e)}"
-        raise ValueError(err_msg) from e
-
-    # Find StateGraph instance
-    workflow: StateGraph = None
-    for val in namespace.values():
-        if isinstance(val, StateGraph):
-            workflow = val
-            break
-
-    if not workflow:
-        raise ValueError("No StateGraph object ('workflow') defined or compiled in the code.")
-
-    # 3. Extract variables from state schema
-    variables: list[dict[str, Any]] = []
-    state_schema = getattr(workflow, "state_schema", None)
-    if state_schema and hasattr(state_schema, "__annotations__"):
-        for var_name, var_type in state_schema.__annotations__.items():
-            # Get type name
-            type_str = getattr(var_type, "__name__", str(var_type))
-            gb_type = TYPE_MAP_PY_TO_GB.get(type_str, "string")
-            variables.append(
-                {
-                    "id": var_name,  # Use variable name as ID for simplicity
-                    "name": var_name,
-                    "type": gb_type,
-                    "value": None,
-                }
-            )
-
-    # 4. Extract nodes (Step vs Switch)
-    nodes: list[dict[str, Any]] = []
-    edges: list[dict[str, Any]] = []
-
-    # Track which nodes are switches
-    conditional_sources = set(workflow.branches.keys())
-
-    # Always add visual START and END nodes
-    start_node_id = "start"
-    end_node_id = "end"
-    nodes.append(
-        {"id": start_node_id, "node_type": "START", "is_input": False, "is_output": True, "slots": [], "code": ""}
-    )
-    nodes.append({"id": end_node_id, "node_type": "END", "is_input": True, "is_output": False, "slots": [], "code": ""})
-
-    # Add other nodes
-    for node_name in workflow.nodes.keys():
-        is_switch = node_name in conditional_sources
-        slots = []
-
-        # If it's a Switch node, find output slot labels from the branch configuration
-        if is_switch:
-            branch_info = workflow.branches[node_name]
-            # branch_info is a dict, keys might be 'condition' or target label
-            for _, branch_spec in branch_info.items():
-                # branch_spec.ends maps routing labels to target nodes
-                for label in branch_spec.ends.keys():
-                    slots.append({"id": f"{node_name}_{label}", "raw_string": label, "selected": False})
-
-        nodes.append(
-            {
-                "id": node_name,
-                "node_type": "SWITCH" if is_switch else "STEP",
-                "is_input": True,
-                "is_output": not is_switch,
-                "slots": slots,
-                "code": function_sources.get(node_name, ""),
-            }
-        )
-
-    # 5. Extract edges
-    # Standard static edges
-    for source, target in workflow.edges:
-        src_id = start_node_id if source == "__start__" else source
-        tgt_id = end_node_id if target == "__end__" else target
-        edges.append(
-            {
-                "id": str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{src_id}->{tgt_id}")),
-                "source_id": src_id,
-                "source_type": "node",
-                "target_id": tgt_id,
-                "target_type": "node",
-            }
-        )
-
-    # Conditional edges
-    for source_node, branches in workflow.branches.items():
-        for _, branch_spec in branches.items():
-            for label, target in branch_spec.ends.items():
-                src_slot_id = f"{source_node}_{label}"
-                tgt_id = end_node_id if target == "__end__" else target
-                edges.append(
-                    {
-                        "id": str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{src_slot_id}->{tgt_id}")),
-                        "source_id": src_slot_id,
-                        "source_type": "slot",
-                        "target_id": tgt_id,
-                        "target_type": "node",
-                    }
-                )
-
-    # 6. Extract helper functions
-    # Any top-level functions defined in the code but NOT added as graph nodes
-    for func_name, func_source in function_sources.items():
-        if func_name not in workflow.nodes and func_name != "State":
-            helper_functions.append({"id": func_name, "name": func_name, "raw_string": func_source})
-
     return {
-        "nodes": nodes,
-        "edges": edges,
         "variables": variables,
-        "functions": helper_functions,
+        "functions": function_sources,
     }
 
 

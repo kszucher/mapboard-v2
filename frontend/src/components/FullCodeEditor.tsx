@@ -65,6 +65,25 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
         autocompletion(),
         updateListener,
         EditorState.tabSize.of(4),
+        EditorState.transactionFilter.of(tr => {
+          if (tr.docChanged) {
+            const docStr = tr.startState.doc.toString();
+            const idx = docStr.indexOf('# Graph Definition');
+            if (idx !== -1) {
+              const graphDefIndex = Math.max(0, idx - 55);
+              let isEditingGraphDef = false;
+              tr.changes.iterChanges((_, toA) => {
+                if (toA >= graphDefIndex) {
+                  isEditingGraphDef = true;
+                }
+              });
+              if (isEditingGraphDef) {
+                return [];
+              }
+            }
+          }
+          return tr;
+        }),
         EditorView.theme({
           '&': {
             height: '100%',

@@ -50,15 +50,47 @@ async def create_graph(
 ) -> uuid.UUID:
     graph = await uow.graphs.create(user_id=user_id, name=graph_name)
 
+    import uuid as py_uuid
+
     from app.graphs.langgraph_sync import parse_code_to_graph
 
     parsed = parse_code_to_graph(DEFAULT_STARTER_CODE)
+
+    default_nodes = [
+        {"id": "start", "node_type": "START", "is_input": False, "is_output": True, "slots": [], "code": ""},
+        {
+            "id": "process_step",
+            "node_type": "STEP",
+            "is_input": True,
+            "is_output": True,
+            "slots": [],
+            "code": 'def process_step(state: State) -> dict:\n    return {"x": state["x"] + 1}',
+        },
+        {"id": "end", "node_type": "END", "is_input": True, "is_output": False, "slots": [], "code": ""},
+    ]
+    default_edges = [
+        {
+            "id": str(py_uuid.uuid5(py_uuid.NAMESPACE_DNS, "start->process_step")),
+            "source_id": "start",
+            "source_type": "node",
+            "target_id": "process_step",
+            "target_type": "node",
+        },
+        {
+            "id": str(py_uuid.uuid5(py_uuid.NAMESPACE_DNS, "process_step->end")),
+            "source_id": "process_step",
+            "source_type": "node",
+            "target_id": "end",
+            "target_type": "node",
+        },
+    ]
+
     initial_flow = {
         "code": DEFAULT_STARTER_CODE,
-        "nodes": parsed["nodes"],
-        "edges": parsed["edges"],
+        "nodes": default_nodes,
+        "edges": default_edges,
         "variables": parsed["variables"],
-        "functions": parsed["functions"],
+        "functions": [],
     }
     graph.flow_json = initial_flow
     await uow.session.flush()
@@ -94,40 +126,76 @@ async def sync_graph_flow(
     existing_code = existing_flow.get("code", "")
 
     new_code = payload.code
+    payload_dict = payload.model_dump(mode="json")
 
     if new_code != existing_code:
         # Code edited in the frontend editor
         try:
             parsed = parse_code_to_graph(new_code)
-            flow_data = {
-                "code": new_code,
-                "nodes": parsed["nodes"],
-                "edges": parsed["edges"],
+
+            nodes = payload_dict.get("nodes", [])
+            edges = payload_dict.get("edges", [])
+            functions = []
+
+            # Match function sources to the visual nodes, updating their code field
+            node_names = {n["id"] for n in nodes if n["node_type"] in ("STEP", "SWITCH")}
+            for node in nodes:
+                node_name = node["id"]
+                if node_name in parsed["functions"]:
+                    node["code"] = parsed["functions"][node_name]
+
+            # Any top-level functions that are not visual nodes become helper functions
+            for func_name, func_source in parsed["functions"].items():
+                if func_name not in node_names and func_name != "State":
+                    functions.append({"id": func_name, "name": func_name, "raw_string": func_source})
+
+            # Regenerate the code block to ensure the read-only Graph Definition section matches payload topology
+            temp_payload = {
+                "nodes": nodes,
+                "edges": edges,
                 "variables": parsed["variables"],
-                "functions": parsed["functions"],
+                "functions": functions,
+            }
+            final_code = generate_graph_code(temp_payload, existing_code=new_code)
+
+            flow_data = {
+                "code": final_code,
+                "nodes": nodes,
+                "edges": edges,
+                "variables": parsed["variables"],
+                "functions": functions,
             }
         except ValueError as e:
             from fastapi import HTTPException
 
             raise HTTPException(status_code=422, detail=str(e))
     else:
-        # Visual edit on the canvas
-        payload_dict = payload.model_dump(mode="json")
+        # Visual edit on the canvas (e.g. node created, deleted, connected, slot modified)
         generated = generate_graph_code(payload_dict, existing_code=existing_code)
 
-        try:
-            parsed = parse_code_to_graph(generated)
-            flow_data = {
-                "code": generated,
-                "nodes": parsed["nodes"],
-                "edges": parsed["edges"],
-                "variables": parsed["variables"],
-                "functions": parsed["functions"],
-            }
-        except ValueError:
-            # Fallback
-            flow_data = payload_dict
-            flow_data["code"] = generated
+        parsed = parse_code_to_graph(generated)
+
+        nodes = payload_dict.get("nodes", [])
+        edges = payload_dict.get("edges", [])
+        node_names = {n["id"] for n in nodes if n["node_type"] in ("STEP", "SWITCH")}
+        for node in nodes:
+            node_name = node["id"]
+            if node_name in parsed["functions"]:
+                node["code"] = parsed["functions"][node_name]
+
+        # Helper functions
+        functions = []
+        for func_name, func_source in parsed["functions"].items():
+            if func_name not in node_names and func_name != "State":
+                functions.append({"id": func_name, "name": func_name, "raw_string": func_source})
+
+        flow_data = {
+            "code": generated,
+            "nodes": nodes,
+            "edges": edges,
+            "variables": parsed["variables"],
+            "functions": functions,
+        }
 
     graph.flow_json = flow_data
     await uow.session.flush()
