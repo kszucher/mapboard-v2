@@ -34,7 +34,6 @@ export interface BaseState {
 
 export interface InitSlice {
   init: (graphId: string) => Promise<void>;
-  syncFromRemote: (flow: GraphFlowRead) => void;
 }
 
 export interface FlowSlice {

@@ -29,10 +29,6 @@ export function createRuffWorkspace(variableNames: string[], nodeType?: string):
   }, PositionEncoding.Utf16);
 }
 
-export function runTypeCheck(_code: string, _variables: Variable[], _functions: FunctionEntity[], _nodeType?: string): Diagnostic[] {
-  return [];
-}
-
 export function runStateDiagnostics(code: string, variables: Variable[]): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
   const registeredNames = new Set(variables.map(v => v.name));

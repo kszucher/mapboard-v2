@@ -1,6 +1,5 @@
 import type { StateCreator } from 'zustand';
 import { apiClient } from '../../api/client';
-import { runLayout } from '../layout';
 import { fromApiPayload } from '../mappers';
 import { resetLastSavedState } from '../storeEngine';
 import type { GraphStoreState, InitSlice } from '../types';
@@ -10,7 +9,7 @@ export const createInitSlice: StateCreator<
   [],
   [],
   InitSlice
-> = (set, get) => ({
+> = (set) => ({
   init: async (graphId) => {
     set({ graphId, isLoading: true, past: [], future: [] });
     try {
@@ -47,27 +46,5 @@ export const createInitSlice: StateCreator<
       console.error('Failed to initialize graph:', err);
       set({ isLoading: false });
     }
-  },
-
-  syncFromRemote: (flow) => {
-    const { graphId, nodes } = get();
-    if (!graphId) return;
-
-    const positions: Record<string, { x: number; y: number }> = {};
-    nodes.forEach((n) => {
-      positions[n.id] = n.position;
-    });
-
-    const mapped = fromApiPayload(flow.nodes, flow.edges, positions);
-
-    runLayout(mapped.nodes, mapped.edges).then(laidOut => {
-      set({
-        code: flow.code || '',
-        nodes: laidOut.nodes,
-        edges: laidOut.edges,
-        variables: flow.variables || [],
-        functions: flow.functions || [],
-      });
-    });
   },
 });
