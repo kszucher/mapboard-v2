@@ -43,8 +43,6 @@ export interface FlowSlice {
   onConnect: (connection: Connection) => Promise<void>;
   onEdgesDelete: (edgesToDelete: AppFlowEdge[]) => Promise<void>;
   onReconnect: (oldEdge: AppFlowEdge, newConnection: Connection) => Promise<void>;
-  updateCode: (code: string) => Promise<void>;
-  runGraph: () => Promise<void>;
 }
 
 export interface NodeSlice {
@@ -79,6 +77,11 @@ export interface VariableFunctionSlice {
   deleteFunction: (functionId: string) => Promise<void>;
 }
 
+export interface ExecutionSlice {
+  updateCode: (code: string) => Promise<void>;
+  runGraph: () => Promise<void>;
+}
+
 export interface HistorySlice {
   undo: () => void;
   redo: () => void;
@@ -92,4 +95,5 @@ export type GraphStoreState = BaseState &
   NodeSlice &
   SlotSlice &
   VariableFunctionSlice &
+  ExecutionSlice &
   HistorySlice;

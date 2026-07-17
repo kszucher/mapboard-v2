@@ -1,9 +1,8 @@
 import { applyEdgeChanges, applyNodeChanges } from '@xyflow/react';
 import type { Connection, EdgeChange, NodeChange } from '@xyflow/react';
 import type { StateCreator } from 'zustand';
-import { apiClient } from '../../api/client';
 import type { ApiNode, AppFlowEdge, AppFlowNode } from '../../components/types';
-import { mapToReactFlowElements, runLayout } from '../../utils/flowUtils';
+import { runLayout } from '../../utils/flowUtils';
 import { triggerSave, updateFlowState } from '../helpers';
 import type { FlowSlice, GraphStoreState } from '../types';
 
@@ -174,75 +173,5 @@ export const createFlowSlice: StateCreator<
         edges: nextEdges,
       };
     });
-  },
-
-  updateCode: async (newCode: string) => {
-    const { graphId, nodes } = get();
-    if (!graphId) return;
-
-    try {
-      set({ isLoading: true });
-      const res = await apiClient.PUT('/graphs/{graph_id}/sync', {
-        params: { path: { graph_id: graphId } },
-        body: {
-          code: newCode,
-          nodes: [],
-          edges: [],
-          variables: [],
-          functions: []
-        }
-      });
-      if ('error' in res) throw res.error;
-
-      const data = res.data;
-      if (data) {
-        const positions: Record<string, { x: number; y: number }> = {};
-        nodes.forEach((n) => {
-          positions[n.id] = n.position;
-        });
-
-        const mapped = mapToReactFlowElements(data.nodes, data.edges, positions);
-        const laidOut = await runLayout(mapped.nodes, mapped.edges);
-
-        set({
-          code: data.code || newCode,
-          nodes: laidOut.nodes,
-          edges: laidOut.edges,
-          variables: data.variables || [],
-          functions: data.functions || [],
-          errorMessage: null,
-        });
-      }
-    } catch (err: any) {
-      console.error('Failed to sync code with backend:', err);
-      const detail = err.detail || String(err);
-      set({ errorMessage: detail });
-      throw new Error(detail);
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-
-  runGraph: async () => {
-    const { graphId } = get();
-    if (!graphId) return;
-
-    try {
-      set({ isLoading: true });
-      const res = await (apiClient as any).POST('/graphs/{graph_id}/run', {
-        params: { path: { graph_id: graphId } }
-      });
-      if ('error' in res) throw res.error;
-
-      const data = res.data;
-      if (data && data.variables) {
-        set({ variables: data.variables });
-      }
-    } catch (err: any) {
-      console.error('Failed to run graph:', err);
-      set({ errorMessage: err.detail || String(err) });
-    } finally {
-      set({ isLoading: false });
-    }
   },
 });
