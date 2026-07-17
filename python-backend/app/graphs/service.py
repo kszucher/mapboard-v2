@@ -20,84 +20,84 @@ async def create_graph(
     import uuid as py_uuid
 
     from app.graphs.langgraph_sync import generate_graph_code
+    from app.graphs.schemas import EdgeRead, NodeRead, SlotRead, VariableRead
 
     default_nodes = [
-        {"id": "start", "node_type": "START", "is_input": False, "is_output": True, "slots": [], "code": ""},
-        {"id": "process_step", "node_type": "STEP", "is_input": True, "is_output": True, "slots": [], "code": ""},
-        {
-            "id": "switch_step",
-            "node_type": "SWITCH",
-            "is_input": True,
-            "is_output": False,
-            "slots": [
-                {"id": "switch_step_option_a", "raw_string": "option_a", "selected": False},
-                {"id": "switch_step_option_b", "raw_string": "option_b", "selected": False},
+        NodeRead(id="start", node_type="START", is_input=False, is_output=True, slots=[]),
+        NodeRead(id="process_step", node_type="STEP", is_input=True, is_output=True, slots=[]),
+        NodeRead(
+            id="switch_step",
+            node_type="SWITCH",
+            is_input=True,
+            is_output=False,
+            slots=[
+                SlotRead(id="switch_step_option_a", raw_string="option_a"),
+                SlotRead(id="switch_step_option_b", raw_string="option_b"),
             ],
-            "code": "",
-        },
-        {"id": "step_a", "node_type": "STEP", "is_input": True, "is_output": True, "slots": [], "code": ""},
-        {"id": "step_b", "node_type": "STEP", "is_input": True, "is_output": True, "slots": [], "code": ""},
-        {"id": "end", "node_type": "END", "is_input": True, "is_output": False, "slots": [], "code": ""},
+        ),
+        NodeRead(id="step_a", node_type="STEP", is_input=True, is_output=True, slots=[]),
+        NodeRead(id="step_b", node_type="STEP", is_input=True, is_output=True, slots=[]),
+        NodeRead(id="end", node_type="END", is_input=True, is_output=False, slots=[]),
     ]
     default_edges = [
-        {
-            "id": str(py_uuid.uuid5(py_uuid.NAMESPACE_DNS, "start->process_step")),
-            "source_id": "start",
-            "source_type": "node",
-            "target_id": "process_step",
-            "target_type": "node",
-        },
-        {
-            "id": str(py_uuid.uuid5(py_uuid.NAMESPACE_DNS, "process_step->switch_step")),
-            "source_id": "process_step",
-            "source_type": "node",
-            "target_id": "switch_step",
-            "target_type": "node",
-        },
-        {
-            "id": str(py_uuid.uuid5(py_uuid.NAMESPACE_DNS, "switch_step_option_a->step_a")),
-            "source_id": "switch_step_option_a",
-            "source_type": "slot",
-            "target_id": "step_a",
-            "target_type": "node",
-        },
-        {
-            "id": str(py_uuid.uuid5(py_uuid.NAMESPACE_DNS, "switch_step_option_b->step_b")),
-            "source_id": "switch_step_option_b",
-            "source_type": "slot",
-            "target_id": "step_b",
-            "target_type": "node",
-        },
-        {
-            "id": str(py_uuid.uuid5(py_uuid.NAMESPACE_DNS, "step_a->end")),
-            "source_id": "step_a",
-            "source_type": "node",
-            "target_id": "end",
-            "target_type": "node",
-        },
-        {
-            "id": str(py_uuid.uuid5(py_uuid.NAMESPACE_DNS, "step_b->end")),
-            "source_id": "step_b",
-            "source_type": "node",
-            "target_id": "end",
-            "target_type": "node",
-        },
+        EdgeRead(
+            id=py_uuid.uuid5(py_uuid.NAMESPACE_DNS, "start->process_step"),
+            source_id="start",
+            source_type="node",
+            target_id="process_step",
+            target_type="node",
+        ),
+        EdgeRead(
+            id=py_uuid.uuid5(py_uuid.NAMESPACE_DNS, "process_step->switch_step"),
+            source_id="process_step",
+            source_type="node",
+            target_id="switch_step",
+            target_type="node",
+        ),
+        EdgeRead(
+            id=py_uuid.uuid5(py_uuid.NAMESPACE_DNS, "switch_step_option_a->step_a"),
+            source_id="switch_step_option_a",
+            source_type="slot",
+            target_id="step_a",
+            target_type="node",
+        ),
+        EdgeRead(
+            id=py_uuid.uuid5(py_uuid.NAMESPACE_DNS, "switch_step_option_b->step_b"),
+            source_id="switch_step_option_b",
+            source_type="slot",
+            target_id="step_b",
+            target_type="node",
+        ),
+        EdgeRead(
+            id=py_uuid.uuid5(py_uuid.NAMESPACE_DNS, "step_a->end"),
+            source_id="step_a",
+            source_type="node",
+            target_id="end",
+            target_type="node",
+        ),
+        EdgeRead(
+            id=py_uuid.uuid5(py_uuid.NAMESPACE_DNS, "step_b->end"),
+            source_id="step_b",
+            source_type="node",
+            target_id="end",
+            target_type="node",
+        ),
     ]
-    variables = [{"id": "x", "name": "x", "type": "number", "value": None}]
+    variables = [VariableRead(id="x", name="x", type="number")]
 
     payload = {
-        "nodes": default_nodes,
-        "edges": default_edges,
-        "variables": variables,
+        "nodes": [n.model_dump(mode="json") for n in default_nodes],
+        "edges": [e.model_dump(mode="json") for e in default_edges],
+        "variables": [v.model_dump(mode="json") for v in variables],
         "functions": [],
     }
     compiled_code = generate_graph_code(payload)
 
     initial_flow = {
         "code": compiled_code,
-        "nodes": default_nodes,
-        "edges": default_edges,
-        "variables": variables,
+        "nodes": payload["nodes"],
+        "edges": payload["edges"],
+        "variables": payload["variables"],
         "functions": [],
     }
     graph.flow_json = initial_flow
