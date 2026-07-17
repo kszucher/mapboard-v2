@@ -1,7 +1,7 @@
 import type { StateCreator } from 'zustand';
 import { apiClient } from '../../api/client';
 import { runLayout } from '../layout';
-import { mapToReactFlowElements } from '../mappers';
+import { fromApiPayload } from '../mappers';
 import { resetLastSavedState } from '../storeEngine';
 import type { GraphStoreState, InitSlice } from '../types';
 
@@ -20,7 +20,7 @@ export const createInitSlice: StateCreator<
       if ('error' in res) throw res.error;
       const data = res.data;
       if (data) {
-        const mapped = mapToReactFlowElements(data.nodes, data.edges, {}, 'none');
+        const mapped = fromApiPayload(data.nodes, data.edges, {}, 'none');
 
         set({
           graphId,
@@ -49,7 +49,7 @@ export const createInitSlice: StateCreator<
     }
   },
 
-  updateFromWebSocket: (flow) => {
+  syncFromRemote: (flow) => {
     const { graphId, nodes } = get();
     if (!graphId) return;
 
@@ -58,7 +58,7 @@ export const createInitSlice: StateCreator<
       positions[n.id] = n.position;
     });
 
-    const mapped = mapToReactFlowElements(flow.nodes, flow.edges, positions);
+    const mapped = fromApiPayload(flow.nodes, flow.edges, positions);
 
     runLayout(mapped.nodes, mapped.edges).then(laidOut => {
       set({

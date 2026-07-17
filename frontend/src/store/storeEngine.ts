@@ -2,7 +2,7 @@ import type { StoreApi } from 'zustand';
 import { apiClient, getClientId } from '../api/client';
 import type { AppFlowEdge, AppFlowNode, FunctionEntity, Variable } from '../components/types';
 import { runLayout } from './layout';
-import { serializeFlowState } from './mappers';
+import { toApiPayload } from './mappers';
 import type { GraphStoreState } from './types';
 
 let onSaveStateChange: ((isSaving: boolean) => void) | null = null;
@@ -19,7 +19,7 @@ export const setOnSyncResponse = (callback: (data: any) => void) => {
 const saveTimeoutsByGraph = new Map<string, number>();
 const lastSavedStateByGraph = new Map<string, string>();
 
-export const triggerSave = (
+export const scheduleAutosave = (
   state: Pick<GraphStoreState, 'graphId' | 'code' | 'nodes' | 'edges' | 'variables' | 'functions'>
 ) => {
   const graphId = state.graphId;
@@ -33,7 +33,7 @@ export const triggerSave = (
   const timeout = window.setTimeout(async () => {
     saveTimeoutsByGraph.delete(graphId);
 
-    const payload = serializeFlowState(state);
+    const payload = toApiPayload(state);
     const stateStr = JSON.stringify(payload);
     if (stateStr === lastSavedStateByGraph.get(graphId)) {
       return;
@@ -65,7 +65,7 @@ export const resetLastSavedState = (
   state: Pick<GraphStoreState, 'graphId' | 'code' | 'nodes' | 'edges' | 'variables' | 'functions'>
 ) => {
   if (!state.graphId) return;
-  const payload = serializeFlowState(state);
+  const payload = toApiPayload(state);
   lastSavedStateByGraph.set(state.graphId, JSON.stringify(payload));
 };
 
@@ -79,7 +79,7 @@ export const takeSnapshot = (state: Pick<GraphStoreState, 'code' | 'nodes' | 'ed
   });
 };
 
-export const updateFlowState = async (
+export const runTransaction = async (
   set: StoreApi<GraphStoreState>['setState'],
   get: StoreApi<GraphStoreState>['getState'],
   updateFn: (state: {
@@ -132,7 +132,7 @@ export const updateFlowState = async (
   }
 
   if (skipLayout) {
-    triggerSave({
+    scheduleAutosave({
       graphId: current.graphId,
       code,
       nodes: updated.nodes,
@@ -151,7 +151,7 @@ export const updateFlowState = async (
       edges: laidOut.edges,
     });
 
-    triggerSave({
+    scheduleAutosave({
       graphId: current.graphId,
       code,
       nodes: laidOut.nodes,

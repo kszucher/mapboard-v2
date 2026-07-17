@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand';
 import { runLayout } from '../layout';
-import { takeSnapshot, triggerSave } from '../storeEngine';
+import { scheduleAutosave, takeSnapshot } from '../storeEngine';
 import type { GraphStoreState, HistorySlice } from '../types';
 
 export const createHistorySlice: StateCreator<
@@ -34,7 +34,7 @@ export const createHistorySlice: StateCreator<
         future: [currentSnapshot, ...future],
       });
 
-      triggerSave({
+      scheduleAutosave({
         graphId,
         code: previous.code,
         nodes: laidOut.nodes,
@@ -70,7 +70,7 @@ export const createHistorySlice: StateCreator<
         future: newFuture,
       });
 
-      triggerSave({
+      scheduleAutosave({
         graphId,
         code: next.code,
         nodes: laidOut.nodes,

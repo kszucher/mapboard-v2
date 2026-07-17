@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import { updateFlowState } from '../storeEngine';
+import { runTransaction } from '../storeEngine';
 import type { GraphStoreState, VariableFunctionSlice } from '../types';
 
 export const createVariableFunctionSlice: StateCreator<
@@ -9,7 +9,7 @@ export const createVariableFunctionSlice: StateCreator<
   VariableFunctionSlice
 > = (set, get) => ({
   addVariable: async (name, type) => {
-    await updateFlowState(set, get, (state) => {
+    await runTransaction(set, get, (state) => {
       const newVar = {
         id: crypto.randomUUID(),
         name,
@@ -24,7 +24,7 @@ export const createVariableFunctionSlice: StateCreator<
   },
 
   addFunction: async (name, inputVariableId, outputVariableId, rawString) => {
-    await updateFlowState(set, get, (state) => {
+    await runTransaction(set, get, (state) => {
       const newFunc = {
         id: crypto.randomUUID(),
         name,
@@ -40,7 +40,7 @@ export const createVariableFunctionSlice: StateCreator<
   },
 
   deleteFunction: async (functionId) => {
-    await updateFlowState(set, get, (state) => {
+    await runTransaction(set, get, (state) => {
       const nextFunctions = state.functions.filter(f => f.id !== functionId);
 
       return {

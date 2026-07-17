@@ -1,7 +1,7 @@
 import type { StateCreator } from 'zustand';
 import type { ApiNode, AppFlowEdge, AppFlowNode, NodeType } from '../../components/types';
 import { createDefaultSlotsForNode } from '../../domain/graphs/rules';
-import { updateFlowState } from '../storeEngine';
+import { runTransaction } from '../storeEngine';
 import type { GraphStoreState, NodeSlice } from '../types';
 
 export const createNodeSlice: StateCreator<
@@ -11,7 +11,7 @@ export const createNodeSlice: StateCreator<
   NodeSlice
 > = (set, get) => ({
   addNode: async (nodeType) => {
-    await updateFlowState(set, get, (state) => {
+    await runTransaction(set, get, (state) => {
       const appNode = createNewNode(nodeType, state.nodes);
 
       return {
@@ -22,7 +22,7 @@ export const createNodeSlice: StateCreator<
   },
 
   insertNode: async (connectorId, nodeType, direction) => {
-    await updateFlowState(set, get, (state) => {
+    await runTransaction(set, get, (state) => {
       const isAfter = direction === 'after';
       const oldEdges = state.edges.filter(e => isAfter ? e.sourceHandle === connectorId : e.targetHandle === connectorId);
 
@@ -73,7 +73,7 @@ export const createNodeSlice: StateCreator<
   },
 
   deleteNode: async (nodeId) => {
-    await updateFlowState(set, get, (state) => {
+    await runTransaction(set, get, (state) => {
       const node = state.nodes.find(n => n.id === nodeId);
       const slotIds = new Set(node ? node.data.node.slots.map(s => s.id) : []);
       const nextNodes = state.nodes.filter(n => n.id !== nodeId);
@@ -101,7 +101,7 @@ export const createNodeSlice: StateCreator<
       return;
     }
 
-    await updateFlowState(set, get, (state) => {
+    await runTransaction(set, get, (state) => {
       const incoming = state.edges.filter(e => e.target === nodeId);
       const outgoing = state.edges.filter(e => e.source === nodeId);
 
@@ -129,7 +129,7 @@ export const createNodeSlice: StateCreator<
   },
 
   convertNode: async (nodeId, targetType) => {
-    await updateFlowState(set, get, (state) => {
+    await runTransaction(set, get, (state) => {
       const nodeIndex = state.nodes.findIndex(n => n.id === nodeId);
       if (nodeIndex === -1) return state;
       const node = state.nodes[nodeIndex];
@@ -148,7 +148,7 @@ export const createNodeSlice: StateCreator<
   },
 
   deleteEdge: async (edgeId) => {
-    await updateFlowState(set, get, (state) => {
+    await runTransaction(set, get, (state) => {
       const nextEdges = state.edges.filter(e => e.id !== edgeId);
       return {
         nodes: state.nodes,
@@ -158,7 +158,7 @@ export const createNodeSlice: StateCreator<
   },
 
   updateNode: async (nodeId, updates) => {
-    await updateFlowState(set, get, (state) => {
+    await runTransaction(set, get, (state) => {
       const nextNodes = state.nodes.map(n => {
         if (n.id !== nodeId) return n;
         return {

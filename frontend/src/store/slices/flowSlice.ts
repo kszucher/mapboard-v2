@@ -3,7 +3,7 @@ import { applyEdgeChanges, applyNodeChanges } from '@xyflow/react';
 import type { StateCreator } from 'zustand';
 import type { ApiNode, AppFlowEdge, AppFlowNode } from '../../components/types';
 import { runLayout } from '../layout';
-import { triggerSave, updateFlowState } from '../storeEngine';
+import { runTransaction, scheduleAutosave } from '../storeEngine';
 import type { FlowSlice, GraphStoreState } from '../types';
 
 export const createFlowSlice: StateCreator<
@@ -42,7 +42,7 @@ export const createFlowSlice: StateCreator<
     const { nodes, edges, graphId, isLoading, pendingLayoutNodeId } = get();
 
     if (hasSelectChange) {
-      triggerSave({
+      scheduleAutosave({
         graphId,
         code: get().code,
         nodes,
@@ -65,7 +65,7 @@ export const createFlowSlice: StateCreator<
             nodes: laidOut.nodes,
             edges: laidOut.edges,
           });
-          triggerSave({
+          scheduleAutosave({
             graphId,
             code: get().code,
             nodes: laidOut.nodes,
@@ -101,7 +101,7 @@ export const createFlowSlice: StateCreator<
             }));
           }, 50);
 
-          triggerSave({
+          scheduleAutosave({
             graphId,
             code: get().code,
             nodes: laidOut.nodes,
@@ -124,7 +124,7 @@ export const createFlowSlice: StateCreator<
   onConnect: async (connection: Connection) => {
     if (!connection.source || !connection.target || !connection.sourceHandle || !connection.targetHandle) return;
 
-    await updateFlowState(set, get, (state) => {
+    await runTransaction(set, get, (state) => {
       const newEdgeId = crypto.randomUUID();
       const newEdge: AppFlowEdge = {
         id: newEdgeId,
@@ -145,7 +145,7 @@ export const createFlowSlice: StateCreator<
   },
 
   onEdgesDelete: async (edgesToDelete: AppFlowEdge[]) => {
-    await updateFlowState(set, get, (state) => {
+    await runTransaction(set, get, (state) => {
       const deleteIds = new Set(edgesToDelete.map(e => e.id));
       return {
         nodes: state.nodes,
@@ -157,7 +157,7 @@ export const createFlowSlice: StateCreator<
   onReconnect: async (oldEdge: AppFlowEdge, newConnection: Connection) => {
     if (!newConnection.source || !newConnection.target || !newConnection.sourceHandle || !newConnection.targetHandle) return;
 
-    await updateFlowState(set, get, (state) => {
+    await runTransaction(set, get, (state) => {
       const updatedEdge: AppFlowEdge = {
         ...oldEdge,
         source: newConnection.source!,

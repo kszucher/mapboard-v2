@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand';
 import type { ApiSlot } from '../../components/types';
-import { updateFlowState } from '../storeEngine';
+import { runTransaction } from '../storeEngine';
 import type { GraphStoreState, SlotSlice } from '../types';
 
 export const createSlotSlice: StateCreator<
@@ -10,7 +10,7 @@ export const createSlotSlice: StateCreator<
   SlotSlice
 > = (set, get) => ({
   createSlot: async (nodeId, idx) => {
-    await updateFlowState(set, get, (state) => {
+    await runTransaction(set, get, (state) => {
       const nextNodes = state.nodes.map(n => {
         const isTargetNode = n.id === nodeId;
         const slots = n.data.node.slots.map(s => ({ ...s, selected: false }));
@@ -69,7 +69,7 @@ export const createSlotSlice: StateCreator<
     const currentIndex = node.data.node.slots.findIndex(s => s.id === slotId);
     const targetSelectSlotId = currentIndex > 0 ? node.data.node.slots[currentIndex - 1].id : null;
 
-    await updateFlowState(set, get, (state) => {
+    await runTransaction(set, get, (state) => {
       const nextNodes = state.nodes.map(n => {
         const isTargetNode = n.id === node.id;
 
@@ -135,7 +135,7 @@ export const createSlotSlice: StateCreator<
 
     const prevSelectedNode = get().nodes.find(n => n.data.node.slots.some(s => s.selected));
 
-    await updateFlowState(set, get, (state) => {
+    await runTransaction(set, get, (state) => {
       const shouldClearOthers = updates.selected === true;
       const nextNodes = state.nodes.map(n => {
         const isTargetNode = n.id === node.id;
@@ -196,7 +196,7 @@ export const createSlotSlice: StateCreator<
 
     if (targetIndex === -1 || targetIndex === currentIndex) return;
 
-    await updateFlowState(set, get, (state) => {
+    await runTransaction(set, get, (state) => {
       const nextNodes = state.nodes.map(n => {
         if (n.id !== node.id) return n;
         const slts = [...n.data.node.slots];
@@ -225,7 +225,7 @@ export const createSlotSlice: StateCreator<
     const hasAnySelected = get().nodes.some(n => n.data.node.slots.some(s => s.selected));
     if (!hasAnySelected) return;
 
-    await updateFlowState(set, get, (state) => {
+    await runTransaction(set, get, (state) => {
       const nextNodes = state.nodes.map(n => {
         const hasSelected = n.data.node.slots.some(s => s.selected);
         if (!hasSelected) return n;

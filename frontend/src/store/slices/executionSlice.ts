@@ -1,7 +1,7 @@
 import type { StateCreator } from 'zustand';
 import { apiClient } from '../../api/client';
 import { runLayout } from '../layout';
-import { mapToReactFlowElements } from '../mappers';
+import { fromApiPayload } from '../mappers';
 import type { ExecutionSlice, GraphStoreState } from '../types';
 
 export const createExecutionSlice: StateCreator<
@@ -35,7 +35,7 @@ export const createExecutionSlice: StateCreator<
           positions[n.id] = n.position;
         });
 
-        const mapped = mapToReactFlowElements(data.nodes, data.edges, positions);
+        const mapped = fromApiPayload(data.nodes, data.edges, positions);
         const laidOut = await runLayout(mapped.nodes, mapped.edges);
 
         set({

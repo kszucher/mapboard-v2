@@ -4,7 +4,7 @@ import type { GraphStoreState } from './types';
 
 type ApiEdge = components['schemas']['EdgeRead'];
 
-export const mapToReactFlowElements = (
+export const fromApiPayload = (
   nodes: ApiNode[],
   edges: ApiEdge[],
   positions: Record<string, { x: number; y: number }> = {},
@@ -58,7 +58,7 @@ export const mapToReactFlowElements = (
   return { nodes: rfNodes, edges: rfEdges };
 };
 
-export const serializeFlowState = (
+export const toApiPayload = (
   state: Pick<GraphStoreState, 'graphId' | 'code' | 'nodes' | 'edges' | 'variables' | 'functions'>
 ) => {
   return {
