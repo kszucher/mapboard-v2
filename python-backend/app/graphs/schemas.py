@@ -22,13 +22,13 @@ class GraphRead(OrmModel):
 
 
 class SlotRead(BaseModel):
-    id: uuid.UUID
+    id: str
     raw_string: str
     selected: bool = False
 
 
 class NodeRead(BaseModel):
-    id: uuid.UUID
+    id: str
     node_type: NodeType
     is_input: bool = False
     is_output: bool = False
@@ -39,24 +39,24 @@ class NodeRead(BaseModel):
 
 class EdgeRead(BaseModel):
     id: uuid.UUID
-    source_id: uuid.UUID
+    source_id: str
     source_type: Literal["node", "slot"]
-    target_id: uuid.UUID
+    target_id: str
     target_type: Literal["node", "slot"]
 
 
 class VariableRead(BaseModel):
-    id: uuid.UUID
+    id: str
     name: str
     type: Literal["boolean", "string", "number"]
     value: Any = None
 
 
 class FunctionRead(BaseModel):
-    id: uuid.UUID
+    id: str
     name: str
-    input_variable: uuid.UUID | None = None
-    output_variable: uuid.UUID | None = None
+    input_variable: str | None = None
+    output_variable: str | None = None
     raw_string: str
 
 

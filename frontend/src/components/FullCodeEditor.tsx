@@ -3,7 +3,7 @@ import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { python } from '@codemirror/lang-python';
 import { EditorState } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
-import { drawSelection, EditorView, keymap } from '@codemirror/view';
+import { drawSelection, EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { Box, Button, Card, Flex, Text } from '@radix-ui/themes';
 import { useEffect, useRef, useState } from 'react';
 import { useGraphStore } from '../store/useGraphStore';
@@ -52,6 +52,7 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
     const state = EditorState.create({
       doc: code,
       extensions: [
+        lineNumbers(),
         history(),
         keymap.of([
           { key: 'Tab', run: acceptCompletion },

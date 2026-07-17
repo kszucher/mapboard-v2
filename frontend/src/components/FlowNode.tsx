@@ -89,7 +89,7 @@ const CustomNodeComponent = ({ data, id, selected }: NodeProps<AppFlowNode>) => 
             {'N' + traversalIndex}
           </Badge>
           <Badge color={NODE_COLORS[data.node.node_type]} size="1" style={{ height: 'var(--space-5)' }}>
-            {data.node.node_type.charAt(0) + data.node.node_type.slice(1).toLowerCase()}
+            {id}
           </Badge>
         </Flex>
 

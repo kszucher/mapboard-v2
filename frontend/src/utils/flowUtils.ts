@@ -153,16 +153,30 @@ export const runLayout = async (
 };
 
 export const createNewNode = (
-  nodeType: NodeType
+  nodeType: NodeType,
+  existingNodes: AppFlowNode[] = []
 ): AppFlowNode => {
-  const newNodeId = crypto.randomUUID();
+  let newNodeId = '';
+  if (nodeType === 'START') {
+    newNodeId = 'start';
+  } else if (nodeType === 'END') {
+    newNodeId = 'end';
+  } else {
+    const prefix = nodeType.toLowerCase();
+    let count = 1;
+    while (existingNodes.some(n => n.id === `${prefix}_${count}`)) {
+      count++;
+    }
+    newNodeId = `${prefix}_${count}`;
+  }
+
   const defaultSlots = createDefaultSlotsForNode(nodeType);
 
   let defaultCode = '';
   if (nodeType === 'STEP') {
-    defaultCode = 'def step_node(state: dict) -> dict:\n    # Write step logic here\n    return {}';
+    defaultCode = `def ${newNodeId}(state: State) -> dict:\n    return {}`;
   } else if (nodeType === 'SWITCH') {
-    defaultCode = 'def switch_node(state: dict) -> str:\n    # Return target slot name (e.g. \'route_a\')\n    return ""';
+    defaultCode = `def ${newNodeId}(state: State) -> str:\n    return ""`;
   } else if (nodeType === 'START' || nodeType === 'END') {
     defaultCode = '# Read-only node';
   }

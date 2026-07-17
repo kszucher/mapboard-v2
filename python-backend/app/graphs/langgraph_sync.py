@@ -1,5 +1,6 @@
 import ast
 import traceback
+import uuid
 from typing import Any
 
 from langgraph.graph import StateGraph
@@ -99,8 +100,8 @@ def parse_code_to_graph(code: str) -> dict[str, Any]:
     conditional_sources = set(workflow.branches.keys())
 
     # Always add visual START and END nodes
-    start_node_id = "START"
-    end_node_id = "END"
+    start_node_id = "start"
+    end_node_id = "end"
     nodes.append(
         {"id": start_node_id, "node_type": "START", "is_input": False, "is_output": True, "slots": [], "code": ""}
     )
@@ -124,8 +125,8 @@ def parse_code_to_graph(code: str) -> dict[str, Any]:
             {
                 "id": node_name,
                 "node_type": "SWITCH" if is_switch else "STEP",
-                "is_input": False,
-                "is_output": False,
+                "is_input": True,
+                "is_output": not is_switch,
                 "slots": slots,
                 "code": function_sources.get(node_name, ""),
             }
@@ -138,7 +139,7 @@ def parse_code_to_graph(code: str) -> dict[str, Any]:
         tgt_id = end_node_id if target == "__end__" else target
         edges.append(
             {
-                "id": f"{src_id}->{tgt_id}",
+                "id": str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{src_id}->{tgt_id}")),
                 "source_id": src_id,
                 "source_type": "node",
                 "target_id": tgt_id,
@@ -154,7 +155,7 @@ def parse_code_to_graph(code: str) -> dict[str, Any]:
                 tgt_id = end_node_id if target == "__end__" else target
                 edges.append(
                     {
-                        "id": f"{src_slot_id}->{tgt_id}",
+                        "id": str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{src_slot_id}->{tgt_id}")),
                         "source_id": src_slot_id,
                         "source_type": "slot",
                         "target_id": tgt_id,
@@ -265,16 +266,16 @@ def generate_graph_code(payload: dict[str, Any], existing_code: str = "") -> str
 
     # Separate edges
     # Find START edges
-    start_edges = [e for e in edges if e["source_id"] == "START"]
+    start_edges = [e for e in edges if e["source_id"] == "start"]
     for e in start_edges:
         code_lines.append(f'workflow.add_edge(START, "{e["target_id"]}")')
 
     # Find static non-START / non-conditional edges
     static_edges = [
-        e for e in edges if e["source_id"] != "START" and e["source_type"] == "node" and e["target_id"] != "START"
+        e for e in edges if e["source_id"] != "start" and e["source_type"] == "node" and e["target_id"] != "start"
     ]
     for e in static_edges:
-        tgt = "END" if e["target_id"] == "END" else f'"{e["target_id"]}"'
+        tgt = "END" if e["target_id"] == "end" else f'"{e["target_id"]}"'
         code_lines.append(f'workflow.add_edge("{e["source_id"]}", {tgt})')
 
     # Resolve conditional edges (branches) from Switch slot connections
@@ -291,7 +292,7 @@ def generate_graph_code(payload: dict[str, Any], existing_code: str = "") -> str
             for slot in switch.get("slots", []):
                 slot_edge = next((e for e in routing_edges if e["source_id"] == slot["id"]), None)
                 if slot_edge:
-                    tgt = "END" if slot_edge["target_id"] == "END" else f'"{slot_edge["target_id"]}"'
+                    tgt = "END" if slot_edge["target_id"] == "end" else f'"{slot_edge["target_id"]}"'
                     path_map_lines.append(f'        "{slot["raw_string"]}": {tgt},')
 
             code_lines.append("workflow.add_conditional_edges(")
