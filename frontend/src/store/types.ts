@@ -59,7 +59,7 @@ export interface NodeSlice {
     code?: string | null;
     selected?: boolean;
   }) => Promise<void>;
-  setSelectedIds: (nodeId: string | null, slotId: string | null) => Promise<void>;
+  setSelectedIds: (nodeId: string | null, branchIndex: number | null) => Promise<void>;
 }
 
 export interface SlotSlice {

@@ -61,3 +61,12 @@ export const findParentNodeBySlotId = (
 ): AppFlowNode | null => {
   return nodes.find(n => n.data.node.slots.some(s => s.id === slotId)) || null;
 };
+
+export const getSlotIdByBranchIndex = (
+  node: AppFlowNode,
+  branchIndex: number
+): string | null => {
+  if (node.data?.node?.node_type !== 'SWITCH') return null;
+  const slots = node.data.node.slots || [];
+  return slots[branchIndex]?.id || null;
+};

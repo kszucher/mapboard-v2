@@ -1,6 +1,7 @@
 import type { StateCreator } from 'zustand';
 import type { ApiNode, AppFlowEdge, AppFlowNode, NodeType } from '../../components/types';
 import { createDefaultSlotsForNode } from '../../domain/graphs/rules';
+import { getSlotIdByBranchIndex } from '../../domain/graphs/traversal';
 import { runTransaction } from '../storeEngine';
 import type { GraphStoreState, NodeSlice } from '../types';
 
@@ -215,8 +216,15 @@ export const createNodeSlice: StateCreator<
     }, { skipHistory: shouldSkipHistory });
   },
 
-  setSelectedIds: async (nodeId, slotId) => {
+  setSelectedIds: async (nodeId, branchIndex) => {
     await runTransaction(set, get, (state) => {
+      let slotId: string | null = null;
+      if (nodeId && branchIndex !== null && branchIndex !== -1) {
+        const node = state.nodes.find(n => n.id === nodeId);
+        if (node) {
+          slotId = getSlotIdByBranchIndex(node, branchIndex);
+        }
+      }
       const nextNodes = syncNodesSelection(state.nodes, nodeId, slotId);
       return {
         selectedNodeId: nodeId,

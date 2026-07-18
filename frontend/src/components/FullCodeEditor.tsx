@@ -392,8 +392,6 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
         const activeFnName = activeFn ? activeFn.name : null;
 
         let targetBranchIndex = -1;
-        let targetSlotId: string | null = null;
-
         if (activeFn) {
           const nodes = useGraphStore.getState().nodes;
           const targetNode = nodes.find(
@@ -434,17 +432,10 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
                 }
               }
             }
-
-            if (targetBranchIndex !== -1) {
-              const slots = targetNode.data.node.slots;
-              if (slots && slots[targetBranchIndex]) {
-                targetSlotId = slots[targetBranchIndex].id;
-              }
-            }
           }
         }
 
-        void setSelectedIds(activeFnName, targetSlotId);
+        void setSelectedIds(activeFnName, targetBranchIndex === -1 ? null : targetBranchIndex);
       }
     });
 
