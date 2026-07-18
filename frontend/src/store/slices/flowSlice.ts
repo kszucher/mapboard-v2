@@ -21,7 +21,7 @@ export const createFlowSlice: StateCreator<
 
     set((state) => {
       let newNodes = applyNodeChanges(changes, state.nodes) as AppFlowNode[];
-      
+
       let nextSelectedNodeId = state.selectedNodeId;
       let nextSelectedSlotId = state.selectedSlotId;
 

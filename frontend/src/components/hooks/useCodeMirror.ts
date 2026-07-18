@@ -1,17 +1,22 @@
 import type { Workspace } from '@astral-sh/ruff-wasm-web';
-import { acceptCompletion, autocompletion } from '@codemirror/autocomplete';
+import { acceptCompletion } from '@codemirror/autocomplete';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { python } from '@codemirror/lang-python';
 import { indentUnit } from '@codemirror/language';
-import { linter, lintGutter } from '@codemirror/lint';
+import { type Diagnostic, linter, lintGutter } from '@codemirror/lint';
 import { Annotation, EditorState, Range, StateEffect, StateField } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
 import type { DecorationSet } from '@codemirror/view';
 import { Decoration, drawSelection, EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { useEffect, useRef, useState } from 'react';
-import { findFunctionAt, findFunctionByName, getEditableRegions, resolveBranchIndexAtPosition } from '../../domain/code/ast';
+import {
+  buildAutocompletionExtension,
+  findFunctionAt,
+  getEditableRegions,
+  resolveBranchIndexAtPosition,
+  resolveHighlightLineRange,
+} from '../../domain/code/ast';
 import { findParentNodeBySlotId } from '../../domain/graphs/traversal';
-import { runRuffLint } from '../../services/ruffLinter';
 import { useGraphStore } from '../../store/useGraphStore';
 import type { Variable } from '../types';
 
@@ -43,49 +48,11 @@ function buildDecorations(state: EditorState) {
   const { nodeId, slotId } = selection;
   if (!nodeId) return Decoration.none;
 
-  const fn = findFunctionByName(state, nodeId);
-  if (!fn) return Decoration.none;
+  const nodes = useGraphStore.getState().nodes;
+  const range = resolveHighlightLineRange(state, nodeId, slotId, nodes);
+  if (!range) return Decoration.none;
 
-  const startLine = state.doc.lineAt(fn.from).number;
-  const endLine = state.doc.lineAt(fn.to).number;
-  let highlightStart = startLine;
-  let highlightEnd = endLine;
-
-  if (slotId) {
-    const branchLines: number[] = [];
-    for (let l = startLine; l <= endLine; l++) {
-      const lineText = state.doc.line(l).text.trim();
-      const isBranchStart = lineText.startsWith('if ') || lineText.startsWith('elif ') || lineText.startsWith('if(') || lineText.startsWith('elif(');
-      if (isBranchStart) {
-        branchLines.push(l);
-      }
-    }
-
-    const nodes = useGraphStore.getState().nodes;
-    const targetNode = nodes.find(n => n.id === nodeId);
-    const slots = targetNode?.data.node.slots || [];
-    const slotIndex = slots.findIndex(s => s.id === slotId);
-
-    if (slotIndex !== -1 && branchLines[slotIndex] !== undefined) {
-      highlightStart = branchLines[slotIndex];
-      if (slotIndex + 1 < branchLines.length) {
-        highlightEnd = branchLines[slotIndex + 1] - 1;
-      } else {
-        highlightEnd = endLine - 1;
-        while (highlightEnd > highlightStart) {
-          const line = state.doc.line(highlightEnd);
-          const text = line.text.trim();
-          const indent = line.text.length - line.text.trimStart().length;
-          const isFallbackReturn = text.startsWith('return') && indent <= 4;
-          if (isFallbackReturn || text === '') {
-            highlightEnd--;
-          } else {
-            break;
-          }
-        }
-      }
-    }
-  }
+  const { highlightStart, highlightEnd } = range;
 
   const decorations: Range<Decoration>[] = [];
   for (let l = highlightStart; l <= highlightEnd; l++) {
@@ -147,54 +114,6 @@ const editorTheme = EditorView.theme({
     borderBottomColor: 'rgba(99, 102, 241, 0.35)',
   }
 });
-
-// Context-aware autocomplete helper for state access
-function buildAutocompletionExtension(variables: Variable[]) {
-  return autocompletion({
-    override: [
-      (context) => {
-        // 1a. Context-aware autocomplete for state["key"] bracket access
-        const stateMatch = context.matchBefore(/state\[\s*["']\w*/);
-        if (stateMatch) {
-          const quoteChar = stateMatch.text.includes('"') ? '"' : "'";
-          const query = stateMatch.text.split(/["']/)[1] || '';
-          const options = variables
-            .filter((v) => v.name.toLowerCase().includes(query.toLowerCase()))
-            .map((v) => ({
-              label: v.name,
-              type: 'property',
-              detail: `(${v.type})`,
-              apply: `state[${quoteChar}${v.name}${quoteChar}]`
-            }));
-          return {
-            from: stateMatch.from,
-            options,
-          };
-        }
-
-        // 1b. Context-aware autocomplete for state.varname dot access
-        const stateDotMatch = context.matchBefore(/state\.\w*/);
-        if (stateDotMatch) {
-          const query = stateDotMatch.text.slice('state.'.length);
-          const options = variables
-            .filter((v) => v.name.toLowerCase().includes(query.toLowerCase()))
-            .map((v) => ({
-              label: `state.${v.name}`,
-              type: 'property',
-              detail: `(${v.type})`,
-              apply: `state.${v.name}`,
-            }));
-          return {
-            from: stateDotMatch.from,
-            options,
-          };
-        }
-
-        return null;
-      }
-    ]
-  });
-}
 
 // Transaction filter that locks non-editable regions
 function buildTransactionFilter() {
@@ -264,7 +183,7 @@ export function useCodeMirror({
   useEffect(() => {
     if (viewRef.current) {
       const currentSelection = viewRef.current.state.field(selectionField);
-      
+
       let targetNodeId = selectedNodeId;
       let targetSlotId = selectedSlotId;
 
@@ -275,7 +194,7 @@ export function useCodeMirror({
           targetSlotId = selectedSlotId;
         }
       }
-      
+
       if (currentSelection.nodeId !== targetNodeId || currentSelection.slotId !== targetSlotId) {
         viewRef.current.dispatch({
           effects: setSelectedItemEffect.of({ nodeId: targetNodeId, slotId: targetSlotId }),
@@ -359,4 +278,46 @@ export function useCodeMirror({
     currentValue,
     setCurrentValue,
   };
+}
+
+function runRuffLint(state: EditorState, workspace: Workspace): Diagnostic[] {
+  const code = state.doc.toString();
+  if (!code.trim()) {
+    return [];
+  }
+
+  try {
+    const results = workspace.check(code);
+    const diagnostics: Diagnostic[] = [];
+
+    for (const d of results) {
+      try {
+        const startRow = Math.max(1, Math.min(d.start_location.row, state.doc.lines));
+        const startLine = state.doc.line(startRow);
+        const startCol = Math.max(0, Math.min(d.start_location.column - 1, startLine.length));
+        const from = startLine.from + startCol;
+
+        const endRow = Math.max(1, Math.min(d.end_location.row, state.doc.lines));
+        const endLine = state.doc.line(endRow);
+        const endCol = Math.max(0, Math.min(d.end_location.column - 1, endLine.length));
+        const to = endLine.from + endCol;
+
+        const severity: 'error' | 'warning' = d.code && (d.code.startsWith('E') || d.code.startsWith('F')) ? 'error' : 'warning';
+
+        diagnostics.push({
+          from,
+          to: to > from ? to : from + 1,
+          severity,
+          message: d.code ? `[${d.code}] ${d.message}` : d.message,
+        });
+      } catch (err) {
+        console.error('Error processing Ruff diagnostic coordinate', err, d);
+      }
+    }
+
+    return diagnostics;
+  } catch (error) {
+    console.error('Ruff linting failed', error);
+    return [];
+  }
 }

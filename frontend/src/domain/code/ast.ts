@@ -1,5 +1,7 @@
+import { autocompletion } from '@codemirror/autocomplete';
 import { syntaxTree } from '@codemirror/language';
 import { EditorState } from '@codemirror/state';
+import type { AppFlowNode, Variable } from '../../components/types';
 
 // Helper to find a function definition enclosing a specific position
 export function findFunctionAt(state: EditorState, pos: number): { name: string; from: number; to: number } | null {
@@ -108,3 +110,110 @@ export function resolveBranchIndexAtPosition(
 
   return -1;
 }
+
+// Helper to resolve the line highlights range for an editable function/slot range
+export function resolveHighlightLineRange(
+  state: EditorState,
+  nodeId: string,
+  slotId: string | null,
+  nodes: AppFlowNode[]
+): { highlightStart: number; highlightEnd: number } | null {
+  const fn = findFunctionByName(state, nodeId);
+  if (!fn) return null;
+
+  const startLine = state.doc.lineAt(fn.from).number;
+  const endLine = state.doc.lineAt(fn.to).number;
+  let highlightStart = startLine;
+  let highlightEnd = endLine;
+
+  if (slotId) {
+    const branchLines: number[] = [];
+    for (let l = startLine; l <= endLine; l++) {
+      const lineText = state.doc.line(l).text.trim();
+      const isBranchStart =
+        lineText.startsWith('if ') ||
+        lineText.startsWith('elif ') ||
+        lineText.startsWith('if(') ||
+        lineText.startsWith('elif(');
+      if (isBranchStart) {
+        branchLines.push(l);
+      }
+    }
+
+    const targetNode = nodes.find((n) => n.id === nodeId);
+    const slots = targetNode?.data.node.slots || [];
+    const slotIndex = slots.findIndex((s) => s.id === slotId);
+
+    if (slotIndex !== -1 && branchLines[slotIndex] !== undefined) {
+      highlightStart = branchLines[slotIndex];
+      if (slotIndex + 1 < branchLines.length) {
+        highlightEnd = branchLines[slotIndex + 1] - 1;
+      } else {
+        highlightEnd = endLine - 1;
+        while (highlightEnd > highlightStart) {
+          const line = state.doc.line(highlightEnd);
+          const text = line.text.trim();
+          const indent = line.text.length - line.text.trimStart().length;
+          const isFallbackReturn = text.startsWith('return') && indent <= 4;
+          if (isFallbackReturn || text === '') {
+            highlightEnd--;
+          } else {
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  return { highlightStart, highlightEnd };
+}
+
+// Context-aware autocomplete helper for state access
+export function buildAutocompletionExtension(variables: Variable[]) {
+  return autocompletion({
+    override: [
+      (context) => {
+        // 1a. Context-aware autocomplete for state["key"] bracket access
+        const stateMatch = context.matchBefore(/state\[\s*["']\w*/);
+        if (stateMatch) {
+          const quoteChar = stateMatch.text.includes('"') ? '"' : "'";
+          const query = stateMatch.text.split(/["']/)[1] || '';
+          const options = variables
+            .filter((v) => v.name.toLowerCase().includes(query.toLowerCase()))
+            .map((v) => ({
+              label: v.name,
+              type: 'property',
+              detail: `(${v.type})`,
+              apply: `state[${quoteChar}${v.name}${quoteChar}]`,
+            }));
+          return {
+            from: stateMatch.from,
+            options,
+          };
+        }
+
+        // 1b. Context-aware autocomplete for state.varname dot access
+        const stateDotMatch = context.matchBefore(/state\.\w*/);
+        if (stateDotMatch) {
+          const query = stateDotMatch.text.slice('state.'.length);
+          const options = variables
+            .filter((v) => v.name.toLowerCase().includes(query.toLowerCase()))
+            .map((v) => ({
+              label: `state.${v.name}`,
+              type: 'property',
+              detail: `(${v.type})`,
+              apply: `state.${v.name}`,
+            }));
+          return {
+            from: stateDotMatch.from,
+            options,
+          };
+        }
+
+        return null;
+      },
+    ],
+  });
+}
+
+

@@ -1,11 +1,9 @@
-import type { Workspace } from '@astral-sh/ruff-wasm-web';
 import { Annotation } from '@codemirror/state';
 import { Box, Button, Card, Flex, Text } from '@radix-ui/themes';
-import { useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { initRuff, createRuffWorkspace } from '../services/ruffLinter';
 import { useGraphStore } from '../store/useGraphStore';
 import { useCodeMirror } from './hooks/useCodeMirror';
+import { useRuffLinter } from './hooks/useRuffLinter';
 
 interface FullCodeEditorProps {
   isGraphSelected: boolean;
@@ -36,20 +34,8 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
   const clearErrorMessage = useGraphStore(state => state.clearErrorMessage);
   const setSelectedIds = useGraphStore(state => state.setSelectedIds);
 
-  const [workspace, setWorkspace] = useState<Workspace | null>(null);
-
-  // Initialize Ruff WASM and Workspace
-  useEffect(() => {
-    let active = true;
-    void initRuff().then(() => {
-      if (!active) return;
-      const ws = createRuffWorkspace(variables.map(v => v.name));
-      setWorkspace(ws);
-    });
-    return () => {
-      active = false;
-    };
-  }, [variables]);
+  // Initialize Ruff WASM workspace using custom hook
+  const workspace = useRuffLinter(variables);
 
   const { containerRef, viewRef, currentValue, setCurrentValue } = useCodeMirror({
     code,
