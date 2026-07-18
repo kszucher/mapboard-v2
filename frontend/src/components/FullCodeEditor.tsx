@@ -308,31 +308,19 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
     selectedNodeId,
     selectedSlotId
   } = useGraphStore(
-    useShallow(state => {
-      const selectedNodeId = state.nodes.find(n => n.selected)?.id || null;
-      let selectedSlotId = null;
-      for (const n of state.nodes) {
-        const slot = n.data.node.slots.find(s => s.selected);
-        if (slot) {
-          selectedSlotId = slot.id;
-          break;
-        }
-      }
-      return {
-        code: state.code,
-        errorMessage: state.errorMessage,
-        variables: state.variables,
-        selectedNodeId,
-        selectedSlotId,
-      };
-    })
+    useShallow(state => ({
+      code: state.code,
+      errorMessage: state.errorMessage,
+      variables: state.variables,
+      selectedNodeId: state.selectedNodeId,
+      selectedSlotId: state.selectedSlotId,
+    }))
   );
 
   // Stable action references
   const updateCode = useGraphStore(state => state.updateCode);
   const clearErrorMessage = useGraphStore(state => state.clearErrorMessage);
-  const selectNodeAndSlotByEditorCursor = useGraphStore(state => state.selectNodeAndSlotByEditorCursor);
-
+  const setSelectedIds = useGraphStore(state => state.setSelectedIds);
 
   const [currentValue, setCurrentValue] = useState(code);
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
@@ -404,12 +392,18 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
         const activeFnName = activeFn ? activeFn.name : null;
 
         let targetBranchIndex = -1;
+        let targetSlotId: string | null = null;
 
         if (activeFn) {
           const nodes = useGraphStore.getState().nodes;
-          const targetNode = nodes.find(n => n.id === activeFnName && n.data?.node?.node_type === 'SWITCH');
+          const targetNode = nodes.find(
+            (n) =>
+              n.id === activeFnName &&
+              (n.data?.node?.node_type === 'STEP' ||
+                n.data?.node?.node_type === 'SWITCH')
+          );
 
-          if (targetNode) {
+          if (targetNode && targetNode.data?.node?.node_type === 'SWITCH') {
             const clickLineNum = update.state.doc.lineAt(pos).number;
             const startLineNum = update.state.doc.lineAt(activeFn.from).number;
             const endLineNum = update.state.doc.lineAt(activeFn.to).number;
@@ -417,14 +411,20 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
             const branchLines: number[] = [];
             for (let l = startLineNum; l <= endLineNum; l++) {
               const lineText = update.state.doc.line(l).text.trim();
-              const isBranchStart = lineText.startsWith('if ') || lineText.startsWith('elif ') || lineText.startsWith('if(') || lineText.startsWith('elif(');
+              const isBranchStart =
+                lineText.startsWith('if ') ||
+                lineText.startsWith('elif ') ||
+                lineText.startsWith('if(') ||
+                lineText.startsWith('elif(');
               if (isBranchStart) {
                 branchLines.push(l);
               }
             }
 
             const clickedLineText = update.state.doc.line(clickLineNum).text;
-            const isFallbackReturn = clickedLineText.trim().startsWith('return') && (clickedLineText.length - clickedLineText.trimStart().length) <= 4;
+            const isFallbackReturn =
+              clickedLineText.trim().startsWith('return') &&
+              clickedLineText.length - clickedLineText.trimStart().length <= 4;
 
             if (clickLineNum !== endLineNum && !isFallbackReturn) {
               for (let i = branchLines.length - 1; i >= 0; i--) {
@@ -434,10 +434,17 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
                 }
               }
             }
+
+            if (targetBranchIndex !== -1) {
+              const slots = targetNode.data.node.slots;
+              if (slots && slots[targetBranchIndex]) {
+                targetSlotId = slots[targetBranchIndex].id;
+              }
+            }
           }
         }
 
-        void selectNodeAndSlotByEditorCursor(activeFnName, targetBranchIndex);
+        void setSelectedIds(activeFnName, targetSlotId);
       }
     });
 

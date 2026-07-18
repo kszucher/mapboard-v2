@@ -82,18 +82,15 @@ export const takeSnapshot = (state: Pick<GraphStoreState, 'code' | 'nodes' | 'ed
 export const runTransaction = async (
   set: StoreApi<GraphStoreState>['setState'],
   get: StoreApi<GraphStoreState>['getState'],
-  updateFn: (state: {
-    code: string;
-    nodes: AppFlowNode[];
-    edges: AppFlowEdge[];
-    variables: Variable[];
-    functions: FunctionEntity[];
-  }) => {
+  updateFn: (state: GraphStoreState) => {
     code?: string;
     nodes: AppFlowNode[];
     edges: AppFlowEdge[];
     variables?: Variable[];
     functions?: FunctionEntity[];
+    selectedNodeId?: string | null;
+    selectedSlotId?: string | null;
+    errorMessage?: string | null;
   },
   options: { skipHistory?: boolean; skipLayout?: boolean } = {}
 ) => {
@@ -107,6 +104,7 @@ export const runTransaction = async (
 
   // 1. Commit changes to the store synchronously first
   set((state) => ({
+    ...updated,
     code,
     nodes: updated.nodes,
     edges: updated.edges,

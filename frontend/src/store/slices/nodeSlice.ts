@@ -1,7 +1,6 @@
 import type { StateCreator } from 'zustand';
 import type { ApiNode, AppFlowEdge, AppFlowNode, NodeType } from '../../components/types';
 import { createDefaultSlotsForNode } from '../../domain/graphs/rules';
-import { findParentNodeBySlotId } from '../../domain/graphs/traversal';
 import { runTransaction } from '../storeEngine';
 import type { GraphStoreState, NodeSlice } from '../types';
 
@@ -198,122 +197,30 @@ export const createNodeSlice: StateCreator<
         nextEdges = nextEdges.filter(e => !(e.source === nodeId && e.sourceHandle === nodeId));
       }
 
+      let nextSelectedNodeId = state.selectedNodeId;
+      let nextSelectedSlotId = state.selectedSlotId;
+      if (updates.selected === true) {
+        nextSelectedNodeId = nodeId;
+        nextSelectedSlotId = null;
+      } else if (updates.selected === false && state.selectedNodeId === nodeId) {
+        nextSelectedNodeId = null;
+      }
+
       return {
+        selectedNodeId: nextSelectedNodeId,
+        selectedSlotId: nextSelectedSlotId,
         nodes: nextNodes,
         edges: nextEdges,
       };
     }, { skipHistory: shouldSkipHistory });
   },
 
-  selectNodeAndSlotByEditorCursor: async (activeFnName, branchIndex) => {
+  setSelectedIds: async (nodeId, slotId) => {
     await runTransaction(set, get, (state) => {
-      const nodes = state.nodes;
-      const targetNode = nodes.find(n => n.id === activeFnName && (n.data?.node?.node_type === 'STEP' || n.data?.node?.node_type === 'SWITCH'));
-      const currentlySelectedNode = nodes.find(n => n.selected);
-
-      let nextNodes = nodes;
-
-      if (targetNode) {
-        let targetSlotId: string | null = null;
-        if (targetNode.data?.node?.node_type === 'SWITCH' && branchIndex !== -1) {
-          const slots = targetNode.data.node.slots;
-          if (slots && slots[branchIndex]) {
-            targetSlotId = slots[branchIndex].id;
-          }
-        }
-
-        // Apply selection to targetNode and optional targetSlotId
-        nextNodes = nodes.map(n => {
-          const isTargetNode = n.id === targetNode.id;
-          const slots = n.data.node.slots.map(s => {
-            const isTargetSlot = targetSlotId !== null && s.id === targetSlotId;
-            return { ...s, selected: isTargetNode && isTargetSlot };
-          });
-
-          const nodeSelected = isTargetNode && targetSlotId === null;
-
-          return {
-            ...n,
-            selected: nodeSelected,
-            data: {
-              ...n.data,
-              node: {
-                ...n.data.node,
-                selected: nodeSelected,
-                slots,
-              }
-            }
-          };
-        });
-      } else {
-        // Clear selection if no target node matches
-        nextNodes = nodes.map(n => {
-          const isCurrentlySelected = currentlySelectedNode && n.id === currentlySelectedNode.id;
-          const shouldClearNode = isCurrentlySelected && (n.data?.node?.node_type === 'STEP' || n.data?.node?.node_type === 'SWITCH');
-
-          const slots = n.data.node.slots.map(s => {
-            return s.selected ? { ...s, selected: false } : s;
-          });
-
-          return {
-            ...n,
-            selected: shouldClearNode ? false : n.selected,
-            data: {
-              ...n.data,
-              node: {
-                ...n.data.node,
-                selected: shouldClearNode ? false : n.selected,
-                slots,
-              }
-            }
-          };
-        });
-      }
-
+      const nextNodes = syncNodesSelection(state.nodes, nodeId, slotId);
       return {
-        nodes: nextNodes,
-        edges: state.edges,
-      };
-    }, { skipHistory: true, skipLayout: true });
-  },
-
-  syncSelectedNodeAndSlot: async (selectedNodeId, selectedSlotId) => {
-    await runTransaction(set, get, (state) => {
-      let targetNodeId = selectedNodeId;
-      let targetSlotId = selectedSlotId;
-
-      if (selectedSlotId) {
-        const parentNode = findParentNodeBySlotId(selectedSlotId, state.nodes);
-        if (parentNode) {
-          targetNodeId = parentNode.id;
-          targetSlotId = selectedSlotId;
-        }
-      }
-
-      const nextNodes = state.nodes.map(n => {
-        const isTargetNode = n.id === targetNodeId;
-        const slots = n.data.node.slots.map(s => {
-          const isTargetSlot = targetSlotId !== null && s.id === targetSlotId;
-          return { ...s, selected: isTargetNode && isTargetSlot };
-        });
-
-        const nodeSelected = isTargetNode && targetSlotId === null;
-
-        return {
-          ...n,
-          selected: nodeSelected,
-          data: {
-            ...n.data,
-            node: {
-              ...n.data.node,
-              selected: nodeSelected,
-              slots,
-            }
-          }
-        };
-      });
-
-      return {
+        selectedNodeId: nodeId,
+        selectedSlotId: slotId,
         nodes: nextNodes,
         edges: state.edges,
       };
@@ -379,4 +286,31 @@ function updateNodeNodeType(node: AppFlowNode, targetType: NodeType): AppFlowNod
       }
     }
   };
+}
+
+export function syncNodesSelection(
+  nodes: AppFlowNode[],
+  selectedNodeId: string | null,
+  selectedSlotId: string | null
+): AppFlowNode[] {
+  return nodes.map(n => {
+    const isNodeSelected = n.id === selectedNodeId && selectedSlotId === null;
+    const slots = n.data.node.slots.map(s => ({
+      ...s,
+      selected: s.id === selectedSlotId
+    }));
+
+    return {
+      ...n,
+      selected: isNodeSelected,
+      data: {
+        ...n.data,
+        node: {
+          ...n.data.node,
+          selected: isNodeSelected,
+          slots
+        }
+      }
+    };
+  });
 }

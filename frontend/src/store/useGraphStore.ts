@@ -22,6 +22,8 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
   errorMessage: null,
   clearErrorMessage: () => set({ errorMessage: null }),
   pendingLayoutNodeId: null,
+  selectedNodeId: null,
+  selectedSlotId: null,
 
   ...createInitSlice(set, get, store),
   ...createFlowSlice(set, get, store),

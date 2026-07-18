@@ -10,6 +10,7 @@ export const createSlotSlice: StateCreator<
   SlotSlice
 > = (set, get) => ({
   createSlot: async (nodeId, idx) => {
+    let createdSlotId: string | null = null;
     await runTransaction(set, get, (state) => {
       const nextNodes = state.nodes.map(n => {
         const isTargetNode = n.id === nodeId;
@@ -21,6 +22,7 @@ export const createSlotSlice: StateCreator<
             raw_string: '',
             selected: true,
           };
+          createdSlotId = newSlot.id;
           slots.splice(idx, 0, newSlot);
         }
 
@@ -39,6 +41,8 @@ export const createSlotSlice: StateCreator<
       });
 
       return {
+        selectedNodeId: null,
+        selectedSlotId: createdSlotId,
         nodes: nextNodes,
         edges: state.edges,
       };
@@ -84,6 +88,8 @@ export const createSlotSlice: StateCreator<
       const nextEdges = state.edges.filter(e => e.sourceHandle !== slotId && e.targetHandle !== slotId);
 
       return {
+        selectedNodeId: null,
+        selectedSlotId: targetSelectSlotId,
         nodes: nextNodes,
         edges: nextEdges,
       };
@@ -134,11 +140,20 @@ export const createSlotSlice: StateCreator<
         };
       });
 
-      const nextEdges = state.edges;
+      let nextSelectedNodeId = state.selectedNodeId;
+      let nextSelectedSlotId = state.selectedSlotId;
+      if (updates.selected === true) {
+        nextSelectedNodeId = null;
+        nextSelectedSlotId = slotId;
+      } else if (updates.selected === false && state.selectedSlotId === slotId) {
+        nextSelectedSlotId = null;
+      }
 
       return {
+        selectedNodeId: nextSelectedNodeId,
+        selectedSlotId: nextSelectedSlotId,
         nodes: nextNodes,
-        edges: nextEdges,
+        edges: state.edges,
       };
     }, { skipHistory: shouldSkipHistory, skipLayout: shouldSkipLayout });
   },
@@ -206,6 +221,7 @@ export const createSlotSlice: StateCreator<
       });
 
       return {
+        selectedSlotId: null,
         nodes: nextNodes,
         edges: state.edges,
       };

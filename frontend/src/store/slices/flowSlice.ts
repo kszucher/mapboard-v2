@@ -5,6 +5,7 @@ import type { ApiNode, AppFlowEdge, AppFlowNode } from '../../components/types';
 import { runLayout } from '../layout';
 import { runTransaction, scheduleAutosave } from '../storeEngine';
 import type { FlowSlice, GraphStoreState } from '../types';
+import { syncNodesSelection } from './nodeSlice';
 
 export const createFlowSlice: StateCreator<
   GraphStoreState,
@@ -19,26 +20,23 @@ export const createFlowSlice: StateCreator<
     if (meaningfulChanges.length === 0 && !hasSelectChange) return;
 
     set((state) => {
-      let newNodes = applyNodeChanges(changes, state.nodes);
-      const selectedNode = newNodes.find(n => n.selected);
-      if (selectedNode) {
-        newNodes = newNodes.map(n => {
-          const isTarget = n.id === selectedNode.id;
-          const nodeData = n.data as { node: ApiNode } | undefined;
-          const slots = nodeData?.node.slots.map(s => ({ ...s, selected: false })) || [];
-          return {
-            ...n,
-            selected: isTarget,
-            data: {
-              ...n.data,
-              node: {
-                ...nodeData?.node,
-                selected: isTarget,
-                slots,
-              }
-            }
-          };
-        });
+      let newNodes = applyNodeChanges(changes, state.nodes) as AppFlowNode[];
+      
+      let nextSelectedNodeId = state.selectedNodeId;
+      let nextSelectedSlotId = state.selectedSlotId;
+
+      if (hasSelectChange) {
+        const selectChange = changes.find(c => c.type === 'select' && c.selected);
+        if (selectChange) {
+          nextSelectedNodeId = (selectChange as any).id;
+          nextSelectedSlotId = null;
+        } else {
+          const currentlySelectedStillSelected = newNodes.some(n => n.id === state.selectedNodeId && n.selected);
+          if (!currentlySelectedStillSelected) {
+            nextSelectedNodeId = null;
+          }
+        }
+        newNodes = syncNodesSelection(newNodes, nextSelectedNodeId, nextSelectedSlotId);
       } else {
         newNodes = newNodes.map(n => {
           const nodeData = n.data as { node: ApiNode } | undefined;
@@ -57,7 +55,11 @@ export const createFlowSlice: StateCreator<
           return n;
         });
       }
-      return { nodes: newNodes as AppFlowNode[] };
+      return {
+        selectedNodeId: nextSelectedNodeId,
+        selectedSlotId: nextSelectedSlotId,
+        nodes: newNodes,
+      };
     });
 
     const { nodes, edges, graphId, isLoading, pendingLayoutNodeId } = get();
