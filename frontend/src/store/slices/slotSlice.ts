@@ -22,28 +22,16 @@ export const createSlotSlice: StateCreator<
             selected: true,
           };
           slots.splice(idx, 0, newSlot);
-
-          return {
-            ...n,
-            data: {
-              ...n.data,
-              node: {
-                ...n.data.node,
-                slots,
-              }
-            }
-          };
         }
-
-        const hadSelection = n.data.node.slots.some(s => s.selected);
-        if (!hadSelection) return n;
 
         return {
           ...n,
+          selected: false,
           data: {
             ...n.data,
             node: {
               ...n.data.node,
+              selected: false,
               slots,
             }
           }
@@ -72,37 +60,22 @@ export const createSlotSlice: StateCreator<
     await runTransaction(set, get, (state) => {
       const nextNodes = state.nodes.map(n => {
         const isTargetNode = n.id === node.id;
-
-        if (isTargetNode) {
-          const nextSlots = n.data.node.slots
-            .filter(s => s.id !== slotId)
-            .map(s => ({
-              ...s,
-              selected: s.id === targetSelectSlotId,
-            }));
-
-          return {
-            ...n,
-            data: {
-              ...n.data,
-              node: {
-                ...n.data.node,
-                slots: nextSlots,
-              }
-            }
-          };
-        }
-
-        const hadSelection = n.data.node.slots.some(s => s.selected);
-        if (!hadSelection) return n;
+        const nextSlots = n.data.node.slots
+          .filter(s => s.id !== slotId)
+          .map(s => ({
+            ...s,
+            selected: isTargetNode && s.id === targetSelectSlotId,
+          }));
 
         return {
           ...n,
+          selected: false,
           data: {
             ...n.data,
             node: {
               ...n.data.node,
-              slots: n.data.node.slots.map(s => ({ ...s, selected: false })),
+              selected: false,
+              slots: nextSlots,
             }
           }
         };
@@ -130,41 +103,31 @@ export const createSlotSlice: StateCreator<
       return;
     }
 
-    const shouldSkipHistory = !('selected' in updates);
+    const shouldSkipHistory = 'selected' in updates;
     const shouldSkipLayout = 'selected' in updates && Object.keys(updates).length === 1;
-
-    const prevSelectedNode = get().nodes.find(n => n.data.node.slots.some(s => s.selected));
 
     await runTransaction(set, get, (state) => {
       const shouldClearOthers = updates.selected === true;
       const nextNodes = state.nodes.map(n => {
-        const isTargetNode = n.id === node.id;
-        const isPrevSelectedNode = shouldClearOthers && prevSelectedNode && n.id === prevSelectedNode.id;
-
-        if (!isTargetNode && !isPrevSelectedNode) {
-          return n;
-        }
-
         const slots = n.data.node.slots.map(s => {
           if (s.id === slotId) {
             return { ...s, ...updates };
-          } else if (shouldClearOthers && s.selected) {
+          } else if (shouldClearOthers) {
             return { ...s, selected: false };
           }
           return s;
         });
 
-        const hasSlotChanges = slots.some((s, idx) => s !== n.data.node.slots[idx]);
-        if (!hasSlotChanges) {
-          return n;
-        }
+        const nodeSelected = shouldClearOthers ? false : n.selected;
 
         return {
           ...n,
+          selected: nodeSelected,
           data: {
             ...n.data,
             node: {
               ...n.data.node,
+              selected: nodeSelected,
               slots,
             }
           }
@@ -246,6 +209,6 @@ export const createSlotSlice: StateCreator<
         nodes: nextNodes,
         edges: state.edges,
       };
-    }, { skipHistory: false, skipLayout: true });
+    }, { skipHistory: true, skipLayout: true });
   },
 });

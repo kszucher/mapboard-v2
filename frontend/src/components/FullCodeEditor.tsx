@@ -5,7 +5,7 @@ import { syntaxTree } from '@codemirror/language';
 import { linter, lintGutter } from '@codemirror/lint';
 import { Annotation, EditorState, StateField } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
-import { drawSelection, EditorView, keymap, lineNumbers, Decoration } from '@codemirror/view';
+import { Decoration, drawSelection, EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { Box, Button, Card, Flex, Text } from '@radix-ui/themes';
 import { useEffect, useRef, useState } from 'react';
 import { createRuffWorkspace, initRuff, runRuffLint } from '../services/ruffLinter';
@@ -93,8 +93,8 @@ function buildDecorations(state: EditorState) {
         const line = state.doc.line(l);
         const className = startLine === endLine ? 'cm-editable-line-single'
           : l === startLine ? 'cm-editable-line-start'
-          : l === endLine ? 'cm-editable-line-end'
-          : 'cm-editable-line-middle';
+            : l === endLine ? 'cm-editable-line-end'
+              : 'cm-editable-line-middle';
 
         decorations.push(
           Decoration.line({ attributes: { class: className } }).range(line.from)

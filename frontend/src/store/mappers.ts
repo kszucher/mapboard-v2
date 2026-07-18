@@ -69,11 +69,11 @@ export const toApiPayload = (
       is_input: n.data.node.is_input ?? false,
       is_output: n.data.node.is_output ?? false,
       code: n.data.node.code ?? "",
-      selected: n.data.node.selected ?? false,
+      selected: false,
       slots: n.data.node.slots.map(s => ({
         id: s.id,
         raw_string: s.raw_string,
-        selected: s.selected ?? false,
+        selected: false,
       })),
     })),
     edges: state.edges.map(e => {

@@ -1,7 +1,7 @@
 import type { StateCreator } from 'zustand';
 import { apiClient } from '../../api/client';
-import { fromApiPayload, toApiPayload } from '../mappers';
 import { runLayout } from '../layout';
+import { fromApiPayload, toApiPayload } from '../mappers';
 import type { ExecutionSlice, GraphStoreState } from '../types';
 
 export const createExecutionSlice: StateCreator<

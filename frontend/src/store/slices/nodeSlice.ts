@@ -158,17 +158,32 @@ export const createNodeSlice: StateCreator<
   },
 
   updateNode: async (nodeId, updates) => {
+    const shouldSkipHistory = updates.selected !== undefined;
     await runTransaction(set, get, (state) => {
+      const shouldClearOthers = updates.selected === true;
       const nextNodes = state.nodes.map(n => {
-        if (n.id !== nodeId) return n;
+        const isTarget = n.id === nodeId;
+        const newSelected = isTarget
+          ? (updates.selected !== undefined ? updates.selected : n.selected)
+          : (shouldClearOthers ? false : n.selected);
+
+        const slots = n.data.node.slots.map(s => {
+          if (shouldClearOthers) {
+            return { ...s, selected: false };
+          }
+          return s;
+        });
+
         return {
           ...n,
-          selected: updates.selected !== undefined ? updates.selected : n.selected,
+          selected: newSelected,
           data: {
             ...n.data,
             node: {
               ...n.data.node,
               ...updates,
+              selected: newSelected,
+              slots,
             }
           }
         };
@@ -186,7 +201,7 @@ export const createNodeSlice: StateCreator<
         nodes: nextNodes,
         edges: nextEdges,
       };
-    });
+    }, { skipHistory: shouldSkipHistory });
   },
 });
 
