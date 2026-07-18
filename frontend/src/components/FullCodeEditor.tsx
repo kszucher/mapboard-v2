@@ -186,6 +186,114 @@ const readOnlyField = StateField.define<DecorationSet>({
   provide: (f) => EditorView.decorations.from(f),
 });
 
+// Custom CodeMirror theme for the editor
+const editorTheme = EditorView.theme({
+  '&': {
+    height: '100%',
+    flexGrow: 1,
+    fontSize: '13px',
+    fontFamily: 'Consolas, Menlo, Monaco, "Courier New", monospace',
+    backgroundColor: '#1e1e1e !important',
+  },
+  '.cm-scroller': { overflow: 'auto' },
+  '.cm-gutters': {
+    backgroundColor: '#1e1e1e !important',
+    borderRight: '1px solid var(--gray-5)',
+  },
+  '.cm-line': {
+    borderLeft: '3px solid transparent',
+    borderRight: '3px solid transparent',
+    borderTop: '1px dashed transparent',
+    borderBottom: '1px dashed transparent',
+  },
+  '.cm-editable-line-start, .cm-editable-line-middle, .cm-editable-line-end, .cm-editable-line-single': {
+    borderLeftColor: 'var(--iris-9)',
+    borderRightColor: 'var(--iris-9)',
+    backgroundColor: 'rgba(59, 130, 246, 0.015) !important',
+  },
+  '.cm-editable-line-start, .cm-editable-line-single': {
+    borderTopColor: 'rgba(99, 102, 241, 0.35)',
+  },
+  '.cm-editable-line-end, .cm-editable-line-single': {
+    borderBottomColor: 'rgba(99, 102, 241, 0.35)',
+  }
+});
+
+// Context-aware autocomplete helper for state access
+function buildAutocompletionExtension(variables: { name: string; type: string }[]) {
+  return autocompletion({
+    override: [
+      (context) => {
+        // 1a. Context-aware autocomplete for state["key"] bracket access
+        const stateMatch = context.matchBefore(/state\[\s*["']\w*/);
+        if (stateMatch) {
+          const quoteChar = stateMatch.text.includes('"') ? '"' : "'";
+          const query = stateMatch.text.split(/["']/)[1] || '';
+          const options = variables
+            .filter((v) => v.name.toLowerCase().includes(query.toLowerCase()))
+            .map((v) => ({
+              label: v.name,
+              type: 'property',
+              detail: `(${v.type})`,
+              apply: `state[${quoteChar}${v.name}${quoteChar}]`
+            }));
+          return {
+            from: stateMatch.from,
+            options,
+          };
+        }
+
+        // 1b. Context-aware autocomplete for state.varname dot access
+        const stateDotMatch = context.matchBefore(/state\.\w*/);
+        if (stateDotMatch) {
+          const query = stateDotMatch.text.slice('state.'.length);
+          const options = variables
+            .filter((v) => v.name.toLowerCase().includes(query.toLowerCase()))
+            .map((v) => ({
+              label: `state.${v.name}`,
+              type: 'property',
+              detail: `(${v.type})`,
+              apply: `state.${v.name}`,
+            }));
+          return {
+            from: stateDotMatch.from,
+            options,
+          };
+        }
+
+        return null;
+      }
+    ]
+  });
+}
+
+// Transaction filter that locks non-editable regions
+function buildTransactionFilter() {
+  return EditorState.transactionFilter.of(tr => {
+    if (tr.docChanged) {
+      if (tr.annotation(systemUpdate)) {
+        return tr;
+      }
+      const allowed = getEditableRegions(tr.startState);
+
+      let isChangeAllowed = true;
+      tr.changes.iterChanges((fromA, toA) => {
+        const isContained = allowed.some(
+          (range) => fromA >= range.from && toA <= range.to
+        );
+        if (!isContained) {
+          isChangeAllowed = false;
+        }
+      });
+
+      if (!isChangeAllowed) {
+        return [];
+      }
+    }
+    return tr;
+  });
+}
+
 export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -349,50 +457,7 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
         python(),
         drawSelection(),
         oneDark,
-        autocompletion({
-          override: [
-            (context) => {
-              // 1a. Context-aware autocomplete for state["key"] bracket access
-              const stateMatch = context.matchBefore(/state\[\s*["']\w*/);
-              if (stateMatch) {
-                const quoteChar = stateMatch.text.includes('"') ? '"' : "'";
-                const query = stateMatch.text.split(/["']/)[1] || '';
-                const options = variables
-                  .filter((v) => v.name.toLowerCase().includes(query.toLowerCase()))
-                  .map((v) => ({
-                    label: v.name,
-                    type: 'property',
-                    detail: `(${v.type})`,
-                    apply: `state[${quoteChar}${v.name}${quoteChar}]`
-                  }));
-                return {
-                  from: stateMatch.from,
-                  options,
-                };
-              }
-
-              // 1b. Context-aware autocomplete for state.varname dot access
-              const stateDotMatch = context.matchBefore(/state\.\w*/);
-              if (stateDotMatch) {
-                const query = stateDotMatch.text.slice('state.'.length);
-                const options = variables
-                  .filter((v) => v.name.toLowerCase().includes(query.toLowerCase()))
-                  .map((v) => ({
-                    label: `state.${v.name}`,
-                    type: 'property',
-                    detail: `(${v.type})`,
-                    apply: `state.${v.name}`,
-                  }));
-                return {
-                  from: stateDotMatch.from,
-                  options,
-                };
-              }
-
-              return null;
-            }
-          ]
-        }),
+        buildAutocompletionExtension(variables),
         workspace ? linter((view) => runRuffLint(view.state, workspace)) : [],
         lintGutter(),
         selectionField,
@@ -400,60 +465,8 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
         updateListener,
         EditorState.tabSize.of(4),
         indentUnit.of('    '),
-        EditorState.transactionFilter.of(tr => {
-          if (tr.docChanged) {
-            if (tr.annotation(systemUpdate)) {
-              return tr;
-            }
-            const allowed = getEditableRegions(tr.startState);
-
-            let isChangeAllowed = true;
-            tr.changes.iterChanges((fromA, toA) => {
-              const isContained = allowed.some(
-                (range) => fromA >= range.from && toA <= range.to
-              );
-              if (!isContained) {
-                isChangeAllowed = false;
-              }
-            });
-
-            if (!isChangeAllowed) {
-              return [];
-            }
-          }
-          return tr;
-        }),
-        EditorView.theme({
-          '&': {
-            height: '100%',
-            flexGrow: 1,
-            fontSize: '13px',
-            fontFamily: 'Consolas, Menlo, Monaco, "Courier New", monospace',
-            backgroundColor: '#1e1e1e !important',
-          },
-          '.cm-scroller': { overflow: 'auto' },
-          '.cm-gutters': {
-            backgroundColor: '#1e1e1e !important',
-            borderRight: '1px solid var(--gray-5)',
-          },
-          '.cm-line': {
-            borderLeft: '3px solid transparent',
-            borderRight: '3px solid transparent',
-            borderTop: '1px dashed transparent',
-            borderBottom: '1px dashed transparent',
-          },
-          '.cm-editable-line-start, .cm-editable-line-middle, .cm-editable-line-end, .cm-editable-line-single': {
-            borderLeftColor: 'var(--iris-9)',
-            borderRightColor: 'var(--iris-9)',
-            backgroundColor: 'rgba(59, 130, 246, 0.015) !important',
-          },
-          '.cm-editable-line-start, .cm-editable-line-single': {
-            borderTopColor: 'rgba(99, 102, 241, 0.35)',
-          },
-          '.cm-editable-line-end, .cm-editable-line-single': {
-            borderBottomColor: 'rgba(99, 102, 241, 0.35)',
-          }
-        }),
+        buildTransactionFilter(),
+        editorTheme,
       ],
     });
 
