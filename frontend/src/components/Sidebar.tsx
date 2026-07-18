@@ -13,8 +13,8 @@ export const Sidebar = ({ isSidebarOpen, isGraphSelected }: SidebarProps) => {
   return (
     <Box
       style={{
-        width: isSidebarOpen ? '800px' : '0px',
-        minWidth: isSidebarOpen ? '800px' : '0px',
+        width: isSidebarOpen ? '500px' : '0px',
+        minWidth: isSidebarOpen ? '500px' : '0px',
         height: '100%',
         borderRight: isSidebarOpen ? '1px solid var(--gray-4)' : 'none',
         backgroundColor: 'var(--gray-2)',
@@ -24,7 +24,7 @@ export const Sidebar = ({ isSidebarOpen, isGraphSelected }: SidebarProps) => {
         flexDirection: 'column',
       }}
     >
-      <Flex direction="column" gap="4" p="4" style={{ width: '800px', height: '100%', minHeight: 0 }}>
+      <Flex direction="column" gap="4" p="4" style={{ width: '500px', height: '100%', minHeight: 0 }}>
         {/* Header */}
         <Flex justify="between" align="center" style={{ flexShrink: 0 }}>
           <Text size="3" weight="bold">Workflow Code</Text>
