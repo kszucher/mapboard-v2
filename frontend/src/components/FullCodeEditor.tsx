@@ -75,7 +75,10 @@ function getEditableRegions(state: EditorState): { from: number; to: number }[] 
       }
 
       if (node.name === 'FunctionDefinition') {
-        regions.push({ from: node.from, to: node.to });
+        const body = node.node.getChild('Body');
+        if (body) {
+          regions.push({ from: body.from + 1, to: body.to });
+        }
       }
     }
   });
