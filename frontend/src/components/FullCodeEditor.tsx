@@ -3,7 +3,7 @@ import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirro
 import { python } from '@codemirror/lang-python';
 import { syntaxTree } from '@codemirror/language';
 import { linter, lintGutter } from '@codemirror/lint';
-import { Annotation, EditorState, StateField } from '@codemirror/state';
+import { Annotation, EditorState, StateField, StateEffect } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { Decoration, drawSelection, EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { Box, Button, Card, Flex, Text } from '@radix-ui/themes';
@@ -17,8 +17,48 @@ interface FullCodeEditorProps {
 
 const systemUpdate = Annotation.define<boolean>();
 
+// Helper to find a function definition enclosing a specific position
+function findFunctionAt(state: EditorState, pos: number): { name: string; from: number; to: number } | null {
+  let result: { name: string; from: number; to: number } | null = null;
+  const docStr = state.doc.toString();
+  syntaxTree(state).iterate({
+    enter(node) {
+      if (node.name === 'FunctionDefinition') {
+        if (pos >= node.from && pos <= node.to) {
+          const nameNode = node.node.getChild('VariableName');
+          if (nameNode) {
+            result = {
+              name: docStr.slice(nameNode.from, nameNode.to),
+              from: node.from,
+              to: node.to
+            };
+          }
+        }
+      }
+    }
+  });
+  return result;
+}
+
+// Helper to find a function definition by name
+function findFunctionByName(state: EditorState, name: string): { from: number; to: number } | null {
+  let result: { from: number; to: number } | null = null;
+  const docStr = state.doc.toString();
+  syntaxTree(state).iterate({
+    enter(node) {
+      if (node.name === 'FunctionDefinition') {
+        const nameNode = node.node.getChild('VariableName');
+        if (nameNode && docStr.slice(nameNode.from, nameNode.to) === name) {
+          result = { from: node.from, to: node.to };
+        }
+      }
+    }
+  });
+  return result;
+}
+
 // Helper to statically scan AST and find allowed editable ranges
-function getEditableRegions(state: EditorState, switchNodeNames: string[]): { from: number; to: number }[] {
+function getEditableRegions(state: EditorState): { from: number; to: number }[] {
   const regions: { from: number; to: number }[] = [];
   const docStr = state.doc.toString();
 
@@ -35,31 +75,7 @@ function getEditableRegions(state: EditorState, switchNodeNames: string[]): { fr
       }
 
       if (node.name === 'FunctionDefinition') {
-        const nameNode = node.node.getChild('VariableName');
-        const bodyNode = node.node.getChild('Body');
-        if (nameNode && bodyNode) {
-          const fnName = docStr.slice(nameNode.from, nameNode.to);
-          if (!switchNodeNames.includes(fnName)) {
-            // Step function: full body is editable
-            regions.push({ from: bodyNode.from + 1, to: bodyNode.to });
-          } else {
-            // Switch function: only condition expressions are editable
-            const bodyText = docStr.slice(bodyNode.from, bodyNode.to);
-            let currentOffset = bodyNode.from;
-            for (const line of bodyText.split('\n')) {
-              const trimmed = line.trimStart();
-              const match = trimmed.match(/^(?:if|elif)\s+/);
-              if (match) {
-                const start = currentOffset + (line.length - trimmed.length) + match[0].length;
-                const colon = line.indexOf(':');
-                if (colon !== -1) {
-                  regions.push({ from: start, to: currentOffset + colon });
-                }
-              }
-              currentOffset += line.length + 1;
-            }
-          }
-        }
+        regions.push({ from: node.from, to: node.to });
       }
     }
   });
@@ -67,47 +83,56 @@ function getEditableRegions(state: EditorState, switchNodeNames: string[]): { fr
   return regions;
 }
 
-// Build line-bracket decorations for editable areas
-function buildDecorations(state: EditorState) {
-  const switchNodeNames = useGraphStore.getState().nodes
-    .filter((n) => n.data?.node?.node_type === 'SWITCH')
-    .map((n) => n.id);
-  const allowed = getEditableRegions(state, switchNodeNames);
-  const decorations: any[] = [];
-  const docStr = state.doc.toString();
+const setSelectedNodeIdEffect = StateEffect.define<string | null>();
 
-  for (const r of allowed) {
-    let regionFrom = r.from;
-    let regionTo = r.to;
-    const text = docStr.slice(regionFrom, regionTo);
-    const leadingSpaces = text.match(/^\s*/)?.[0].length || 0;
-    const trailingSpaces = text.match(/\s*$/)?.[0].length || 0;
-
-    regionFrom += leadingSpaces;
-    regionTo -= trailingSpaces;
-
-    if (regionTo > regionFrom) {
-      const startLine = state.doc.lineAt(regionFrom).number;
-      const endLine = state.doc.lineAt(regionTo).number;
-      for (let l = startLine; l <= endLine; l++) {
-        const line = state.doc.line(l);
-        const className = startLine === endLine ? 'cm-editable-line-single'
-          : l === startLine ? 'cm-editable-line-start'
-            : l === endLine ? 'cm-editable-line-end'
-              : 'cm-editable-line-middle';
-
-        decorations.push(
-          Decoration.line({ attributes: { class: className } }).range(line.from)
-        );
+const selectedNodeIdField = StateField.define<string | null>({
+  create: () => null,
+  update: (value, tr) => {
+    for (const effect of tr.effects) {
+      if (effect.is(setSelectedNodeIdEffect)) {
+        return effect.value;
       }
     }
+    return value;
+  }
+});
+
+// Build line-bracket decorations for editable areas
+function buildDecorations(state: EditorState) {
+  const selectedId = state.field(selectedNodeIdField);
+  if (!selectedId) return Decoration.none;
+
+  const fn = findFunctionByName(state, selectedId);
+  if (!fn) return Decoration.none;
+
+  const decorations: any[] = [];
+  const startLine = state.doc.lineAt(fn.from).number;
+  const endLine = state.doc.lineAt(fn.to).number;
+
+  for (let l = startLine; l <= endLine; l++) {
+    const line = state.doc.line(l);
+    const className = startLine === endLine ? 'cm-editable-line-single'
+      : l === startLine ? 'cm-editable-line-start'
+        : l === endLine ? 'cm-editable-line-end'
+          : 'cm-editable-line-middle';
+
+    decorations.push(
+      Decoration.line({ attributes: { class: className } }).range(line.from)
+    );
   }
   return Decoration.set(decorations, true);
 }
 
 const readOnlyField = StateField.define<any>({
   create: (state) => buildDecorations(state),
-  update: (value, tr) => tr.docChanged ? buildDecorations(tr.state) : value.map(tr.changes),
+  update: (value, tr) => {
+    const oldId = tr.startState.field(selectedNodeIdField);
+    const newId = tr.state.field(selectedNodeIdField);
+    if (tr.docChanged || oldId !== newId) {
+      return buildDecorations(tr.state);
+    }
+    return value.map(tr.changes);
+  },
   provide: (f) => EditorView.decorations.from(f),
 });
 
@@ -120,6 +145,7 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
   const errorMessage = useGraphStore(state => state.errorMessage);
   const clearErrorMessage = useGraphStore(state => state.clearErrorMessage);
   const variables = useGraphStore(state => state.variables);
+  const selectedNodeId = useGraphStore(state => state.nodes.find(n => n.selected)?.id || null);
 
   const [currentValue, setCurrentValue] = useState(code);
   const [workspace, setWorkspace] = useState<any>(null);
@@ -151,6 +177,17 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
     }
   }, [code]);
 
+  useEffect(() => {
+    if (viewRef.current) {
+      const currentSelected = viewRef.current.state.field(selectedNodeIdField);
+      if (currentSelected !== selectedNodeId) {
+        viewRef.current.dispatch({
+          effects: setSelectedNodeIdEffect.of(selectedNodeId),
+        });
+      }
+    }
+  }, [selectedNodeId]);
+
   // Create CodeMirror instance
   useEffect(() => {
     if (!containerRef.current) return;
@@ -160,6 +197,26 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
         const val = update.state.doc.toString();
         setCurrentValue(val);
         clearErrorMessage();
+      }
+
+      if (update.selectionSet || update.docChanged) {
+        const pos = update.state.selection.main.head;
+        const activeFn = findFunctionAt(update.state, pos);
+        const activeFnName = activeFn ? activeFn.name : null;
+
+        const nodes = useGraphStore.getState().nodes;
+        const targetNode = nodes.find(n => n.id === activeFnName && (n.data?.node?.node_type === 'STEP' || n.data?.node?.node_type === 'SWITCH'));
+        const currentlySelectedNode = nodes.find(n => n.selected);
+
+        if (targetNode) {
+          if (!targetNode.selected) {
+            useGraphStore.getState().updateNode(targetNode.id, { selected: true });
+          }
+        } else {
+          if (currentlySelectedNode && (currentlySelectedNode.data?.node?.node_type === 'STEP' || currentlySelectedNode.data?.node?.node_type === 'SWITCH')) {
+            useGraphStore.getState().updateNode(currentlySelectedNode.id, { selected: false });
+          }
+        }
       }
     });
 
@@ -223,6 +280,7 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
         }),
         workspace ? linter((view) => runRuffLint(view.state, workspace)) : [],
         lintGutter(),
+        selectedNodeIdField,
         readOnlyField,
         updateListener,
         EditorState.tabSize.of(4),
@@ -231,10 +289,7 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
             if (tr.annotation(systemUpdate)) {
               return tr;
             }
-            const switchNodeNames = useGraphStore.getState().nodes
-              .filter((n) => n.data?.node?.node_type === 'SWITCH')
-              .map((n) => n.id);
-            const allowed = getEditableRegions(tr.startState, switchNodeNames);
+            const allowed = getEditableRegions(tr.startState);
 
             let isChangeAllowed = true;
             tr.changes.iterChanges((fromA, toA) => {
@@ -265,16 +320,22 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
             backgroundColor: '#1e1e1e !important',
             borderRight: '1px solid var(--gray-5)',
           },
+          '.cm-line': {
+            borderLeft: '3px solid transparent',
+            borderRight: '3px solid transparent',
+            borderTop: '1px dashed transparent',
+            borderBottom: '1px dashed transparent',
+          },
           '.cm-editable-line-start, .cm-editable-line-middle, .cm-editable-line-end, .cm-editable-line-single': {
-            borderLeft: '3px solid var(--iris-9)',
-            borderRight: '3px solid var(--iris-9)',
+            borderLeftColor: 'var(--iris-9)',
+            borderRightColor: 'var(--iris-9)',
             backgroundColor: 'rgba(59, 130, 246, 0.015) !important',
           },
           '.cm-editable-line-start, .cm-editable-line-single': {
-            borderTop: '1px dashed rgba(99, 102, 241, 0.35)',
+            borderTopColor: 'rgba(99, 102, 241, 0.35)',
           },
           '.cm-editable-line-end, .cm-editable-line-single': {
-            borderBottom: '1px dashed rgba(99, 102, 241, 0.35)',
+            borderBottomColor: 'rgba(99, 102, 241, 0.35)',
           }
         }),
       ],
