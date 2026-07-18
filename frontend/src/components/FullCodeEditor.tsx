@@ -88,13 +88,19 @@ function getEditableRegions(state: EditorState): { from: number; to: number }[] 
   return regions;
 }
 
-const setSelectedNodeIdEffect = StateEffect.define<string | null>();
+const setSelectedItemEffect = StateEffect.define<{
+  nodeId: string | null;
+  slotId: string | null;
+}>();
 
-const selectedNodeIdField = StateField.define<string | null>({
-  create: () => null,
+const selectionField = StateField.define<{
+  nodeId: string | null;
+  slotId: string | null;
+}>({
+  create: () => ({ nodeId: null, slotId: null }),
   update: (value, tr) => {
     for (const effect of tr.effects) {
-      if (effect.is(setSelectedNodeIdEffect)) {
+      if (effect.is(setSelectedItemEffect)) {
         return effect.value;
       }
     }
@@ -104,21 +110,60 @@ const selectedNodeIdField = StateField.define<string | null>({
 
 // Build line-bracket decorations for editable areas
 function buildDecorations(state: EditorState) {
-  const selectedId = state.field(selectedNodeIdField);
-  if (!selectedId) return Decoration.none;
+  const selection = state.field(selectionField);
+  const { nodeId, slotId } = selection;
+  if (!nodeId) return Decoration.none;
 
-  const fn = findFunctionByName(state, selectedId);
+  const fn = findFunctionByName(state, nodeId);
   if (!fn) return Decoration.none;
 
-  const decorations: Range<Decoration>[] = [];
   const startLine = state.doc.lineAt(fn.from).number;
   const endLine = state.doc.lineAt(fn.to).number;
+  let highlightStart = startLine;
+  let highlightEnd = endLine;
 
-  for (let l = startLine; l <= endLine; l++) {
+  if (slotId) {
+    const branchLines: number[] = [];
+    for (let l = startLine; l <= endLine; l++) {
+      const lineText = state.doc.line(l).text.trim();
+      const isBranchStart = lineText.startsWith('if ') || lineText.startsWith('elif ') || lineText.startsWith('if(') || lineText.startsWith('elif(');
+      if (isBranchStart) {
+        branchLines.push(l);
+      }
+    }
+
+    const nodes = useGraphStore.getState().nodes;
+    const targetNode = nodes.find(n => n.id === nodeId);
+    const slots = targetNode?.data.node.slots || [];
+    const slotIndex = slots.findIndex(s => s.id === slotId);
+
+    if (slotIndex !== -1 && branchLines[slotIndex] !== undefined) {
+      highlightStart = branchLines[slotIndex];
+      if (slotIndex + 1 < branchLines.length) {
+        highlightEnd = branchLines[slotIndex + 1] - 1;
+      } else {
+        highlightEnd = endLine - 1;
+        while (highlightEnd > highlightStart) {
+          const line = state.doc.line(highlightEnd);
+          const text = line.text.trim();
+          const indent = line.text.length - line.text.trimStart().length;
+          const isFallbackReturn = text.startsWith('return') && indent <= 4;
+          if (isFallbackReturn || text === '') {
+            highlightEnd--;
+          } else {
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  const decorations: Range<Decoration>[] = [];
+  for (let l = highlightStart; l <= highlightEnd; l++) {
     const line = state.doc.line(l);
-    const className = startLine === endLine ? 'cm-editable-line-single'
-      : l === startLine ? 'cm-editable-line-start'
-        : l === endLine ? 'cm-editable-line-end'
+    const className = highlightStart === highlightEnd ? 'cm-editable-line-single'
+      : l === highlightStart ? 'cm-editable-line-start'
+        : l === highlightEnd ? 'cm-editable-line-end'
           : 'cm-editable-line-middle';
 
     decorations.push(
@@ -131,9 +176,9 @@ function buildDecorations(state: EditorState) {
 const readOnlyField = StateField.define<DecorationSet>({
   create: (state) => buildDecorations(state),
   update: (value, tr) => {
-    const oldId = tr.startState.field(selectedNodeIdField);
-    const newId = tr.state.field(selectedNodeIdField);
-    if (tr.docChanged || oldId !== newId) {
+    const oldSelection = tr.startState.field(selectionField);
+    const newSelection = tr.state.field(selectionField);
+    if (tr.docChanged || oldSelection.nodeId !== newSelection.nodeId || oldSelection.slotId !== newSelection.slotId) {
       return buildDecorations(tr.state);
     }
     return value.map(tr.changes);
@@ -151,6 +196,15 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
   const clearErrorMessage = useGraphStore(state => state.clearErrorMessage);
   const variables = useGraphStore(state => state.variables);
   const selectedNodeId = useGraphStore(state => state.nodes.find(n => n.selected)?.id || null);
+  const selectedSlotId = useGraphStore(state => {
+    for (const n of state.nodes) {
+      const slot = n.data.node.slots.find(s => s.selected);
+      if (slot) {
+        return slot.id;
+      }
+    }
+    return null;
+  });
 
   const [currentValue, setCurrentValue] = useState(code);
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
@@ -184,14 +238,27 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
 
   useEffect(() => {
     if (viewRef.current) {
-      const currentSelected = viewRef.current.state.field(selectedNodeIdField);
-      if (currentSelected !== selectedNodeId) {
+      const currentSelection = viewRef.current.state.field(selectionField);
+      
+      let targetNodeId = selectedNodeId;
+      let targetSlotId = null;
+
+      if (selectedSlotId) {
+        const nodes = useGraphStore.getState().nodes;
+        const parentNode = nodes.find(n => n.data.node.slots.some(s => s.id === selectedSlotId));
+        if (parentNode) {
+          targetNodeId = parentNode.id;
+          targetSlotId = selectedSlotId;
+        }
+      }
+      
+      if (currentSelection.nodeId !== targetNodeId || currentSelection.slotId !== targetSlotId) {
         viewRef.current.dispatch({
-          effects: setSelectedNodeIdEffect.of(selectedNodeId),
+          effects: setSelectedItemEffect.of({ nodeId: targetNodeId, slotId: targetSlotId }),
         });
       }
     }
-  }, [selectedNodeId]);
+  }, [selectedNodeId, selectedSlotId]);
 
   // Create CodeMirror instance
   useEffect(() => {
@@ -214,12 +281,55 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
         const currentlySelectedNode = nodes.find(n => n.selected);
 
         if (targetNode) {
+          if (targetNode.data?.node?.node_type === 'SWITCH' && activeFn) {
+            const clickLineNum = update.state.doc.lineAt(pos).number;
+            const startLineNum = update.state.doc.lineAt(activeFn.from).number;
+            const endLineNum = update.state.doc.lineAt(activeFn.to).number;
+
+            const branchLines: number[] = [];
+            for (let l = startLineNum; l <= endLineNum; l++) {
+              const lineText = update.state.doc.line(l).text.trim();
+              const isBranchStart = lineText.startsWith('if ') || lineText.startsWith('elif ') || lineText.startsWith('if(') || lineText.startsWith('elif(');
+              if (isBranchStart) {
+                branchLines.push(l);
+              }
+            }
+
+            let targetBranchIndex = -1;
+            const clickedLineText = update.state.doc.line(clickLineNum).text;
+            const isFallbackReturn = clickedLineText.trim().startsWith('return') && (clickedLineText.length - clickedLineText.trimStart().length) <= 4;
+
+            if (clickLineNum !== endLineNum && !isFallbackReturn) {
+              for (let i = branchLines.length - 1; i >= 0; i--) {
+                if (branchLines[i] <= clickLineNum) {
+                  targetBranchIndex = i;
+                  break;
+                }
+              }
+            }
+
+            if (targetBranchIndex !== -1) {
+              const slots = targetNode.data.node.slots;
+              if (slots && slots[targetBranchIndex]) {
+                const targetSlot = slots[targetBranchIndex];
+                const currentlySelectedSlot = targetNode.data.node.slots.find(s => s.selected);
+                if (!currentlySelectedSlot || currentlySelectedSlot.id !== targetSlot.id) {
+                  useGraphStore.getState().updateSlot(targetSlot.id, { selected: true });
+                }
+                return;
+              }
+            }
+          }
+
           if (!targetNode.selected) {
             useGraphStore.getState().updateNode(targetNode.id, { selected: true });
           }
         } else {
+          const hasSelectedSlot = nodes.some(n => n.data?.node?.slots?.some(s => s.selected));
           if (currentlySelectedNode && (currentlySelectedNode.data?.node?.node_type === 'STEP' || currentlySelectedNode.data?.node?.node_type === 'SWITCH')) {
             useGraphStore.getState().updateNode(currentlySelectedNode.id, { selected: false });
+          } else if (hasSelectedSlot) {
+            useGraphStore.getState().clearSlotSelection();
           }
         }
       }
@@ -285,7 +395,7 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
         }),
         workspace ? linter((view) => runRuffLint(view.state, workspace)) : [],
         lintGutter(),
-        selectedNodeIdField,
+        selectionField,
         readOnlyField,
         updateListener,
         EditorState.tabSize.of(4),
