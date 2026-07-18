@@ -2,7 +2,7 @@ import type { Workspace } from '@astral-sh/ruff-wasm-web';
 import { acceptCompletion, autocompletion } from '@codemirror/autocomplete';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { python } from '@codemirror/lang-python';
-import { syntaxTree } from '@codemirror/language';
+import { indentUnit, syntaxTree } from '@codemirror/language';
 import { linter, lintGutter } from '@codemirror/lint';
 import { Annotation, EditorState, Range, StateEffect, StateField } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
@@ -289,6 +289,7 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
         readOnlyField,
         updateListener,
         EditorState.tabSize.of(4),
+        indentUnit.of('    '),
         EditorState.transactionFilter.of(tr => {
           if (tr.docChanged) {
             if (tr.annotation(systemUpdate)) {
