@@ -1,10 +1,12 @@
+import type { Workspace } from '@astral-sh/ruff-wasm-web';
 import { acceptCompletion, autocompletion } from '@codemirror/autocomplete';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { python } from '@codemirror/lang-python';
 import { syntaxTree } from '@codemirror/language';
 import { linter, lintGutter } from '@codemirror/lint';
-import { Annotation, EditorState, StateField, StateEffect } from '@codemirror/state';
+import { Annotation, EditorState, Range, StateEffect, StateField } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
+import type { DecorationSet } from '@codemirror/view';
 import { Decoration, drawSelection, EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { Box, Button, Card, Flex, Text } from '@radix-ui/themes';
 import { useEffect, useRef, useState } from 'react';
@@ -108,7 +110,7 @@ function buildDecorations(state: EditorState) {
   const fn = findFunctionByName(state, selectedId);
   if (!fn) return Decoration.none;
 
-  const decorations: any[] = [];
+  const decorations: Range<Decoration>[] = [];
   const startLine = state.doc.lineAt(fn.from).number;
   const endLine = state.doc.lineAt(fn.to).number;
 
@@ -126,7 +128,7 @@ function buildDecorations(state: EditorState) {
   return Decoration.set(decorations, true);
 }
 
-const readOnlyField = StateField.define<any>({
+const readOnlyField = StateField.define<DecorationSet>({
   create: (state) => buildDecorations(state),
   update: (value, tr) => {
     const oldId = tr.startState.field(selectedNodeIdField);
@@ -151,7 +153,7 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
   const selectedNodeId = useGraphStore(state => state.nodes.find(n => n.selected)?.id || null);
 
   const [currentValue, setCurrentValue] = useState(code);
-  const [workspace, setWorkspace] = useState<any>(null);
+  const [workspace, setWorkspace] = useState<Workspace | null>(null);
 
   // Initialize Ruff WASM and Workspace
   useEffect(() => {
