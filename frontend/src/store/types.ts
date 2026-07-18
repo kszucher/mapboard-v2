@@ -57,6 +57,8 @@ export interface NodeSlice {
     code?: string | null;
     selected?: boolean;
   }) => Promise<void>;
+  selectNodeAndSlotByEditorCursor: (activeFnName: string | null, branchIndex: number) => Promise<void>;
+  syncSelectedNodeAndSlot: (selectedNodeId: string | null, selectedSlotId: string | null) => Promise<void>;
 }
 
 export interface SlotSlice {

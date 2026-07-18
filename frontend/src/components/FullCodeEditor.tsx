@@ -11,6 +11,7 @@ import { Decoration, drawSelection, EditorView, keymap, lineNumbers } from '@cod
 import { Box, Button, Card, Flex, Text } from '@radix-ui/themes';
 import { useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
+import { findParentNodeBySlotId } from '../domain/graphs/traversal';
 import { createRuffWorkspace, initRuff, runRuffLint } from '../services/ruffLinter';
 import { useGraphStore } from '../store/useGraphStore';
 
@@ -299,11 +300,10 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
 
+  // Unified reactive selectors
   const {
     code,
-    updateCode,
     errorMessage,
-    clearErrorMessage,
     variables,
     selectedNodeId,
     selectedSlotId
@@ -320,15 +320,19 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
       }
       return {
         code: state.code,
-        updateCode: state.updateCode,
         errorMessage: state.errorMessage,
-        clearErrorMessage: state.clearErrorMessage,
         variables: state.variables,
         selectedNodeId,
         selectedSlotId,
       };
     })
   );
+
+  // Stable action references
+  const updateCode = useGraphStore(state => state.updateCode);
+  const clearErrorMessage = useGraphStore(state => state.clearErrorMessage);
+  const selectNodeAndSlotByEditorCursor = useGraphStore(state => state.selectNodeAndSlotByEditorCursor);
+
 
   const [currentValue, setCurrentValue] = useState(code);
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
@@ -365,11 +369,10 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
       const currentSelection = viewRef.current.state.field(selectionField);
       
       let targetNodeId = selectedNodeId;
-      let targetSlotId = null;
+      let targetSlotId = selectedSlotId;
 
       if (selectedSlotId) {
-        const nodes = useGraphStore.getState().nodes;
-        const parentNode = nodes.find(n => n.data.node.slots.some(s => s.id === selectedSlotId));
+        const parentNode = findParentNodeBySlotId(selectedSlotId, useGraphStore.getState().nodes);
         if (parentNode) {
           targetNodeId = parentNode.id;
           targetSlotId = selectedSlotId;
@@ -400,12 +403,13 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
         const activeFn = findFunctionAt(update.state, pos);
         const activeFnName = activeFn ? activeFn.name : null;
 
-        const nodes = useGraphStore.getState().nodes;
-        const targetNode = nodes.find(n => n.id === activeFnName && (n.data?.node?.node_type === 'STEP' || n.data?.node?.node_type === 'SWITCH'));
-        const currentlySelectedNode = nodes.find(n => n.selected);
+        let targetBranchIndex = -1;
 
-        if (targetNode) {
-          if (targetNode.data?.node?.node_type === 'SWITCH' && activeFn) {
+        if (activeFn) {
+          const nodes = useGraphStore.getState().nodes;
+          const targetNode = nodes.find(n => n.id === activeFnName && n.data?.node?.node_type === 'SWITCH');
+
+          if (targetNode) {
             const clickLineNum = update.state.doc.lineAt(pos).number;
             const startLineNum = update.state.doc.lineAt(activeFn.from).number;
             const endLineNum = update.state.doc.lineAt(activeFn.to).number;
@@ -419,7 +423,6 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
               }
             }
 
-            let targetBranchIndex = -1;
             const clickedLineText = update.state.doc.line(clickLineNum).text;
             const isFallbackReturn = clickedLineText.trim().startsWith('return') && (clickedLineText.length - clickedLineText.trimStart().length) <= 4;
 
@@ -431,31 +434,10 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
                 }
               }
             }
-
-            if (targetBranchIndex !== -1) {
-              const slots = targetNode.data.node.slots;
-              if (slots && slots[targetBranchIndex]) {
-                const targetSlot = slots[targetBranchIndex];
-                const currentlySelectedSlot = targetNode.data.node.slots.find(s => s.selected);
-                if (!currentlySelectedSlot || currentlySelectedSlot.id !== targetSlot.id) {
-                  useGraphStore.getState().updateSlot(targetSlot.id, { selected: true });
-                }
-                return;
-              }
-            }
-          }
-
-          if (!targetNode.selected) {
-            useGraphStore.getState().updateNode(targetNode.id, { selected: true });
-          }
-        } else {
-          const hasSelectedSlot = nodes.some(n => n.data?.node?.slots?.some(s => s.selected));
-          if (currentlySelectedNode && (currentlySelectedNode.data?.node?.node_type === 'STEP' || currentlySelectedNode.data?.node?.node_type === 'SWITCH')) {
-            useGraphStore.getState().updateNode(currentlySelectedNode.id, { selected: false });
-          } else if (hasSelectedSlot) {
-            useGraphStore.getState().clearSlotSelection();
           }
         }
+
+        void selectNodeAndSlotByEditorCursor(activeFnName, targetBranchIndex);
       }
     });
 

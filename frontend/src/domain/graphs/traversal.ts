@@ -54,3 +54,10 @@ export const getIncomingEdgeOptions = (
     };
   });
 };
+
+export const findParentNodeBySlotId = (
+  slotId: string,
+  nodes: AppFlowNode[]
+): AppFlowNode | null => {
+  return nodes.find(n => n.data.node.slots.some(s => s.id === slotId)) || null;
+};
