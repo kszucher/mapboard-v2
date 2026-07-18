@@ -10,6 +10,7 @@ import type { DecorationSet } from '@codemirror/view';
 import { Decoration, drawSelection, EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { Box, Button, Card, Flex, Text } from '@radix-ui/themes';
 import { useEffect, useRef, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { createRuffWorkspace, initRuff, runRuffLint } from '../services/ruffLinter';
 import { useGraphStore } from '../store/useGraphStore';
 
@@ -298,21 +299,36 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
 
-  const code = useGraphStore(state => state.code);
-  const updateCode = useGraphStore(state => state.updateCode);
-  const errorMessage = useGraphStore(state => state.errorMessage);
-  const clearErrorMessage = useGraphStore(state => state.clearErrorMessage);
-  const variables = useGraphStore(state => state.variables);
-  const selectedNodeId = useGraphStore(state => state.nodes.find(n => n.selected)?.id || null);
-  const selectedSlotId = useGraphStore(state => {
-    for (const n of state.nodes) {
-      const slot = n.data.node.slots.find(s => s.selected);
-      if (slot) {
-        return slot.id;
+  const {
+    code,
+    updateCode,
+    errorMessage,
+    clearErrorMessage,
+    variables,
+    selectedNodeId,
+    selectedSlotId
+  } = useGraphStore(
+    useShallow(state => {
+      const selectedNodeId = state.nodes.find(n => n.selected)?.id || null;
+      let selectedSlotId = null;
+      for (const n of state.nodes) {
+        const slot = n.data.node.slots.find(s => s.selected);
+        if (slot) {
+          selectedSlotId = slot.id;
+          break;
+        }
       }
-    }
-    return null;
-  });
+      return {
+        code: state.code,
+        updateCode: state.updateCode,
+        errorMessage: state.errorMessage,
+        clearErrorMessage: state.clearErrorMessage,
+        variables: state.variables,
+        selectedNodeId,
+        selectedSlotId,
+      };
+    })
+  );
 
   const [currentValue, setCurrentValue] = useState(code);
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
