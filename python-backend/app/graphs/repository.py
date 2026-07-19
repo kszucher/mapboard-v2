@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models
@@ -30,3 +30,49 @@ class GraphRepository(BaseRepository[models.Graph, GraphCreate, GraphCreate]):
             select(models.Graph).where(models.Graph.user_id == user_id).order_by(models.Graph.id.desc())
         )
         return list(result.scalars().all())
+
+
+class GraphHistoryCreate(BaseModel):
+    graph_id: uuid.UUID
+    flow_json: dict
+    sequence_number: int
+
+
+class GraphHistoryRepository(BaseRepository[models.GraphHistory, GraphHistoryCreate, GraphHistoryCreate]):
+    def __init__(self, session: AsyncSession):
+        super().__init__(models.GraphHistory, session)
+
+    async def clear_by_graph(self, graph_id: uuid.UUID) -> None:
+        await self.session.execute(
+            delete(models.GraphHistory).where(models.GraphHistory.graph_id == graph_id)
+        )
+        await self.session.flush()
+
+    async def delete_future_snapshots(self, graph_id: uuid.UUID, min_sequence: int) -> None:
+        await self.session.execute(
+            delete(models.GraphHistory).where(
+                models.GraphHistory.graph_id == graph_id,
+                models.GraphHistory.sequence_number > min_sequence
+            )
+        )
+        await self.session.flush()
+
+    async def get_by_sequence(self, graph_id: uuid.UUID, sequence_number: int) -> models.GraphHistory | None:
+        result = await self.session.execute(
+            select(models.GraphHistory).where(
+                models.GraphHistory.graph_id == graph_id,
+                models.GraphHistory.sequence_number == sequence_number
+            )
+        )
+        return result.scalars().first()
+
+    async def save_snapshot(self, graph_id: uuid.UUID, flow_json: dict, sequence_number: int) -> models.GraphHistory:
+        snapshot = models.GraphHistory(
+            graph_id=graph_id,
+            flow_json=flow_json,
+            sequence_number=sequence_number
+        )
+        self.session.add(snapshot)
+        await self.session.flush()
+        return snapshot
+

@@ -9,7 +9,7 @@ from app.constants import EventName
 from app.events import GraphEventBroker
 
 if TYPE_CHECKING:
-    from app.graphs.repository import GraphRepository
+    from app.graphs.repository import GraphHistoryRepository, GraphRepository
     from app.users.repository import UserRepository
 
 
@@ -23,6 +23,7 @@ class UnitOfWork:
         # Lazy-loaded repositories
         self._graphs: GraphRepository | None = None
         self._users: UserRepository | None = None
+        self._graph_history: GraphHistoryRepository | None = None
 
     @property
     def graphs(self) -> GraphRepository:
@@ -31,6 +32,14 @@ class UnitOfWork:
 
             self._graphs = GraphRepository(self.session)
         return self._graphs
+
+    @property
+    def graph_history(self) -> GraphHistoryRepository:
+        if self._graph_history is None:
+            from app.graphs.repository import GraphHistoryRepository
+
+            self._graph_history = GraphHistoryRepository(self.session)
+        return self._graph_history
 
     @property
     def users(self) -> UserRepository:

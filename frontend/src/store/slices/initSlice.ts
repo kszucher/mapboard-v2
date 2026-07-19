@@ -11,7 +11,7 @@ export const createInitSlice: StateCreator<
   InitSlice
 > = (set) => ({
   init: async (graphId) => {
-    set({ graphId, isLoading: true, past: [], future: [] });
+    set({ graphId, isLoading: true, canUndo: false, canRedo: false });
     try {
       const res = await apiClient.GET('/graphs/{graph_id}/flow', {
         params: { path: { graph_id: graphId } }
@@ -28,6 +28,8 @@ export const createInitSlice: StateCreator<
           edges: mapped.edges,
           variables: data.variables || [],
           functions: data.functions || [],
+          canUndo: data.can_undo ?? false,
+          canRedo: data.can_redo ?? false,
           isLoading: mapped.nodes.length > 0,
         });
 

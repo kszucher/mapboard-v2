@@ -66,6 +66,8 @@ class GraphFlowRead(BaseModel):
     edges: list[EdgeRead]
     variables: list[VariableRead] = []
     functions: list[FunctionRead] = []
+    can_undo: bool = False
+    can_redo: bool = False
 
 
 class GraphSyncPayload(BaseModel):
@@ -76,6 +78,25 @@ class GraphSyncPayload(BaseModel):
     functions: list[FunctionRead] = []
 
 
-class NodeRenameRequest(BaseModel):
-    old_id: str
-    new_id: str
+class NodeCreateRequest(BaseModel):
+    node_type: NodeType
+    connector_id: str | None = None
+    direction: Literal["before", "after"] | None = None
+
+
+class NodeUpdateRequest(BaseModel):
+    new_id: str | None = None
+    is_input: bool | None = None
+    is_output: bool | None = None
+
+
+class SlotCreateRequest(BaseModel):
+    index: int
+
+
+class SlotUpdateRequest(BaseModel):
+    raw_string: str
+
+
+class SlotMoveRequest(BaseModel):
+    direction: Literal["up", "down", "top", "bottom"]

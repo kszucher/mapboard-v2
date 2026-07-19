@@ -15,8 +15,8 @@ export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
   edges: [],
   variables: [],
   functions: [],
-  past: [],
-  future: [],
+  canUndo: false,
+  canRedo: false,
   isLoading: false,
   isSaving: false,
   errorMessage: null,
@@ -38,5 +38,11 @@ setOnSaveStateChange((isSaving) => {
 setOnSyncResponse((data) => {
   if (data.code !== undefined) {
     useGraphStore.setState({ code: data.code });
+  }
+  if (data.can_undo !== undefined) {
+    useGraphStore.setState({ canUndo: data.can_undo });
+  }
+  if (data.can_redo !== undefined) {
+    useGraphStore.setState({ canRedo: data.can_redo });
   }
 });

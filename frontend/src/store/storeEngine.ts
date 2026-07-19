@@ -93,7 +93,6 @@ export const runTransaction = async (
   options: { skipHistory?: boolean; skipLayout?: boolean } = {}
 ) => {
   const current = get();
-  const snapshot = options.skipHistory ? null : takeSnapshot(current);
   const updated = updateFn(current);
 
   const code = updated.code ?? current.code;
@@ -101,16 +100,13 @@ export const runTransaction = async (
   const functions = updated.functions ?? current.functions;
 
   // 1. Commit changes to the store synchronously first
-  set((state) => ({
+  set(() => ({
     ...updated,
     code,
     nodes: updated.nodes,
     edges: updated.edges,
     variables,
     functions,
-    ...(!options.skipHistory && snapshot
-      ? { past: [...state.past, snapshot], future: [] }
-      : {}),
   }));
 
   // 2. Perform layout/save asynchronously in the background

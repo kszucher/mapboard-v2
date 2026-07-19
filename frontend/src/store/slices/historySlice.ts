@@ -1,7 +1,8 @@
 import type { StateCreator } from 'zustand';
 import { runLayout } from '../layout';
-import { scheduleAutosave, takeSnapshot } from '../storeEngine';
 import type { GraphStoreState, HistorySlice } from '../types';
+import { apiClient } from '../../api/client';
+import { fromApiPayload } from '../mappers';
 
 export const createHistorySlice: StateCreator<
   GraphStoreState,
@@ -9,78 +10,69 @@ export const createHistorySlice: StateCreator<
   [],
   HistorySlice
 > = (set, get) => ({
-  undo: () => {
-    const { past, future, code, nodes, edges, variables, functions, graphId } = get();
-    if (past.length === 0) return;
+  undo: async () => {
+    const { graphId, nodes } = get();
+    if (!graphId) return;
 
-    const previous = past[past.length - 1];
-    const newPast = past.slice(0, -1);
-    const currentSnapshot = takeSnapshot({ code, nodes, edges, variables, functions });
-
-    const currentPositions = Object.fromEntries(nodes.map(n => [n.id, n.position]));
-    const nodesAtCurrentPositions = previous.nodes.map(n => ({
-      ...n,
-      position: currentPositions[n.id] ?? n.position,
-    }));
-
-    runLayout(nodesAtCurrentPositions, previous.edges).then((laidOut) => {
-      set({
-        code: previous.code,
-        nodes: laidOut.nodes,
-        edges: laidOut.edges,
-        variables: previous.variables,
-        functions: previous.functions,
-        past: newPast,
-        future: [currentSnapshot, ...future],
+    try {
+      const res = await apiClient.POST('/graphs/{graph_id}/history/undo', {
+        params: { path: { graph_id: graphId } },
       });
+      if ('error' in res) throw res.error;
 
-      scheduleAutosave({
-        graphId,
-        code: previous.code,
-        nodes: laidOut.nodes,
-        edges: laidOut.edges,
-        variables: previous.variables,
-        functions: previous.functions,
-      });
-    });
+      const data = res.data;
+      if (data) {
+        const currentPositions = Object.fromEntries(nodes.map(n => [n.id, n.position]));
+        const mapped = fromApiPayload(data.nodes, data.edges, currentPositions);
+
+        const laidOut = await runLayout(mapped.nodes, mapped.edges);
+        set({
+          code: data.code || '',
+          nodes: laidOut.nodes,
+          edges: laidOut.edges,
+          variables: data.variables || [],
+          functions: data.functions || [],
+          canUndo: data.can_undo ?? false,
+          canRedo: data.can_redo ?? false,
+          errorMessage: null,
+        });
+      }
+    } catch (err: any) {
+      console.error('Failed to undo:', err);
+      set({ errorMessage: err.detail || String(err) });
+    }
   },
 
-  redo: () => {
-    const { past, future, code, nodes, edges, variables, functions, graphId } = get();
-    if (future.length === 0) return;
+  redo: async () => {
+    const { graphId, nodes } = get();
+    if (!graphId) return;
 
-    const next = future[0];
-    const newFuture = future.slice(1);
-    const currentSnapshot = takeSnapshot({ code, nodes, edges, variables, functions });
-
-    const currentPositions = Object.fromEntries(nodes.map(n => [n.id, n.position]));
-    const nodesAtCurrentPositions = next.nodes.map(n => ({
-      ...n,
-      position: currentPositions[n.id] ?? n.position,
-    }));
-
-    runLayout(nodesAtCurrentPositions, next.edges).then((laidOut) => {
-      set({
-        code: next.code,
-        nodes: laidOut.nodes,
-        edges: laidOut.edges,
-        variables: next.variables,
-        functions: next.functions,
-        past: [...past, currentSnapshot],
-        future: newFuture,
+    try {
+      const res = await apiClient.POST('/graphs/{graph_id}/history/redo', {
+        params: { path: { graph_id: graphId } },
       });
+      if ('error' in res) throw res.error;
 
-      scheduleAutosave({
-        graphId,
-        code: next.code,
-        nodes: laidOut.nodes,
-        edges: laidOut.edges,
-        variables: next.variables,
-        functions: next.functions,
-      });
-    });
+      const data = res.data;
+      if (data) {
+        const currentPositions = Object.fromEntries(nodes.map(n => [n.id, n.position]));
+        const mapped = fromApiPayload(data.nodes, data.edges, currentPositions);
+
+        const laidOut = await runLayout(mapped.nodes, mapped.edges);
+        set({
+          code: data.code || '',
+          nodes: laidOut.nodes,
+          edges: laidOut.edges,
+          variables: data.variables || [],
+          functions: data.functions || [],
+          canUndo: data.can_undo ?? false,
+          canRedo: data.can_redo ?? false,
+          errorMessage: null,
+        });
+      }
+    } catch (err: any) {
+      console.error('Failed to redo:', err);
+      set({ errorMessage: err.detail || String(err) });
+    }
   },
-
-  canUndo: () => get().past.length > 0,
-  canRedo: () => get().future.length > 0,
 });

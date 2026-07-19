@@ -2,10 +2,10 @@ import { PlusIcon } from '@radix-ui/react-icons';
 import { DropdownMenu } from '@radix-ui/themes';
 import { useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { canShortcircuitNode, getAvailableConversions } from '../domain/graphs/rules';
+import { canShortcircuitNode } from '../domain/graphs/rules';
 import { getIncomingEdgeOptions, getOutgoingEdgeOptions } from '../domain/graphs/traversal';
 import { useGraphStore } from '../store/useGraphStore';
-import type { InsertableNodeType, NodeType } from './types';
+import type { InsertableNodeType } from './types';
 
 const INSERTABLE_NODE_TYPES: { type: InsertableNodeType; label: string }[] = [
   { type: 'STEP', label: 'Step' },
@@ -20,7 +20,6 @@ export interface FlowNodeActionsContentProps {
 export const FlowNodeActionsContent = ({ nodeId, onRenameClick }: FlowNodeActionsContentProps) => {
   const deleteNode = useGraphStore(state => state.deleteNode);
   const shortcircuitNode = useGraphStore(state => state.shortcircuitNode);
-  const convertNode = useGraphStore(state => state.convertNode);
   const insertNode = useGraphStore(state => state.insertNode);
   const deleteEdge = useGraphStore(state => state.deleteEdge);
 
@@ -58,13 +57,7 @@ export const FlowNodeActionsContent = ({ nodeId, onRenameClick }: FlowNodeAction
     if (nodeData) void shortcircuitNode(nodeData.id);
   }, [nodeData, shortcircuitNode]);
 
-  const conversions = useMemo(() => {
-    return nodeData ? getAvailableConversions(nodeData.node_type) : [];
-  }, [nodeData]);
 
-  const handleConvert = useCallback((targetType: NodeType) => {
-    if (nodeData) void convertNode(nodeData.id, targetType);
-  }, [nodeData, convertNode]);
 
 
   const handleInsert = useCallback(
@@ -145,20 +138,7 @@ export const FlowNodeActionsContent = ({ nodeId, onRenameClick }: FlowNodeAction
         </>
       )}
 
-      {conversions.length > 0 && (
-        <DropdownMenu.Sub>
-          <DropdownMenu.SubTrigger>
-            {'Convert'}
-          </DropdownMenu.SubTrigger>
-          <DropdownMenu.SubContent>
-            {conversions.map(c => (
-              <DropdownMenu.Item key={c.targetType} onClick={() => handleConvert(c.targetType)}>
-                {c.label}
-              </DropdownMenu.Item>
-            ))}
-          </DropdownMenu.SubContent>
-        </DropdownMenu.Sub>
-      )}
+
       {!isStart && !isEnd && canShortcircuit && (
         <DropdownMenu.Item onClick={handleShortcircuit}>
           {'Shortcircuit'}

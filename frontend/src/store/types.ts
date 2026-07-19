@@ -11,22 +11,10 @@ export interface BaseState {
   edges: AppFlowEdge[];
   variables: Variable[];
   functions: FunctionEntity[];
-  past: Array<{
-    code: string;
-    nodes: AppFlowNode[];
-    edges: AppFlowEdge[];
-    variables: Variable[];
-    functions: FunctionEntity[]
-  }>;
-  future: Array<{
-    code: string;
-    nodes: AppFlowNode[];
-    edges: AppFlowEdge[];
-    variables: Variable[];
-    functions: FunctionEntity[]
-  }>;
   isLoading: boolean;
   isSaving: boolean;
+  canUndo: boolean;
+  canRedo: boolean;
   errorMessage: string | null;
   clearErrorMessage: () => void;
   pendingLayoutNodeId: string | null;
@@ -49,7 +37,6 @@ export interface NodeSlice {
   insertNode: (connectorId: string, nodeType: NodeType, direction: 'before' | 'after') => Promise<void>;
   deleteNode: (nodeId: string) => Promise<void>;
   shortcircuitNode: (nodeId: string) => Promise<void>;
-  convertNode: (nodeId: string, targetType: NodeType) => Promise<void>;
   deleteEdge: (edgeId: string) => Promise<void>;
   updateNode: (nodeId: string, updates: {
     is_input?: boolean;
@@ -78,10 +65,8 @@ export interface ExecutionSlice {
 }
 
 export interface HistorySlice {
-  undo: () => void;
-  redo: () => void;
-  canUndo: () => boolean;
-  canRedo: () => boolean;
+  undo: () => Promise<void>;
+  redo: () => Promise<void>;
 }
 
 export type GraphStoreState = BaseState &

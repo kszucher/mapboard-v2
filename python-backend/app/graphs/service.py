@@ -7,6 +7,7 @@ from app.constants import EventName
 from app.graphs.schemas import GraphSyncPayload
 
 if TYPE_CHECKING:
+    from app import models
     from app.context import UnitOfWork
 
 
@@ -208,7 +209,15 @@ async def sync_graph_flow(
             "functions": functions,
         }
 
+    # Clear future history branches
+    await uow.graph_history.delete_future_snapshots(graph_id, graph.current_history_sequence)
+
+    # Increment sequence and save snapshot
+    next_seq = graph.current_history_sequence + 1
+    await uow.graph_history.save_snapshot(graph.id, flow_data, next_seq)
+
     graph.flow_json = flow_data
+    graph.current_history_sequence = next_seq
     await uow.session.flush()
 
     uow.emit(
@@ -216,7 +225,7 @@ async def sync_graph_flow(
         graph_id=graph_id,
         payload={},
     )
-    return flow_data
+    return await _prepare_response_flow(uow, graph, flow_data)
 
 
 async def run_graph_flow(uow: UnitOfWork, graph_id: uuid.UUID) -> dict:
@@ -265,75 +274,253 @@ async def run_graph_flow(uow: UnitOfWork, graph_id: uuid.UUID) -> dict:
     return flow_data
 
 
-async def rename_node(uow: UnitOfWork, graph_id: uuid.UUID, old_id: str, new_id: str) -> dict:
+async def get_and_reset_graph_flow(uow: UnitOfWork, graph_id: uuid.UUID) -> dict:
     graph = await uow.graphs.get(graph_id)
     if not graph:
         from app.exceptions import ValidationError
 
         raise ValidationError(f"Graph {graph_id} not found")
 
-    from app.graphs.ast_editor import CodeASTEditor
+    flow_data = graph.flow_json or {}
+
+    # Reset/clear history snapshots on graph load
+    await uow.graph_history.clear_by_graph(graph_id)
+    graph.current_history_sequence = 0
+    await uow.graph_history.save_snapshot(graph_id, flow_data, 0)
+    await uow.session.flush()
+
+    return await _prepare_response_flow(uow, graph, flow_data)
+
+
+async def _prepare_response_flow(uow: UnitOfWork, graph: models.Graph, flow_data: dict) -> dict:
+    next_snap = await uow.graph_history.get_by_sequence(graph.id, graph.current_history_sequence + 1)
+    return {**flow_data, "can_undo": graph.current_history_sequence > 0, "can_redo": next_snap is not None}
+
+
+async def _commit_state_snapshot(uow: UnitOfWork, graph: models.Graph, flow_data: dict) -> dict:
+    from app.constants import EventName
     from app.graphs.langgraph_sync import generate_graph_code, parse_code_to_graph
     from app.graphs.schemas import NodeRead
 
-    flow_data = graph.flow_json or {}
-    code = flow_data.get("code", "")
-    nodes = flow_data.get("nodes", [])
-    edges = flow_data.get("edges", [])
+    # Clear future history branches
+    await uow.graph_history.delete_future_snapshots(graph.id, graph.current_history_sequence)
 
-    # 1. Rename function definition via AST
-    editor = CodeASTEditor(code)
-    if editor.rename_function(old_id, new_id):
-        code = editor.get_code()
+    # Reformat/Compile Python code based on the new visual elements
+    old_nodes_raw = graph.flow_json.get("nodes", [])
+    old_nodes = [NodeRead.model_validate(n) for n in old_nodes_raw]
 
-    # 2. Rename node in JSON
-    for node in nodes:
-        if node["id"] == old_id:
-            node["id"] = new_id
+    generated_code = generate_graph_code(flow_data, existing_code=flow_data.get("code", ""), old_nodes=old_nodes)
+    parsed = parse_code_to_graph(generated_code)
 
-    # 3. Rename edges in JSON
-    for edge in edges:
-        if edge["source_id"] == old_id:
-            edge["source_id"] = new_id
-        if edge["target_id"] == old_id:
-            edge["target_id"] = new_id
-
-    # 4. Re-generate graph definitions and save
-    old_nodes = [NodeRead.model_validate(n) for n in flow_data.get("nodes", [])]
-    payload_dict = {
-        "code": code,
-        "nodes": nodes,
-        "edges": edges,
-        "variables": flow_data.get("variables", []),
-        "functions": flow_data.get("functions", []),
-    }
-
-    generated = generate_graph_code(payload_dict, existing_code=code, old_nodes=old_nodes)
-    parsed = parse_code_to_graph(generated)
-
-    node_names = {n["id"] for n in nodes if n["node_type"] in ("STEP", "SWITCH")}
-    for node in nodes:
+    # Sync parsed function definitions into visual nodes code field
+    node_names = {n["id"] for n in flow_data["nodes"] if n["node_type"] in ("STEP", "SWITCH")}
+    for node in flow_data["nodes"]:
         node_name = node["id"]
         if node_name in parsed["functions"]:
             node["code"] = parsed["functions"][node_name]
 
+    # Generate helper functions
     functions = []
     for func_name, func_source in parsed["functions"].items():
         if func_name not in node_names and func_name != "State":
             functions.append({"id": func_name, "name": func_name, "raw_string": func_source})
 
+    # Prepare final flow structure
     updated_flow = {
-        "code": generated,
-        "nodes": nodes,
-        "edges": edges,
+        "code": generated_code,
+        "nodes": flow_data["nodes"],
+        "edges": flow_data["edges"],
         "variables": parsed["variables"],
         "functions": functions,
     }
 
+    # Increment sequence and save snapshot
+    next_seq = graph.current_history_sequence + 1
+    await uow.graph_history.save_snapshot(graph.id, updated_flow, next_seq)
+
+    # Update graph row
     graph.flow_json = updated_flow
+    graph.current_history_sequence = next_seq
     await uow.session.flush()
 
-    from app.constants import EventName
+    uow.emit(event=EventName.GRAPH_UPDATED, graph_id=graph.id, payload={})
+    return await _prepare_response_flow(uow, graph, updated_flow)
 
-    uow.emit(event=EventName.GRAPH_UPDATED, graph_id=graph_id, payload={})
-    return updated_flow
+
+async def undo_graph_flow(uow: UnitOfWork, graph_id: uuid.UUID) -> dict:
+    graph = await uow.graphs.get(graph_id)
+    if not graph:
+        from app.exceptions import ValidationError
+
+        raise ValidationError(f"Graph {graph_id} not found")
+
+    if graph.current_history_sequence <= 0:
+        return graph.flow_json
+
+    prev_seq = graph.current_history_sequence - 1
+    snapshot = await uow.graph_history.get_by_sequence(graph_id, prev_seq)
+    if snapshot:
+        graph.flow_json = snapshot.flow_json
+        graph.current_history_sequence = prev_seq
+        await uow.session.flush()
+
+        from app.constants import EventName
+
+        uow.emit(event=EventName.GRAPH_UPDATED, graph_id=graph_id, payload={})
+
+    return await _prepare_response_flow(uow, graph, graph.flow_json)
+
+
+async def redo_graph_flow(uow: UnitOfWork, graph_id: uuid.UUID) -> dict:
+    graph = await uow.graphs.get(graph_id)
+    if not graph:
+        from app.exceptions import ValidationError
+
+        raise ValidationError(f"Graph {graph_id} not found")
+
+    next_seq = graph.current_history_sequence + 1
+    snapshot = await uow.graph_history.get_by_sequence(graph_id, next_seq)
+    if snapshot:
+        graph.flow_json = snapshot.flow_json
+        graph.current_history_sequence = next_seq
+        await uow.session.flush()
+
+        from app.constants import EventName
+
+        uow.emit(event=EventName.GRAPH_UPDATED, graph_id=graph_id, payload={})
+
+    return await _prepare_response_flow(uow, graph, graph.flow_json)
+
+
+async def add_node(
+    uow: UnitOfWork,
+    graph_id: uuid.UUID,
+    node_type: str,
+    connector_id: str | None = None,
+    direction: str | None = None,
+) -> dict:
+    graph = await uow.graphs.get(graph_id)
+    if not graph:
+        from app.exceptions import ValidationError
+
+        raise ValidationError(f"Graph {graph_id} not found")
+
+    from app.graphs import graph_mutations
+
+    mutated = graph_mutations.add_node(graph.flow_json, node_type, connector_id, direction)
+    return await _commit_state_snapshot(uow, graph, mutated)
+
+
+async def update_node(uow: UnitOfWork, graph_id: uuid.UUID, node_id: str, updates: dict) -> dict:
+    graph = await uow.graphs.get(graph_id)
+    if not graph:
+        from app.exceptions import ValidationError
+
+        raise ValidationError(f"Graph {graph_id} not found")
+
+    flow_data = graph.flow_json or {}
+
+    new_id = updates.get("new_id")
+    if new_id:
+        from app.graphs.ast_editor import CodeASTEditor
+
+        editor = CodeASTEditor(flow_data.get("code", ""))
+        if editor.rename_function(node_id, new_id):
+            flow_data["code"] = editor.get_code()
+
+    from app.graphs import graph_mutations
+
+    mutated = graph_mutations.update_node(flow_data, node_id, updates)
+
+    return await _commit_state_snapshot(uow, graph, mutated)
+
+
+async def delete_node(uow: UnitOfWork, graph_id: uuid.UUID, node_id: str) -> dict:
+    graph = await uow.graphs.get(graph_id)
+    if not graph:
+        from app.exceptions import ValidationError
+
+        raise ValidationError(f"Graph {graph_id} not found")
+
+    from app.graphs import graph_mutations
+
+    mutated = graph_mutations.delete_node(graph.flow_json, node_id)
+    return await _commit_state_snapshot(uow, graph, mutated)
+
+
+async def shortcircuit_node(uow: UnitOfWork, graph_id: uuid.UUID, node_id: str) -> dict:
+    graph = await uow.graphs.get(graph_id)
+    if not graph:
+        from app.exceptions import ValidationError
+
+        raise ValidationError(f"Graph {graph_id} not found")
+
+    from app.graphs import graph_mutations
+
+    mutated = graph_mutations.shortcircuit_node(graph.flow_json, node_id)
+    return await _commit_state_snapshot(uow, graph, mutated)
+
+
+async def create_slot(uow: UnitOfWork, graph_id: uuid.UUID, node_id: str, index: int) -> dict:
+    graph = await uow.graphs.get(graph_id)
+    if not graph:
+        from app.exceptions import ValidationError
+
+        raise ValidationError(f"Graph {graph_id} not found")
+
+    from app.graphs import graph_mutations
+
+    mutated = graph_mutations.create_slot(graph.flow_json, node_id, index)
+    return await _commit_state_snapshot(uow, graph, mutated)
+
+
+async def update_slot(uow: UnitOfWork, graph_id: uuid.UUID, slot_id: str, raw_string: str) -> dict:
+    graph = await uow.graphs.get(graph_id)
+    if not graph:
+        from app.exceptions import ValidationError
+
+        raise ValidationError(f"Graph {graph_id} not found")
+
+    from app.graphs import graph_mutations
+
+    mutated = graph_mutations.update_slot(graph.flow_json, slot_id, raw_string)
+    return await _commit_state_snapshot(uow, graph, mutated)
+
+
+async def delete_slot(uow: UnitOfWork, graph_id: uuid.UUID, slot_id: str) -> dict:
+    graph = await uow.graphs.get(graph_id)
+    if not graph:
+        from app.exceptions import ValidationError
+
+        raise ValidationError(f"Graph {graph_id} not found")
+
+    from app.graphs import graph_mutations
+
+    mutated = graph_mutations.delete_slot(graph.flow_json, slot_id)
+    return await _commit_state_snapshot(uow, graph, mutated)
+
+
+async def move_slot(uow: UnitOfWork, graph_id: uuid.UUID, slot_id: str, direction: str) -> dict:
+    graph = await uow.graphs.get(graph_id)
+    if not graph:
+        from app.exceptions import ValidationError
+
+        raise ValidationError(f"Graph {graph_id} not found")
+
+    from app.graphs import graph_mutations
+
+    mutated = graph_mutations.move_slot(graph.flow_json, slot_id, direction)
+    return await _commit_state_snapshot(uow, graph, mutated)
+
+
+async def delete_edge(uow: UnitOfWork, graph_id: uuid.UUID, edge_id: uuid.UUID) -> dict:
+    graph = await uow.graphs.get(graph_id)
+    if not graph:
+        from app.exceptions import ValidationError
+
+        raise ValidationError(f"Graph {graph_id} not found")
+
+    from app.graphs import graph_mutations
+
+    mutated = graph_mutations.delete_edge(graph.flow_json, edge_id)
+    return await _commit_state_snapshot(uow, graph, mutated)

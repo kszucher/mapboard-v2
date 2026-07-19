@@ -157,7 +157,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/graphs/{graph_id}/rename-node": {
+  "/graphs/{graph_id}/history/undo": {
     parameters: {
       query?: never;
       header?: never;
@@ -166,9 +166,147 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Rename Node Endpoint */
-    post: operations["rename_node_endpoint_graphs__graph_id__rename_node_post"];
+    /** Undo Endpoint */
+    post: operations["undo_endpoint_graphs__graph_id__history_undo_post"];
     delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/graphs/{graph_id}/history/redo": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Redo Endpoint */
+    post: operations["redo_endpoint_graphs__graph_id__history_redo_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/graphs/{graph_id}/nodes": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Add Node Endpoint */
+    post: operations["add_node_endpoint_graphs__graph_id__nodes_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/graphs/{graph_id}/nodes/{node_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete Node Endpoint */
+    delete: operations["delete_node_endpoint_graphs__graph_id__nodes__node_id__delete"];
+    options?: never;
+    head?: never;
+    /** Update Node Endpoint */
+    patch: operations["update_node_endpoint_graphs__graph_id__nodes__node_id__patch"];
+    trace?: never;
+  };
+  "/graphs/{graph_id}/nodes/{node_id}/shortcircuit": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Shortcircuit Node Endpoint */
+    post: operations["shortcircuit_node_endpoint_graphs__graph_id__nodes__node_id__shortcircuit_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/graphs/{graph_id}/nodes/{node_id}/slots": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Create Slot Endpoint */
+    post: operations["create_slot_endpoint_graphs__graph_id__nodes__node_id__slots_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/graphs/{graph_id}/slots/{slot_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete Slot Endpoint */
+    delete: operations["delete_slot_endpoint_graphs__graph_id__slots__slot_id__delete"];
+    options?: never;
+    head?: never;
+    /** Update Slot Endpoint */
+    patch: operations["update_slot_endpoint_graphs__graph_id__slots__slot_id__patch"];
+    trace?: never;
+  };
+  "/graphs/{graph_id}/slots/{slot_id}/move": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Move Slot Endpoint */
+    post: operations["move_slot_endpoint_graphs__graph_id__slots__slot_id__move_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/graphs/{graph_id}/edges/{edge_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete Edge Endpoint */
+    delete: operations["delete_edge_endpoint_graphs__graph_id__edges__edge_id__delete"];
     options?: never;
     head?: never;
     patch?: never;
@@ -268,6 +406,16 @@ export interface components {
        * @default []
        */
       functions: components["schemas"]["FunctionRead"][];
+      /**
+       * Can Undo
+       * @default false
+       */
+      can_undo: boolean;
+      /**
+       * Can Redo
+       * @default false
+       */
+      can_redo: boolean;
     };
     /** GraphRead */
     GraphRead: {
@@ -311,6 +459,14 @@ export interface components {
       /** Detail */
       detail?: components["schemas"]["ValidationError"][];
     };
+    /** NodeCreateRequest */
+    NodeCreateRequest: {
+      node_type: components["schemas"]["NodeType"];
+      /** Connector Id */
+      connector_id?: string | null;
+      /** Direction */
+      direction?: ("before" | "after") | null;
+    };
     /** NodeRead */
     NodeRead: {
       /** Id */
@@ -339,18 +495,20 @@ export interface components {
        */
       selected: boolean;
     };
-    /** NodeRenameRequest */
-    NodeRenameRequest: {
-      /** Old Id */
-      old_id: string;
-      /** New Id */
-      new_id: string;
-    };
     /**
      * NodeType
      * @enum {string}
      */
     NodeType: "START" | "END" | "STEP" | "SWITCH";
+    /** NodeUpdateRequest */
+    NodeUpdateRequest: {
+      /** New Id */
+      new_id?: string | null;
+      /** Is Input */
+      is_input?: boolean | null;
+      /** Is Output */
+      is_output?: boolean | null;
+    };
     /** SetActiveGraph */
     SetActiveGraph: {
       /**
@@ -364,6 +522,19 @@ export interface components {
        */
       graph_id: string;
     };
+    /** SlotCreateRequest */
+    SlotCreateRequest: {
+      /** Index */
+      index: number;
+    };
+    /** SlotMoveRequest */
+    SlotMoveRequest: {
+      /**
+       * Direction
+       * @enum {string}
+       */
+      direction: "up" | "down" | "top" | "bottom";
+    };
     /** SlotRead */
     SlotRead: {
       /** Id */
@@ -375,6 +546,11 @@ export interface components {
        * @default false
        */
       selected: boolean;
+    };
+    /** SlotUpdateRequest */
+    SlotUpdateRequest: {
+      /** Raw String */
+      raw_string: string;
     };
     /** UserCreate */
     UserCreate: {
@@ -703,7 +879,73 @@ export interface operations {
       };
     };
   };
-  rename_node_endpoint_graphs__graph_id__rename_node_post: {
+  undo_endpoint_graphs__graph_id__history_undo_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        "x-client-id"?: string | null;
+      };
+      path: {
+        graph_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GraphFlowRead"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  redo_endpoint_graphs__graph_id__history_redo_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        "x-client-id"?: string | null;
+      };
+      path: {
+        graph_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GraphFlowRead"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  add_node_endpoint_graphs__graph_id__nodes_post: {
     parameters: {
       query?: never;
       header?: {
@@ -716,9 +958,297 @@ export interface operations {
     };
     requestBody: {
       content: {
-        "application/json": components["schemas"]["NodeRenameRequest"];
+        "application/json": components["schemas"]["NodeCreateRequest"];
       };
     };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GraphFlowRead"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_node_endpoint_graphs__graph_id__nodes__node_id__delete: {
+    parameters: {
+      query?: never;
+      header?: {
+        "x-client-id"?: string | null;
+      };
+      path: {
+        graph_id: string;
+        node_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GraphFlowRead"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  update_node_endpoint_graphs__graph_id__nodes__node_id__patch: {
+    parameters: {
+      query?: never;
+      header?: {
+        "x-client-id"?: string | null;
+      };
+      path: {
+        graph_id: string;
+        node_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NodeUpdateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GraphFlowRead"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  shortcircuit_node_endpoint_graphs__graph_id__nodes__node_id__shortcircuit_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        "x-client-id"?: string | null;
+      };
+      path: {
+        graph_id: string;
+        node_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GraphFlowRead"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  create_slot_endpoint_graphs__graph_id__nodes__node_id__slots_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        "x-client-id"?: string | null;
+      };
+      path: {
+        graph_id: string;
+        node_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SlotCreateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GraphFlowRead"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_slot_endpoint_graphs__graph_id__slots__slot_id__delete: {
+    parameters: {
+      query?: never;
+      header?: {
+        "x-client-id"?: string | null;
+      };
+      path: {
+        graph_id: string;
+        slot_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GraphFlowRead"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  update_slot_endpoint_graphs__graph_id__slots__slot_id__patch: {
+    parameters: {
+      query?: never;
+      header?: {
+        "x-client-id"?: string | null;
+      };
+      path: {
+        graph_id: string;
+        slot_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SlotUpdateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GraphFlowRead"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  move_slot_endpoint_graphs__graph_id__slots__slot_id__move_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        "x-client-id"?: string | null;
+      };
+      path: {
+        graph_id: string;
+        slot_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SlotMoveRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GraphFlowRead"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_edge_endpoint_graphs__graph_id__edges__edge_id__delete: {
+    parameters: {
+      query?: never;
+      header?: {
+        "x-client-id"?: string | null;
+      };
+      path: {
+        graph_id: string;
+        edge_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
     responses: {
       /** @description Successful Response */
       200: {

@@ -23,8 +23,8 @@ export const Frame = () => {
 
   const undo = useGraphStore(state => state.undo);
   const redo = useGraphStore(state => state.redo);
-  const canUndo = useGraphStore(state => state.past.length > 0);
-  const canRedo = useGraphStore(state => state.future.length > 0);
+  const canUndo = useGraphStore(state => state.canUndo);
+  const canRedo = useGraphStore(state => state.canRedo);
 
   const addNode = useGraphStore(state => state.addNode);
   const createGraphMutation = useCreateGraph();
