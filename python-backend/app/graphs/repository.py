@@ -43,16 +43,13 @@ class GraphHistoryRepository(BaseRepository[models.GraphHistory, GraphHistoryCre
         super().__init__(models.GraphHistory, session)
 
     async def clear_by_graph(self, graph_id: uuid.UUID) -> None:
-        await self.session.execute(
-            delete(models.GraphHistory).where(models.GraphHistory.graph_id == graph_id)
-        )
+        await self.session.execute(delete(models.GraphHistory).where(models.GraphHistory.graph_id == graph_id))
         await self.session.flush()
 
     async def delete_future_snapshots(self, graph_id: uuid.UUID, min_sequence: int) -> None:
         await self.session.execute(
             delete(models.GraphHistory).where(
-                models.GraphHistory.graph_id == graph_id,
-                models.GraphHistory.sequence_number > min_sequence
+                models.GraphHistory.graph_id == graph_id, models.GraphHistory.sequence_number > min_sequence
             )
         )
         await self.session.flush()
@@ -60,19 +57,13 @@ class GraphHistoryRepository(BaseRepository[models.GraphHistory, GraphHistoryCre
     async def get_by_sequence(self, graph_id: uuid.UUID, sequence_number: int) -> models.GraphHistory | None:
         result = await self.session.execute(
             select(models.GraphHistory).where(
-                models.GraphHistory.graph_id == graph_id,
-                models.GraphHistory.sequence_number == sequence_number
+                models.GraphHistory.graph_id == graph_id, models.GraphHistory.sequence_number == sequence_number
             )
         )
         return result.scalars().first()
 
     async def save_snapshot(self, graph_id: uuid.UUID, flow_json: dict, sequence_number: int) -> models.GraphHistory:
-        snapshot = models.GraphHistory(
-            graph_id=graph_id,
-            flow_json=flow_json,
-            sequence_number=sequence_number
-        )
+        snapshot = models.GraphHistory(graph_id=graph_id, flow_json=flow_json, sequence_number=sequence_number)
         self.session.add(snapshot)
         await self.session.flush()
         return snapshot
-

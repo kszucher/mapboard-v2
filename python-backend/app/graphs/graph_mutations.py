@@ -272,12 +272,49 @@ def create_edge(flow_json: dict, source: str, target: str, source_handle: str, t
 
     new_edge = {
         "id": str(uuid.uuid4()),
-        "source_id": source,
-        "target_id": target,
+        "source_id": source_handle if source_type == "slot" else source,
+        "target_id": target_handle if target_type == "slot" else target,
         "source_handle": source_handle,
         "target_handle": target_handle,
         "source_type": source_type,
         "target_type": target_type,
     }
     edges.append(new_edge)
+    return flow_json
+
+
+def reconnect_edge(
+    flow_json: dict,
+    edge_id: uuid.UUID,
+    source: str,
+    target: str,
+    source_handle: str,
+    target_handle: str,
+) -> dict:
+    edges = flow_json.get("edges", [])
+    edge_str_id = str(edge_id)
+    nodes = flow_json.get("nodes", [])
+
+    edge = next((e for e in edges if e["id"] == edge_str_id), None)
+    if not edge:
+        return flow_json
+
+    source_node = next((n for n in nodes if n["id"] == source), None)
+    target_node = next((n for n in nodes if n["id"] == target), None)
+
+    source_type = "slot" if (source_node and source_node["node_type"] == "SWITCH") else "node"
+    target_type = "node"
+
+    if target_node:
+        is_target_slot = any(s["id"] == target_handle for s in target_node.get("slots", []))
+        if is_target_slot:
+            target_type = "slot"
+
+    edge["source_id"] = source_handle if source_type == "slot" else source
+    edge["target_id"] = target_handle if target_type == "slot" else target
+    edge["source_handle"] = source_handle
+    edge["target_handle"] = target_handle
+    edge["source_type"] = source_type
+    edge["target_type"] = target_type
+
     return flow_json

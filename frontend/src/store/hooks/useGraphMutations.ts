@@ -275,6 +275,35 @@ export const useCreateEdge = (graphId: string) => {
   });
 };
 
+export const useReconnectEdge = (graphId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      edgeId: string;
+      source: string;
+      target: string;
+      sourceHandle: string;
+      targetHandle: string;
+    }) => {
+      const res = await apiClient.PATCH('/graphs/{graph_id}/edges/{edge_id}/reconnect', {
+        params: { path: { graph_id: graphId, edge_id: payload.edgeId } },
+        headers: { 'X-Client-Id': getClientId() },
+        body: {
+          source: payload.source,
+          target: payload.target,
+          source_handle: payload.sourceHandle,
+          target_handle: payload.targetHandle
+        }
+      });
+      if ('error' in res) throw res.error;
+      return res.data;
+    },
+    onSuccess: (data) => {
+      handleMutationSuccess(queryClient, graphId, data);
+    }
+  });
+};
+
 export const useRunGraph = (graphId: string) => {
   const queryClient = useQueryClient();
   return useMutation({

@@ -2,7 +2,7 @@ import type { Connection, NodeChange, OnError } from '@xyflow/react';
 import { Controls, ReactFlow, useReactFlow } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useCallback } from 'react';
-import { useCreateEdge, useDeleteEdge } from '../store/hooks/useGraphMutations';
+import { useCreateEdge, useDeleteEdge, useReconnectEdge } from '../store/hooks/useGraphMutations';
 import { useLaidOutGraph } from '../store/hooks/useLaidOutGraph';
 import { useGraphStore } from '../store/useGraphStore';
 import FlowEdge from './FlowEdge.tsx';
@@ -24,6 +24,7 @@ const FlowContent = ({
 
   const { mutateAsync: createEdge } = useCreateEdge(selectedGraphId);
   const { mutateAsync: deleteEdge } = useDeleteEdge(selectedGraphId);
+  const { mutateAsync: reconnectEdge } = useReconnectEdge(selectedGraphId);
 
   const { fitView } = useReactFlow();
 
@@ -91,16 +92,15 @@ const FlowContent = ({
 
   const onReconnect = useCallback((oldEdge: AppFlowEdge, newConnection: Connection) => {
     if (newConnection.source && newConnection.target && newConnection.sourceHandle && newConnection.targetHandle) {
-      void deleteEdge(oldEdge.id).then(() => {
-        void createEdge({
-          source: newConnection.source!,
-          target: newConnection.target!,
-          sourceHandle: newConnection.sourceHandle!,
-          targetHandle: newConnection.targetHandle!,
-        });
+      void reconnectEdge({
+        edgeId: oldEdge.id,
+        source: newConnection.source,
+        target: newConnection.target,
+        sourceHandle: newConnection.sourceHandle,
+        targetHandle: newConnection.targetHandle,
       });
     }
-  }, [deleteEdge, createEdge]);
+  }, [reconnectEdge]);
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>

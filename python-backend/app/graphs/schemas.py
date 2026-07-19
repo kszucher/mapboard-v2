@@ -107,3 +107,10 @@ class EdgeCreateRequest(BaseModel):
     target: str
     source_handle: str
     target_handle: str
+
+
+class EdgeReconnectRequest(BaseModel):
+    source: str
+    target: str
+    source_handle: str
+    target_handle: str

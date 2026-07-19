@@ -7,6 +7,7 @@ from app.db import get_uow
 from app.graphs import service as graph_service
 from app.graphs.schemas import (
     EdgeCreateRequest,
+    EdgeReconnectRequest,
     GraphCreate,
     GraphFlowRead,
     GraphRead,
@@ -155,6 +156,26 @@ async def create_edge_endpoint(
 ) -> GraphFlowRead:
     updated_flow = await graph_service.create_edge(
         uow, graph_id, payload.source, payload.target, payload.source_handle, payload.target_handle
+    )
+    await uow.commit()
+    return GraphFlowRead.model_validate(updated_flow)
+
+
+@router.patch("/{graph_id}/edges/{edge_id}/reconnect", response_model=GraphFlowRead)
+async def reconnect_edge_endpoint(
+    graph_id: uuid.UUID,
+    edge_id: uuid.UUID,
+    payload: EdgeReconnectRequest,
+    uow: Any = Depends(get_uow),
+) -> GraphFlowRead:
+    updated_flow = await graph_service.reconnect_edge(
+        uow,
+        graph_id,
+        edge_id,
+        payload.source,
+        payload.target,
+        payload.source_handle,
+        payload.target_handle,
     )
     await uow.commit()
     return GraphFlowRead.model_validate(updated_flow)

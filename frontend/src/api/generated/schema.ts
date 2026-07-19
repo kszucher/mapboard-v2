@@ -329,6 +329,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/graphs/{graph_id}/edges/{edge_id}/reconnect": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Reconnect Edge Endpoint */
+    patch: operations["reconnect_edge_endpoint_graphs__graph_id__edges__edge_id__reconnect_patch"];
+    trace?: never;
+  };
   "/health": {
     parameters: {
       query?: never;
@@ -389,6 +406,17 @@ export interface components {
        * @enum {string}
        */
       target_type: "node" | "slot";
+    };
+    /** EdgeReconnectRequest */
+    EdgeReconnectRequest: {
+      /** Source */
+      source: string;
+      /** Target */
+      target: string;
+      /** Source Handle */
+      source_handle: string;
+      /** Target Handle */
+      target_handle: string;
     };
     /** FunctionRead */
     FunctionRead: {
@@ -1312,6 +1340,44 @@ export interface operations {
     requestBody: {
       content: {
         "application/json": components["schemas"]["EdgeCreateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GraphFlowRead"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  reconnect_edge_endpoint_graphs__graph_id__edges__edge_id__reconnect_patch: {
+    parameters: {
+      query?: never;
+      header?: {
+        "x-client-id"?: string | null;
+      };
+      path: {
+        graph_id: string;
+        edge_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EdgeReconnectRequest"];
       };
     };
     responses: {
