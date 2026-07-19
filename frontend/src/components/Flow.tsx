@@ -54,13 +54,16 @@ const FlowContent = ({
   }, [clearSlotSelection]);
 
   const onNodesChange = useCallback((changes: NodeChange[]) => {
-    const selectChange = changes.find(c => c.type === 'select');
+    const selectChanges = changes.filter(
+      (c): c is Extract<NodeChange, { type: 'select' }> => c.type === 'select'
+    );
+    const selectChange = selectChanges.find(c => c.selected);
+    const deselectChange = selectChanges.find(c => !c.selected);
+
     if (selectChange) {
-      if (selectChange.selected) {
-        setSelectedIds(selectChange.id, null);
-      } else {
-        setSelectedIds(null, null);
-      }
+      setSelectedIds(selectChange.id, null);
+    } else if (deselectChange) {
+      setSelectedIds(null, null);
     }
 
     onNodesLayoutChange(changes);
