@@ -283,11 +283,13 @@ async def get_and_reset_graph_flow(uow: UnitOfWork, graph_id: uuid.UUID) -> dict
 
     flow_data = graph.flow_json or {}
 
-    # Reset/clear history snapshots on graph load
-    await uow.graph_history.clear_by_graph(graph_id)
-    graph.current_history_sequence = 0
-    await uow.graph_history.save_snapshot(graph_id, flow_data, 0)
-    await uow.session.flush()
+    # Reset/clear history snapshots on graph load only if snapshot 0 doesn't exist
+    existing_snapshot = await uow.graph_history.get_by_sequence(graph_id, 0)
+    if not existing_snapshot:
+        await uow.graph_history.clear_by_graph(graph_id)
+        graph.current_history_sequence = 0
+        await uow.graph_history.save_snapshot(graph_id, flow_data, 0)
+        await uow.session.flush()
 
     return await _prepare_response_flow(uow, graph, flow_data)
 

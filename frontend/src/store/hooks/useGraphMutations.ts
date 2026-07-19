@@ -211,7 +211,8 @@ export const useUndo = (graphId: string) => {
   return useMutation({
     mutationFn: async () => {
       const res = await apiClient.POST('/graphs/{graph_id}/history/undo', {
-        params: { path: { graph_id: graphId } }
+        params: { path: { graph_id: graphId } },
+        headers: { 'X-Client-Id': getClientId() }
       });
       if ('error' in res) throw res.error;
       return res.data;
@@ -227,7 +228,8 @@ export const useRedo = (graphId: string) => {
   return useMutation({
     mutationFn: async () => {
       const res = await apiClient.POST('/graphs/{graph_id}/history/redo', {
-        params: { path: { graph_id: graphId } }
+        params: { path: { graph_id: graphId } },
+        headers: { 'X-Client-Id': getClientId() }
       });
       if ('error' in res) throw res.error;
       return res.data;
