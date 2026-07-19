@@ -1,9 +1,6 @@
-import type { StoreApi } from 'zustand';
 import { apiClient, getClientId } from '../api/client';
-import type { AppFlowEdge, AppFlowNode, FunctionEntity, Variable } from '../components/types';
-import { runLayout } from './layout';
+import { queryClient } from '../api/queryClient';
 import { toApiPayload } from './mappers';
-import type { GraphStoreState } from './types';
 
 let onSaveStateChange: ((isSaving: boolean) => void) | null = null;
 let onSyncResponse: ((data: any) => void) | null = null;
@@ -19,10 +16,7 @@ export const setOnSyncResponse = (callback: (data: any) => void) => {
 const saveTimeoutsByGraph = new Map<string, number>();
 const lastSavedStateByGraph = new Map<string, string>();
 
-export const scheduleAutosave = (
-  state: Pick<GraphStoreState, 'graphId' | 'code' | 'nodes' | 'edges' | 'variables' | 'functions'>
-) => {
-  const graphId = state.graphId;
+export const scheduleAutosave = (graphId: string, newCode: string) => {
   if (!graphId) return;
 
   const existingTimeout = saveTimeoutsByGraph.get(graphId);
@@ -32,6 +26,19 @@ export const scheduleAutosave = (
 
   const timeout = window.setTimeout(async () => {
     saveTimeoutsByGraph.delete(graphId);
+
+    // Retrieve visual elements and structures from TanStack Query cache
+    const cached = queryClient.getQueryData<any>(['graph', graphId]);
+    if (!cached) return;
+
+    const state = {
+      graphId,
+      code: newCode,
+      nodes: cached.nodes || [],
+      edges: cached.edges || [],
+      variables: cached.variables || [],
+      functions: cached.functions || [],
+    };
 
     const payload = toApiPayload(state);
     const stateStr = JSON.stringify(payload);
@@ -50,6 +57,8 @@ export const scheduleAutosave = (
       if ('error' in res) throw res.error;
       if (res.data) {
         onSyncResponse?.(res.data);
+        // Sync newly compiled output back into query cache
+        queryClient.setQueryData(['graph', graphId], res.data);
       }
     } catch (err) {
       console.error('Failed to sync graph flow with backend:', err);
@@ -62,94 +71,16 @@ export const scheduleAutosave = (
 };
 
 export const resetLastSavedState = (
-  state: Pick<GraphStoreState, 'graphId' | 'code' | 'nodes' | 'edges' | 'variables' | 'functions'>
+  state: {
+    graphId: string;
+    code: string;
+    nodes: any[];
+    edges: any[];
+    variables: any[];
+    functions: any[];
+  }
 ) => {
   if (!state.graphId) return;
   const payload = toApiPayload(state);
   lastSavedStateByGraph.set(state.graphId, JSON.stringify(payload));
-};
-
-export const takeSnapshot = (state: Pick<GraphStoreState, 'code' | 'nodes' | 'edges' | 'variables' | 'functions'>) => {
-  return structuredClone({
-    code: state.code,
-    nodes: state.nodes,
-    edges: state.edges,
-    variables: state.variables,
-    functions: state.functions,
-  });
-};
-
-export const runTransaction = async (
-  set: StoreApi<GraphStoreState>['setState'],
-  get: StoreApi<GraphStoreState>['getState'],
-  updateFn: (state: GraphStoreState) => {
-    code?: string;
-    nodes: AppFlowNode[];
-    edges: AppFlowEdge[];
-    variables?: Variable[];
-    functions?: FunctionEntity[];
-    errorMessage?: string | null;
-  },
-  options: { skipHistory?: boolean; skipLayout?: boolean } = {}
-) => {
-  const current = get();
-  const updated = updateFn(current);
-
-  const code = updated.code ?? current.code;
-  const variables = updated.variables ?? current.variables;
-  const functions = updated.functions ?? current.functions;
-
-  // 1. Commit changes to the store synchronously first
-  set(() => ({
-    ...updated,
-    code,
-    nodes: updated.nodes,
-    edges: updated.edges,
-    variables,
-    functions,
-  }));
-
-  // 2. Perform layout/save asynchronously in the background
-  let skipLayout = options.skipLayout;
-  const nodeWithCountChange = updated.nodes.find(node => {
-    const prevNode = current.nodes.find((n: AppFlowNode) => n.id === node.id);
-    const prevCount = prevNode ? prevNode.data.node.slots.length : 0;
-    const nextCount = node.data.node.slots.length;
-    return prevCount !== nextCount;
-  });
-
-  if (nodeWithCountChange) {
-    set({ pendingLayoutNodeId: nodeWithCountChange.id });
-    skipLayout = true;
-  }
-
-  if (skipLayout) {
-    scheduleAutosave({
-      graphId: current.graphId,
-      code,
-      nodes: updated.nodes,
-      edges: updated.edges,
-      variables,
-      functions,
-    });
-    return;
-  }
-
-  void runLayout(updated.nodes, updated.edges).then((laidOut) => {
-    if (get().graphId !== current.graphId) return;
-
-    set({
-      nodes: laidOut.nodes,
-      edges: laidOut.edges,
-    });
-
-    scheduleAutosave({
-      graphId: current.graphId,
-      code,
-      nodes: laidOut.nodes,
-      edges: laidOut.edges,
-      variables,
-      functions,
-    });
-  });
 };

@@ -100,3 +100,10 @@ class SlotUpdateRequest(BaseModel):
 
 class SlotMoveRequest(BaseModel):
     direction: Literal["up", "down", "top", "bottom"]
+
+
+class EdgeCreateRequest(BaseModel):
+    source: str
+    target: str
+    source_handle: str
+    target_handle: str

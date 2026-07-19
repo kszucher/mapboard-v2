@@ -38,7 +38,7 @@ def add_node(flow_json: dict, node_type: str, connector_id: str | None = None, d
         is_after = direction == "after"
         # Find old edges connected to the connector
         old_edges = [
-            e for e in edges if (e["source_handle"] == connector_id if is_after else e["target_handle"] == connector_id)
+            e for e in edges if (e.get("source_id") == connector_id if is_after else e.get("target_id") == connector_id)
         ]
 
         to_slot_id = node_id
@@ -51,14 +51,10 @@ def add_node(flow_json: dict, node_type: str, connector_id: str | None = None, d
                 (n for n in nodes if any(s["id"] == connector_id for s in n.get("slots", []))), None
             )
 
-        target_or_source_node_id = target_or_source_node["id"] if target_or_source_node else ""
-
         new_edge = {
             "id": str(uuid.uuid4()),
-            "source_id": target_or_source_node_id if is_after else node_id,
-            "target_id": node_id if is_after else target_or_source_node_id,
-            "source_handle": connector_id if is_after else from_slot_id,
-            "target_handle": to_slot_id if is_after else connector_id,
+            "source_id": connector_id if is_after else from_slot_id,
+            "target_id": to_slot_id if is_after else connector_id,
             "source_type": (
                 "slot"
                 if (is_after and target_or_source_node and target_or_source_node["node_type"] == "SWITCH")
@@ -76,12 +72,10 @@ def add_node(flow_json: dict, node_type: str, connector_id: str | None = None, d
         for old_edge in old_edges:
             upd = old_edge.copy()
             if is_after:
-                upd["source_id"] = node_id
-                upd["source_handle"] = from_slot_id
+                upd["source_id"] = from_slot_id
                 upd["source_type"] = "slot" if node_type == "SWITCH" else "node"
             else:
-                upd["target_id"] = node_id
-                upd["target_handle"] = to_slot_id
+                upd["target_id"] = to_slot_id
                 upd["target_type"] = "node"
             updated_old_edges.append(upd)
 
@@ -257,4 +251,33 @@ def delete_edge(flow_json: dict, edge_id: uuid.UUID) -> dict:
     edges = flow_json.get("edges", [])
     edge_str_id = str(edge_id)
     flow_json["edges"] = [e for e in edges if e["id"] != edge_str_id]
+    return flow_json
+
+
+def create_edge(flow_json: dict, source: str, target: str, source_handle: str, target_handle: str) -> dict:
+    edges = flow_json.setdefault("edges", [])
+    nodes = flow_json.get("nodes", [])
+
+    source_node = next((n for n in nodes if n["id"] == source), None)
+    target_node = next((n for n in nodes if n["id"] == target), None)
+
+    source_type = "slot" if (source_node and source_node["node_type"] == "SWITCH") else "node"
+    target_type = "node"
+
+    # Map target type if it's connected to a slot of a node
+    if target_node:
+        is_target_slot = any(s["id"] == target_handle for s in target_node.get("slots", []))
+        if is_target_slot:
+            target_type = "slot"
+
+    new_edge = {
+        "id": str(uuid.uuid4()),
+        "source_id": source,
+        "target_id": target,
+        "source_handle": source_handle,
+        "target_handle": target_handle,
+        "source_type": source_type,
+        "target_type": target_type,
+    }
+    edges.append(new_edge)
     return flow_json

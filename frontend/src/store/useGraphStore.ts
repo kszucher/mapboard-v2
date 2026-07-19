@@ -1,48 +1,73 @@
 import { create } from 'zustand';
-import { createExecutionSlice } from './slices/executionSlice';
-import { createFlowSlice } from './slices/flowSlice';
-import { createHistorySlice } from './slices/historySlice';
-import { createInitSlice } from './slices/initSlice';
-import { createNodeSlice } from './slices/nodeSlice';
-import { createSlotSlice } from './slices/slotSlice';
-import { setOnSaveStateChange, setOnSyncResponse } from './storeEngine';
+import { scheduleAutosave } from './storeEngine';
+import { queryClient } from '../api/queryClient';
 import type { GraphStoreState } from './types';
 
-export const useGraphStore = create<GraphStoreState>((set, get, store) => ({
+export const useGraphStore = create<GraphStoreState>((set, get) => ({
   graphId: null,
   code: '',
-  nodes: [],
-  edges: [],
-  variables: [],
-  functions: [],
-  canUndo: false,
-  canRedo: false,
+  selectedNodeId: null,
+  selectedSlotId: null,
+  selectedSlotIndex: null,
   isLoading: false,
   isSaving: false,
   errorMessage: null,
+
   clearErrorMessage: () => set({ errorMessage: null }),
-  pendingLayoutNodeId: null,
 
-  ...createInitSlice(set, get, store),
-  ...createFlowSlice(set, get, store),
-  ...createNodeSlice(set, get, store),
-  ...createSlotSlice(set, get, store),
-  ...createExecutionSlice(set, get, store),
-  ...createHistorySlice(set, get, store),
+  init: (graphId) => {
+    set({
+      graphId,
+      code: '',
+      selectedNodeId: null,
+      selectedSlotId: null,
+      selectedSlotIndex: null,
+      errorMessage: null,
+    });
+  },
+
+  updateCode: (newCode) => {
+    const { graphId } = get();
+    set({ code: newCode });
+    if (graphId) {
+      scheduleAutosave(graphId, newCode);
+    }
+  },
+
+  setSelectedIds: (nodeId, branchIndex) => {
+    const { graphId } = get();
+    if (!graphId) return;
+
+    if (nodeId === null) {
+      set({ selectedNodeId: null, selectedSlotId: null, selectedSlotIndex: null });
+      return;
+    }
+
+    // Retrieve raw graph nodes from TanStack Query cache to match slot indexing
+    const cached = queryClient.getQueryData<any>(['graph', graphId]);
+    const nodes = cached?.nodes || [];
+
+    const isSlotSelection = branchIndex !== null && branchIndex !== -1;
+    let selectedSlotId: string | null = null;
+    let selectedSlotIndex: number | null = null;
+
+    if (isSlotSelection) {
+      const node = nodes.find((n: any) => n.id === nodeId);
+      const slot = node?.slots?.[branchIndex];
+      if (slot) {
+        selectedSlotId = slot.id;
+        selectedSlotIndex = branchIndex;
+      }
+    }
+
+    set({
+      selectedNodeId: nodeId,
+      selectedSlotId,
+      selectedSlotIndex,
+    });
+  },
+
+  clearSlotSelection: () => {
+    set({ selectedSlotId: null, selectedSlotIndex: null });
+  },
 }));
-
-setOnSaveStateChange((isSaving) => {
-  useGraphStore.setState({ isSaving });
-});
-
-setOnSyncResponse((data) => {
-  if (data.code !== undefined) {
-    useGraphStore.setState({ code: data.code });
-  }
-  if (data.can_undo !== undefined) {
-    useGraphStore.setState({ canUndo: data.can_undo });
-  }
-  if (data.can_redo !== undefined) {
-    useGraphStore.setState({ canRedo: data.can_redo });
-  }
-});

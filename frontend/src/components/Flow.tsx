@@ -1,4 +1,4 @@
-import type { OnError } from '@xyflow/react';
+import type { OnError, Connection, NodeChange } from '@xyflow/react';
 import { Controls, ReactFlow, useReactFlow } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useCallback } from 'react';
@@ -6,6 +6,9 @@ import { useGraphStore } from '../store/useGraphStore';
 import FlowEdge from './FlowEdge.tsx';
 import { CustomNode } from './FlowNode.tsx';
 import { useGraphWebSocket } from './hooks/useGraphWebSocket.ts';
+import { useLaidOutGraph } from '../store/hooks/useLaidOutGraph';
+import { useCreateEdge, useDeleteEdge } from '../store/hooks/useGraphMutations';
+import type { AppFlowEdge } from './types';
 
 const nodeTypes = { custom: CustomNode };
 const edgeTypes = { custom: FlowEdge };
@@ -15,16 +18,12 @@ const FlowContent = ({
 }: {
   selectedGraphId: string;
 }) => {
-  const nodes = useGraphStore(state => state.nodes);
-  const edges = useGraphStore(state => state.edges);
-  const isLoading = useGraphStore(state => state.isLoading);
-
-  const onNodesChange = useGraphStore(state => state.onNodesChange);
-  const onEdgesChange = useGraphStore(state => state.onEdgesChange);
-  const onConnect = useGraphStore(state => state.onConnect);
-  const onEdgesDelete = useGraphStore(state => state.onEdgesDelete);
-  const onReconnect = useGraphStore(state => state.onReconnect);
+  const { nodes, edges, isLoading, onNodesChange: onNodesLayoutChange } = useLaidOutGraph(selectedGraphId);
+  const setSelectedIds = useGraphStore(state => state.setSelectedIds);
   const clearSlotSelection = useGraphStore(state => state.clearSlotSelection);
+
+  const { mutateAsync: createEdge } = useCreateEdge(selectedGraphId);
+  const { mutateAsync: deleteEdge } = useDeleteEdge(selectedGraphId);
 
   const { fitView } = useReactFlow();
 
@@ -53,6 +52,51 @@ const FlowContent = ({
   const handlePaneClick = useCallback(() => {
     void clearSlotSelection();
   }, [clearSlotSelection]);
+
+  const onNodesChange = useCallback((changes: NodeChange[]) => {
+    const selectChange = changes.find(c => c.type === 'select');
+    if (selectChange) {
+      if (selectChange.selected) {
+        setSelectedIds(selectChange.id, null);
+      } else {
+        setSelectedIds(null, null);
+      }
+    }
+
+    onNodesLayoutChange(changes);
+  }, [setSelectedIds, onNodesLayoutChange]);
+
+  const onEdgesChange = useCallback(() => {}, []);
+
+  const onConnect = useCallback((connection: Connection) => {
+    if (connection.source && connection.target && connection.sourceHandle && connection.targetHandle) {
+      void createEdge({
+        source: connection.source,
+        target: connection.target,
+        sourceHandle: connection.sourceHandle,
+        targetHandle: connection.targetHandle,
+      });
+    }
+  }, [createEdge]);
+
+  const onEdgesDelete = useCallback((edgesToDelete: AppFlowEdge[]) => {
+    edgesToDelete.forEach(e => {
+      void deleteEdge(e.id);
+    });
+  }, [deleteEdge]);
+
+  const onReconnect = useCallback((oldEdge: AppFlowEdge, newConnection: Connection) => {
+    if (newConnection.source && newConnection.target && newConnection.sourceHandle && newConnection.targetHandle) {
+      void deleteEdge(oldEdge.id).then(() => {
+        void createEdge({
+          source: newConnection.source!,
+          target: newConnection.target!,
+          sourceHandle: newConnection.sourceHandle!,
+          targetHandle: newConnection.targetHandle!,
+        });
+      });
+    }
+  }, [deleteEdge, createEdge]);
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>

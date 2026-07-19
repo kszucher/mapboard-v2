@@ -3,6 +3,14 @@ import { Handle, Position } from '@xyflow/react';
 import { memo, useCallback, useMemo } from 'react';
 import { NODE_PADDING } from '../store/layout';
 import { useGraphStore } from '../store/useGraphStore';
+import { useGraphQuery } from '../store/hooks/useLaidOutGraph';
+import { fromApiPayload } from '../store/mappers';
+import {
+  useUpdateSlot,
+  useMoveSlot,
+  useCreateSlot,
+  useDeleteSlot,
+} from '../store/hooks/useGraphMutations';
 import { Editor } from './Editor.tsx';
 import { FlowNodeSlotActions } from './FlowNodeSlotActions.tsx';
 
@@ -25,31 +33,25 @@ export const FlowNodeSlot = memo(({
   onSelect,
   onNavigate,
 }: FlowNodeSlotProps) => {
-  // Subscribe to only this specific slot
-  const slot = useGraphStore(
-    useCallback(
-      (state) => {
-        for (const n of state.nodes) {
-          const found = n.data.node.slots.find((s) => s.id === slotId);
-          if (found) return found;
-        }
-        return undefined;
-      },
-      [slotId]
-    )
-  );
+  const graphId = useGraphStore(state => state.graphId) || '';
+  const { data } = useGraphQuery(graphId);
+  const { nodes } = useMemo(() => {
+    if (!data) return { nodes: [] };
+    return fromApiPayload(data.nodes, []);
+  }, [data]);
 
-  const updateSlot = useGraphStore((state) => state.updateSlot);
-  const moveSlot = useGraphStore((state) => state.moveSlot);
-  const createSlot = useGraphStore((state) => state.createSlot);
-  const deleteSlot = useGraphStore((state) => state.deleteSlot);
+  const { mutateAsync: updateSlot } = useUpdateSlot(graphId);
+  const { mutateAsync: moveSlot } = useMoveSlot(graphId);
+  const { mutateAsync: createSlot } = useCreateSlot(graphId);
+  const { mutateAsync: deleteSlot } = useDeleteSlot(graphId);
 
-  const node = useGraphStore(
-    useCallback(
-      (state) => state.nodes.find((n) => n.data.node.slots.some((s) => s.id === slotId)),
-      [slotId]
-    )
-  );
+  const node = useMemo(() => {
+    return nodes.find((n) => n.data.node.slots.some((s) => s.id === slotId));
+  }, [nodes, slotId]);
+
+  const slot = useMemo(() => {
+    return node?.data.node.slots.find((s) => s.id === slotId);
+  }, [node, slotId]);
 
   const indexInNode = useMemo(() => {
     if (!node) return -1;
@@ -58,33 +60,32 @@ export const FlowNodeSlot = memo(({
 
   const handleUpdateItem = useCallback(
     (newValue: string) => {
-      void updateSlot(slotId, { raw_string: newValue });
+      void updateSlot({ slotId, rawString: newValue });
     },
     [slotId, updateSlot]
   );
 
   const handleMoveUp = useCallback(() => {
-    void moveSlot(slotId, 'up');
+    void moveSlot({ slotId, direction: 'up' });
   }, [slotId, moveSlot]);
 
   const handleMoveDown = useCallback(() => {
-    void moveSlot(slotId, 'down');
+    void moveSlot({ slotId, direction: 'down' });
   }, [slotId, moveSlot]);
 
   const handleAddAbove = useCallback(() => {
     if (!slot || !node || indexInNode === -1) return;
-    void createSlot(node.id, indexInNode);
+    void createSlot({ nodeId: node.id, index: indexInNode });
   }, [createSlot, node, slot, indexInNode]);
 
   const handleAddBelow = useCallback(() => {
     if (!slot || !node || indexInNode === -1) return;
-    void createSlot(node.id, indexInNode + 1);
+    void createSlot({ nodeId: node.id, index: indexInNode + 1 });
   }, [createSlot, node, slot, indexInNode]);
 
   const handleDeleteSlot = useCallback(() => {
     void deleteSlot(slotId);
   }, [slotId, deleteSlot]);
-
 
   if (!slot) return null;
 

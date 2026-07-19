@@ -1,5 +1,6 @@
 import { Box, Button, Flex, Text } from '@radix-ui/themes';
 import { useGraphStore } from '../store/useGraphStore';
+import { useRunGraph } from '../store/hooks/useGraphMutations';
 import { FullCodeEditor } from './FullCodeEditor';
 
 interface SidebarProps {
@@ -8,7 +9,8 @@ interface SidebarProps {
 }
 
 export const Sidebar = ({ isSidebarOpen, isGraphSelected }: SidebarProps) => {
-  const runGraph = useGraphStore(state => state.runGraph);
+  const graphId = useGraphStore(state => state.graphId) || '';
+  const { mutate: runGraph } = useRunGraph(graphId);
 
   return (
     <Box

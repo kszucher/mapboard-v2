@@ -19,10 +19,9 @@ const NODE_COLORS: Record<NodeType, BadgeProps['color']> = {
 
 const CustomNodeComponent = ({ data, id, selected }: NodeProps<AppFlowNode>) => {
   const updateNodeInternals = useUpdateNodeInternals();
-  const updateSlot = useGraphStore(state => state.updateSlot);
+  const setSelectedIds = useGraphStore(state => state.setSelectedIds);
 
   const mySlots = data.node.slots;
-  const isLoading = useGraphStore(state => state.isLoading);
 
 
   const mySlotsHash = useMemo(() => {
@@ -45,9 +44,9 @@ const CustomNodeComponent = ({ data, id, selected }: NodeProps<AppFlowNode>) => 
     }
 
     if (targetIndex !== currentIndex) {
-      void updateSlot(mySlots[targetIndex].id, { selected: true });
+      setSelectedIds(id, targetIndex);
     }
-  }, [mySlots, updateSlot]);
+  }, [mySlots, id, setSelectedIds]);
 
   const { node } = data;
   const isStart = node.node_type === 'START';
@@ -64,8 +63,6 @@ const CustomNodeComponent = ({ data, id, selected }: NodeProps<AppFlowNode>) => 
         borderRadius: 'var(--radius-3)',
         padding: NODE_PADDING,
         gap: NODE_PADDING,
-        opacity: isLoading ? 0 : 1,
-        transition: 'opacity 0.2s ease-in-out',
         outline: selected ? '2px solid var(--accent-8)' : '1px solid var(--gray-5)',
         boxShadow: 'none',
       }}
@@ -98,7 +95,7 @@ const CustomNodeComponent = ({ data, id, selected }: NodeProps<AppFlowNode>) => 
         )}
       </Flex>
 
-      {mySlots.map((slot) => {
+      {mySlots.map((slot, index) => {
         const disabled = isStart || isEnd;
 
         return (
@@ -109,7 +106,7 @@ const CustomNodeComponent = ({ data, id, selected }: NodeProps<AppFlowNode>) => 
             isStart={isStart}
             isEnd={isEnd}
             isSelected={!!slot.selected}
-            onSelect={() => void updateSlot(slot.id, { selected: true })}
+            onSelect={() => setSelectedIds(id, index)}
             onNavigate={(direction) => handleNavigateSlot(slot.id, direction)}
           />
         );

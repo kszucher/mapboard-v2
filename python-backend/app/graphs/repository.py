@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 
 from pydantic import BaseModel
-from sqlalchemy import select, delete
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models

@@ -1,10 +1,18 @@
 import { ArrowDownIcon, ArrowUpIcon, PlusIcon, TrashIcon } from '@radix-ui/react-icons';
 import { DropdownMenu } from '@radix-ui/themes';
 import { useCallback, useMemo } from 'react';
-import { useShallow } from 'zustand/react/shallow';
-import { getIncomingEdgeOptions, getOutgoingEdgeOptions } from '../domain/graphs/traversal';
 import { useGraphStore } from '../store/useGraphStore';
+import { useGraphQuery } from '../store/hooks/useLaidOutGraph';
+import { fromApiPayload } from '../store/mappers';
+import {
+  useCreateSlot,
+  useDeleteSlot,
+  useMoveSlot,
+  useInsertNode,
+  useDeleteEdge,
+} from '../store/hooks/useGraphMutations';
 import type { InsertableNodeType } from './types';
+import type { AppFlowEdge } from './types';
 
 const INSERTABLE_NODE_TYPES: { type: InsertableNodeType; label: string }[] = [
   { type: 'STEP', label: 'Step' },
@@ -18,14 +26,18 @@ export interface SlotActionsContentProps {
 export const FlowNodeSlotActionsContent = ({
   slotId,
 }: SlotActionsContentProps) => {
-  const createSlot = useGraphStore(state => state.createSlot);
-  const deleteSlot = useGraphStore(state => state.deleteSlot);
-  const moveSlot = useGraphStore(state => state.moveSlot);
-  const insertNode = useGraphStore(state => state.insertNode);
-  const deleteEdge = useGraphStore(state => state.deleteEdge);
+  const graphId = useGraphStore(state => state.graphId) || '';
+  const { data } = useGraphQuery(graphId);
+  const { nodes, edges } = useMemo(() => {
+    if (!data) return { nodes: [], edges: [] };
+    return fromApiPayload(data.nodes, data.edges);
+  }, [data]);
 
-  const edges = useGraphStore(useShallow(state => state.edges));
-  const nodes = useGraphStore(useShallow(state => state.nodes));
+  const { mutateAsync: createSlot } = useCreateSlot(graphId);
+  const { mutateAsync: deleteSlot } = useDeleteSlot(graphId);
+  const { mutateAsync: moveSlot } = useMoveSlot(graphId);
+  const { mutateAsync: insertNode } = useInsertNode(graphId);
+  const { mutateAsync: deleteEdge } = useDeleteEdge(graphId);
 
   const node = useMemo(() => {
     return nodes.find(n => n.data.node.slots.some(s => s.id === slotId));
@@ -62,6 +74,7 @@ export const FlowNodeSlotActionsContent = ({
   }, [mySlots]);
 
   const outgoingEdgeOptions = useMemo(() => {
+    // Custom traversal selector using react hooks or traversal utilities
     return getOutgoingEdgeOptions(slotId, edges, nodes);
   }, [slotId, edges, nodes]);
 
@@ -79,26 +92,25 @@ export const FlowNodeSlotActionsContent = ({
 
   const handleInsert = useCallback(
     (nodeType: InsertableNodeType, direction: 'before' | 'after') => {
-      void insertNode(slotId, nodeType, direction);
+      void insertNode({ connectorId: slotId, nodeType, direction });
     },
     [insertNode, slotId]
   );
 
-
   const handleMoveTop = useCallback(() => {
-    void moveSlot(slotId, 'top');
+    void moveSlot({ slotId, direction: 'top' });
   }, [slotId, moveSlot]);
 
   const handleMoveUp = useCallback(() => {
-    void moveSlot(slotId, 'up');
+    void moveSlot({ slotId, direction: 'up' });
   }, [slotId, moveSlot]);
 
   const handleMoveDown = useCallback(() => {
-    void moveSlot(slotId, 'down');
+    void moveSlot({ slotId, direction: 'down' });
   }, [slotId, moveSlot]);
 
   const handleMoveBottom = useCallback(() => {
-    void moveSlot(slotId, 'bottom');
+    void moveSlot({ slotId, direction: 'bottom' });
   }, [slotId, moveSlot]);
 
   const handleDeleteItem = useCallback(() => {
@@ -107,12 +119,12 @@ export const FlowNodeSlotActionsContent = ({
 
   const handleAddAbove = useCallback(() => {
     if (!slot || !node) return;
-    void createSlot(node.id, indexInNode);
+    void createSlot({ nodeId: node.id, index: indexInNode });
   }, [createSlot, node, slot, indexInNode]);
 
   const handleAddBelow = useCallback(() => {
     if (!slot || !node) return;
-    void createSlot(node.id, indexInNode + 1);
+    void createSlot({ nodeId: node.id, index: indexInNode + 1 });
   }, [createSlot, node, slot, indexInNode]);
 
   const renderInsertSubmenu = (direction: 'before' | 'after') => {
@@ -164,7 +176,6 @@ export const FlowNodeSlotActionsContent = ({
 
   return (
     <>
-
       <DropdownMenu.Item onClick={handleAddAbove}>
         <PlusIcon style={{ marginRight: 8 }}/> Add Slot Above
       </DropdownMenu.Item>
@@ -208,3 +219,26 @@ export const FlowNodeSlotActionsContent = ({
     </>
   );
 };
+
+// Traversal helper wrappers
+function getOutgoingEdgeOptions(slotId: string, edges: AppFlowEdge[], nodes: any[]) {
+  const outgoing = edges.filter(e => e.sourceHandle === slotId);
+  return outgoing.map(e => {
+    const targetNode = nodes.find(n => n.id === e.target);
+    return {
+      edgeId: e.id,
+      label: `To ${targetNode?.data?.node?.id || e.target}`,
+    };
+  });
+}
+
+function getIncomingEdgeOptions(slotId: string, edges: AppFlowEdge[], nodes: any[]) {
+  const incoming = edges.filter(e => e.targetHandle === slotId);
+  return incoming.map(e => {
+    const sourceNode = nodes.find(n => n.id === e.source);
+    return {
+      edgeId: e.id,
+      label: `From ${sourceNode?.data?.node?.id || e.source}`,
+    };
+  });
+}

@@ -524,3 +524,18 @@ async def delete_edge(uow: UnitOfWork, graph_id: uuid.UUID, edge_id: uuid.UUID) 
 
     mutated = graph_mutations.delete_edge(graph.flow_json, edge_id)
     return await _commit_state_snapshot(uow, graph, mutated)
+
+
+async def create_edge(
+    uow: UnitOfWork, graph_id: uuid.UUID, source: str, target: str, source_handle: str, target_handle: str
+) -> dict:
+    graph = await uow.graphs.get(graph_id)
+    if not graph:
+        from app.exceptions import ValidationError
+
+        raise ValidationError(f"Graph {graph_id} not found")
+
+    from app.graphs import graph_mutations
+
+    mutated = graph_mutations.create_edge(graph.flow_json, source, target, source_handle, target_handle)
+    return await _commit_state_snapshot(uow, graph, mutated)

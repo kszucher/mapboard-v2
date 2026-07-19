@@ -1,15 +1,9 @@
 import { Theme } from '@radix-ui/themes';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { Frame } from './Frame.tsx';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: true,
-    },
-  },
-});
+import { queryClient } from '../api/queryClient';
+
 
 
 export const App = () => {

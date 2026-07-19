@@ -1,7 +1,7 @@
 import { Annotation } from '@codemirror/state';
 import { Box, Button, Card, Flex, Text } from '@radix-ui/themes';
-import { useShallow } from 'zustand/react/shallow';
 import { useGraphStore } from '../store/useGraphStore';
+import { useGraphQuery } from '../store/hooks/useLaidOutGraph';
 import { useCodeMirror } from './hooks/useCodeMirror';
 import { useRuffLinter } from './hooks/useRuffLinter';
 
@@ -12,36 +12,14 @@ interface FullCodeEditorProps {
 const systemUpdate = Annotation.define<boolean>();
 
 export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
-  // Unified reactive selectors
-  const {
-    code,
-    errorMessage,
-    variables,
-    selectedNodeId,
-    selectedSlotId
-  } = useGraphStore(
-    useShallow(state => {
-      let selNodeId: string | null = null;
-      let selSlotId: string | null = null;
-      for (const n of state.nodes) {
-        if (n.selected) {
-          selNodeId = n.id;
-        }
-        for (const s of n.data.node.slots) {
-          if (s.selected) {
-            selSlotId = s.id;
-          }
-        }
-      }
-      return {
-        code: state.code,
-        errorMessage: state.errorMessage,
-        variables: state.variables,
-        selectedNodeId: selNodeId,
-        selectedSlotId: selSlotId,
-      };
-    })
-  );
+  const graphId = useGraphStore(state => state.graphId) || '';
+  const { data: graphFlow } = useGraphQuery(graphId);
+  const variables = graphFlow?.variables || [];
+
+  const code = useGraphStore(state => state.code);
+  const errorMessage = useGraphStore(state => state.errorMessage);
+  const selectedNodeId = useGraphStore(state => state.selectedNodeId);
+  const selectedSlotId = useGraphStore(state => state.selectedSlotId);
 
   // Stable action references
   const updateCode = useGraphStore(state => state.updateCode);

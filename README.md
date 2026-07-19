@@ -84,11 +84,20 @@ graph TD
     Parse -- "Syntax Error" --> Diags[CodeMirror Diagnostics]
 ```
 
-### Local Zustand Store vs. DB Caching
-To keep UI edits latency-free, the frontend updates a local Zustand store in memory and syncs changes asynchronously. The visual `nodes` and `edges` list are cached in the database's `flow_json` to avoid parsing and executing python code on every read.
+### TanStack Query Cache & Lightweight Zustand Store
+Graphboard uses **TanStack Query** to drive server synchronizations, data cache invalidations, and mutations, while **Zustand** is kept as a lightweight UI store.
+* **TanStack Query**:
+  * `useGraphQuery(graphId)`: Fetches raw, un-laid-out graph structure from the server. Deduplicated across all child components (nodes, slots, editor).
+  * `useLaidOutGraph(graphId)`: Exclusively executed once at the canvas root to manage layout coordinates, initial measuring phases, and slot count updates.
+  * `useGraphMutations(graphId)`: Mutates structural nodes, edges, slots, and updates the local CodeMirror editor buffer on success.
+* **Zustand Store**:
+  * Manages UI selection markers (`selectedNodeId`, `selectedSlotId`), active diagnostics, and the unsaved CodeMirror text buffer.
+  * Selection state is reactively stitched into mapped React Flow nodes inside `useLaidOutGraph` to skip running ELK layout calculations on selection toggles.
 
 ### Auto-Layout ONLY (No Drag-and-Drop)
-React Flow's `nodesDraggable` is set to `false`. Node coordinates `(x, y)` are computed on the fly by ELK in the frontend using node dimensions. Slot edits trigger a debounced (1000ms) ELK recalculation once resizing finishes.
+React Flow's `nodesDraggable` is set to `false`. Node coordinates `(x, y)` are computed on the fly by ELK in the frontend. Layout changes are performed in two phases:
+1. **Initial Load**: Graph renders nodes unmeasured. Once `nodes.every(n => n.measured)` is met, ELK runs layout exactly **once** and sets `isLoading` to false.
+2. **Pending Mutations**: Slot modifications flag the target node's dimensions as pending. Layout is deferred until the new slot dimensions are measured.
 
 ---
 
@@ -96,10 +105,10 @@ React Flow's `nodesDraggable` is set to `false`. Node coordinates `(x, y)` are c
 
 * **CodeMirror Transaction Lock**: We use `EditorState.transactionFilter` inside `FullCodeEditor.tsx` to detect and intercept modifications touching the bottom Graph Definition section (finding `# Graph Definition` string index), blocking the transaction to enforce read-only properties. To allow programmatic updates (like visual slot renaming, node creations, or undo/redo layout updates) to modify this section, we dispatch transactions with a custom `systemUpdate` annotation to bypass the filter.
 * **Fault-Tolerant Code Validation**: If the user writes a syntax or parsing error in CodeMirror, the backend rejects the sync payload with a `422 Unprocessable Entity` error. The frontend catches this, displays the traceback in the diagnostics panel, and freezes canvas edits to preserve the last valid visual representation.
-* **Unconditional Layout Transitions**: Visual CSS transitions (`transition: transform 400ms...`) are applied statically to node styles in `flowUtils.ts` when elements are mapped. React Flow forwards this to the outer wrapper, animating all coordinate updates.
-* **Undo/Redo Animation Trigger**: The history snapshots store final layout positions. If loaded directly, React Flow snaps nodes instantly. To trigger slide animations, `historySlice.ts` maps the *current screen positions* onto the history nodes *before* running ELK. Do not bypass this mapping.
+* **Unconditional Layout Transitions**: Visual CSS transitions (`transition: transform 400ms...`) are applied statically to node styles when elements are mapped. React Flow forwards this to the outer wrapper, animating all coordinate updates.
 * **Custom Handles Lifecycle & `updateNodeInternals`**: When slots are added or removed, React Flow's DOM-cached registry becomes stale. We must compute a stable `slotsHash` in `FlowNode.tsx` and run a `useEffect` triggering `updateNodeInternals(id)` whenever the hash changes to force React Flow to re-query the handles.
 * **String-Based Identifiers (UUID Migration)**: Node, slot, and edge IDs are represented as `string` values instead of strict `uuid.UUID` types. This enables user-friendly, readable node names (like `"step_1"`) and slot names (like `"switch_1_option_a"`) to serve directly as the execution keys in the compiled LangGraph workflow.
+
 
 
 

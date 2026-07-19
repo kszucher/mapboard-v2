@@ -1,7 +1,10 @@
 import { DotsHorizontalIcon } from '@radix-ui/react-icons';
 import { Button, Dialog, DropdownMenu, Flex, IconButton, Text, TextField } from '@radix-ui/themes';
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useState, useMemo } from 'react';
 import { useGraphStore } from '../store/useGraphStore';
+import { useGraphQuery } from '../store/hooks/useLaidOutGraph';
+import { fromApiPayload } from '../store/mappers';
+import { useUpdateNode } from '../store/hooks/useGraphMutations';
 import { FlowNodeActionsContent } from './FlowNodeActionsContent.tsx';
 
 interface FlowNodeActionsProps {
@@ -15,8 +18,13 @@ export const FlowNodeActions = memo(({ nodeId, triggerStyle }: FlowNodeActionsPr
   const [newName, setNewName] = useState(nodeId);
   const [error, setError] = useState<string | null>(null);
 
-  const nodes = useGraphStore(state => state.nodes);
-  const renameNode = useGraphStore(state => state.renameNode);
+  const graphId = useGraphStore(state => state.graphId) || '';
+  const { data } = useGraphQuery(graphId);
+  const { nodes } = useMemo(() => {
+    if (!data) return { nodes: [] };
+    return fromApiPayload(data.nodes, []);
+  }, [data]);
+  const { mutateAsync: updateNode } = useUpdateNode(graphId);
 
   useEffect(() => {
     if (renameOpen) {
@@ -42,7 +50,7 @@ export const FlowNodeActions = memo(({ nodeId, triggerStyle }: FlowNodeActionsPr
     }
 
     try {
-      await renameNode(nodeId, trimmed);
+      await updateNode({ nodeId, updates: { new_id: trimmed } });
       setRenameOpen(false);
     } catch (err: any) {
       setError(err?.message || 'Failed to rename node.');

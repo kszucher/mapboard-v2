@@ -1,7 +1,5 @@
 import type { components } from '../api/generated/schema';
 import type { ApiNode, AppFlowEdge, AppFlowNode } from '../components/types';
-import type { GraphStoreState } from './types';
-
 type ApiEdge = components['schemas']['EdgeRead'];
 
 export const fromApiPayload = (
@@ -59,7 +57,14 @@ export const fromApiPayload = (
 };
 
 export const toApiPayload = (
-  state: Pick<GraphStoreState, 'graphId' | 'code' | 'nodes' | 'edges' | 'variables' | 'functions'>
+  state: {
+    graphId: string | null;
+    code: string;
+    nodes: AppFlowNode[];
+    edges: AppFlowEdge[];
+    variables: components['schemas']['VariableRead'][];
+    functions: components['schemas']['FunctionRead'][];
+  }
 ) => {
   return {
     code: state.code,

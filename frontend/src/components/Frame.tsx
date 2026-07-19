@@ -5,6 +5,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useCreateGraph, useSetActiveGraph } from '../api/mutations';
 import { useActiveGraphId, useUserGraphs, useUserId } from '../api/queries';
 import { useGraphStore } from '../store/useGraphStore';
+import { useGraphQuery } from '../store/hooks/useLaidOutGraph';
+import { useUndo, useRedo, useAddNode } from '../store/hooks/useGraphMutations';
 import { Flow } from './Flow.tsx';
 import { Sidebar } from './Sidebar.tsx';
 import type { NodeType } from './types';
@@ -17,16 +19,17 @@ const NODE_TYPES: NodeType[] = [
 export const Frame = () => {
   const { data: userId } = useUserId();
   const { data: selectedGraphId } = useActiveGraphId(userId ?? null);
+  const { data: graphFlow } = useGraphQuery(selectedGraphId || '');
   const { data: graphs } = useUserGraphs(userId ?? null);
-
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  const undo = useGraphStore(state => state.undo);
-  const redo = useGraphStore(state => state.redo);
-  const canUndo = useGraphStore(state => state.canUndo);
-  const canRedo = useGraphStore(state => state.canRedo);
+  const { mutate: undo } = useUndo(selectedGraphId || '');
+  const { mutate: redo } = useRedo(selectedGraphId || '');
+  const { mutate: addNode } = useAddNode(selectedGraphId || '');
 
-  const addNode = useGraphStore(state => state.addNode);
+  const canUndo = graphFlow?.can_undo ?? false;
+  const canRedo = graphFlow?.can_redo ?? false;
+
   const createGraphMutation = useCreateGraph();
   const setActiveGraphMutation = useSetActiveGraph();
 
@@ -51,7 +54,7 @@ export const Frame = () => {
     (graphId: string) => {
       if (!userId) return;
       setActiveGraphMutation.mutate({ userId, graphId });
-      void init(graphId);
+      init(graphId);
     },
     [userId, setActiveGraphMutation, init]
   );
@@ -59,9 +62,22 @@ export const Frame = () => {
   // Sync state initialization if selectedGraphId is loaded on initial mount
   useEffect(() => {
     if (selectedGraphId) {
-      void init(selectedGraphId);
+      init(selectedGraphId);
     }
   }, [selectedGraphId, init]);
+
+  // Sync local editor buffer with loaded server state
+  useEffect(() => {
+    if (graphFlow) {
+      const store = useGraphStore.getState();
+      if (store.graphId !== selectedGraphId || !store.code) {
+        useGraphStore.setState({
+          graphId: selectedGraphId || null,
+          code: graphFlow.code || '',
+        });
+      }
+    }
+  }, [graphFlow, selectedGraphId]);
 
   const activeGraphName = useMemo(
     () => graphs?.find(graph => graph.id === selectedGraphId)?.name ?? 'Select graph',
@@ -142,7 +158,7 @@ export const Frame = () => {
               color="gray"
               radius="full"
               disabled={!isGraphSelected || !canUndo}
-              onClick={undo}
+              onClick={() => undo()}
             >
               <ResetIcon width="20" height="20"/>
             </IconButton>
@@ -152,7 +168,7 @@ export const Frame = () => {
               color="gray"
               radius="full"
               disabled={!isGraphSelected || !canRedo}
-              onClick={redo}
+              onClick={() => redo()}
             >
               <ResetIcon width="20" height="20" style={{ transform: 'scaleX(-1)' }}/>
             </IconButton>

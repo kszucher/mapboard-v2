@@ -18,6 +18,8 @@ import {
 } from '../../domain/code/ast';
 import { findParentNodeBySlotId } from '../../domain/graphs/traversal';
 import { useGraphStore } from '../../store/useGraphStore';
+import { queryClient } from '../../api/queryClient';
+import { fromApiPayload } from '../../store/mappers';
 import type { Variable } from '../types';
 
 const systemUpdate = Annotation.define<boolean>();
@@ -48,7 +50,10 @@ function buildDecorations(state: EditorState) {
   const { nodeId, slotId } = selection;
   if (!nodeId) return Decoration.none;
 
-  const nodes = useGraphStore.getState().nodes;
+  const graphId = useGraphStore.getState().graphId || '';
+  const cached = queryClient.getQueryData<any>(['graph', graphId]);
+  const mapped = cached ? fromApiPayload(cached.nodes, cached.edges) : { nodes: [], edges: [] };
+  const nodes = mapped.nodes;
   const range = resolveHighlightLineRange(state, nodeId, slotId, nodes);
   if (!range) return Decoration.none;
 
@@ -149,7 +154,7 @@ export interface UseCodeMirrorProps {
   selectedSlotId: string | null;
   workspace: Workspace | null;
   clearErrorMessage: () => void;
-  setSelectedIds: (nodeId: string | null, branchIndex: number | null) => Promise<void>;
+  setSelectedIds: (nodeId: string | null, branchIndex: number | null) => void;
 }
 
 export function useCodeMirror({
@@ -188,7 +193,10 @@ export function useCodeMirror({
       let targetSlotId = selectedSlotId;
 
       if (selectedSlotId) {
-        const parentNode = findParentNodeBySlotId(selectedSlotId, useGraphStore.getState().nodes);
+        const graphId = useGraphStore.getState().graphId || '';
+        const cached = queryClient.getQueryData<any>(['graph', graphId]);
+        const mapped = cached ? fromApiPayload(cached.nodes, cached.edges) : { nodes: [], edges: [] };
+        const parentNode = findParentNodeBySlotId(selectedSlotId, mapped.nodes);
         if (parentNode) {
           targetNodeId = parentNode.id;
           targetSlotId = selectedSlotId;
@@ -228,7 +236,7 @@ export function useCodeMirror({
           }
         }
 
-        void setSelectedIds(activeFnName, targetBranchIndex === -1 ? null : targetBranchIndex);
+        setSelectedIds(activeFnName, targetBranchIndex === -1 ? null : targetBranchIndex);
       }
     });
 

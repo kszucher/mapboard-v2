@@ -1,10 +1,12 @@
 import { PlusIcon } from '@radix-ui/react-icons';
 import { DropdownMenu } from '@radix-ui/themes';
 import { useCallback, useMemo } from 'react';
-import { useShallow } from 'zustand/react/shallow';
 import { canShortcircuitNode } from '../domain/graphs/rules';
 import { getIncomingEdgeOptions, getOutgoingEdgeOptions } from '../domain/graphs/traversal';
 import { useGraphStore } from '../store/useGraphStore';
+import { useGraphQuery } from '../store/hooks/useLaidOutGraph';
+import { fromApiPayload } from '../store/mappers';
+import { useDeleteNode, useShortcircuitNode, useInsertNode, useDeleteEdge } from '../store/hooks/useGraphMutations';
 import type { InsertableNodeType } from './types';
 
 const INSERTABLE_NODE_TYPES: { type: InsertableNodeType; label: string }[] = [
@@ -18,13 +20,17 @@ export interface FlowNodeActionsContentProps {
 }
 
 export const FlowNodeActionsContent = ({ nodeId, onRenameClick }: FlowNodeActionsContentProps) => {
-  const deleteNode = useGraphStore(state => state.deleteNode);
-  const shortcircuitNode = useGraphStore(state => state.shortcircuitNode);
-  const insertNode = useGraphStore(state => state.insertNode);
-  const deleteEdge = useGraphStore(state => state.deleteEdge);
+  const graphId = useGraphStore(state => state.graphId) || '';
+  const { data } = useGraphQuery(graphId);
+  const { nodes, edges } = useMemo(() => {
+    if (!data) return { nodes: [], edges: [] };
+    return fromApiPayload(data.nodes, data.edges);
+  }, [data]);
 
-  const edges = useGraphStore(useShallow(state => state.edges));
-  const nodes = useGraphStore(useShallow(state => state.nodes));
+  const { mutateAsync: deleteNode } = useDeleteNode(graphId);
+  const { mutateAsync: shortcircuitNode } = useShortcircuitNode(graphId);
+  const { mutateAsync: insertNode } = useInsertNode(graphId);
+  const { mutateAsync: deleteEdge } = useDeleteEdge(graphId);
 
   const nodeData = useMemo(() => {
     return nodes.find(n => n.id === nodeId)?.data?.node;
@@ -62,7 +68,7 @@ export const FlowNodeActionsContent = ({ nodeId, onRenameClick }: FlowNodeAction
 
   const handleInsert = useCallback(
     (nodeType: InsertableNodeType, direction: 'before' | 'after') => {
-      void insertNode(nodeId, nodeType, direction);
+      void insertNode({ connectorId: nodeId, nodeType, direction });
     },
     [insertNode, nodeId]
   );
