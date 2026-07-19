@@ -52,7 +52,7 @@ export const createFlowSlice: StateCreator<
                 ...n.data,
                 node: {
                   ...nodeData.node,
-                  selected: n.selected,
+                  selected: n.selected ?? false,
                 }
               }
             };

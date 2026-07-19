@@ -118,7 +118,7 @@ export const createSlotSlice: StateCreator<
           return s;
         });
 
-        const nodeSelected = shouldClearOthers ? false : n.selected;
+        const nodeSelected = shouldClearOthers ? false : (n.selected ?? false);
 
         return {
           ...n,

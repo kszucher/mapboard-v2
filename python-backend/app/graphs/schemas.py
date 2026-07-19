@@ -74,3 +74,8 @@ class GraphSyncPayload(BaseModel):
     edges: list[EdgeRead]
     variables: list[VariableRead] = []
     functions: list[FunctionRead] = []
+
+
+class NodeRenameRequest(BaseModel):
+    old_id: str
+    new_id: str

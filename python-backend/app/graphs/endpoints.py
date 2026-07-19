@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.db import get_uow
 from app.graphs import service as graph_service
-from app.graphs.schemas import GraphCreate, GraphFlowRead, GraphRead, GraphSyncPayload
+from app.graphs.schemas import GraphCreate, GraphFlowRead, GraphRead, GraphSyncPayload, NodeRenameRequest
 
 router = APIRouter(prefix="/graphs", tags=["graphs"])
 
@@ -45,3 +45,12 @@ async def run_graph(graph_id: uuid.UUID, uow: Any = Depends(get_uow)) -> dict[st
     flow_data = await graph_service.run_graph_flow(uow, graph_id)
     await uow.commit()
     return {"variables": flow_data.get("variables", [])}
+
+
+@router.post("/{graph_id}/rename-node", response_model=GraphFlowRead)
+async def rename_node_endpoint(
+    graph_id: uuid.UUID, payload: NodeRenameRequest, uow: Any = Depends(get_uow)
+) -> GraphFlowRead:
+    updated_flow = await graph_service.rename_node(uow, graph_id, payload.old_id, payload.new_id)
+    await uow.commit()
+    return GraphFlowRead.model_validate(updated_flow)

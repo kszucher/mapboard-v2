@@ -140,6 +140,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/graphs/{graph_id}/run": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Run Graph */
+    post: operations["run_graph_graphs__graph_id__run_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/graphs/{graph_id}/rename-node": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Rename Node Endpoint */
+    post: operations["rename_node_endpoint_graphs__graph_id__rename_node_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/health": {
     parameters: {
       query?: never;
@@ -175,27 +209,24 @@ export interface components {
        * Format: uuid
        */
       id: string;
-      /**
-       * Source Id
-       * Format: uuid
-       */
+      /** Source Id */
       source_id: string;
-      /** Source Type */
-      source_type: "node" | "slot";
       /**
-       * Target Id
-       * Format: uuid
+       * Source Type
+       * @enum {string}
        */
+      source_type: "node" | "slot";
+      /** Target Id */
       target_id: string;
-      /** Target Type */
+      /**
+       * Target Type
+       * @enum {string}
+       */
       target_type: "node" | "slot";
     };
     /** FunctionRead */
     FunctionRead: {
-      /**
-       * Id
-       * Format: uuid
-       */
+      /** Id */
       id: string;
       /** Name */
       name: string;
@@ -218,7 +249,10 @@ export interface components {
     };
     /** GraphFlowRead */
     GraphFlowRead: {
-      /** Code */
+      /**
+       * Code
+       * @default
+       */
       code: string;
       /** Nodes */
       nodes: components["schemas"]["NodeRead"][];
@@ -252,7 +286,10 @@ export interface components {
     };
     /** GraphSyncPayload */
     GraphSyncPayload: {
-      /** Code */
+      /**
+       * Code
+       * @default
+       */
       code: string;
       /** Nodes */
       nodes: components["schemas"]["NodeRead"][];
@@ -276,18 +313,38 @@ export interface components {
     };
     /** NodeRead */
     NodeRead: {
-      /**
-       * Id
-       * Format: uuid
-       */
+      /** Id */
       id: string;
       node_type: components["schemas"]["NodeType"];
-      /** Is Input */
+      /**
+       * Is Input
+       * @default false
+       */
       is_input: boolean;
-      /** Is Output */
+      /**
+       * Is Output
+       * @default false
+       */
       is_output: boolean;
       /** Slots */
       slots: components["schemas"]["SlotRead"][];
+      /**
+       * Code
+       * @default
+       */
+      code: string;
+      /**
+       * Selected
+       * @default false
+       */
+      selected: boolean;
+    };
+    /** NodeRenameRequest */
+    NodeRenameRequest: {
+      /** Old Id */
+      old_id: string;
+      /** New Id */
+      new_id: string;
     };
     /**
      * NodeType
@@ -309,10 +366,7 @@ export interface components {
     };
     /** SlotRead */
     SlotRead: {
-      /**
-       * Id
-       * Format: uuid
-       */
+      /** Id */
       id: string;
       /** Raw String */
       raw_string: string;
@@ -338,10 +392,7 @@ export interface components {
     };
     /** VariableRead */
     VariableRead: {
-      /**
-       * Id
-       * Format: uuid
-       */
+      /** Id */
       id: string;
       /** Name */
       name: string;
@@ -594,6 +645,78 @@ export interface operations {
     requestBody: {
       content: {
         "application/json": components["schemas"]["GraphSyncPayload"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GraphFlowRead"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  run_graph_graphs__graph_id__run_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        "x-client-id"?: string | null;
+      };
+      path: {
+        graph_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  rename_node_endpoint_graphs__graph_id__rename_node_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        "x-client-id"?: string | null;
+      };
+      path: {
+        graph_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NodeRenameRequest"];
       };
     };
     responses: {

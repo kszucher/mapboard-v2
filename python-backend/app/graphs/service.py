@@ -263,3 +263,77 @@ async def run_graph_flow(uow: UnitOfWork, graph_id: uuid.UUID) -> dict:
     await uow.session.flush()
 
     return flow_data
+
+
+async def rename_node(uow: UnitOfWork, graph_id: uuid.UUID, old_id: str, new_id: str) -> dict:
+    graph = await uow.graphs.get(graph_id)
+    if not graph:
+        from app.exceptions import ValidationError
+
+        raise ValidationError(f"Graph {graph_id} not found")
+
+    from app.graphs.ast_editor import CodeASTEditor
+    from app.graphs.langgraph_sync import generate_graph_code, parse_code_to_graph
+    from app.graphs.schemas import NodeRead
+
+    flow_data = graph.flow_json or {}
+    code = flow_data.get("code", "")
+    nodes = flow_data.get("nodes", [])
+    edges = flow_data.get("edges", [])
+
+    # 1. Rename function definition via AST
+    editor = CodeASTEditor(code)
+    if editor.rename_function(old_id, new_id):
+        code = editor.get_code()
+
+    # 2. Rename node in JSON
+    for node in nodes:
+        if node["id"] == old_id:
+            node["id"] = new_id
+
+    # 3. Rename edges in JSON
+    for edge in edges:
+        if edge["source_id"] == old_id:
+            edge["source_id"] = new_id
+        if edge["target_id"] == old_id:
+            edge["target_id"] = new_id
+
+    # 4. Re-generate graph definitions and save
+    old_nodes = [NodeRead.model_validate(n) for n in flow_data.get("nodes", [])]
+    payload_dict = {
+        "code": code,
+        "nodes": nodes,
+        "edges": edges,
+        "variables": flow_data.get("variables", []),
+        "functions": flow_data.get("functions", []),
+    }
+
+    generated = generate_graph_code(payload_dict, existing_code=code, old_nodes=old_nodes)
+    parsed = parse_code_to_graph(generated)
+
+    node_names = {n["id"] for n in nodes if n["node_type"] in ("STEP", "SWITCH")}
+    for node in nodes:
+        node_name = node["id"]
+        if node_name in parsed["functions"]:
+            node["code"] = parsed["functions"][node_name]
+
+    functions = []
+    for func_name, func_source in parsed["functions"].items():
+        if func_name not in node_names and func_name != "State":
+            functions.append({"id": func_name, "name": func_name, "raw_string": func_source})
+
+    updated_flow = {
+        "code": generated,
+        "nodes": nodes,
+        "edges": edges,
+        "variables": parsed["variables"],
+        "functions": functions,
+    }
+
+    graph.flow_json = updated_flow
+    await uow.session.flush()
+
+    from app.constants import EventName
+
+    uow.emit(event=EventName.GRAPH_UPDATED, graph_id=graph_id, payload={})
+    return updated_flow

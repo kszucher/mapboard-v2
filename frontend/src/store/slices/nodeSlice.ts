@@ -3,6 +3,9 @@ import type { ApiNode, AppFlowEdge, AppFlowNode, NodeType } from '../../componen
 import { createDefaultSlotsForNode } from '../../domain/graphs/rules';
 import { runTransaction } from '../storeEngine';
 import type { GraphStoreState, NodeSlice } from '../types';
+import { apiClient, getClientId } from '../../api/client';
+
+
 
 export const createNodeSlice: StateCreator<
   GraphStoreState,
@@ -164,8 +167,8 @@ export const createNodeSlice: StateCreator<
       const nextNodes = state.nodes.map(n => {
         const isTarget = n.id === nodeId;
         const newSelected = isTarget
-          ? (updates.selected !== undefined ? updates.selected : n.selected)
-          : (shouldClearOthers ? false : n.selected);
+          ? (updates.selected !== undefined ? updates.selected : (n.selected ?? false))
+          : (shouldClearOthers ? false : (n.selected ?? false));
 
         const slots = n.data.node.slots.map(s => {
           if (shouldClearOthers) {
@@ -235,6 +238,77 @@ export const createNodeSlice: StateCreator<
         edges: state.edges,
       };
     }, { skipHistory: true, skipLayout: true });
+  },
+
+  renameNode: async (nodeId, newId) => {
+    const { graphId, nodes, edges } = get();
+    if (!graphId) return;
+
+    try {
+      set({ isLoading: true });
+      const res = await apiClient.POST('/graphs/{graph_id}/rename-node', {
+        params: { path: { graph_id: graphId } },
+        headers: { 'X-Client-Id': getClientId() },
+        body: { old_id: nodeId, new_id: newId }
+      });
+      if ('error' in res) throw res.error;
+
+      const data = res.data;
+      if (data) {
+        // 1. Rename the nodes in place to keep positions & styles
+        const nextNodes = nodes.map((n) => {
+          if (n.id === nodeId) {
+            return {
+              ...n,
+              id: newId,
+              data: {
+                ...n.data,
+                node: {
+                  ...n.data.node,
+                  id: newId,
+                },
+              },
+            };
+          }
+          return n;
+        });
+
+        // 2. Rename edge references in place
+        const nextEdges = edges.map((e) => {
+          const isSourceMatch = e.source === nodeId;
+          const isTargetMatch = e.target === nodeId;
+          const isSourceHandleMatch = e.sourceHandle === nodeId;
+          const isTargetHandleMatch = e.targetHandle === nodeId;
+
+          if (!isSourceMatch && !isTargetMatch && !isSourceHandleMatch && !isTargetHandleMatch) {
+            return e;
+          }
+
+          return {
+            ...e,
+            source: isSourceMatch ? newId : e.source,
+            target: isTargetMatch ? newId : e.target,
+            sourceHandle: isSourceHandleMatch ? newId : e.sourceHandle,
+            targetHandle: isTargetHandleMatch ? newId : e.targetHandle,
+          };
+        });
+
+        // 3. Atomically update the store
+        set({
+          code: data.code || '',
+          nodes: nextNodes,
+          edges: nextEdges,
+          variables: data.variables || [],
+          functions: data.functions || [],
+          errorMessage: null,
+        });
+      }
+    } catch (err: any) {
+      console.error('Failed to rename node:', err);
+      set({ errorMessage: err.detail || String(err) });
+    } finally {
+      set({ isLoading: false });
+    }
   },
 });
 

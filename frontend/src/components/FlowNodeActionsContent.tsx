@@ -14,9 +14,10 @@ const INSERTABLE_NODE_TYPES: { type: InsertableNodeType; label: string }[] = [
 
 export interface FlowNodeActionsContentProps {
   nodeId: string;
+  onRenameClick: () => void;
 }
 
-export const FlowNodeActionsContent = ({ nodeId }: FlowNodeActionsContentProps) => {
+export const FlowNodeActionsContent = ({ nodeId, onRenameClick }: FlowNodeActionsContentProps) => {
   const deleteNode = useGraphStore(state => state.deleteNode);
   const shortcircuitNode = useGraphStore(state => state.shortcircuitNode);
   const convertNode = useGraphStore(state => state.convertNode);
@@ -161,6 +162,11 @@ export const FlowNodeActionsContent = ({ nodeId }: FlowNodeActionsContentProps) 
       {!isStart && !isEnd && canShortcircuit && (
         <DropdownMenu.Item onClick={handleShortcircuit}>
           {'Shortcircuit'}
+        </DropdownMenu.Item>
+      )}
+      {!isStart && !isEnd && (
+        <DropdownMenu.Item onClick={onRenameClick}>
+          {'Rename'}
         </DropdownMenu.Item>
       )}
       <DropdownMenu.Item onClick={handleDelete}>

@@ -58,6 +58,7 @@ export interface NodeSlice {
     selected?: boolean;
   }) => Promise<void>;
   setSelectedIds: (nodeId: string | null, branchIndex: number | null) => Promise<void>;
+  renameNode: (nodeId: string, newId: string) => Promise<void>;
 }
 
 export interface SlotSlice {
