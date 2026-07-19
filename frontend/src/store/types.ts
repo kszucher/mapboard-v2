@@ -30,8 +30,6 @@ export interface BaseState {
   errorMessage: string | null;
   clearErrorMessage: () => void;
   pendingLayoutNodeId: string | null;
-  selectedNodeId: string | null;
-  selectedSlotId: string | null;
 }
 
 export interface InitSlice {

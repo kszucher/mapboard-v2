@@ -88,8 +88,6 @@ export const runTransaction = async (
     edges: AppFlowEdge[];
     variables?: Variable[];
     functions?: FunctionEntity[];
-    selectedNodeId?: string | null;
-    selectedSlotId?: string | null;
     errorMessage?: string | null;
   },
   options: { skipHistory?: boolean; skipLayout?: boolean } = {}

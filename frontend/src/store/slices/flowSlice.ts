@@ -5,7 +5,6 @@ import type { ApiNode, AppFlowEdge, AppFlowNode } from '../../components/types';
 import { runLayout } from '../layout';
 import { runTransaction, scheduleAutosave } from '../storeEngine';
 import type { FlowSlice, GraphStoreState } from '../types';
-import { syncNodesSelection } from './nodeSlice';
 
 export const createFlowSlice: StateCreator<
   GraphStoreState,
@@ -22,21 +21,27 @@ export const createFlowSlice: StateCreator<
     set((state) => {
       let newNodes = applyNodeChanges(changes, state.nodes) as AppFlowNode[];
 
-      let nextSelectedNodeId = state.selectedNodeId;
-      let nextSelectedSlotId = state.selectedSlotId;
-
       if (hasSelectChange) {
-        const selectChange = changes.find(c => c.type === 'select' && c.selected);
-        if (selectChange) {
-          nextSelectedNodeId = (selectChange as any).id;
-          nextSelectedSlotId = null;
-        } else {
-          const currentlySelectedStillSelected = newNodes.some(n => n.id === state.selectedNodeId && n.selected);
-          if (!currentlySelectedStillSelected) {
-            nextSelectedNodeId = null;
-          }
-        }
-        newNodes = syncNodesSelection(newNodes, nextSelectedNodeId, nextSelectedSlotId);
+        const selectedNode = newNodes.find(n => n.selected);
+        newNodes = newNodes.map(n => {
+          const isSelected = selectedNode ? n.id === selectedNode.id : false;
+          const slots = n.data.node.slots.map(s => ({
+            ...s,
+            selected: false, // Mutual exclusivity: slots are deselected when a node is selected
+          }));
+          return {
+            ...n,
+            selected: isSelected,
+            data: {
+              ...n.data,
+              node: {
+                ...n.data.node,
+                selected: isSelected,
+                slots,
+              }
+            }
+          };
+        });
       } else {
         newNodes = newNodes.map(n => {
           const nodeData = n.data as { node: ApiNode } | undefined;
@@ -56,8 +61,6 @@ export const createFlowSlice: StateCreator<
         });
       }
       return {
-        selectedNodeId: nextSelectedNodeId,
-        selectedSlotId: nextSelectedSlotId,
         nodes: newNodes,
       };
     });

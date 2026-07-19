@@ -20,13 +20,27 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
     selectedNodeId,
     selectedSlotId
   } = useGraphStore(
-    useShallow(state => ({
-      code: state.code,
-      errorMessage: state.errorMessage,
-      variables: state.variables,
-      selectedNodeId: state.selectedNodeId,
-      selectedSlotId: state.selectedSlotId,
-    }))
+    useShallow(state => {
+      let selNodeId: string | null = null;
+      let selSlotId: string | null = null;
+      for (const n of state.nodes) {
+        if (n.selected) {
+          selNodeId = n.id;
+        }
+        for (const s of n.data.node.slots) {
+          if (s.selected) {
+            selSlotId = s.id;
+          }
+        }
+      }
+      return {
+        code: state.code,
+        errorMessage: state.errorMessage,
+        variables: state.variables,
+        selectedNodeId: selNodeId,
+        selectedSlotId: selSlotId,
+      };
+    })
   );
 
   // Stable action references
