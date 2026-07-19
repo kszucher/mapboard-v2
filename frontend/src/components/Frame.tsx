@@ -1,5 +1,5 @@
 import { CaretDownIcon, CheckIcon, MixIcon, PlayIcon, ReaderIcon, ResetIcon } from '@radix-ui/react-icons';
-import { AlertDialog, Box, Button, DropdownMenu, Flex, IconButton, Text } from '@radix-ui/themes';
+import { Box, Button, DropdownMenu, Flex, IconButton, Text } from '@radix-ui/themes';
 import { ReactFlowProvider } from '@xyflow/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useCreateGraph, useSetActiveGraph } from '../api/mutations';
@@ -32,9 +32,6 @@ export const Frame = () => {
 
   const createGraphMutation = useCreateGraph();
   const setActiveGraphMutation = useSetActiveGraph();
-
-  const errorMessage = useGraphStore(state => state.errorMessage);
-  const clearErrorMessage = useGraphStore(state => state.clearErrorMessage);
 
   const handleCreateNode = useCallback(
     (nodeType: NodeType) => {
@@ -227,25 +224,6 @@ export const Frame = () => {
           )}
         </Box>
       </Flex>
-
-      {/* Error Message Modal */}
-      <AlertDialog.Root open={!!errorMessage} onOpenChange={(open) => {
-        if (!open) clearErrorMessage();
-      }}>
-        <AlertDialog.Content style={{ maxWidth: '450px' }}>
-          <AlertDialog.Title color="red">Error</AlertDialog.Title>
-          <AlertDialog.Description size="2" mb="4">
-            {errorMessage}
-          </AlertDialog.Description>
-          <Flex gap="3" justify="end">
-            <AlertDialog.Cancel>
-              <Button variant="soft" color="gray" onClick={clearErrorMessage}>
-                OK
-              </Button>
-            </AlertDialog.Cancel>
-          </Flex>
-        </AlertDialog.Content>
-      </AlertDialog.Root>
     </>
   );
 };

@@ -1,5 +1,7 @@
 import { Annotation } from '@codemirror/state';
 import { Box, Button, Card, Flex, Text } from '@radix-ui/themes';
+
+import { useSyncGraph } from '../store/hooks/useGraphMutations';
 import { useGraphQuery } from '../store/hooks/useLaidOutGraph';
 import { useGraphStore } from '../store/useGraphStore';
 import { useCodeMirror } from './hooks/useCodeMirror';
@@ -11,20 +13,42 @@ interface FullCodeEditorProps {
 
 const systemUpdate = Annotation.define<boolean>();
 
+const getErrorMessage = (error: unknown): string | null => {
+  if (!error) return null;
+  if (typeof error === 'object') {
+    if ('detail' in error) {
+      if (typeof error.detail === 'string') {
+        return error.detail;
+      }
+      if (Array.isArray(error.detail)) {
+        return error.detail.map((d: any) => d.msg || JSON.stringify(d)).join('\n');
+      }
+      return JSON.stringify(error.detail);
+    }
+    if ('message' in error && typeof error.message === 'string') {
+      return error.message;
+    }
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
+};
+
 export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
   const graphId = useGraphStore(state => state.graphId) || '';
   const { data: graphFlow } = useGraphQuery(graphId);
   const variables = graphFlow?.variables || [];
 
   const code = useGraphStore(state => state.code);
-  const errorMessage = useGraphStore(state => state.errorMessage);
   const selectedNodeId = useGraphStore(state => state.selectedNodeId);
   const selectedSlotId = useGraphStore(state => state.selectedSlotId);
 
   // Stable action references
-  const updateCode = useGraphStore(state => state.updateCode);
-  const clearErrorMessage = useGraphStore(state => state.clearErrorMessage);
   const setSelectedIds = useGraphStore(state => state.setSelectedIds);
+
+  const { mutate: syncGraph, isPending: isSaving, error: syncError, reset: resetSyncError } = useSyncGraph(graphId);
+  const errorMessage = getErrorMessage(syncError);
 
   // Initialize Ruff WASM workspace using custom hook
   const workspace = useRuffLinter(variables);
@@ -35,23 +59,23 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
     selectedNodeId,
     selectedSlotId,
     workspace,
-    clearErrorMessage,
+    clearErrorMessage: resetSyncError,
     setSelectedIds,
   });
 
   const isChanged = currentValue !== code;
 
-  const handleApprove = async () => {
-    try {
-      await updateCode(currentValue);
-    } catch (e) {
-      // Error is set in store and displayed in panel
-    }
+  const handleApprove = () => {
+    syncGraph(currentValue, {
+      onSuccess: () => {
+        useGraphStore.setState({ code: currentValue });
+      }
+    });
   };
 
   const handleDiscard = () => {
     setCurrentValue(code);
-    clearErrorMessage();
+    resetSyncError();
     if (viewRef.current) {
       const state = viewRef.current.state;
       viewRef.current.dispatch({
@@ -113,9 +137,9 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
           size="2"
           variant="soft"
           color="gray"
-          disabled={!isChanged || !isGraphSelected}
+          disabled={!isChanged || !isGraphSelected || isSaving}
           onClick={handleDiscard}
-          style={{ cursor: isChanged && isGraphSelected ? 'pointer' : 'default' }}
+          style={{ cursor: isChanged && isGraphSelected && !isSaving ? 'pointer' : 'default' }}
         >
           Discard
         </Button>
@@ -123,11 +147,11 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
           size="2"
           variant="solid"
           color="iris"
-          disabled={!isChanged || !isGraphSelected}
+          disabled={!isChanged || !isGraphSelected || isSaving}
           onClick={handleApprove}
-          style={{ cursor: isChanged && isGraphSelected ? 'pointer' : 'default' }}
+          style={{ cursor: isChanged && isGraphSelected && !isSaving ? 'pointer' : 'default' }}
         >
-          Approve Code
+          {isSaving ? 'Saving...' : 'Approve Code'}
         </Button>
       </Flex>
     </Flex>

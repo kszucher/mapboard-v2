@@ -1,9 +1,8 @@
 import { create } from 'zustand';
+import type { components } from '../api/generated/schema';
 import { queryClient } from '../api/queryClient';
 import { queryKeys } from '../api/queryKeys';
-import { scheduleAutosave } from './storeEngine';
 import type { GraphStoreState } from './types';
-import type { components } from '../api/generated/schema';
 
 export const useGraphStore = create<GraphStoreState>((set, get) => ({
   graphId: null,
@@ -12,10 +11,6 @@ export const useGraphStore = create<GraphStoreState>((set, get) => ({
   selectedSlotId: null,
   selectedSlotIndex: null,
   isLoading: false,
-  isSaving: false,
-  errorMessage: null,
-
-  clearErrorMessage: () => set({ errorMessage: null }),
 
   init: (graphId) => {
     set({
@@ -24,16 +19,11 @@ export const useGraphStore = create<GraphStoreState>((set, get) => ({
       selectedNodeId: null,
       selectedSlotId: null,
       selectedSlotIndex: null,
-      errorMessage: null,
     });
   },
 
   updateCode: (newCode) => {
-    const { graphId } = get();
     set({ code: newCode });
-    if (graphId) {
-      scheduleAutosave(graphId, newCode);
-    }
   },
 
   setSelectedIds: (nodeId, branchIndex) => {

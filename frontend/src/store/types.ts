@@ -5,9 +5,6 @@ export interface BaseState {
   selectedSlotId: string | null;
   selectedSlotIndex: number | null;
   isLoading: boolean;
-  isSaving: boolean;
-  errorMessage: string | null;
-  clearErrorMessage: () => void;
 }
 
 export interface UiActions {

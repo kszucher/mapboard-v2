@@ -9,6 +9,7 @@ import { oneDark } from '@codemirror/theme-one-dark';
 import type { DecorationSet } from '@codemirror/view';
 import { Decoration, drawSelection, EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { useEffect, useRef, useState } from 'react';
+import type { components } from '../../api/generated/schema';
 import { queryClient } from '../../api/queryClient';
 import { queryKeys } from '../../api/queryKeys';
 import {
@@ -22,7 +23,6 @@ import { findParentNodeBySlotId } from '../../domain/graphs/traversal';
 import { fromApiPayload } from '../../store/mappers';
 import { useGraphStore } from '../../store/useGraphStore';
 import type { Variable } from '../types';
-import type { components } from '../../api/generated/schema';
 
 const systemUpdate = Annotation.define<boolean>();
 
