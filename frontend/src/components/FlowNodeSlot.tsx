@@ -93,6 +93,9 @@ export const FlowNodeSlot = memo(({
 
   const actions = !disabled ? (
     <div
+      onPointerDown={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
       style={{
         display: 'inline-flex',
         alignItems: 'center',

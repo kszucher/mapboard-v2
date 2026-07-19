@@ -65,7 +65,7 @@ const CustomNodeComponent = ({ data, id, selected }: NodeProps<AppFlowNode>) => 
         padding: NODE_PADDING,
         gap: NODE_PADDING,
         opacity: isLoading ? 0 : 1,
-        transition: 'opacity 0.2s ease-in-out, outline 0.15s ease-in-out',
+        transition: 'opacity 0.2s ease-in-out',
         outline: selected ? '2px solid var(--accent-8)' : '1px solid var(--gray-5)',
         boxShadow: 'none',
       }}
