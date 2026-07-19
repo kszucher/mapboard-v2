@@ -6,7 +6,8 @@ type ApiEdge = components['schemas']['EdgeRead'];
 export const fromApiPayload = (
   nodes: ApiNode[],
   edges: ApiEdge[],
-  positions: Record<string, { x: number; y: number }> = {},
+  prevNodes: AppFlowNode[] = [],
+  prevEdges: AppFlowEdge[] = [],
   defaultTransition = 'transform 400ms cubic-bezier(0.4, 0, 0.2, 1)'
 ): { nodes: AppFlowNode[]; edges: AppFlowEdge[] } => {
   const slotToNodeId: Record<string, string> = {};
@@ -16,12 +17,24 @@ export const fromApiPayload = (
     });
   });
 
+  // Stitch renames: match added/removed nodes to map positions/dimensions
+  const newNodeIds = nodes.map(n => n.id);
+  const oldNodeIds = prevNodes.map(n => n.id);
+  const addedId = newNodeIds.find(id => !oldNodeIds.includes(id));
+  const removedId = oldNodeIds.find(id => !newNodeIds.includes(id));
+
+  const getPrevNode = (nodeId: string) => {
+    const lookupId = nodeId === addedId ? removedId : nodeId;
+    return prevNodes.find(n => n.id === lookupId);
+  };
+
   const rfNodes = nodes.map(n => {
-    const position = positions[n.id] || { x: 0, y: 0 };
+    const prevNode = getPrevNode(n.id);
     return {
       id: n.id,
       type: 'custom' as const,
-      position,
+      position: prevNode?.position || { x: 0, y: 0 },
+      measured: prevNode?.measured,
       selected: n.selected ?? false,
       style: {
         transition: defaultTransition,
@@ -39,6 +52,8 @@ export const fromApiPayload = (
 
       if (!sourceNodeId || !targetNodeId) return null;
 
+      const prevEdge = prevEdges.find(e => e.id === edge.id);
+
       return {
         id: edge.id,
         source: sourceNodeId,
@@ -48,7 +63,7 @@ export const fromApiPayload = (
         type: 'custom' as const,
         animated: true,
         data: {
-          sections: [],
+          sections: prevEdge?.data?.sections || [],
         },
       };
     })
