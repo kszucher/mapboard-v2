@@ -52,8 +52,11 @@ export const FlowNodeActions = memo(({ nodeId, triggerStyle }: FlowNodeActionsPr
     try {
       await updateNode({ nodeId, updates: { new_id: trimmed } });
       setRenameOpen(false);
-    } catch (err: any) {
-      setError(err?.message || 'Failed to rename node.');
+    } catch (err) {
+      const message = (err && typeof err === 'object' && 'message' in err && typeof err.message === 'string')
+        ? err.message
+        : 'Failed to rename node.';
+      setError(message);
     }
   };
 

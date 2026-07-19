@@ -10,6 +10,7 @@ import type { DecorationSet } from '@codemirror/view';
 import { Decoration, drawSelection, EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { useEffect, useRef, useState } from 'react';
 import { queryClient } from '../../api/queryClient';
+import { queryKeys } from '../../api/queryKeys';
 import {
   buildAutocompletionExtension,
   findFunctionAt,
@@ -21,6 +22,7 @@ import { findParentNodeBySlotId } from '../../domain/graphs/traversal';
 import { fromApiPayload } from '../../store/mappers';
 import { useGraphStore } from '../../store/useGraphStore';
 import type { Variable } from '../types';
+import type { components } from '../../api/generated/schema';
 
 const systemUpdate = Annotation.define<boolean>();
 
@@ -51,7 +53,7 @@ function buildDecorations(state: EditorState) {
   if (!nodeId) return Decoration.none;
 
   const graphId = useGraphStore.getState().graphId || '';
-  const cached = queryClient.getQueryData<any>(['graph', graphId]);
+  const cached = queryClient.getQueryData<components['schemas']['GraphFlowRead']>(queryKeys.graphs.flow(graphId));
   const mapped = cached ? fromApiPayload(cached.nodes, cached.edges) : { nodes: [], edges: [] };
   const nodes = mapped.nodes;
   const range = resolveHighlightLineRange(state, nodeId, slotId, nodes);
@@ -194,7 +196,7 @@ export function useCodeMirror({
 
       if (selectedSlotId) {
         const graphId = useGraphStore.getState().graphId || '';
-        const cached = queryClient.getQueryData<any>(['graph', graphId]);
+        const cached = queryClient.getQueryData<components['schemas']['GraphFlowRead']>(queryKeys.graphs.flow(graphId));
         const mapped = cached ? fromApiPayload(cached.nodes, cached.edges) : { nodes: [], edges: [] };
         const parentNode = findParentNodeBySlotId(selectedSlotId, mapped.nodes);
         if (parentNode) {

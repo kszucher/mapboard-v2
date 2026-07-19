@@ -1,17 +1,11 @@
 import { apiClient, getClientId } from '../api/client';
 import { queryClient } from '../api/queryClient';
-import { toApiPayload } from './mappers';
+import { queryKeys } from '../api/queryKeys';
+import { fromApiPayload, toApiPayload } from './mappers';
+import type { components } from '../api/generated/schema';
 
-let onSaveStateChange: ((isSaving: boolean) => void) | null = null;
-let onSyncResponse: ((data: any) => void) | null = null;
-
-export const setOnSaveStateChange = (callback: (isSaving: boolean) => void) => {
-  onSaveStateChange = callback;
-};
-
-export const setOnSyncResponse = (callback: (data: any) => void) => {
-  onSyncResponse = callback;
-};
+export const onSaveStateChange: ((isSaving: boolean) => void) | null = null;
+export const onSyncResponse: ((data: components['schemas']['GraphFlowRead']) => void) | null = null;
 
 const saveTimeoutsByGraph = new Map<string, number>();
 const lastSavedStateByGraph = new Map<string, string>();
@@ -28,14 +22,16 @@ export const scheduleAutosave = (graphId: string, newCode: string) => {
     saveTimeoutsByGraph.delete(graphId);
 
     // Retrieve visual elements and structures from TanStack Query cache
-    const cached = queryClient.getQueryData<any>(['graph', graphId]);
+    const cached = queryClient.getQueryData<components['schemas']['GraphFlowRead']>(queryKeys.graphs.flow(graphId));
     if (!cached) return;
+
+    const mapped = fromApiPayload(cached.nodes, cached.edges);
 
     const state = {
       graphId,
       code: newCode,
-      nodes: cached.nodes || [],
-      edges: cached.edges || [],
+      nodes: mapped.nodes,
+      edges: mapped.edges,
       variables: cached.variables || [],
       functions: cached.functions || [],
     };
@@ -58,7 +54,7 @@ export const scheduleAutosave = (graphId: string, newCode: string) => {
       if (res.data) {
         onSyncResponse?.(res.data);
         // Sync newly compiled output back into query cache
-        queryClient.setQueryData(['graph', graphId], res.data);
+        queryClient.setQueryData(queryKeys.graphs.flow(graphId), res.data);
       }
     } catch (err) {
       console.error('Failed to sync graph flow with backend:', err);
@@ -68,19 +64,4 @@ export const scheduleAutosave = (graphId: string, newCode: string) => {
   }, 500);
 
   saveTimeoutsByGraph.set(graphId, timeout);
-};
-
-export const resetLastSavedState = (
-  state: {
-    graphId: string;
-    code: string;
-    nodes: any[];
-    edges: any[];
-    variables: any[];
-    functions: any[];
-  }
-) => {
-  if (!state.graphId) return;
-  const payload = toApiPayload(state);
-  lastSavedStateByGraph.set(state.graphId, JSON.stringify(payload));
 };

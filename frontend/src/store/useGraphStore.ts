@@ -1,7 +1,9 @@
 import { create } from 'zustand';
 import { queryClient } from '../api/queryClient';
+import { queryKeys } from '../api/queryKeys';
 import { scheduleAutosave } from './storeEngine';
 import type { GraphStoreState } from './types';
+import type { components } from '../api/generated/schema';
 
 export const useGraphStore = create<GraphStoreState>((set, get) => ({
   graphId: null,
@@ -44,7 +46,7 @@ export const useGraphStore = create<GraphStoreState>((set, get) => ({
     }
 
     // Retrieve raw graph nodes from TanStack Query cache to match slot indexing
-    const cached = queryClient.getQueryData<any>(['graph', graphId]);
+    const cached = queryClient.getQueryData<components['schemas']['GraphFlowRead']>(queryKeys.graphs.flow(graphId));
     const nodes = cached?.nodes || [];
 
     const isSlotSelection = branchIndex !== null && branchIndex !== -1;
@@ -52,7 +54,7 @@ export const useGraphStore = create<GraphStoreState>((set, get) => ({
     let selectedSlotIndex: number | null = null;
 
     if (isSlotSelection) {
-      const node = nodes.find((n: any) => n.id === nodeId);
+      const node = nodes.find((n: components['schemas']['NodeRead']) => n.id === nodeId);
       const slot = node?.slots?.[branchIndex];
       if (slot) {
         selectedSlotId = slot.id;

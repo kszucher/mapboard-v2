@@ -1,13 +1,18 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, QueryClient } from '@tanstack/react-query';
 import { apiClient, getClientId } from '../../api/client';
 import type { NodeType } from '../../components/types';
+import { queryKeys } from '../../api/queryKeys';
 import { useGraphStore } from '../useGraphStore';
 
-const handleMutationSuccess = (queryClient: any, graphId: string, data: any) => {
-  if (data?.code !== undefined) {
-    useGraphStore.setState({ code: data.code });
+const handleMutationSuccess = (
+  queryClient: QueryClient,
+  graphId: string,
+  data: unknown
+) => {
+  if (data && typeof data === 'object' && 'code' in data && typeof (data as { code?: unknown }).code === 'string') {
+    useGraphStore.setState({ code: (data as { code: string }).code });
   }
-  void queryClient.invalidateQueries({ queryKey: ['graph', graphId] });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.graphs.flow(graphId) });
 };
 
 export const useAddNode = (graphId: string) => {

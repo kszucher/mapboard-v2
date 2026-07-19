@@ -1,29 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
 import type { NodeChange } from '@xyflow/react';
 import { applyNodeChanges } from '@xyflow/react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { apiClient } from '../../api/client';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AppFlowEdge, AppFlowNode } from '../../components/types';
+import { graphQueries } from '../../api/queries/graphs';
 import { runLayout } from '../layout';
 import { fromApiPayload } from '../mappers';
 import { useGraphStore } from '../useGraphStore';
 
 export const useGraphQuery = (graphId: string) => {
-  return useQuery({
-    queryKey: ['graph', graphId],
-    queryFn: async () => {
-      const res = await apiClient.GET('/graphs/{graph_id}/flow', {
-        params: { path: { graph_id: graphId } }
-      });
-      if ('error' in res) throw res.error;
-      return res.data;
-    },
-    enabled: !!graphId,
-  });
+  return useQuery(graphQueries.flow(graphId));
 };
 
 export const useLaidOutGraph = (graphId: string) => {
   const query = useGraphQuery(graphId);
+  const layoutSeqRef = useRef(0);
 
   const [layoutResult, setLayoutResult] = useState<{
     nodes: AppFlowNode[];
@@ -36,7 +27,9 @@ export const useLaidOutGraph = (graphId: string) => {
   });
 
   const triggerLayout = useCallback((nodes: AppFlowNode[], edges: AppFlowEdge[]) => {
+    const seq = ++layoutSeqRef.current;
     runLayout(nodes, edges).then(laidOut => {
+      if (seq !== layoutSeqRef.current) return;
       setLayoutResult({
         nodes: laidOut.nodes,
         edges: laidOut.edges,
