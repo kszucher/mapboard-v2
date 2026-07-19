@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import type { NodeChange } from '@xyflow/react';
 import { applyNodeChanges } from '@xyflow/react';
 import { apiClient } from '../../api/client';
@@ -35,8 +35,6 @@ export const useLaidOutGraph = (graphId: string) => {
     isLoading: true,
   });
 
-  const pendingLayoutNodeIdRef = useRef<string | null>(null);
-
   const triggerLayout = useCallback((nodes: AppFlowNode[], edges: AppFlowEdge[]) => {
     runLayout(nodes, edges).then(laidOut => {
       setLayoutResult({
@@ -60,12 +58,18 @@ export const useLaidOutGraph = (graphId: string) => {
           if (allMeasured) {
             triggerLayout(newNodes, prev.edges);
           }
-        } else if (pendingLayoutNodeIdRef.current) {
-          const targetChanged = changes.some(
-            c => c.type === 'dimensions' && c.id === pendingLayoutNodeIdRef.current
-          );
-          if (targetChanged) {
-            pendingLayoutNodeIdRef.current = null;
+        } else {
+          // Detect if any node is newly added or has physically resized
+          const anyNodeResized = newNodes.some(node => {
+            const prevNode = prev.nodes.find(n => n.id === node.id);
+            if (!prevNode) return true; // Newly added node
+            return (
+              node.measured?.width !== prevNode.measured?.width ||
+              node.measured?.height !== prevNode.measured?.height
+            );
+          });
+
+          if (anyNodeResized) {
             triggerLayout(newNodes, prev.edges);
           }
         }
@@ -102,23 +106,10 @@ export const useLaidOutGraph = (graphId: string) => {
       const mapped = fromApiPayload(query.data.nodes, query.data.edges, positions);
       mapped.nodes = mapped.nodes.map(n => measured[n.id] ? { ...n, measured: { ...n.measured, ...measured[n.id] } } : n);
 
-      // Detect slot count changes to schedule layout after React Flow measures new slot dimensions
-      const nodeWithCountChange = mapped.nodes.find(node => {
-        const prevNode = prevNodes.find(n => n.id === node.id);
-        const prevCount = prevNode ? prevNode.data.node.slots.length : 0;
-        return prevCount !== node.data.node.slots.length;
-      });
-
-      if (nodeWithCountChange) {
-        pendingLayoutNodeIdRef.current = nodeWithCountChange.id;
-      }
-
       if (isNewGraph) {
         return { nodes: mapped.nodes, edges: mapped.edges, isLoading: true };
       } else {
-        if (!nodeWithCountChange) {
-          triggerLayout(mapped.nodes, mapped.edges);
-        }
+        triggerLayout(mapped.nodes, mapped.edges);
         return { ...prev, nodes: mapped.nodes, edges: mapped.edges };
       }
     });
