@@ -1,16 +1,11 @@
 import { Flex } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
 import { memo, useCallback, useMemo } from 'react';
-import { NODE_PADDING } from '../store/layout';
-import { useGraphStore } from '../store/useGraphStore';
+import { useCreateSlot, useDeleteSlot, useMoveSlot, useUpdateSlot, } from '../store/hooks/useGraphMutations';
 import { useGraphQuery } from '../store/hooks/useLaidOutGraph';
+import { NODE_PADDING } from '../store/layout';
 import { fromApiPayload } from '../store/mappers';
-import {
-  useUpdateSlot,
-  useMoveSlot,
-  useCreateSlot,
-  useDeleteSlot,
-} from '../store/hooks/useGraphMutations';
+import { useGraphStore } from '../store/useGraphStore';
 import { Editor } from './Editor.tsx';
 import { FlowNodeSlotActions } from './FlowNodeSlotActions.tsx';
 

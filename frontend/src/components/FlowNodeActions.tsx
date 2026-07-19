@@ -1,10 +1,10 @@
 import { DotsHorizontalIcon } from '@radix-ui/react-icons';
 import { Button, Dialog, DropdownMenu, Flex, IconButton, Text, TextField } from '@radix-ui/themes';
-import { memo, useEffect, useState, useMemo } from 'react';
-import { useGraphStore } from '../store/useGraphStore';
+import { memo, useEffect, useMemo, useState } from 'react';
+import { useUpdateNode } from '../store/hooks/useGraphMutations';
 import { useGraphQuery } from '../store/hooks/useLaidOutGraph';
 import { fromApiPayload } from '../store/mappers';
-import { useUpdateNode } from '../store/hooks/useGraphMutations';
+import { useGraphStore } from '../store/useGraphStore';
 import { FlowNodeActionsContent } from './FlowNodeActionsContent.tsx';
 
 interface FlowNodeActionsProps {

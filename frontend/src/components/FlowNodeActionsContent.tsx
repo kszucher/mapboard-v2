@@ -3,10 +3,10 @@ import { DropdownMenu } from '@radix-ui/themes';
 import { useCallback, useMemo } from 'react';
 import { canShortcircuitNode } from '../domain/graphs/rules';
 import { getIncomingEdgeOptions, getOutgoingEdgeOptions } from '../domain/graphs/traversal';
-import { useGraphStore } from '../store/useGraphStore';
+import { useDeleteEdge, useDeleteNode, useInsertNode, useShortcircuitNode } from '../store/hooks/useGraphMutations';
 import { useGraphQuery } from '../store/hooks/useLaidOutGraph';
 import { fromApiPayload } from '../store/mappers';
-import { useDeleteNode, useShortcircuitNode, useInsertNode, useDeleteEdge } from '../store/hooks/useGraphMutations';
+import { useGraphStore } from '../store/useGraphStore';
 import type { InsertableNodeType } from './types';
 
 const INSERTABLE_NODE_TYPES: { type: InsertableNodeType; label: string }[] = [
@@ -62,8 +62,6 @@ export const FlowNodeActionsContent = ({ nodeId, onRenameClick }: FlowNodeAction
   const handleShortcircuit = useCallback(() => {
     if (nodeData) void shortcircuitNode(nodeData.id);
   }, [nodeData, shortcircuitNode]);
-
-
 
 
   const handleInsert = useCallback(

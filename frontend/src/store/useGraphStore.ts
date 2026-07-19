@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { scheduleAutosave } from './storeEngine';
 import { queryClient } from '../api/queryClient';
+import { scheduleAutosave } from './storeEngine';
 import type { GraphStoreState } from './types';
 
 export const useGraphStore = create<GraphStoreState>((set, get) => ({

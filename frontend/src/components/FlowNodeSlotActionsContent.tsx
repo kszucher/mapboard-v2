@@ -1,18 +1,18 @@
 import { ArrowDownIcon, ArrowUpIcon, PlusIcon, TrashIcon } from '@radix-ui/react-icons';
 import { DropdownMenu } from '@radix-ui/themes';
 import { useCallback, useMemo } from 'react';
-import { useGraphStore } from '../store/useGraphStore';
-import { useGraphQuery } from '../store/hooks/useLaidOutGraph';
-import { fromApiPayload } from '../store/mappers';
+import { getIncomingEdgeOptions, getOutgoingEdgeOptions } from '../domain/graphs/traversal';
 import {
   useCreateSlot,
-  useDeleteSlot,
-  useMoveSlot,
-  useInsertNode,
   useDeleteEdge,
+  useDeleteSlot,
+  useInsertNode,
+  useMoveSlot,
 } from '../store/hooks/useGraphMutations';
+import { useGraphQuery } from '../store/hooks/useLaidOutGraph';
+import { fromApiPayload } from '../store/mappers';
+import { useGraphStore } from '../store/useGraphStore';
 import type { InsertableNodeType } from './types';
-import type { AppFlowEdge } from './types';
 
 const INSERTABLE_NODE_TYPES: { type: InsertableNodeType; label: string }[] = [
   { type: 'STEP', label: 'Step' },
@@ -219,26 +219,3 @@ export const FlowNodeSlotActionsContent = ({
     </>
   );
 };
-
-// Traversal helper wrappers
-function getOutgoingEdgeOptions(slotId: string, edges: AppFlowEdge[], nodes: any[]) {
-  const outgoing = edges.filter(e => e.sourceHandle === slotId);
-  return outgoing.map(e => {
-    const targetNode = nodes.find(n => n.id === e.target);
-    return {
-      edgeId: e.id,
-      label: `To ${targetNode?.data?.node?.id || e.target}`,
-    };
-  });
-}
-
-function getIncomingEdgeOptions(slotId: string, edges: AppFlowEdge[], nodes: any[]) {
-  const incoming = edges.filter(e => e.targetHandle === slotId);
-  return incoming.map(e => {
-    const sourceNode = nodes.find(n => n.id === e.source);
-    return {
-      edgeId: e.id,
-      label: `From ${sourceNode?.data?.node?.id || e.source}`,
-    };
-  });
-}

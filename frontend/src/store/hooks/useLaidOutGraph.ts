@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState, useEffect, useMemo, useCallback } from 'react';
 import type { NodeChange } from '@xyflow/react';
 import { applyNodeChanges } from '@xyflow/react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiClient } from '../../api/client';
-import { fromApiPayload } from '../mappers';
+import type { AppFlowEdge, AppFlowNode } from '../../components/types';
 import { runLayout } from '../layout';
-import type { AppFlowNode, AppFlowEdge } from '../../components/types';
+import { fromApiPayload } from '../mappers';
 import { useGraphStore } from '../useGraphStore';
 
 export const useGraphQuery = (graphId: string) => {
@@ -104,7 +104,10 @@ export const useLaidOutGraph = (graphId: string) => {
       }
 
       const mapped = fromApiPayload(query.data.nodes, query.data.edges, positions);
-      mapped.nodes = mapped.nodes.map(n => measured[n.id] ? { ...n, measured: { ...n.measured, ...measured[n.id] } } : n);
+      mapped.nodes = mapped.nodes.map(n => measured[n.id] ? {
+        ...n,
+        measured: { ...n.measured, ...measured[n.id] }
+      } : n);
 
       if (isNewGraph) {
         return { nodes: mapped.nodes, edges: mapped.edges, isLoading: true };

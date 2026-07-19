@@ -1,7 +1,7 @@
 import { Annotation } from '@codemirror/state';
 import { Box, Button, Card, Flex, Text } from '@radix-ui/themes';
-import { useGraphStore } from '../store/useGraphStore';
 import { useGraphQuery } from '../store/hooks/useLaidOutGraph';
+import { useGraphStore } from '../store/useGraphStore';
 import { useCodeMirror } from './hooks/useCodeMirror';
 import { useRuffLinter } from './hooks/useRuffLinter';
 

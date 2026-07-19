@@ -9,6 +9,7 @@ import { oneDark } from '@codemirror/theme-one-dark';
 import type { DecorationSet } from '@codemirror/view';
 import { Decoration, drawSelection, EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { useEffect, useRef, useState } from 'react';
+import { queryClient } from '../../api/queryClient';
 import {
   buildAutocompletionExtension,
   findFunctionAt,
@@ -17,9 +18,8 @@ import {
   resolveHighlightLineRange,
 } from '../../domain/code/ast';
 import { findParentNodeBySlotId } from '../../domain/graphs/traversal';
-import { useGraphStore } from '../../store/useGraphStore';
-import { queryClient } from '../../api/queryClient';
 import { fromApiPayload } from '../../store/mappers';
+import { useGraphStore } from '../../store/useGraphStore';
 import type { Variable } from '../types';
 
 const systemUpdate = Annotation.define<boolean>();

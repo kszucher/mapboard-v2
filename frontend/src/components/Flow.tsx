@@ -1,13 +1,13 @@
-import type { OnError, Connection, NodeChange } from '@xyflow/react';
+import type { Connection, NodeChange, OnError } from '@xyflow/react';
 import { Controls, ReactFlow, useReactFlow } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useCallback } from 'react';
+import { useCreateEdge, useDeleteEdge } from '../store/hooks/useGraphMutations';
+import { useLaidOutGraph } from '../store/hooks/useLaidOutGraph';
 import { useGraphStore } from '../store/useGraphStore';
 import FlowEdge from './FlowEdge.tsx';
 import { CustomNode } from './FlowNode.tsx';
 import { useGraphWebSocket } from './hooks/useGraphWebSocket.ts';
-import { useLaidOutGraph } from '../store/hooks/useLaidOutGraph';
-import { useCreateEdge, useDeleteEdge } from '../store/hooks/useGraphMutations';
 import type { AppFlowEdge } from './types';
 
 const nodeTypes = { custom: CustomNode };
@@ -66,7 +66,8 @@ const FlowContent = ({
     onNodesLayoutChange(changes);
   }, [setSelectedIds, onNodesLayoutChange]);
 
-  const onEdgesChange = useCallback(() => {}, []);
+  const onEdgesChange = useCallback(() => {
+  }, []);
 
   const onConnect = useCallback((connection: Connection) => {
     if (connection.source && connection.target && connection.sourceHandle && connection.targetHandle) {

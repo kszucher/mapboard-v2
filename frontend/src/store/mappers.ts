@@ -1,5 +1,6 @@
 import type { components } from '../api/generated/schema';
 import type { ApiNode, AppFlowEdge, AppFlowNode } from '../components/types';
+
 type ApiEdge = components['schemas']['EdgeRead'];
 
 export const fromApiPayload = (
