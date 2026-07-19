@@ -86,6 +86,13 @@ export const useLaidOutGraph = (graphId: string) => {
         if (n.measured) measured[n.id] = { width: n.measured.width, height: n.measured.height };
       });
 
+      const edgeSections: Record<string, any[]> = {};
+      prev.edges.forEach(e => {
+        if (e.data?.sections) {
+          edgeSections[e.id] = e.data.sections;
+        }
+      });
+
       // Stitch renames
       const newNodeIds = query.data.nodes.map(n => n.id);
       const oldNodeIds = prevNodes.map(n => n.id);
@@ -101,6 +108,21 @@ export const useLaidOutGraph = (graphId: string) => {
         ...n,
         measured: { ...n.measured, ...measured[n.id] }
       } : n);
+
+      // Preserve edge sections to prevent jumping to straight lines
+      mapped.edges = mapped.edges.map(e => {
+        const prevSections = edgeSections[e.id];
+        if (prevSections) {
+          return {
+            ...e,
+            data: {
+              ...e.data,
+              sections: prevSections,
+            }
+          };
+        }
+        return e;
+      });
 
       if (isNewGraph) {
         return { nodes: mapped.nodes, edges: mapped.edges, isLoading: true };
