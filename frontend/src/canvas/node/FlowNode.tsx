@@ -2,12 +2,12 @@ import type { BadgeProps } from '@radix-ui/themes';
 import { Badge, Flex } from '@radix-ui/themes';
 import { Handle, type NodeProps, Position, useUpdateNodeInternals } from '@xyflow/react';
 import { memo, useCallback, useEffect, useMemo } from 'react';
-import { NODE_PADDING } from '../store/layout';
-import { useGraphStore } from '../store/useGraphStore';
+import { NODE_PADDING } from '../../domain/graph/layout';
+import { useGraphStore } from '../../store/graphStore';
+import { FlowNodeSlot } from '../slot/FlowNodeSlot.tsx';
+import { type AppFlowNode, type NodeType } from '../types.ts';
 
 import { FlowNodeActions } from './FlowNodeActions.tsx';
-import { FlowNodeSlot } from './FlowNodeSlot.tsx';
-import { type AppFlowNode, type NodeType } from './types.ts';
 
 
 const NODE_COLORS: Record<NodeType, BadgeProps['color']> = {

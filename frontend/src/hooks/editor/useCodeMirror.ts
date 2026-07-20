@@ -9,6 +9,7 @@ import { oneDark } from '@codemirror/theme-one-dark';
 import type { DecorationSet } from '@codemirror/view';
 import { Decoration, drawSelection, EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { useEffect, useRef, useState } from 'react';
+import type { Variable } from '../../canvas/types';
 import {
   buildAutocompletionExtension,
   findFunctionAt,
@@ -16,7 +17,6 @@ import {
   getFoldEffectsForFunctions,
   resolveHighlightLineRange,
 } from '../../domain/code/ast';
-import type { Variable } from '../types';
 
 const systemUpdate = Annotation.define<boolean>();
 

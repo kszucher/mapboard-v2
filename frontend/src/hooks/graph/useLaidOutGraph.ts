@@ -2,12 +2,12 @@ import { useQuery } from '@tanstack/react-query';
 import type { NodeChange } from '@xyflow/react';
 import { applyNodeChanges } from '@xyflow/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { AppFlowEdge, AppFlowNode } from '../../components/types';
-import { graphQueries } from '../../api/queries/graphs';
-import { runLayout } from '../layout';
-import { fromApiPayload } from '../mappers';
-import { useGraphStore } from '../useGraphStore';
 import type { components } from '../../api/generated/schema';
+import { graphQueries } from '../../api/queries/graphs';
+import type { AppFlowEdge, AppFlowNode } from '../../canvas/types';
+import { runLayout } from '../../domain/graph/layout';
+import { fromApiPayload } from '../../domain/graph/mappers';
+import { useGraphStore } from '../../store/graphStore';
 
 type GraphFlowRead = components['schemas']['GraphFlowRead'];
 

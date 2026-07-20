@@ -1,4 +1,4 @@
-import type { ApiSlot, NodeType } from '../../components/types';
+import type { ApiSlot, NodeType } from '../../canvas/types';
 
 export const NODE_LABELS: Record<NodeType, string> = {
   START: 'Start',

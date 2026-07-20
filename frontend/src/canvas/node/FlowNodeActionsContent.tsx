@@ -1,13 +1,13 @@
 import { PlusIcon } from '@radix-ui/react-icons';
 import { DropdownMenu } from '@radix-ui/themes';
 import { useCallback, useMemo } from 'react';
-import { canShortcircuitNode } from '../domain/graphs/rules';
-import { getIncomingEdgeOptions, getOutgoingEdgeOptions } from '../domain/graphs/traversal';
-import { useDeleteEdge, useDeleteNode, useInsertNode, useShortcircuitNode } from '../store/hooks/useGraphMutations';
-import { useGraphQuery } from '../store/hooks/useLaidOutGraph';
-import { fromApiPayload } from '../store/mappers';
-import { useGraphStore } from '../store/useGraphStore';
-import type { InsertableNodeType } from './types';
+import { fromApiPayload } from '../../domain/graph/mappers';
+import { canShortcircuitNode } from '../../domain/graph/rules';
+import { getIncomingEdgeOptions, getOutgoingEdgeOptions } from '../../domain/graph/traversal';
+import { useDeleteEdge, useDeleteNode, useInsertNode, useShortcircuitNode } from '../../hooks/graph/useGraphMutations';
+import { useGraphQuery } from '../../hooks/graph/useLaidOutGraph';
+import { useGraphStore } from '../../store/graphStore';
+import type { InsertableNodeType } from '../types';
 
 const INSERTABLE_NODE_TYPES: { type: InsertableNodeType; label: string }[] = [
   { type: 'STEP', label: 'Step' },

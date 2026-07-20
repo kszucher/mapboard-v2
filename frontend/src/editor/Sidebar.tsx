@@ -1,6 +1,6 @@
 import { Box, Button, Flex, Text } from '@radix-ui/themes';
-import { useRunGraph } from '../store/hooks/useGraphMutations';
-import { useGraphStore } from '../store/useGraphStore';
+import { useRunGraph } from '../hooks/graph/useGraphMutations';
+import { useGraphStore } from '../store/graphStore';
 import { FullCodeEditor } from './FullCodeEditor';
 
 interface SidebarProps {
@@ -48,5 +48,3 @@ export const Sidebar = ({ isSidebarOpen, isGraphSelected }: SidebarProps) => {
     </Box>
   );
 };
-
-

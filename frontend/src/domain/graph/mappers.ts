@@ -1,5 +1,5 @@
-import type { components } from '../api/generated/schema';
-import type { ApiNode, AppFlowEdge, AppFlowNode } from '../components/types';
+import type { components } from '../../api/generated/schema';
+import type { ApiNode, ApiSlot, AppFlowEdge, AppFlowNode } from '../../canvas/types';
 
 type ApiEdge = components['schemas']['EdgeRead'];
 
@@ -12,7 +12,7 @@ export const fromApiPayload = (
 ): { nodes: AppFlowNode[]; edges: AppFlowEdge[] } => {
   const slotToNodeId: Record<string, string> = {};
   nodes.forEach(n => {
-    n.slots.forEach(s => {
+    n.slots.forEach((s: ApiSlot) => {
       slotToNodeId[s.id] = n.id;
     });
   });
@@ -91,7 +91,7 @@ export const toApiPayload = (
       is_output: n.data.node.is_output ?? false,
       code: n.data.node.code ?? "",
       selected: false,
-      slots: n.data.node.slots.map(s => ({
+      slots: n.data.node.slots.map((s: ApiSlot) => ({
         id: s.id,
         raw_string: s.raw_string,
         selected: false,

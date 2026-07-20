@@ -1,12 +1,13 @@
 import { Flex } from '@radix-ui/themes';
 import { Handle, Position } from '@xyflow/react';
 import { memo, useCallback, useMemo } from 'react';
-import { useCreateSlot, useDeleteSlot, useMoveSlot, useUpdateSlot, } from '../store/hooks/useGraphMutations';
-import { useGraphQuery } from '../store/hooks/useLaidOutGraph';
-import { NODE_PADDING } from '../store/layout';
-import { fromApiPayload } from '../store/mappers';
-import { useGraphStore } from '../store/useGraphStore';
-import { Editor } from './Editor.tsx';
+import { NODE_PADDING } from '../../domain/graph/layout';
+import { fromApiPayload } from '../../domain/graph/mappers';
+import { Editor } from '../../editor/Editor.tsx';
+import { useCreateSlot, useDeleteSlot, useMoveSlot, useUpdateSlot, } from '../../hooks/graph/useGraphMutations';
+import { useGraphQuery } from '../../hooks/graph/useLaidOutGraph';
+import { useGraphStore } from '../../store/graphStore';
+import type { ApiSlot } from '../types';
 import { FlowNodeSlotActions } from './FlowNodeSlotActions.tsx';
 
 interface FlowNodeSlotProps {
@@ -41,16 +42,16 @@ export const FlowNodeSlot = memo(({
   const { mutateAsync: deleteSlot } = useDeleteSlot(graphId);
 
   const node = useMemo(() => {
-    return nodes.find((n) => n.data.node.slots.some((s) => s.id === slotId));
+    return nodes.find((n) => n.data.node.slots.some((s: ApiSlot) => s.id === slotId));
   }, [nodes, slotId]);
 
   const slot = useMemo(() => {
-    return node?.data.node.slots.find((s) => s.id === slotId);
+    return node?.data.node.slots.find((s: ApiSlot) => s.id === slotId);
   }, [node, slotId]);
 
   const indexInNode = useMemo(() => {
     if (!node) return -1;
-    return node.data.node.slots.findIndex((s) => s.id === slotId);
+    return node.data.node.slots.findIndex((s: ApiSlot) => s.id === slotId);
   }, [node, slotId]);
 
   const handleUpdateItem = useCallback(

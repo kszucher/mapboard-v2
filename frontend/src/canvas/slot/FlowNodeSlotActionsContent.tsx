@@ -1,18 +1,18 @@
 import { ArrowDownIcon, ArrowUpIcon, PlusIcon, TrashIcon } from '@radix-ui/react-icons';
 import { DropdownMenu } from '@radix-ui/themes';
 import { useCallback, useMemo } from 'react';
-import { getIncomingEdgeOptions, getOutgoingEdgeOptions } from '../domain/graphs/traversal';
+import { fromApiPayload } from '../../domain/graph/mappers';
+import { getIncomingEdgeOptions, getOutgoingEdgeOptions } from '../../domain/graph/traversal';
 import {
   useCreateSlot,
   useDeleteEdge,
   useDeleteSlot,
   useInsertNode,
   useMoveSlot,
-} from '../store/hooks/useGraphMutations';
-import { useGraphQuery } from '../store/hooks/useLaidOutGraph';
-import { fromApiPayload } from '../store/mappers';
-import { useGraphStore } from '../store/useGraphStore';
-import type { InsertableNodeType } from './types';
+} from '../../hooks/graph/useGraphMutations';
+import { useGraphQuery } from '../../hooks/graph/useLaidOutGraph';
+import { useGraphStore } from '../../store/graphStore';
+import type { ApiSlot, InsertableNodeType } from '../types';
 
 const INSERTABLE_NODE_TYPES: { type: InsertableNodeType; label: string }[] = [
   { type: 'STEP', label: 'Step' },
@@ -40,11 +40,11 @@ export const FlowNodeSlotActionsContent = ({
   const { mutateAsync: deleteEdge } = useDeleteEdge(graphId);
 
   const node = useMemo(() => {
-    return nodes.find(n => n.data.node.slots.some(s => s.id === slotId));
+    return nodes.find(n => n.data.node.slots.some((s: ApiSlot) => s.id === slotId));
   }, [nodes, slotId]);
 
   const slot = useMemo(() => {
-    return node?.data.node.slots.find(s => s.id === slotId);
+    return node?.data.node.slots.find((s: ApiSlot) => s.id === slotId);
   }, [node, slotId]);
 
   const isInput = false;
@@ -56,7 +56,7 @@ export const FlowNodeSlotActionsContent = ({
 
   const indexInNode = useMemo(() => {
     if (!slot) return -1;
-    return mySlots.findIndex(s => s.id === slotId);
+    return mySlots.findIndex((s: ApiSlot) => s.id === slotId);
   }, [mySlots, slotId, slot]);
 
   const canMoveUp = useMemo(() => {

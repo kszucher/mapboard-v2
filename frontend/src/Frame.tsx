@@ -2,14 +2,14 @@ import { CaretDownIcon, CheckIcon, MixIcon, PlayIcon, ReaderIcon, ResetIcon } fr
 import { Box, Button, DropdownMenu, Flex, IconButton, Text } from '@radix-ui/themes';
 import { ReactFlowProvider } from '@xyflow/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useCreateGraph, useSetActiveGraph } from '../api/mutations';
-import { useActiveGraphId, useUserGraphs, useUserId } from '../api/queries';
-import { useAddNode, useRedo, useUndo } from '../store/hooks/useGraphMutations';
-import { useGraphQuery } from '../store/hooks/useLaidOutGraph';
-import { useGraphStore } from '../store/useGraphStore';
-import { Flow } from './Flow.tsx';
-import { Sidebar } from './Sidebar.tsx';
-import type { NodeType } from './types';
+import { useCreateGraph, useSetActiveGraph } from './api/mutations';
+import { useActiveGraphId, useUserGraphs, useUserId } from './api/queries';
+import { Flow } from './canvas/Flow.tsx';
+import type { NodeType } from './canvas/types';
+import { Sidebar } from './editor/Sidebar.tsx';
+import { useAddNode, useRedo, useUndo } from './hooks/graph/useGraphMutations';
+import { useGraphQuery } from './hooks/graph/useLaidOutGraph';
+import { useGraphStore } from './store/graphStore';
 
 const NODE_TYPES: NodeType[] = [
   'STEP',
@@ -227,5 +227,3 @@ export const Frame = () => {
     </>
   );
 };
-
-

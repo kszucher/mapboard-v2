@@ -1,4 +1,4 @@
-import type { AppFlowEdge, AppFlowNode } from '../../components/types';
+import type { AppFlowEdge, AppFlowNode } from '../../canvas/types';
 
 export interface EdgeOption {
   edgeId: string;

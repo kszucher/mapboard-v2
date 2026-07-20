@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { getClientId } from '../../api/client';
 import { connectGraphSocket, type GraphEventWithSender } from '../../api/ws';
-import { useGraphStore } from '../../store/useGraphStore';
+import { useGraphStore } from '../../store/graphStore';
 
 /**
  * Custom hook to manage WebSocket connection for a graph with Zustand store integration.
@@ -24,5 +24,3 @@ export const useGraphWebSocket = (graphId: string | null) => {
     return connectGraphSocket(graphId, handleEvent);
   }, [graphId]);
 };
-
-

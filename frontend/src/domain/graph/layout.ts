@@ -1,6 +1,6 @@
 import type { ElkExtendedEdge, ElkNode, ElkPort, LayoutOptions } from 'elkjs';
 import ELK from 'elkjs/lib/elk-api.js';
-import type { AppFlowEdge, AppFlowNode } from '../components/types';
+import type { AppFlowEdge, AppFlowNode } from '../../canvas/types';
 
 const elk = new ELK({
   workerFactory: () =>

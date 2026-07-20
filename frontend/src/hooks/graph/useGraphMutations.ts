@@ -2,9 +2,9 @@ import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient, getClientId } from '../../api/client';
 import type { components } from '../../api/generated/schema';
 import { queryKeys } from '../../api/queryKeys';
-import type { NodeType } from '../../components/types';
-import { fromApiPayload, toApiPayload } from '../mappers';
-import { useGraphStore } from '../useGraphStore';
+import type { NodeType } from '../../canvas/types';
+import { fromApiPayload, toApiPayload } from '../../domain/graph/mappers';
+import { useGraphStore } from '../../store/graphStore';
 
 const handleMutationSuccess = (
   queryClient: QueryClient,

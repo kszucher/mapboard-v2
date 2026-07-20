@@ -1,11 +1,11 @@
 import { Annotation } from '@codemirror/state';
 import { Box, Button, Card, Flex, Text } from '@radix-ui/themes';
+import { useCodeMirror } from '../hooks/editor/useCodeMirror';
+import { useRuffLinter } from '../hooks/editor/useRuffLinter';
 
-import { useSyncGraph } from '../store/hooks/useGraphMutations';
-import { useGraphQuery } from '../store/hooks/useLaidOutGraph';
-import { useGraphStore } from '../store/useGraphStore';
-import { useCodeMirror } from './hooks/useCodeMirror';
-import { useRuffLinter } from './hooks/useRuffLinter';
+import { useSyncGraph } from '../hooks/graph/useGraphMutations';
+import { useGraphQuery } from '../hooks/graph/useLaidOutGraph';
+import { useGraphStore } from '../store/graphStore';
 
 interface FullCodeEditorProps {
   isGraphSelected: boolean;
