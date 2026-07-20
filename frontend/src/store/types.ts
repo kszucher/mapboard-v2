@@ -4,14 +4,12 @@ export interface BaseState {
   selectedNodeId: string | null;
   selectedSlotId: string | null;
   selectedSlotIndex: number | null;
-  isLoading: boolean;
 }
 
 export interface UiActions {
   setSelectedIds: (nodeId: string | null, branchIndex: number | null) => void;
   clearSlotSelection: () => void;
   init: (graphId: string) => void;
-  updateCode: (code: string) => void;
 }
 
 export type GraphStoreState = BaseState & UiActions;

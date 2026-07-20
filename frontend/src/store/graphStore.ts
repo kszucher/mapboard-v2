@@ -10,7 +10,6 @@ export const useGraphStore = create<GraphStoreState>((set, get) => ({
   selectedNodeId: null,
   selectedSlotId: null,
   selectedSlotIndex: null,
-  isLoading: false,
 
   init: (graphId) => {
     set({
@@ -20,10 +19,6 @@ export const useGraphStore = create<GraphStoreState>((set, get) => ({
       selectedSlotId: null,
       selectedSlotIndex: null,
     });
-  },
-
-  updateCode: (newCode) => {
-    set({ code: newCode });
   },
 
   setSelectedIds: (nodeId, branchIndex) => {

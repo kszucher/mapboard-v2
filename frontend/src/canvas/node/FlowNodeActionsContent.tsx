@@ -5,7 +5,7 @@ import { fromApiPayload } from '../../domain/graph/mappers';
 import { canShortcircuitNode } from '../../domain/graph/rules';
 import { getIncomingEdgeOptions, getOutgoingEdgeOptions } from '../../domain/graph/traversal';
 import { useDeleteEdge, useDeleteNode, useInsertNode, useShortcircuitNode } from '../../hooks/graph/useGraphMutations';
-import { useGraphQuery } from '../../hooks/graph/useLaidOutGraph';
+import { useGraphQuery } from '../../hooks/graph/useGraphQuery';
 import { useGraphStore } from '../../store/graphStore';
 import type { InsertableNodeType } from '../types';
 

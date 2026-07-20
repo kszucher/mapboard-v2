@@ -5,7 +5,7 @@ import { NODE_PADDING } from '../../domain/graph/layout';
 import { fromApiPayload } from '../../domain/graph/mappers';
 import { Editor } from '../../editor/Editor.tsx';
 import { useCreateSlot, useDeleteSlot, useMoveSlot, useUpdateSlot, } from '../../hooks/graph/useGraphMutations';
-import { useGraphQuery } from '../../hooks/graph/useLaidOutGraph';
+import { useGraphQuery } from '../../hooks/graph/useGraphQuery';
 import { useGraphStore } from '../../store/graphStore';
 import type { ApiSlot } from '../types';
 import { FlowNodeSlotActions } from './FlowNodeSlotActions.tsx';

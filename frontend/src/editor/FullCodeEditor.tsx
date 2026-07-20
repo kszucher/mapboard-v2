@@ -4,7 +4,7 @@ import { useCodeMirror } from '../hooks/editor/useCodeMirror';
 import { useRuffLinter } from '../hooks/editor/useRuffLinter';
 
 import { useSyncGraph } from '../hooks/graph/useGraphMutations';
-import { useGraphQuery } from '../hooks/graph/useLaidOutGraph';
+import { useGraphQuery } from '../hooks/graph/useGraphQuery';
 import { useGraphStore } from '../store/graphStore';
 
 interface FullCodeEditorProps {
@@ -21,7 +21,7 @@ const getErrorMessage = (error: unknown): string | null => {
         return error.detail;
       }
       if (Array.isArray(error.detail)) {
-        return error.detail.map((d: any) => d.msg || JSON.stringify(d)).join('\n');
+        return error.detail.map((d: { msg?: string }) => d.msg ?? JSON.stringify(d)).join('\n');
       }
       return JSON.stringify(error.detail);
     }

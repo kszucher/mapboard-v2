@@ -3,7 +3,7 @@ import { Button, Dialog, DropdownMenu, Flex, IconButton, Text, TextField } from 
 import { memo, useEffect, useMemo, useState } from 'react';
 import { fromApiPayload } from '../../domain/graph/mappers';
 import { useUpdateNode } from '../../hooks/graph/useGraphMutations';
-import { useGraphQuery } from '../../hooks/graph/useLaidOutGraph';
+import { useGraphQuery } from '../../hooks/graph/useGraphQuery';
 import { useGraphStore } from '../../store/graphStore';
 import { FlowNodeActionsContent } from './FlowNodeActionsContent.tsx';
 

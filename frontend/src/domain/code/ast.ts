@@ -1,15 +1,15 @@
 import { autocompletion } from '@codemirror/autocomplete';
 import { foldEffect, syntaxTree, unfoldEffect } from '@codemirror/language';
-import { EditorState } from '@codemirror/state';
+import { EditorState, type StateEffect } from '@codemirror/state';
 import type { Variable } from '../../canvas/types';
 
 // Helper to collect fold/unfold effects for all functions based on selectedNodeId
 export function getFoldEffectsForFunctions(
   state: EditorState,
   selectedNodeId: string | null
-): any[] {
+): StateEffect<unknown>[] {
   const docStr = state.doc.toString();
-  const effects: any[] = [];
+  const effects: StateEffect<unknown>[] = [];
   syntaxTree(state).iterate({
     enter(node) {
       if (node.name === 'FunctionDefinition') {

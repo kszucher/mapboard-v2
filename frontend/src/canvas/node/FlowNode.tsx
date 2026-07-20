@@ -48,11 +48,11 @@ const CustomNodeComponent = ({ data, id, selected }: NodeProps<AppFlowNode>) => 
     }
   }, [mySlots, id, setSelectedIds]);
 
+  if (!data) return null;
+
   const { node } = data;
   const isStart = node.node_type === 'START';
   const isEnd = node.node_type === 'END';
-
-  if (!data) return null;
 
   return (
     <Flex

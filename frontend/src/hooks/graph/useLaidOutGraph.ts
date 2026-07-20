@@ -1,19 +1,16 @@
-import { useQuery } from '@tanstack/react-query';
 import type { NodeChange } from '@xyflow/react';
 import { applyNodeChanges } from '@xyflow/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { components } from '../../api/generated/schema';
-import { graphQueries } from '../../api/queries/graphs';
 import type { AppFlowEdge, AppFlowNode } from '../../canvas/types';
 import { runLayout } from '../../domain/graph/layout';
 import { fromApiPayload } from '../../domain/graph/mappers';
 import { useGraphStore } from '../../store/graphStore';
 
+import { useGraphQuery } from './useGraphQuery';
+
 type GraphFlowRead = components['schemas']['GraphFlowRead'];
 
-export const useGraphQuery = (graphId: string) => {
-  return useQuery(graphQueries.flow(graphId));
-};
 
 export const useLaidOutGraph = (graphId: string) => {
   const query = useGraphQuery(graphId);

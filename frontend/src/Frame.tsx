@@ -7,8 +7,8 @@ import { useActiveGraphId, useUserGraphs, useUserId } from './api/queries';
 import { Flow } from './canvas/Flow.tsx';
 import type { NodeType } from './canvas/types';
 import { Sidebar } from './editor/Sidebar.tsx';
-import { useAddNode, useRedo, useUndo } from './hooks/graph/useGraphMutations';
-import { useGraphQuery } from './hooks/graph/useLaidOutGraph';
+import { useAddNode, useRedo, useRunGraph, useUndo } from './hooks/graph/useGraphMutations';
+import { useGraphQuery } from './hooks/graph/useGraphQuery';
 import { useGraphStore } from './store/graphStore';
 
 const NODE_TYPES: NodeType[] = [
@@ -26,6 +26,7 @@ export const Frame = () => {
   const { mutate: undo } = useUndo(selectedGraphId || '');
   const { mutate: redo } = useRedo(selectedGraphId || '');
   const { mutate: addNode } = useAddNode(selectedGraphId || '');
+  const { mutate: runGraph } = useRunGraph(selectedGraphId || '');
 
   const canUndo = graphFlow?.can_undo ?? false;
   const canRedo = graphFlow?.can_redo ?? false;
@@ -178,8 +179,8 @@ export const Frame = () => {
               </DropdownMenu.Trigger>
               {isGraphSelected && (
                 <DropdownMenu.Content onCloseAutoFocus={e => e.preventDefault()}>
-                  {NODE_TYPES.map((nodeType, id) => (
-                    <DropdownMenu.Item onClick={() => handleCreateNode(nodeType)} key={id}>
+                  {NODE_TYPES.map((nodeType) => (
+                    <DropdownMenu.Item onClick={() => handleCreateNode(nodeType)} key={nodeType}>
                       {nodeType}
                     </DropdownMenu.Item>
                   ))}
@@ -187,7 +188,8 @@ export const Frame = () => {
               )}
             </DropdownMenu.Root>
 
-            <IconButton variant="solid" color="gray" radius="full" onClick={() => console.log('play...')}>
+            <IconButton variant="solid" color="gray" radius="full" onClick={() => runGraph()}
+                        disabled={!isGraphSelected}>
               <PlayIcon width="20" height="20"/>
             </IconButton>
           </Flex>

@@ -10,7 +10,7 @@ import {
   useInsertNode,
   useMoveSlot,
 } from '../../hooks/graph/useGraphMutations';
-import { useGraphQuery } from '../../hooks/graph/useLaidOutGraph';
+import { useGraphQuery } from '../../hooks/graph/useGraphQuery';
 import { useGraphStore } from '../../store/graphStore';
 import type { ApiSlot, InsertableNodeType } from '../types';
 
