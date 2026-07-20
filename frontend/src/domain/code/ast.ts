@@ -1,7 +1,36 @@
 import { autocompletion } from '@codemirror/autocomplete';
-import { syntaxTree } from '@codemirror/language';
+import { syntaxTree, foldEffect, unfoldEffect } from '@codemirror/language';
 import { EditorState } from '@codemirror/state';
 import type { Variable } from '../../components/types';
+
+// Helper to collect fold/unfold effects for all functions based on selectedNodeId
+export function getFoldEffectsForFunctions(
+  state: EditorState,
+  selectedNodeId: string | null
+): any[] {
+  const docStr = state.doc.toString();
+  const effects: any[] = [];
+  syntaxTree(state).iterate({
+    enter(node) {
+      if (node.name === 'FunctionDefinition') {
+        const nameNode = node.node.getChild('VariableName');
+        if (nameNode) {
+          const fnName = docStr.slice(nameNode.from, nameNode.to);
+          const body = node.node.getChild('Body');
+          if (body) {
+            const isSelected = fnName === selectedNodeId;
+            if (isSelected) {
+              effects.push(unfoldEffect.of({ from: body.from, to: body.to }));
+            } else {
+              effects.push(foldEffect.of({ from: body.from, to: body.to }));
+            }
+          }
+        }
+      }
+    }
+  });
+  return effects;
+}
 
 // Helper to find a function definition enclosing a specific position
 export function findFunctionAt(state: EditorState, pos: number): { name: string; from: number; to: number } | null {

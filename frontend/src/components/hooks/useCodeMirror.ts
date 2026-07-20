@@ -2,7 +2,7 @@ import type { Workspace } from '@astral-sh/ruff-wasm-web';
 import { acceptCompletion } from '@codemirror/autocomplete';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { python } from '@codemirror/lang-python';
-import { indentUnit } from '@codemirror/language';
+import { foldGutter, indentUnit } from '@codemirror/language';
 import { type Diagnostic, linter, lintGutter } from '@codemirror/lint';
 import { Annotation, EditorState, Range, StateEffect, StateField } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
@@ -13,6 +13,7 @@ import {
   buildAutocompletionExtension,
   findFunctionAt,
   getEditableRegions,
+  getFoldEffectsForFunctions,
   resolveHighlightLineRange,
 } from '../../domain/code/ast';
 import type { Variable } from '../types';
@@ -167,6 +168,7 @@ export function useCodeMirror({
   }, [code]);
 
   // Sync component selection back to CodeMirror selection effects
+  // Sync component selection back to CodeMirror selection effects and fold/unfold functions
   useEffect(() => {
     if (viewRef.current) {
       const currentSelection = viewRef.current.state.field(selectionField);
@@ -175,6 +177,11 @@ export function useCodeMirror({
         viewRef.current.dispatch({
           effects: setSelectedItemEffect.of(selectedNodeId),
         });
+      }
+
+      const effects = getFoldEffectsForFunctions(viewRef.current.state, selectedNodeId);
+      if (effects.length > 0) {
+        viewRef.current.dispatch({ effects });
       }
     }
   }, [selectedNodeId]);
@@ -213,6 +220,7 @@ export function useCodeMirror({
         python(),
         drawSelection(),
         oneDark,
+        foldGutter(),
         buildAutocompletionExtension(variables),
         workspace ? linter((view) => runRuffLint(view.state, workspace)) : [],
         lintGutter(),
@@ -232,6 +240,12 @@ export function useCodeMirror({
     });
 
     viewRef.current = view;
+
+    // Apply initial fold state on mount
+    const initialEffects = getFoldEffectsForFunctions(view.state, selectedNodeId);
+    if (initialEffects.length > 0) {
+      view.dispatch({ effects: initialEffects });
+    }
 
     return () => {
       view.destroy();
