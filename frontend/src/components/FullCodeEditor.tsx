@@ -42,7 +42,6 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
 
   const code = useGraphStore(state => state.code);
   const selectedNodeId = useGraphStore(state => state.selectedNodeId);
-  const selectedSlotId = useGraphStore(state => state.selectedSlotId);
 
   // Stable action references
   const setSelectedIds = useGraphStore(state => state.setSelectedIds);
@@ -57,7 +56,6 @@ export const FullCodeEditor = ({ isGraphSelected }: FullCodeEditorProps) => {
     code,
     variables,
     selectedNodeId,
-    selectedSlotId,
     workspace,
     clearErrorMessage: resetSyncError,
     setSelectedIds,

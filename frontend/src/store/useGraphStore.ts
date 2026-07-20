@@ -53,7 +53,7 @@ export const useGraphStore = create<GraphStoreState>((set, get) => ({
     }
 
     set({
-      selectedNodeId: isSlotSelection ? null : nodeId,
+      selectedNodeId: nodeId,
       selectedSlotId,
       selectedSlotIndex,
     });

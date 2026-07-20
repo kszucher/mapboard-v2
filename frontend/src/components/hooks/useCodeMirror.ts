@@ -9,33 +9,20 @@ import { oneDark } from '@codemirror/theme-one-dark';
 import type { DecorationSet } from '@codemirror/view';
 import { Decoration, drawSelection, EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { useEffect, useRef, useState } from 'react';
-import type { components } from '../../api/generated/schema';
-import { queryClient } from '../../api/queryClient';
-import { queryKeys } from '../../api/queryKeys';
 import {
   buildAutocompletionExtension,
   findFunctionAt,
   getEditableRegions,
-  resolveBranchIndexAtPosition,
   resolveHighlightLineRange,
 } from '../../domain/code/ast';
-import { findParentNodeBySlotId } from '../../domain/graphs/traversal';
-import { fromApiPayload } from '../../store/mappers';
-import { useGraphStore } from '../../store/useGraphStore';
 import type { Variable } from '../types';
 
 const systemUpdate = Annotation.define<boolean>();
 
-const setSelectedItemEffect = StateEffect.define<{
-  nodeId: string | null;
-  slotId: string | null;
-}>();
+const setSelectedItemEffect = StateEffect.define<string | null>();
 
-const selectionField = StateField.define<{
-  nodeId: string | null;
-  slotId: string | null;
-}>({
-  create: () => ({ nodeId: null, slotId: null }),
+const selectionField = StateField.define<string | null>({
+  create: () => null,
   update: (value, tr) => {
     for (const effect of tr.effects) {
       if (effect.is(setSelectedItemEffect)) {
@@ -48,15 +35,10 @@ const selectionField = StateField.define<{
 
 // Build line-bracket decorations for editable areas
 function buildDecorations(state: EditorState) {
-  const selection = state.field(selectionField);
-  const { nodeId, slotId } = selection;
+  const nodeId = state.field(selectionField);
   if (!nodeId) return Decoration.none;
 
-  const graphId = useGraphStore.getState().graphId || '';
-  const cached = queryClient.getQueryData<components['schemas']['GraphFlowRead']>(queryKeys.graphs.flow(graphId));
-  const mapped = cached ? fromApiPayload(cached.nodes, cached.edges) : { nodes: [], edges: [] };
-  const nodes = mapped.nodes;
-  const range = resolveHighlightLineRange(state, nodeId, slotId, nodes);
+  const range = resolveHighlightLineRange(state, nodeId);
   if (!range) return Decoration.none;
 
   const { highlightStart, highlightEnd } = range;
@@ -81,7 +63,7 @@ const readOnlyField = StateField.define<DecorationSet>({
   update: (value, tr) => {
     const oldSelection = tr.startState.field(selectionField);
     const newSelection = tr.state.field(selectionField);
-    if (tr.docChanged || oldSelection.nodeId !== newSelection.nodeId || oldSelection.slotId !== newSelection.slotId) {
+    if (tr.docChanged || oldSelection !== newSelection) {
       return buildDecorations(tr.state);
     }
     return value.map(tr.changes);
@@ -153,7 +135,6 @@ export interface UseCodeMirrorProps {
   code: string;
   variables: Variable[];
   selectedNodeId: string | null;
-  selectedSlotId: string | null;
   workspace: Workspace | null;
   clearErrorMessage: () => void;
   setSelectedIds: (nodeId: string | null, branchIndex: number | null) => void;
@@ -163,7 +144,6 @@ export function useCodeMirror({
   code,
   variables,
   selectedNodeId,
-  selectedSlotId,
   workspace,
   clearErrorMessage,
   setSelectedIds,
@@ -191,27 +171,13 @@ export function useCodeMirror({
     if (viewRef.current) {
       const currentSelection = viewRef.current.state.field(selectionField);
 
-      let targetNodeId = selectedNodeId;
-      let targetSlotId = selectedSlotId;
-
-      if (selectedSlotId) {
-        const graphId = useGraphStore.getState().graphId || '';
-        const cached = queryClient.getQueryData<components['schemas']['GraphFlowRead']>(queryKeys.graphs.flow(graphId));
-        const mapped = cached ? fromApiPayload(cached.nodes, cached.edges) : { nodes: [], edges: [] };
-        const parentNode = findParentNodeBySlotId(selectedSlotId, mapped.nodes);
-        if (parentNode) {
-          targetNodeId = parentNode.id;
-          targetSlotId = selectedSlotId;
-        }
-      }
-
-      if (currentSelection.nodeId !== targetNodeId || currentSelection.slotId !== targetSlotId) {
+      if (currentSelection !== selectedNodeId) {
         viewRef.current.dispatch({
-          effects: setSelectedItemEffect.of({ nodeId: targetNodeId, slotId: targetSlotId }),
+          effects: setSelectedItemEffect.of(selectedNodeId),
         });
       }
     }
-  }, [selectedNodeId, selectedSlotId]);
+  }, [selectedNodeId]);
 
   // Create CodeMirror instance
   useEffect(() => {
@@ -229,16 +195,7 @@ export function useCodeMirror({
         const activeFn = findFunctionAt(update.state, pos);
         const activeFnName = activeFn ? activeFn.name : null;
 
-        let targetBranchIndex = -1;
-
-        if (activeFn) {
-          const targetBranch = resolveBranchIndexAtPosition(update.state, pos, activeFn);
-          if (targetBranch !== -1) {
-            targetBranchIndex = targetBranch;
-          }
-        }
-
-        setSelectedIds(activeFnName, targetBranchIndex === -1 ? null : targetBranchIndex);
+        setSelectedIds(activeFnName, null);
       }
     });
 
