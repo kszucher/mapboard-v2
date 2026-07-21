@@ -14,6 +14,10 @@ export const useLaidOutGraph = (graphId: string) => {
 
   const [isLoading, setIsLoading] = useState(true);
 
+  const selectedNodeId = useGraphStore(state => state.selectedNodeId);
+  const selectedSlotId = useGraphStore(state => state.selectedSlotId);
+  const clearSlotSelection = useGraphStore(state => state.clearSlotSelection);
+
   const runLayoutCalculation = useCallback(
     (nodes: AppFlowNode[], edges: AppFlowEdge[]) => {
       const seq = ++layoutSeqRef.current;
@@ -41,18 +45,18 @@ export const useLaidOutGraph = (graphId: string) => {
       currentEdges
     );
 
+    // Safety check: clear selection if selected node/slot no longer exists in graph
+    if (selectedNodeId && !nodes.some(n => n.id === selectedNodeId)) {
+      void clearSlotSelection();
+    } else if (selectedSlotId && !nodes.some(n => n.data.node.slots.some(s => s.id === selectedSlotId))) {
+      void clearSlotSelection();
+    }
+
     setNodes(nodes);
     setEdges(edges);
 
     runLayoutCalculation(nodes, edges);
-  }, [query.data, runLayoutCalculation, setNodes, setEdges, getNodes, getEdges]);
-
-  const selectedNodeId = useGraphStore(state => state.selectedNodeId);
-  const selectedSlotId = useGraphStore(state => state.selectedSlotId);
-
-  useEffect(() => {
-    setNodes(nds => stitchNodeSelection(nds as AppFlowNode[], selectedNodeId, selectedSlotId));
-  }, [selectedNodeId, selectedSlotId, setNodes]);
+  }, [query.data, runLayoutCalculation, setNodes, setEdges, getNodes, getEdges, selectedNodeId, selectedSlotId, clearSlotSelection]);
 
   const onNodesLayoutChange = useCallback(
     (changes: NodeChange[]) => {
@@ -95,21 +99,3 @@ const shouldTriggerLayoutOnResize = (
     );
   });
 };
-
-const stitchNodeSelection = (
-  nodes: AppFlowNode[],
-  selectedNodeId: string | null,
-  selectedSlotId: string | null
-): AppFlowNode[] =>
-  nodes.map(n => {
-    const isNodeSelected = n.id === selectedNodeId;
-    const slots = n.data.node.slots.map(s => ({ ...s, selected: s.id === selectedSlotId }));
-    return {
-      ...n,
-      selected: isNodeSelected,
-      data: {
-        ...n.data,
-        node: { ...n.data.node, selected: isNodeSelected, slots },
-      },
-    };
-  });

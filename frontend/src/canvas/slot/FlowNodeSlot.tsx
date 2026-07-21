@@ -15,7 +15,6 @@ interface FlowNodeSlotProps {
   disabled: boolean;
   isStart: boolean;
   isEnd: boolean;
-  isSelected: boolean;
   onSelect: () => void;
   onNavigate: (direction: 'up' | 'down') => void;
 }
@@ -25,10 +24,10 @@ export const FlowNodeSlot = memo(({
   disabled,
   isStart,
   isEnd,
-  isSelected,
   onSelect,
   onNavigate,
 }: FlowNodeSlotProps) => {
+  const isSelected = useGraphStore(state => state.selectedSlotId === slotId);
   const graphId = useGraphStore(state => state.graphId) || '';
   const { data } = useGraphQuery(graphId);
   const { nodes } = useMemo(() => {

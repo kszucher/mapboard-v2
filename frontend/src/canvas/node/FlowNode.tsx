@@ -20,12 +20,12 @@ const NODE_COLORS: Record<NodeType, BadgeProps['color']> = {
 const CustomNodeComponent = ({ data, id, selected }: NodeProps<AppFlowNode>) => {
   const updateNodeInternals = useUpdateNodeInternals();
   const setSelectedIds = useGraphStore(state => state.setSelectedIds);
+  const isNodeSelected = useGraphStore(state => state.selectedNodeId === id);
 
   const mySlots = data.node.slots;
 
-
   const mySlotsHash = useMemo(() => {
-    return mySlots.map((s, index) => `${s.id}:${index}:${s.selected}`).join(',');
+    return mySlots.map((s, index) => `${s.id}:${index}`).join(',');
   }, [mySlots]);
 
   useEffect(() => {
@@ -53,6 +53,7 @@ const CustomNodeComponent = ({ data, id, selected }: NodeProps<AppFlowNode>) => 
   const { node } = data;
   const isStart = node.node_type === 'START';
   const isEnd = node.node_type === 'END';
+  const isSelected = isNodeSelected || selected;
 
   return (
     <Flex
@@ -63,7 +64,7 @@ const CustomNodeComponent = ({ data, id, selected }: NodeProps<AppFlowNode>) => 
         borderRadius: 'var(--radius-3)',
         padding: NODE_PADDING,
         gap: NODE_PADDING,
-        outline: selected ? '2px solid var(--accent-8)' : '1px solid var(--gray-5)',
+        outline: isSelected ? '2px solid var(--accent-8)' : '1px solid var(--gray-5)',
         boxShadow: 'none',
       }}
     >
@@ -105,7 +106,6 @@ const CustomNodeComponent = ({ data, id, selected }: NodeProps<AppFlowNode>) => 
             disabled={disabled}
             isStart={isStart}
             isEnd={isEnd}
-            isSelected={!!slot.selected}
             onSelect={() => setSelectedIds(id, index)}
             onNavigate={(direction) => handleNavigateSlot(slot.id, direction)}
           />
