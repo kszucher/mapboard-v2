@@ -1,5 +1,5 @@
 import { useReactFlow } from '@xyflow/react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { AppFlowEdge, AppFlowNode } from '../../canvas/types';
 import { getNextDownstreamNodeId, getNextUpstreamNodeId, getSiblingNodeId, } from '../../domain/graph/traversal';
 import { useGraphStore } from '../../store/graphStore';
@@ -18,8 +18,10 @@ export const useGraphKeyboardShortcuts = (graphId: string) => {
   const { mutateAsync: deleteNode } = useDeleteNode(graphId);
   const { mutateAsync: moveSlot } = useMoveSlot(graphId);
 
+  const isMutatingRef = useRef(false);
+
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = async (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       // Do not trigger global canvas navigation if user is actively typing in text input/textarea
       if (
@@ -51,23 +53,41 @@ export const useGraphKeyboardShortcuts = (graphId: string) => {
           return;
         }
 
-        if (e.key === 'ArrowUp') {
+        if (e.key === 'ArrowUp' && e.ctrlKey) {
           e.preventDefault();
           e.stopPropagation();
-          if (e.ctrlKey) {
-            void moveSlot({ slotId: selectedSlotId, direction: 'up' });
-          } else if (currentIndex > 0) {
+          if (isMutatingRef.current) return;
+          isMutatingRef.current = true;
+          try {
+            await moveSlot({ slotId: selectedSlotId, direction: 'up' });
+          } finally {
+            isMutatingRef.current = false;
+          }
+          return;
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          e.stopPropagation();
+          if (currentIndex > 0) {
             setSelectedIds(selectedNodeId, currentIndex - 1);
           }
           return;
         }
 
-        if (e.key === 'ArrowDown') {
+        if (e.key === 'ArrowDown' && e.ctrlKey) {
           e.preventDefault();
           e.stopPropagation();
-          if (e.ctrlKey) {
-            void moveSlot({ slotId: selectedSlotId, direction: 'down' });
-          } else if (currentIndex < slots.length - 1) {
+          if (isMutatingRef.current) return;
+          isMutatingRef.current = true;
+          try {
+            await moveSlot({ slotId: selectedSlotId, direction: 'down' });
+          } finally {
+            isMutatingRef.current = false;
+          }
+          return;
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          e.stopPropagation();
+          if (currentIndex < slots.length - 1) {
             setSelectedIds(selectedNodeId, currentIndex + 1);
           }
           return;
@@ -77,10 +97,16 @@ export const useGraphKeyboardShortcuts = (graphId: string) => {
           e.preventDefault();
           e.stopPropagation();
           if (currentIndex !== -1) {
-            if (e.shiftKey) {
-              void createSlot({ nodeId: selectedNodeId, index: currentIndex });
-            } else {
-              void createSlot({ nodeId: selectedNodeId, index: currentIndex + 1 });
+            if (isMutatingRef.current) return;
+            isMutatingRef.current = true;
+            try {
+              if (e.shiftKey) {
+                await createSlot({ nodeId: selectedNodeId, index: currentIndex });
+              } else {
+                await createSlot({ nodeId: selectedNodeId, index: currentIndex + 1 });
+              }
+            } finally {
+              isMutatingRef.current = false;
             }
           }
           return;
@@ -89,7 +115,13 @@ export const useGraphKeyboardShortcuts = (graphId: string) => {
         if (e.key === 'Delete') {
           e.preventDefault();
           e.stopPropagation();
-          void deleteSlot(selectedSlotId);
+          if (isMutatingRef.current) return;
+          isMutatingRef.current = true;
+          try {
+            await deleteSlot(selectedSlotId);
+          } finally {
+            isMutatingRef.current = false;
+          }
           return;
         }
 
@@ -117,8 +149,14 @@ export const useGraphKeyboardShortcuts = (graphId: string) => {
         if (e.key === 'Delete') {
           e.preventDefault();
           e.stopPropagation();
-          void deleteNode(selectedNodeId);
-          setSelectedIds(null, null);
+          if (isMutatingRef.current) return;
+          isMutatingRef.current = true;
+          try {
+            await deleteNode(selectedNodeId);
+            setSelectedIds(null, null);
+          } finally {
+            isMutatingRef.current = false;
+          }
           return;
         }
 
