@@ -1,13 +1,9 @@
 import { useReactFlow } from '@xyflow/react';
 import { useEffect } from 'react';
 import type { AppFlowEdge, AppFlowNode } from '../../canvas/types';
+import { getNextDownstreamNodeId, getNextUpstreamNodeId, getSiblingNodeId, } from '../../domain/graph/traversal';
 import { useGraphStore } from '../../store/graphStore';
-import {
-  useCreateSlot,
-  useDeleteNode,
-  useDeleteSlot,
-  useMoveSlot,
-} from './useGraphMutations';
+import { useCreateSlot, useDeleteNode, useDeleteSlot, useMoveSlot, } from './useGraphMutations';
 
 export const useGraphKeyboardShortcuts = (graphId: string) => {
   const { getNodes, getEdges } = useReactFlow();
@@ -131,67 +127,21 @@ export const useGraphKeyboardShortcuts = (graphId: string) => {
           e.preventDefault();
           e.stopPropagation();
 
+          let nextNodeId: string | null = null;
           if (e.key === 'ArrowRight') {
-            // Traverse downstream along outgoing edges.
-            // Priority: top-to-bottom slot order, then node-level output handle
-            const slots = currentNode.data.node.slots || [];
-            let targetNodeId: string | null = null;
-
-            for (const slot of slots) {
-              const edge = edges.find(
-                eg => eg.source === selectedNodeId && eg.sourceHandle === slot.id
-              );
-              if (edge) {
-                targetNodeId = edge.target;
-                break;
-              }
-            }
-
-            if (!targetNodeId) {
-              const nodeEdge = edges.find(
-                eg => eg.source === selectedNodeId && eg.sourceHandle === selectedNodeId
-              );
-              if (nodeEdge) {
-                targetNodeId = nodeEdge.target;
-              }
-            }
-
-            if (!targetNodeId) {
-              const anyEdge = edges.find(eg => eg.source === selectedNodeId);
-              if (anyEdge) {
-                targetNodeId = anyEdge.target;
-              }
-            }
-
-            if (targetNodeId) {
-              setSelectedIds(targetNodeId, null);
-            }
-            return;
+            nextNodeId = getNextDownstreamNodeId(selectedNodeId, nodes, edges);
+          } else if (e.key === 'ArrowLeft') {
+            nextNodeId = getNextUpstreamNodeId(selectedNodeId, nodes, edges);
+          } else if (e.key === 'ArrowUp') {
+            nextNodeId = getSiblingNodeId(selectedNodeId, 'above', nodes, edges);
+          } else if (e.key === 'ArrowDown') {
+            nextNodeId = getSiblingNodeId(selectedNodeId, 'below', nodes, edges);
           }
 
-          if (e.key === 'ArrowLeft') {
-            // Traverse upstream along incoming edges
-            const incomingEdge = edges.find(eg => eg.target === selectedNodeId);
-            if (incomingEdge) {
-              setSelectedIds(incomingEdge.source, null);
-            }
-            return;
+          if (nextNodeId) {
+            setSelectedIds(nextNodeId, null);
           }
-
-          if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-            // Sibling traversal: find nodes on current layer rank or sharing same incoming/outgoing parent
-            const sortedNodesByY = [...nodes].sort((a, b) => a.position.y - b.position.y);
-            const currentIdx = sortedNodesByY.findIndex(n => n.id === selectedNodeId);
-
-            if (currentIdx !== -1) {
-              if (e.key === 'ArrowUp' && currentIdx > 0) {
-                setSelectedIds(sortedNodesByY[currentIdx - 1].id, null);
-              } else if (e.key === 'ArrowDown' && currentIdx < sortedNodesByY.length - 1) {
-                setSelectedIds(sortedNodesByY[currentIdx + 1].id, null);
-              }
-            }
-            return;
-          }
+          return;
         }
       }
     };
