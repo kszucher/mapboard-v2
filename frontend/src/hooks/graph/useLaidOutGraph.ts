@@ -17,6 +17,7 @@ export const useLaidOutGraph = (graphId: string) => {
 
   const runLayoutCalculation = useCallback(
     (nodes: AppFlowNode[], edges: AppFlowEdge[]) => {
+      // Sequence ticket counter: discards out-of-order async worker layout responses
       const seq = ++layoutSeqRef.current;
       runLayout(nodes, edges).then(laidOut => {
         if (seq === layoutSeqRef.current) {
