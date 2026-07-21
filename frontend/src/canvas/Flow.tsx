@@ -119,6 +119,7 @@ const FlowContent = ({
           onReconnect={onReconnect}
           isValidConnection={isValidConnection}
           nodesDraggable={false}
+          deleteKeyCode={null}
           colorMode="dark"
           zoomOnScroll={true}
           zoomOnDoubleClick={false}

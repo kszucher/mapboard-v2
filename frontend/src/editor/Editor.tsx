@@ -34,6 +34,16 @@ export const Editor = ({
 
   const [value, setValue] = useState(initialValue);
   const [isEditing, setIsEditing] = useState(false);
+  const prevInitialValueRef = useRef(initialValue);
+
+  useEffect(() => {
+    if (initialValue !== prevInitialValueRef.current) {
+      prevInitialValueRef.current = initialValue;
+      if (!isEditing) {
+        setValue(initialValue);
+      }
+    }
+  }, [initialValue, isEditing]);
 
   const onSaveRef = useRef(onSave);
   useEffect(() => {
@@ -242,7 +252,7 @@ export const Editor = ({
               verticalAlign: 'top',
             }}
           >
-            {initialValue}
+            {value || initialValue}
           </span>
         )}
       </div>
