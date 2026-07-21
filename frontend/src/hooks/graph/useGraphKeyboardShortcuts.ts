@@ -152,7 +152,6 @@ export const useGraphKeyboardShortcuts = (graphId: string) => {
           isMutatingRef.current = true;
           try {
             await deleteNode(selectedNodeId);
-            setSelectedIds(null, null);
           } finally {
             isMutatingRef.current = false;
           }

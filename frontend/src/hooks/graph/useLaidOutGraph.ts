@@ -13,8 +13,7 @@ export const useLaidOutGraph = (graphId: string) => {
   const { setNodes, setEdges, getNodes, getEdges } = useReactFlow();
 
   const [isLoading, setIsLoading] = useState(true);
-  const clearSlotSelection = useGraphStore(state => state.clearSlotSelection);
-  const clearNodeSelection = useGraphStore(state => state.clearNodeSelection);
+  const reconcileSelection = useGraphStore(state => state.reconcileSelection);
 
   const runLayoutCalculation = useCallback(
     (nodes: AppFlowNode[], edges: AppFlowEdge[]) => {
@@ -44,23 +43,13 @@ export const useLaidOutGraph = (graphId: string) => {
       currentEdges
     );
 
-    const selNodeId = useGraphStore.getState().selectedNodeId;
-    const selSlotId = useGraphStore.getState().selectedSlotId;
-
-    const isNodeMissing = selNodeId && !nodes.some(n => n.id === selNodeId);
-    const isSlotMissing = selSlotId && !nodes.some(n => n.data.node.slots.some(s => s.id === selSlotId));
-
-    if (isNodeMissing) {
-      void clearNodeSelection();
-    } else if (isSlotMissing) {
-      void clearSlotSelection();
-    }
+    reconcileSelection(nodes);
 
     setNodes(nodes);
     setEdges(edges);
 
     runLayoutCalculation(nodes, edges);
-  }, [query.data, runLayoutCalculation, setNodes, setEdges, getNodes, getEdges, clearSlotSelection, clearNodeSelection]);
+  }, [query.data, runLayoutCalculation, setNodes, setEdges, getNodes, getEdges, reconcileSelection]);
 
   const onNodesLayoutChange = useCallback(
     (changes: NodeChange[]) => {
