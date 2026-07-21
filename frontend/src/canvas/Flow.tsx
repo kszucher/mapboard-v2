@@ -1,5 +1,5 @@
 import type { Connection, NodeChange, OnError } from '@xyflow/react';
-import { Controls, ReactFlow, useReactFlow } from '@xyflow/react';
+import { Controls, ReactFlow, ReactFlowProvider, useReactFlow } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useCallback } from 'react';
 import { useCreateEdge, useDeleteEdge, useReconnectEdge } from '../hooks/graph/useGraphMutations';
@@ -157,5 +157,7 @@ const FlowContent = ({
 };
 
 export const Flow = ({ selectedGraphId }: { selectedGraphId: string }) => (
-  <FlowContent key={selectedGraphId} selectedGraphId={selectedGraphId}/>
+  <ReactFlowProvider key={selectedGraphId}>
+    <FlowContent selectedGraphId={selectedGraphId}/>
+  </ReactFlowProvider>
 );

@@ -1,5 +1,5 @@
 import type { NodeChange } from '@xyflow/react';
-import { applyNodeChanges } from '@xyflow/react';
+import { applyNodeChanges, useReactFlow } from '@xyflow/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AppFlowEdge, AppFlowNode } from '../../canvas/types';
 import { runLayout } from '../../domain/graph/layout';
@@ -10,8 +10,9 @@ import { useGraphQuery } from './useGraphQuery';
 export const useLaidOutGraph = (graphId: string) => {
   const query = useGraphQuery(graphId);
   const layoutSeqRef = useRef(0);
+  const { setNodes: setRfNodes, setEdges: setRfEdges } = useReactFlow();
 
-  const [layout, setLayout] = useState<{
+  const [graphState, setGraphState] = useState<{
     nodes: AppFlowNode[];
     edges: AppFlowEdge[];
     isLoading: boolean;
@@ -24,19 +25,25 @@ export const useLaidOutGraph = (graphId: string) => {
   const prevNodesRef = useRef<AppFlowNode[]>([]);
   const prevEdgesRef = useRef<AppFlowEdge[]>([]);
 
-  useEffect(() => {
-    prevNodesRef.current = layout.nodes;
-    prevEdgesRef.current = layout.edges;
-  }, [layout.nodes, layout.edges]);
-
-  const runLayoutCalculation = useCallback((nodes: AppFlowNode[], edges: AppFlowEdge[]) => {
-    const seq = ++layoutSeqRef.current;
-    runLayout(nodes, edges).then(laidOut => {
-      if (seq === layoutSeqRef.current) {
-        setLayout({ nodes: laidOut.nodes, edges: laidOut.edges, isLoading: false });
-      }
-    });
-  }, []);
+  const runLayoutCalculation = useCallback(
+    (nodes: AppFlowNode[], edges: AppFlowEdge[]) => {
+      const seq = ++layoutSeqRef.current;
+      runLayout(nodes, edges).then(laidOut => {
+        if (seq === layoutSeqRef.current) {
+          prevNodesRef.current = laidOut.nodes;
+          prevEdgesRef.current = laidOut.edges;
+          setRfNodes(laidOut.nodes);
+          setRfEdges(laidOut.edges);
+          setGraphState({
+            nodes: laidOut.nodes,
+            edges: laidOut.edges,
+            isLoading: false,
+          });
+        }
+      });
+    },
+    [setRfNodes, setRfEdges]
+  );
 
   useEffect(() => {
     if (!query.data) return;
@@ -51,43 +58,53 @@ export const useLaidOutGraph = (graphId: string) => {
       prevEdges
     );
 
-    const hasNewNodes = nodes.some(n => !prevNodes.some(pn => pn.id === n.id));
+    prevNodesRef.current = nodes;
+    prevEdgesRef.current = edges;
 
-    setLayout(prev => ({ ...prev, nodes, edges }));
+    setRfNodes(nodes);
+    setRfEdges(edges);
+    setGraphState(prev => ({
+      ...prev,
+      nodes,
+      edges,
+    }));
 
-    if (!hasNewNodes) {
-      runLayoutCalculation(nodes, edges);
-    }
-  }, [query.data, runLayoutCalculation]);
+    runLayoutCalculation(nodes, edges);
+  }, [query.data, runLayoutCalculation, setRfNodes, setRfEdges]);
 
   const selectedNodeId = useGraphStore(state => state.selectedNodeId);
   const selectedSlotId = useGraphStore(state => state.selectedSlotId);
 
   const stitchedNodes = useMemo(
-    () => stitchNodeSelection(layout.nodes, selectedNodeId, selectedSlotId),
-    [layout.nodes, selectedNodeId, selectedSlotId]
+    () => stitchNodeSelection(graphState.nodes, selectedNodeId, selectedSlotId),
+    [graphState.nodes, selectedNodeId, selectedSlotId]
   );
 
-  const onNodesLayoutChange = useCallback((changes: NodeChange[]) => {
-    const prevNodes = prevNodesRef.current;
-    const prevEdges = prevEdgesRef.current;
-    const newNodes = applyNodeChanges(changes, prevNodes) as AppFlowNode[];
+  const onNodesLayoutChange = useCallback(
+    (changes: NodeChange[]) => {
+      const prevNodes = prevNodesRef.current;
+      const prevEdges = prevEdgesRef.current;
+      const newNodes = applyNodeChanges(changes, prevNodes) as AppFlowNode[];
 
-    if (
-      changes.some(c => c.type === 'dimensions') &&
-      shouldTriggerLayoutOnResize(prevNodes, newNodes, layout.isLoading)
-    ) {
-      runLayoutCalculation(newNodes, prevEdges);
-    }
+      if (
+        changes.some(c => c.type === 'dimensions') &&
+        shouldTriggerLayoutOnResize(prevNodes, newNodes, graphState.isLoading)
+      ) {
+        runLayoutCalculation(newNodes, prevEdges);
+      }
 
-    setLayout(prev => ({ ...prev, nodes: newNodes }));
-  }, [runLayoutCalculation, layout.isLoading]);
+      prevNodesRef.current = newNodes;
+      setRfNodes(newNodes);
+      setGraphState(prev => ({ ...prev, nodes: newNodes }));
+    },
+    [runLayoutCalculation, graphState.isLoading, setRfNodes]
+  );
 
   return {
     ...query,
     nodes: stitchedNodes,
-    edges: layout.edges,
-    isLoading: layout.isLoading,
+    edges: graphState.edges,
+    isLoading: graphState.isLoading,
     onNodesLayoutChange,
   };
 };
@@ -97,12 +114,7 @@ const shouldTriggerLayoutOnResize = (
   newNodes: AppFlowNode[],
   isLoading: boolean
 ): boolean => {
-  if (isLoading) {
-    return (
-      newNodes.length > 0 &&
-      newNodes.every(n => n.measured?.width !== undefined && n.measured?.height !== undefined)
-    );
-  }
+  if (isLoading) return true;
 
   return newNodes.some(node => {
     const prevNode = prevNodes.find(n => n.id === node.id);
