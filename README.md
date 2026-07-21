@@ -1,107 +1,68 @@
 # Graphboard
 
-Graphboard is a pure visual, logic-driven graph editor for building, compiling, and visualizing **LangGraph** workflows. Visual node arrangements, slot AST expressions, and state schemas serve as the single source of truth, from which full Python scripts are deterministically generated and displayed in a read-only sidebar preview.
+**Graphboard** is a visual, graph-oriented editor for designing, compiling, and running **LangGraph** workflows in Python.
 
-### Project Status & Evolution
-This repository serves as a personal, non-commercial R&D exploration and a continuous playground for full-stack AI system design. It builds upon ideas from a previous project (Mapboard) with two fundamental architectural shifts:
-* **Backend Stack:** Migrated from Nest.js/Node.js to a Python/FastAPI ecosystem.
-* **Pure Visual Graph Architecture:** Pivoted from bidirectional code editing to a pure graph-oriented model where code is non-editable, automatically generated, and validated via backend Ruff diagnostics.
-
-*As an active work-in-progress experiment, this codebase is primarily dedicated to skill acquisition, showcasing advanced conversational state control, and prototyping dynamic graph translation layer concepts.*
+Instead of writing executable code by hand, you construct your agentic logic visually using nodes, state schemas, and expression slots. Graphboard automatically synthesizes clean, executable Python code in real time and validates it on the fly.
 
 ---
 
-Below is a screenshot of the AI workflow of a well-known "Who wants to be a millionaire" game.
-
-<img width="1980" height="1080" alt="Image" src="https://github.com/user-attachments/assets/dc6bf916-0dcb-40ca-aa49-36ea0802aedc" />
+<img width="1980" height="1080" alt="Graphboard Interface Preview" src="https://github.com/user-attachments/assets/dc6bf916-0dcb-40ca-aa49-36ea0802aedc" />
 
 ---
 
-## 1. Core Concept & Visual Node Roles
+## 💡 How It Works
 
-In Graphboard, agentic logic is structured into visual execution nodes. Each node maps to generated Python code and LangGraph constructs:
-
-### START Node (Entry point)
-* **Role**: Defines where the workflow execution begins.
-* **Code Representation**: Mapped directly to standard LangGraph sentinels: `workflow.add_edge(START, "first_step")`.
-
-### END Node (Exit point)
-* **Role**: Defines transition out of the state machine.
-* **Code Representation**: Mapped to the `END` sentinel: `workflow.add_edge("last_step", END)` or `{"yes_route": END}`.
-
-### STEP Node (Sequential Execution)
-* **Role**: Represents a task performing updates or state calculations.
-* **Code Representation**: A generated python function returning state mutation dicts, registered via `workflow.add_node("name", func)`.
-
-### SWITCH Node (Decision & Routing)
-* **Role**: Evaluates slot AST condition expressions to dynamically route control flow.
-* **Code Representation**: A generated router function evaluating slot AST expressions in `if/elif` order, registered via `workflow.add_conditional_edges("name", router_func, path_map)`.
+1. **Build Visually**: Arrange nodes (Steps, Decisions/Switches, Entry & Exit points) on an auto-layout canvas.
+2. **Define Logic via Expressions**: Assign AST expression conditions to decision slots and state updates to action nodes.
+3. **Inspect Generated Python Code**: Graphboard deterministically compiles your visual graph into executable Python code (using standard `LangGraph` primitive calls and `TypedDict` state definitions).
+4. **Instant Linting**: The Python backend runs native `Ruff` static analysis on the generated code to surface errors and warnings directly back onto the visual canvas and sidebar code viewer.
 
 ---
 
-## 2. Project Progress Tracker (Incremental Status)
+## 🧩 Visual Node Types
 
-### Phase 1: Core Graph & Layout Foundation (Implemented)
-* **Programmatic Auto-Layout**: Configured React Flow to disable manual node dragging (`nodesDraggable: false`) and delegate all positioning calculations to ELK.
-* **Slot-Based Handling**: Implemented output slots on Switch nodes representing execution branches, while Step nodes use node-level input/output handles directly.
-* **Detour Back-Edge Routing**: Detected backward execution paths (feedback loops) and routed them manually around the bottom of the graph to avoid distorting ELK layouts.
-* **Handles Lifecycle Sync**: Added automatic React Flow handle cache updates via `updateNodeInternals` when slot configurations toggle.
-* **Animation Transition Smoothness**: Mapped screen coordinates before history changes to trigger clean sliding animations on undo/redo.
-
-### Phase 2: State & Synchronization Layer (Implemented)
-* **FastAPI Backend Port**: Rewrote the server from Node.js/Nest.js to Python/FastAPI.
-* **Optimistic Store Sync**: Integrated a Zustand store on the frontend that updates memory instantly, synchronizing with the database asynchronously.
-* **UoW Event Buffering**: Configured a FastAPI Unit of Work transaction manager that buffers WebSocket broadcasts until transactions commit successfully.
-
-### Phase 3: Pure Visual Graph & AST Engine (Implemented)
-* **Pure Graph Source of Truth**: Graph schema (`state_schema`, nodes, slot AST expressions) is the sole data representation. Manual code editing is disabled.
-* **Deterministic Code Generation**: Python code is dynamically synthesized on the backend from ASTs and graph topology.
-* **Read-Only CodeMirror Sidebar**: Displays the generated Python script in read-only mode with active syntax highlighting.
-* **Bidirectional AST Selection & Folding**: Retained CodeMirror AST syntax tree traversal so selecting canvas nodes unfolds and highlights code functions, and clicking code function definitions selects corresponding visual nodes.
-
-### Phase 4: Native Backend Ruff Engine (Implemented)
-* **Backend Ruff Diagnostic Checks**: Executes `ruff check --output-format=json -` natively on the backend against generated Python code.
-* **Frontend Diagnostics Display**: Surfacing Ruff diagnostics directly in CodeMirror and canvas problem indicators without needing browser WASM binaries.
+| Node Type | Role | Generated Python Representation |
+| :--- | :--- | :--- |
+| **START** | Entry point of execution flow | Mapped to `START` sentinel: `workflow.add_edge(START, "first_step")` |
+| **END** | Exit point / state machine termination | Mapped to `END` sentinel: `workflow.add_edge("last_step", END)` |
+| **STEP** | Performs state updates / calculations | Generated Python function registered via `workflow.add_node("step_name", func)` |
+| **SWITCH** | Evaluates conditional branching logic | Router function evaluating expressions in `if/elif` order registered via `workflow.add_conditional_edges(...)` |
 
 ---
 
-## 3. Core System Architecture & Design Choices
+## 🏗️ Architecture Overview
 
-### Dynamic Graph-to-Code Pipeline
+Graphboard operates as a reactive web application driven by a Python FastAPI backend and a React Flow frontend:
 
 ```mermaid
 graph TD
-    Canvas[Visual React Flow Canvas] -- "On Node / Slot AST Mutation" --> Sync[Backend Graph Payload Sync]
-    Sync -- "Derive Python Code" --> Gen[Backend Code & AST Generator]
-    Gen -- "Run Ruff CLI" --> Ruff[Native Backend Ruff Engine]
-    Gen -- "Generated Python Script" --> Preview[Read-Only CodeMirror Sidebar]
-    Ruff -- "Structured Diagnostics" --> Diags[CodeMirror & Node Diagnostics]
+    UI[Visual Canvas Editor] -- "Node / Slot AST Mutations" --> API[FastAPI Backend]
+    API -- "Synthesizes Python Script" --> Compiler[AST Generator]
+    Compiler -- "Runs Static Analysis" --> Ruff[Native Ruff Linter]
+    Compiler -- "Generated Code String" --> Sidebar[Read-Only Code Mirror Sidebar]
+    Ruff -- "Line & Column Diagnostics" --> UI
 ```
 
-### TanStack Query Cache & Lightweight Zustand Store
-Graphboard uses **TanStack Query** to drive server synchronizations, data cache invalidations, and mutations, while **Zustand** is kept as a lightweight UI store.
-* **TanStack Query**:
-  * `useGraphQuery(graphId)`: Fetches raw, un-laid-out graph structure from the server. Deduplicated across all child components (nodes, slots, editor).
-  * `useLaidOutGraph(graphId)`: Exclusively executed once at the canvas root to manage layout coordinates, initial measuring phases, and slot count updates.
-  * `useGraphMutations(graphId)`: Mutates structural nodes, edges, slots, and updates the local CodeMirror editor buffer on success.
-* **Zustand Store**:
-  * Manages UI selection markers (`selectedNodeId`, `selectedSlotId`) and active diagnostics.
-  * Selection state is reactively stitched into mapped React Flow nodes inside `useLaidOutGraph` to skip running ELK layout calculations on selection toggles.
-
-### Auto-Layout ONLY (No Drag-and-Drop)
-React Flow's `nodesDraggable` is set to `false`. Node coordinates `(x, y)` are computed on the fly by ELK in the frontend. Layout changes are performed in two phases:
-1. **Initial Load**: Graph renders nodes unmeasured. Once `nodes.every(n => n.measured)` is met, ELK runs layout exactly **once** and sets `isLoading` to false.
-2. **Pending Mutations**: Slot modifications flag the target node's dimensions as pending. Layout is deferred until the new slot dimensions are measured.
+### Key Technical Choices
+* **Pure Visual Graph Model**: The visual graph (nodes, slots, edges, state schema) is the single source of truth. Code is strictly a generated output.
+* **Deterministic Layout (ELK)**: Manual node dragging is disabled (`nodesDraggable: false`). Layout is computed automatically by ELK (Eclipse Layout Kernel) on the frontend for consistent, clean diagramming.
+* **Synchronized Code Inspector**: Clicking a visual node automatically highlights and unfolds its generated function in the CodeMirror sidebar, while clicking a function in the code editor highlights its visual node on the canvas.
+* **Optimistic Updates & Unit of Work**: Uses TanStack Query for data fetching, Zustand for UI selection markers, and a FastAPI Unit of Work transaction manager to buffer WebSocket events until DB commits finish.
 
 ---
 
-## 4. Key Implementation Gotchas
+## 🛠️ Tech Stack
 
-* **CodeMirror Read-Only Guard**: Set `EditorState.readOnly.of(true)` across the entire CodeMirror state in `useCodeMirror.ts` to enforce read-only properties while preserving AST syntax tree iteration for bidirectional selection and code folding.
-* **Native Ruff Diagnostics Integration**: Diagnostics are generated natively on the backend via Python `subprocess` calling `ruff check`, eliminating the heavy `@astral-sh/ruff-wasm-web` browser bundle.
-* **Unconditional Layout Transitions**: Visual CSS transitions (`transition: transform 400ms...`) are applied statically to node styles when elements are mapped. React Flow forwards this to the outer wrapper, animating all coordinate updates.
-* **Custom Handles Lifecycle & `updateNodeInternals`**: When slots are added or removed, React Flow's DOM-cached registry becomes stale. We must compute a stable `slotsHash` in `FlowNode.tsx` and run a `useEffect` triggering `updateNodeInternals(id)` whenever the hash changes to force React Flow to re-query the handles.
-* **String-Based Identifiers (UUID Migration)**: Node, slot, and edge IDs are represented as `string` values instead of strict `uuid.UUID` types. This enables user-friendly, readable node names (like `"step_1"`) and slot names (like `"switch_1_option_a"`) to serve directly as the execution keys in the compiled LangGraph workflow.
+* **Frontend**: React 19, TypeScript, React Flow (@xyflow/react), CodeMirror 6, TanStack Query, Zustand, Radix UI.
+* **Backend**: Python 3.12+, FastAPI, SQLAlchemy 2.0, Pydantic v2, Ruff (for code linting & formatting), LangGraph.
+
+---
+
+## 📌 Implementation Gotchas & Quirks
+
+* **Handle Lifecycle (`updateNodeInternals`)**: When slots are added or removed dynamically on SWITCH nodes, React Flow's cached handle locations can become stale. We use a computed `slotsHash` in `FlowNode.tsx` to call `updateNodeInternals(id)` whenever slots change.
+* **String Identifiers**: Node and slot IDs use readable string names (e.g. `"step_1"`, `"option_a"`) rather than raw UUIDs, matching the function names and branch keys in the generated LangGraph workflow.
+* **Read-Only CodeMirror Guard**: `EditorState.readOnly.of(true)` locks CodeMirror edits while keeping full syntax tree parsing enabled for bidirectional selection and code folding.
 
 
 
