@@ -78,27 +78,47 @@ export const getSiblingNodeId = (
   nodes: AppFlowNode[],
   edges: AppFlowEdge[]
 ): string | null => {
-  const currentNode = nodes.find(n => n.id === currentNodeId);
-  if (!currentNode) return null;
+  // Trace upstream to find the nearest ancestor node that has slots, and get the slot ID we came from
+  const getBranchOrigin = (nodeId: string): { ancestorId: string; slotId: string } | null => {
+    let curr = nodeId;
+    while (curr) {
+      const incoming = edges.find(e => e.target === curr);
+      if (!incoming) return null;
+      if (incoming.sourceHandle && incoming.sourceHandle !== incoming.source) {
+        return { ancestorId: incoming.source, slotId: incoming.sourceHandle };
+      }
+      curr = incoming.source;
+    }
+    return null;
+  };
 
-  const parentSourceIds = edges.filter(eg => eg.target === currentNodeId).map(eg => eg.source);
-  const childTargetIds = edges.filter(eg => eg.source === currentNodeId).map(eg => eg.target);
+  const myOrigin = getBranchOrigin(currentNodeId);
+  if (!myOrigin) return null;
 
-  const siblingNodes = nodes.filter(n => {
-    if (n.id === currentNodeId) return false;
-    const sharesParent = edges.some(eg => parentSourceIds.includes(eg.source) && eg.target === n.id);
-    const sharesChild = edges.some(eg => childTargetIds.includes(eg.target) && eg.source === n.id);
-    return sharesParent || sharesChild;
-  }).sort((a, b) => a.position.y - b.position.y);
+  // Sibling candidates are nodes that also trace back to the same ancestor, but a different slot
+  const candidates = nodes
+    .map(node => {
+      const origin = getBranchOrigin(node.id);
+      if (origin && origin.ancestorId === myOrigin.ancestorId && origin.slotId !== myOrigin.slotId) {
+        const ancestorNode = nodes.find(n => n.id === myOrigin.ancestorId);
+        const slots = ancestorNode?.data?.node?.slots || [];
+        return {
+          nodeId: node.id,
+          slotIndex: slots.findIndex(s => s.id === origin.slotId)
+        };
+      }
+      return null;
+    })
+    .filter((c): c is NonNullable<typeof c> => c !== null && c.slotIndex !== -1);
 
-  if (siblingNodes.length === 0) return null;
+  const ancestorNode = nodes.find(n => n.id === myOrigin.ancestorId);
+  const mySlotIndex = ancestorNode?.data?.node?.slots?.findIndex(s => s.id === myOrigin.slotId) ?? -1;
 
-  const currentY = currentNode.position.y;
   if (position === 'above') {
-    const candidatesAbove = siblingNodes.filter(n => n.position.y < currentY);
-    return candidatesAbove.length > 0 ? candidatesAbove[candidatesAbove.length - 1].id : null;
+    const candidatesAbove = candidates.filter(c => c.slotIndex < mySlotIndex);
+    return candidatesAbove.sort((a, b) => b.slotIndex - a.slotIndex)[0]?.nodeId || null;
+  } else {
+    const candidatesBelow = candidates.filter(c => c.slotIndex > mySlotIndex);
+    return candidatesBelow.sort((a, b) => a.slotIndex - b.slotIndex)[0]?.nodeId || null;
   }
-
-  const candidatesBelow = siblingNodes.filter(n => n.position.y > currentY);
-  return candidatesBelow.length > 0 ? candidatesBelow[0].id : null;
 };
