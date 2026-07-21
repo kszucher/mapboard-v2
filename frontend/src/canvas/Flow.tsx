@@ -18,7 +18,7 @@ const FlowContent = ({
 }: {
   selectedGraphId: string;
 }) => {
-  const { nodes, edges, isLoading, onNodesChange: onNodesLayoutChange } = useLaidOutGraph(selectedGraphId);
+  const { nodes, edges, isLoading, onNodesLayoutChange } = useLaidOutGraph(selectedGraphId);
   const setSelectedIds = useGraphStore(state => state.setSelectedIds);
   const clearSlotSelection = useGraphStore(state => state.clearSlotSelection);
 
