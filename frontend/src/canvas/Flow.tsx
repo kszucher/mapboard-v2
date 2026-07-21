@@ -3,6 +3,7 @@ import { Controls, ReactFlow, ReactFlowProvider, useReactFlow } from '@xyflow/re
 import '@xyflow/react/dist/style.css';
 import { useCallback } from 'react';
 import { useCreateEdge, useDeleteEdge, useReconnectEdge } from '../hooks/graph/useGraphMutations';
+import { useGraphKeyboardShortcuts } from '../hooks/graph/useGraphKeyboardShortcuts';
 import { useGraphWebSocket } from '../hooks/graph/useGraphWebSocket';
 import { useLaidOutGraph } from '../hooks/graph/useLaidOutGraph';
 import { useGraphStore } from '../store/graphStore';
@@ -29,6 +30,7 @@ const FlowContent = ({
   const { fitView } = useReactFlow();
 
   useGraphWebSocket(selectedGraphId);
+  useGraphKeyboardShortcuts(selectedGraphId);
 
   const isValidConnection = useCallback(() => true, []);
 
@@ -59,12 +61,9 @@ const FlowContent = ({
       (c): c is Extract<NodeChange, { type: 'select' }> => c.type === 'select'
     );
     const selectChange = selectChanges.find(c => c.selected);
-    const deselectChange = selectChanges.find(c => !c.selected);
 
     if (selectChange) {
       setSelectedIds(selectChange.id, null);
-    } else if (deselectChange) {
-      setSelectedIds(null, null);
     }
 
     onNodesLayoutChange(changes);
@@ -119,6 +118,7 @@ const FlowContent = ({
           onReconnect={onReconnect}
           isValidConnection={isValidConnection}
           nodesDraggable={false}
+          multiSelectionKeyCode={null}
           deleteKeyCode={null}
           colorMode="dark"
           zoomOnScroll={true}

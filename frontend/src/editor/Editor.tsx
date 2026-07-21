@@ -7,12 +7,6 @@ interface PlainEditorProps {
   readOnly?: boolean;
   isSelected: boolean;
   onSelect: () => void;
-  onMoveUp?: () => void;
-  onMoveDown?: () => void;
-  onNavigate?: (direction: 'up' | 'down') => void;
-  onAddAbove?: () => void;
-  onAddBelow?: () => void;
-  onDelete?: () => void;
 }
 
 export const Editor = ({
@@ -22,12 +16,6 @@ export const Editor = ({
   readOnly = false,
   isSelected,
   onSelect,
-  onMoveUp,
-  onMoveDown,
-  onNavigate,
-  onAddAbove,
-  onAddBelow,
-  onDelete,
 }: PlainEditorProps) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -85,53 +73,11 @@ export const Editor = ({
         return;
       }
 
-      if (e.key === 'ArrowUp') {
-        if (e.ctrlKey) {
-          if (onMoveUp) {
-            e.preventDefault();
-            e.stopPropagation();
-            onMoveUp();
-          }
-        } else {
-          if (onNavigate) {
-            e.preventDefault();
-            e.stopPropagation();
-            onNavigate('up');
-          }
-        }
-      } else if (e.key === 'ArrowDown') {
-        if (e.ctrlKey) {
-          if (onMoveDown) {
-            e.preventDefault();
-            e.stopPropagation();
-            onMoveDown();
-          }
-        } else {
-          if (onNavigate) {
-            e.preventDefault();
-            e.stopPropagation();
-            onNavigate('down');
-          }
-        }
-      } else if (e.key === 'Insert') {
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.shiftKey) {
-          if (onAddAbove) onAddAbove();
-        } else {
-          if (onAddBelow) onAddBelow();
-        }
-      } else if (e.key === 'F2') {
+      if (e.key === 'F2') {
         if (!isEditing && !readOnly) {
           e.preventDefault();
           e.stopPropagation();
           startEditing();
-        }
-      } else if (e.key === 'Delete') {
-        if (!isEditing && onDelete) {
-          e.preventDefault();
-          e.stopPropagation();
-          onDelete();
         }
       }
     };
@@ -140,7 +86,7 @@ export const Editor = ({
     return () => {
       window.removeEventListener('keydown', handleKeyDown, true);
     };
-  }, [isSelected, onMoveUp, onMoveDown, onNavigate, onAddAbove, onAddBelow, onDelete, isEditing, readOnly, initialValue, startEditing]);
+  }, [isSelected, isEditing, readOnly, startEditing]);
 
   const handleWrapperClick = (e: React.MouseEvent) => {
     if (disabled) return;

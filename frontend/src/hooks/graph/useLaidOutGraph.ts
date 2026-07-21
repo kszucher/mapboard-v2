@@ -43,9 +43,9 @@ export const useLaidOutGraph = (graphId: string) => {
       currentEdges
     );
 
-    // Safety check: clear selection if selected node or slot no longer exists in graph
     const selNodeId = useGraphStore.getState().selectedNodeId;
     const selSlotId = useGraphStore.getState().selectedSlotId;
+
     const isNodeMissing = selNodeId && !nodes.some(n => n.id === selNodeId);
     const isSlotMissing = selSlotId && !nodes.some(n => n.data.node.slots.some(s => s.id === selSlotId));
 

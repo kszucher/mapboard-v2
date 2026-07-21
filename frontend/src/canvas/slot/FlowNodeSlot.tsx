@@ -4,7 +4,7 @@ import { memo, useCallback, useMemo } from 'react';
 import { NODE_PADDING } from '../../domain/graph/layout';
 import { fromApiPayload } from '../../domain/graph/mappers';
 import { Editor } from '../../editor/Editor.tsx';
-import { useCreateSlot, useDeleteSlot, useMoveSlot, useUpdateSlot, } from '../../hooks/graph/useGraphMutations';
+import { useUpdateSlot } from '../../hooks/graph/useGraphMutations';
 import { useGraphQuery } from '../../hooks/graph/useGraphQuery';
 import { useGraphStore } from '../../store/graphStore';
 import type { ApiSlot } from '../types';
@@ -16,7 +16,6 @@ interface FlowNodeSlotProps {
   isStart: boolean;
   isEnd: boolean;
   onSelect: () => void;
-  onNavigate: (direction: 'up' | 'down') => void;
 }
 
 export const FlowNodeSlot = memo(({
@@ -25,7 +24,6 @@ export const FlowNodeSlot = memo(({
   isStart,
   isEnd,
   onSelect,
-  onNavigate,
 }: FlowNodeSlotProps) => {
   const isSelected = useGraphStore(state => state.selectedSlotId === slotId);
   const graphId = useGraphStore(state => state.graphId) || '';
@@ -36,9 +34,6 @@ export const FlowNodeSlot = memo(({
   }, [data]);
 
   const { mutateAsync: updateSlot } = useUpdateSlot(graphId);
-  const { mutateAsync: moveSlot } = useMoveSlot(graphId);
-  const { mutateAsync: createSlot } = useCreateSlot(graphId);
-  const { mutateAsync: deleteSlot } = useDeleteSlot(graphId);
 
   const node = useMemo(() => {
     return nodes.find((n) => n.data.node.slots.some((s: ApiSlot) => s.id === slotId));
@@ -48,39 +43,12 @@ export const FlowNodeSlot = memo(({
     return node?.data.node.slots.find((s: ApiSlot) => s.id === slotId);
   }, [node, slotId]);
 
-  const indexInNode = useMemo(() => {
-    if (!node) return -1;
-    return node.data.node.slots.findIndex((s: ApiSlot) => s.id === slotId);
-  }, [node, slotId]);
-
   const handleUpdateItem = useCallback(
     (newValue: string) => {
       void updateSlot({ slotId, rawString: newValue });
     },
     [slotId, updateSlot]
   );
-
-  const handleMoveUp = useCallback(() => {
-    void moveSlot({ slotId, direction: 'up' });
-  }, [slotId, moveSlot]);
-
-  const handleMoveDown = useCallback(() => {
-    void moveSlot({ slotId, direction: 'down' });
-  }, [slotId, moveSlot]);
-
-  const handleAddAbove = useCallback(() => {
-    if (!slot || !node || indexInNode === -1) return;
-    void createSlot({ nodeId: node.id, index: indexInNode });
-  }, [createSlot, node, slot, indexInNode]);
-
-  const handleAddBelow = useCallback(() => {
-    if (!slot || !node || indexInNode === -1) return;
-    void createSlot({ nodeId: node.id, index: indexInNode + 1 });
-  }, [createSlot, node, slot, indexInNode]);
-
-  const handleDeleteSlot = useCallback(() => {
-    void deleteSlot(slotId);
-  }, [slotId, deleteSlot]);
 
   if (!slot) return null;
 
@@ -134,12 +102,6 @@ export const FlowNodeSlot = memo(({
           disabled={disabled}
           isSelected={isSelected}
           onSelect={onSelect}
-          onMoveUp={handleMoveUp}
-          onMoveDown={handleMoveDown}
-          onNavigate={onNavigate}
-          onAddAbove={handleAddAbove}
-          onAddBelow={handleAddBelow}
-          onDelete={handleDeleteSlot}
         />
       </Flex>
       {actions}

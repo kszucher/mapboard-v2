@@ -1,14 +1,12 @@
 import type { BadgeProps } from '@radix-ui/themes';
 import { Badge, Flex } from '@radix-ui/themes';
 import { Handle, type NodeProps, Position, useUpdateNodeInternals } from '@xyflow/react';
-import { memo, useCallback, useEffect, useMemo } from 'react';
+import { memo, useEffect, useMemo } from 'react';
 import { NODE_PADDING } from '../../domain/graph/layout';
 import { useGraphStore } from '../../store/graphStore';
 import { FlowNodeSlot } from '../slot/FlowNodeSlot.tsx';
 import { type AppFlowNode, type NodeType } from '../types.ts';
-
 import { FlowNodeActions } from './FlowNodeActions.tsx';
-
 
 const NODE_COLORS: Record<NodeType, BadgeProps['color']> = {
   START: 'gray',
@@ -17,43 +15,30 @@ const NODE_COLORS: Record<NodeType, BadgeProps['color']> = {
   SWITCH: 'amber',
 };
 
-const CustomNodeComponent = ({ data, id, selected }: NodeProps<AppFlowNode>) => {
+const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   const updateNodeInternals = useUpdateNodeInternals();
   const setSelectedIds = useGraphStore(state => state.setSelectedIds);
   const isNodeSelected = useGraphStore(state => state.selectedNodeId === id);
-
-  const mySlots = data.node.slots;
+  const selectedSlotId = useGraphStore(state => state.selectedSlotId);
 
   const mySlotsHash = useMemo(() => {
-    return mySlots.map((s, index) => `${s.id}:${index}`).join(',');
-  }, [mySlots]);
+    const slots = data?.node?.slots || [];
+    return slots.map((s, index) => `${s.id}:${index}`).join(',');
+  }, [data?.node?.slots]);
 
   useEffect(() => {
     updateNodeInternals(id);
-  }, [mySlotsHash, data.node.node_type, data.node.is_input, data.node.is_output, id, updateNodeInternals]);
-
-  const handleNavigateSlot = useCallback((currentSlotId: string, direction: 'up' | 'down') => {
-    const currentIndex = mySlots.findIndex(s => s.id === currentSlotId);
-    if (currentIndex === -1) return;
-
-    let targetIndex = currentIndex;
-    if (direction === 'up' && currentIndex > 0) {
-      targetIndex = currentIndex - 1;
-    } else if (direction === 'down' && currentIndex < mySlots.length - 1) {
-      targetIndex = currentIndex + 1;
-    }
-
-    if (targetIndex !== currentIndex) {
-      setSelectedIds(id, targetIndex);
-    }
-  }, [mySlots, id, setSelectedIds]);
+  }, [mySlotsHash, data?.node?.node_type, data?.node?.is_input, data?.node?.is_output, id, updateNodeInternals]);
 
   if (!data) return null;
 
   const { node } = data;
+  const mySlots = node.slots || [];
   const isStart = node.node_type === 'START';
   const isEnd = node.node_type === 'END';
-  const isSelected = isNodeSelected || selected;
+
+  // Strictly mutually exclusive: node outline ONLY shows when node is selected AND no slot is selected
+  const isSelected = isNodeSelected && selectedSlotId === null;
 
   return (
     <Flex
@@ -107,7 +92,6 @@ const CustomNodeComponent = ({ data, id, selected }: NodeProps<AppFlowNode>) => 
             isStart={isStart}
             isEnd={isEnd}
             onSelect={() => setSelectedIds(id, index)}
-            onNavigate={(direction) => handleNavigateSlot(slot.id, direction)}
           />
         );
       })}
