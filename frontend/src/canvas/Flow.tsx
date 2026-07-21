@@ -6,7 +6,7 @@ import { useCreateEdge, useDeleteEdge, useReconnectEdge } from '../hooks/graph/u
 import { useGraphWebSocket } from '../hooks/graph/useGraphWebSocket';
 import { useLaidOutGraph } from '../hooks/graph/useLaidOutGraph';
 import { useGraphStore } from '../store/graphStore';
-import FlowEdge from './FlowEdge.tsx';
+import FlowEdge from './edge/FlowEdge.tsx';
 import { CustomNode } from './node/FlowNode.tsx';
 import type { AppFlowEdge } from './types';
 
@@ -157,5 +157,5 @@ const FlowContent = ({
 };
 
 export const Flow = ({ selectedGraphId }: { selectedGraphId: string }) => (
-  <FlowContent key={selectedGraphId} selectedGraphId={selectedGraphId} />
+  <FlowContent key={selectedGraphId} selectedGraphId={selectedGraphId}/>
 );
