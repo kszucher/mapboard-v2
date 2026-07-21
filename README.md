@@ -95,7 +95,7 @@ graph TD
 
 ## 📌 Implementation Gotchas & Quirks
 
-* **Handle Lifecycle (`updateNodeInternals`)**: When slots are added or removed dynamically on SWITCH nodes, React Flow's cached handle locations become stale. We use a computed `slotsHash` in `FlowNode.tsx` to trigger `updateNodeInternals(id)` whenever slots change.
+* **Handle Lifecycle (`updateNodeInternals`)**: When slots are added or removed dynamically on SWITCH nodes, React Flow's cached handle locations become stale. We listen to `node.slots` changes in `FlowNode.tsx` to trigger `updateNodeInternals(id)` whenever slot structure updates.
 * **CodeMirror Read-Only Guard**: Setting `EditorState.readOnly.of(true)` across CodeMirror locks typing while allowing `@codemirror/language` AST syntax tree iteration to continue driving bidirectional node highlighting and code folding.
 * **Native Ruff CLI Subprocess**: Running `ruff check` natively on the backend executes in sub-milliseconds, completely eliminating WASM bundle overhead on the frontend.
 

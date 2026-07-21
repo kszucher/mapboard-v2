@@ -1,7 +1,7 @@
 import type { BadgeProps } from '@radix-ui/themes';
 import { Badge, Flex } from '@radix-ui/themes';
 import { Handle, type NodeProps, Position, useUpdateNodeInternals } from '@xyflow/react';
-import { memo, useEffect, useMemo } from 'react';
+import { memo, useEffect } from 'react';
 import { NODE_PADDING } from '../../domain/graph/layout';
 import { useGraphStore } from '../../store/graphStore';
 import { FlowNodeSlot } from '../slot/FlowNodeSlot.tsx';
@@ -21,14 +21,9 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   const isNodeSelected = useGraphStore(state => state.selectedNodeId === id);
   const selectedSlotId = useGraphStore(state => state.selectedSlotId);
 
-  const mySlotsHash = useMemo(() => {
-    const slots = data?.node?.slots || [];
-    return slots.map((s, index) => `${s.id}:${index}`).join(',');
-  }, [data?.node?.slots]);
-
   useEffect(() => {
     updateNodeInternals(id);
-  }, [mySlotsHash, data?.node?.node_type, data?.node?.is_input, data?.node?.is_output, id, updateNodeInternals]);
+  }, [id, updateNodeInternals, data?.node?.slots, data?.node?.node_type, data?.node?.is_input, data?.node?.is_output]);
 
   if (!data) return null;
 
