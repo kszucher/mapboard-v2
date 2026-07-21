@@ -6,8 +6,8 @@ Instead of writing complex state machine code manually, Graphboard provides a vi
 
 ### 🚀 Project Status & R&D Evolution
 This repository serves as a personal, non-commercial full-stack R&D exploration and engineering showcase for full-stack AI system design. It builds directly upon ideas from a previous project (**Mapboard**), introducing two core architectural evolutions:
-1. **Backend Stack Shift**: Migrated from Nest.js/Node.js to a Python/FastAPI ecosystem to natively integrate with Python-first AI orchestration frameworks (LangGraph).
-2. **Pure Visual Graph Architecture**: Evolved from bidirectional string-code parsing to a pure graph-oriented model where AST expressions and node topologies generate standard Python code automatically, validated via native backend `Ruff` static analysis.
+* **Backend Stack:** Migrated from Nest.js/Node.js to a Python/FastAPI ecosystem.
+* **Execution Strategy:** Replaced a custom DAG execution engine with an ongoing, active implementation of a LangGraph-based state machine interpreter.
 
 *This project serves as a showcase of advanced conversational state control, real-time visual-to-code translation layer design, and complex React/FastAPI architecture.*
 
