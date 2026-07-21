@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface PlainEditorProps {
   initialValue: string;
@@ -32,34 +32,31 @@ export const Editor = ({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const [value, setValue] = useState(initialValue);
   const [isEditing, setIsEditing] = useState(false);
-  const prevInitialValueRef = useRef(initialValue);
+  const [draft, setDraft] = useState(initialValue);
+  const [committedDraft, setCommittedDraft] = useState<string | null>(null);
+  const [prevInitialValue, setPrevInitialValue] = useState(initialValue);
 
-  useEffect(() => {
-    if (initialValue !== prevInitialValueRef.current) {
-      prevInitialValueRef.current = initialValue;
-      if (!isEditing) {
-        setValue(initialValue);
-      }
+  if (initialValue !== prevInitialValue) {
+    setPrevInitialValue(initialValue);
+    setCommittedDraft(null);
+  }
+
+  const startEditing = useCallback(() => {
+    if (disabled || readOnly) return;
+    setDraft(committedDraft ?? initialValue);
+    setIsEditing(true);
+  }, [disabled, readOnly, committedDraft, initialValue]);
+
+  const commitEditing = () => {
+    if (draft !== initialValue) {
+      setCommittedDraft(draft);
+      onSave(draft);
     }
-  }, [initialValue, isEditing]);
-
-  const onSaveRef = useRef(onSave);
-  useEffect(() => {
-    onSaveRef.current = onSave;
-  }, [onSave]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setValue(e.target.value);
-  };
-
-  const commitAndExit = () => {
-    onSaveRef.current(value);
     setIsEditing(false);
   };
 
-  // Focus and select-to-end when editing starts (native input handles caret placement)
+  // Focus and select-to-end when editing starts
   useEffect(() => {
     if (isEditing && inputRef.current) {
       const el = inputRef.current;
@@ -69,13 +66,9 @@ export const Editor = ({
     }
   }, [isEditing]);
 
-  // If isSelected becomes false, exit edit mode
-  useEffect(() => {
-    if (!isSelected) {
-      setIsEditing(false);
-    }
-  }, [isSelected]);
-
+  if (!isSelected && isEditing) {
+    setIsEditing(false);
+  }
 
   // Handle keyboard shortcuts when selected
   useEffect(() => {
@@ -132,8 +125,7 @@ export const Editor = ({
         if (!isEditing && !readOnly) {
           e.preventDefault();
           e.stopPropagation();
-          setValue(initialValue);
-          setIsEditing(true);
+          startEditing();
         }
       } else if (e.key === 'Delete') {
         if (!isEditing && onDelete) {
@@ -142,27 +134,23 @@ export const Editor = ({
           onDelete();
         }
       }
-
     };
 
     window.addEventListener('keydown', handleKeyDown, true);
     return () => {
       window.removeEventListener('keydown', handleKeyDown, true);
     };
-  }, [isSelected, onMoveUp, onMoveDown, onNavigate, onAddAbove, onAddBelow, onDelete, isEditing, readOnly, initialValue]);
+  }, [isSelected, onMoveUp, onMoveDown, onNavigate, onAddAbove, onAddBelow, onDelete, isEditing, readOnly, initialValue, startEditing]);
 
   const handleWrapperClick = (e: React.MouseEvent) => {
     if (disabled) return;
 
     if (!isSelected) {
-      // First click: select the slot item (visualized by border)
       e.stopPropagation();
       onSelect();
     } else if (!isEditing && !readOnly) {
-      // Second click: enter edit mode, seeding the edit buffer from the latest prop value
       e.stopPropagation();
-      setValue(initialValue);
-      setIsEditing(true);
+      startEditing();
     }
   };
 
@@ -214,9 +202,9 @@ export const Editor = ({
         {isEditing ? (
           <input
             ref={inputRef}
-            value={value}
-            onChange={handleChange}
-            onBlur={commitAndExit}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commitEditing}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
@@ -234,9 +222,6 @@ export const Editor = ({
                 appearance: 'none',
                 WebkitAppearance: 'none',
                 verticalAlign: 'top',
-                // Makes the input grow/shrink with its content, like contentEditable did.
-                // Supported in current versions of all major browsers (Baseline as of June 2026);
-                // older browsers just fall back to a fixed width instead of breaking.
                 fieldSizing: 'content',
               } as React.CSSProperties
             }
@@ -252,7 +237,7 @@ export const Editor = ({
               verticalAlign: 'top',
             }}
           >
-            {value || initialValue}
+            {committedDraft ?? initialValue}
           </span>
         )}
       </div>
