@@ -19,7 +19,6 @@ type LayoutResult = {
 // Private: ELK layout engine
 // ---------------------------------------------------------------------------
 
-const INITIAL_LAYOUT: LayoutResult = { nodes: [], edges: [], isLoading: true };
 
 /**
  * Manages the ELK layout lifecycle: sequencing, loading state, and dimension-
@@ -32,10 +31,10 @@ const INITIAL_LAYOUT: LayoutResult = { nodes: [], edges: [], isLoading: true };
  */
 const useLayoutEngine = () => {
   const seqRef = useRef(0);
-  const [result, setResult] = useState<LayoutResult>(INITIAL_LAYOUT);
+  const [result, setResult] = useState<LayoutResult>({ nodes: [], edges: [], isLoading: true });
 
   // Stable mirror of `result` — readable inside callbacks without stale closures.
-  const resultRef = useRef<LayoutResult>(INITIAL_LAYOUT);
+  const resultRef = useRef<LayoutResult>({ nodes: [], edges: [], isLoading: true });
 
   const commit = useCallback((next: LayoutResult) => {
     resultRef.current = next;
