@@ -53,8 +53,11 @@ export const useLaidOutGraph = (graphId: string) => {
       void clearSlotSelection();
     }
 
+    setNodes(nodes);
+    setEdges(edges);
+
     runLayoutCalculation(nodes, edges);
-  }, [query.data, runLayoutCalculation, getNodes, getEdges, clearSlotSelection]);
+  }, [query.data, runLayoutCalculation, setNodes, setEdges, getNodes, getEdges, clearSlotSelection]);
 
   const onNodesLayoutChange = useCallback(
     (changes: NodeChange[]) => {
