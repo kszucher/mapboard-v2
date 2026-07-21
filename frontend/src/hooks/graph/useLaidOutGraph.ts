@@ -10,7 +10,6 @@ import { useGraphQuery } from './useGraphQuery';
 export const useLaidOutGraph = (graphId: string) => {
   const query = useGraphQuery(graphId);
   const layoutSeqRef = useRef(0);
-  const measuredMapRef = useRef<Record<string, { width?: number; height?: number }>>({});
   const { setNodes, setEdges, getNodes, getEdges } = useReactFlow();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -53,18 +52,10 @@ export const useLaidOutGraph = (graphId: string) => {
       void clearSlotSelection();
     }
 
-    // Restore measured bounds from measuredMapRef for restored nodes (e.g. Undo/Redo)
-    const nodesWithMeasured = nodes.map(n => {
-      if (!n.measured && measuredMapRef.current[n.id]) {
-        return { ...n, measured: measuredMapRef.current[n.id] as { width: number; height: number } };
-      }
-      return n;
-    });
-
-    setNodes(nodesWithMeasured);
+    setNodes(nodes);
     setEdges(edges);
 
-    runLayoutCalculation(nodesWithMeasured, edges);
+    runLayoutCalculation(nodes, edges);
   }, [query.data, runLayoutCalculation, setNodes, setEdges, getNodes, getEdges, clearSlotSelection]);
 
   const onNodesLayoutChange = useCallback(
@@ -73,18 +64,7 @@ export const useLaidOutGraph = (graphId: string) => {
       const currentEdges = getEdges() as AppFlowEdge[];
       const newNodes = applyNodeChanges(changes, currentNodes) as AppFlowNode[];
 
-      let shouldRecalc = false;
-      changes.forEach(c => {
-        if (c.type === 'dimensions' && c.dimensions) {
-          const prev = measuredMapRef.current[c.id];
-          if (!prev || prev.width !== c.dimensions.width || prev.height !== c.dimensions.height) {
-            measuredMapRef.current[c.id] = c.dimensions;
-            shouldRecalc = true;
-          }
-        }
-      });
-
-      if (shouldRecalc) {
+      if (changes.some(c => c.type === 'dimensions')) {
         runLayoutCalculation(newNodes, currentEdges);
       } else {
         setNodes(newNodes);
