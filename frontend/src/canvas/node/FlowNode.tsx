@@ -76,7 +76,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
         )}
       </Flex>
 
-      {mySlots.map((slot, index) => {
+      {mySlots.map((slot) => {
         const disabled = isStart || isEnd;
 
         return (
@@ -86,7 +86,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
             disabled={disabled}
             isStart={isStart}
             isEnd={isEnd}
-            onSelect={() => setSelectedIds(id, index)}
+            onSelect={() => setSelectedIds(id, slot.id)}
           />
         );
       })}

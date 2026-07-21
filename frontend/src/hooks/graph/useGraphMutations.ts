@@ -34,6 +34,12 @@ export const useAddNode = (graphId: string) => {
     },
     onSuccess: (data) => {
       handleMutationSuccess(queryClient, graphId, data);
+      if (data && 'nodes' in data && Array.isArray(data.nodes) && data.nodes.length > 0) {
+        const newlyAddedNode = data.nodes[data.nodes.length - 1];
+        if (newlyAddedNode?.id) {
+          useGraphStore.getState().setSelectedIds(newlyAddedNode.id, null);
+        }
+      }
     }
   });
 };
@@ -60,6 +66,12 @@ export const useInsertNode = (graphId: string) => {
     },
     onSuccess: (data) => {
       handleMutationSuccess(queryClient, graphId, data);
+      if (data && 'nodes' in data && Array.isArray(data.nodes) && data.nodes.length > 0) {
+        const insertedNode = data.nodes[data.nodes.length - 1];
+        if (insertedNode?.id) {
+          useGraphStore.getState().setSelectedIds(insertedNode.id, null);
+        }
+      }
     }
   });
 };
@@ -151,8 +163,15 @@ export const useCreateSlot = (graphId: string) => {
       if ('error' in res) throw res.error;
       return res.data;
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       handleMutationSuccess(queryClient, graphId, data);
+      if (data && 'nodes' in data && Array.isArray(data.nodes)) {
+        const targetNode = data.nodes.find((n: { id: string }) => n.id === variables.nodeId);
+        const createdSlot = targetNode?.slots?.[variables.index];
+        if (createdSlot?.id) {
+          useGraphStore.getState().setSelectedIds(variables.nodeId, createdSlot.id);
+        }
+      }
     }
   });
 };

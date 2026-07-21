@@ -3,11 +3,10 @@ export interface BaseState {
   code: string; // local code buffer for CodeMirror
   selectedNodeId: string | null;
   selectedSlotId: string | null;
-  selectedSlotIndex: number | null;
 }
 
 export interface UiActions {
-  setSelectedIds: (nodeId: string | null, branchIndex: number | null) => void;
+  setSelectedIds: (nodeId: string | null, slotId: string | null) => void;
   clearSlotSelection: () => void;
   clearNodeSelection: () => void;
   init: (graphId: string) => void;

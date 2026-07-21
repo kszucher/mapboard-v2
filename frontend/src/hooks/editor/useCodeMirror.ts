@@ -98,7 +98,7 @@ export interface UseCodeMirrorProps {
   variables: StateVariable[];
   selectedNodeId: string | null;
   diagnostics: BackendDiagnostic[];
-  setSelectedIds: (nodeId: string | null, branchIndex: number | null) => void;
+  setSelectedIds: (nodeId: string | null, slotId: string | null) => void;
 }
 
 export function useCodeMirror({

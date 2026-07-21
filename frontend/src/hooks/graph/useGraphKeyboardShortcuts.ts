@@ -9,7 +9,6 @@ export const useGraphKeyboardShortcuts = (graphId: string) => {
   const { getNodes, getEdges } = useReactFlow();
   const selectedNodeId = useGraphStore(state => state.selectedNodeId);
   const selectedSlotId = useGraphStore(state => state.selectedSlotId);
-  const selectedSlotIndex = useGraphStore(state => state.selectedSlotIndex);
   const setSelectedIds = useGraphStore(state => state.setSelectedIds);
   const clearSlotSelection = useGraphStore(state => state.clearSlotSelection);
 
@@ -43,7 +42,7 @@ export const useGraphKeyboardShortcuts = (graphId: string) => {
         if (!currentNode) return;
 
         const slots = currentNode.data.node.slots || [];
-        const currentIndex = selectedSlotIndex ?? slots.findIndex(s => s.id === selectedSlotId);
+        const currentIndex = slots.findIndex(s => s.id === selectedSlotId);
 
         if (e.key === 'Backspace' || e.key === 'Escape') {
           e.preventDefault();
@@ -68,7 +67,7 @@ export const useGraphKeyboardShortcuts = (graphId: string) => {
           e.preventDefault();
           e.stopPropagation();
           if (currentIndex > 0) {
-            setSelectedIds(selectedNodeId, currentIndex - 1);
+            setSelectedIds(selectedNodeId, slots[currentIndex - 1].id);
           }
           return;
         }
@@ -88,7 +87,7 @@ export const useGraphKeyboardShortcuts = (graphId: string) => {
           e.preventDefault();
           e.stopPropagation();
           if (currentIndex < slots.length - 1) {
-            setSelectedIds(selectedNodeId, currentIndex + 1);
+            setSelectedIds(selectedNodeId, slots[currentIndex + 1].id);
           }
           return;
         }
@@ -141,7 +140,7 @@ export const useGraphKeyboardShortcuts = (graphId: string) => {
           if (slots.length > 0) {
             e.preventDefault();
             e.stopPropagation();
-            setSelectedIds(selectedNodeId, 0);
+            setSelectedIds(selectedNodeId, slots[0].id);
             return;
           }
         }
@@ -194,7 +193,6 @@ export const useGraphKeyboardShortcuts = (graphId: string) => {
     getEdges,
     selectedNodeId,
     selectedSlotId,
-    selectedSlotIndex,
     setSelectedIds,
     clearSlotSelection,
     createSlot,
