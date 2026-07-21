@@ -21,6 +21,14 @@ export const useLaidOutGraph = (graphId: string) => {
     isLoading: true,
   });
 
+  const prevNodesRef = useRef<AppFlowNode[]>([]);
+  const prevEdgesRef = useRef<AppFlowEdge[]>([]);
+
+  useEffect(() => {
+    prevNodesRef.current = layout.nodes;
+    prevEdgesRef.current = layout.edges;
+  }, [layout.nodes, layout.edges]);
+
   const runLayoutCalculation = useCallback((nodes: AppFlowNode[], edges: AppFlowEdge[]) => {
     const seq = ++layoutSeqRef.current;
     runLayout(nodes, edges).then(laidOut => {
@@ -33,24 +41,23 @@ export const useLaidOutGraph = (graphId: string) => {
   useEffect(() => {
     if (!query.data) return;
 
-    setLayout(prev => {
-      const { nodes, edges } = fromApiPayload(
-        query.data.nodes,
-        query.data.edges,
-        prev.nodes,
-        prev.edges
-      );
+    const prevNodes = prevNodesRef.current;
+    const prevEdges = prevEdgesRef.current;
 
-      const hasNewNodes = nodes.some(n => !prev.nodes.some(pn => pn.id === n.id));
+    const { nodes, edges } = fromApiPayload(
+      query.data.nodes,
+      query.data.edges,
+      prevNodes,
+      prevEdges
+    );
 
-      // If there are new nodes, let ReactFlow render & measure them first.
-      // onNodesLayoutChange will trigger ELK once real dimensions are available.
-      if (!hasNewNodes) {
-        runLayoutCalculation(nodes, edges);
-      }
+    const hasNewNodes = nodes.some(n => !prevNodes.some(pn => pn.id === n.id));
 
-      return { ...prev, nodes, edges };
-    });
+    setLayout(prev => ({ ...prev, nodes, edges }));
+
+    if (!hasNewNodes) {
+      runLayoutCalculation(nodes, edges);
+    }
   }, [query.data, runLayoutCalculation]);
 
   const selectedNodeId = useGraphStore(state => state.selectedNodeId);
@@ -62,17 +69,19 @@ export const useLaidOutGraph = (graphId: string) => {
   );
 
   const onNodesLayoutChange = useCallback((changes: NodeChange[]) => {
-    setLayout(prev => {
-      const newNodes = applyNodeChanges(changes, prev.nodes) as AppFlowNode[];
-      if (
-        changes.some(c => c.type === 'dimensions') &&
-        shouldTriggerLayoutOnResize(prev.nodes, newNodes, prev.isLoading)
-      ) {
-        runLayoutCalculation(newNodes, prev.edges);
-      }
-      return { ...prev, nodes: newNodes };
-    });
-  }, [runLayoutCalculation]);
+    const prevNodes = prevNodesRef.current;
+    const prevEdges = prevEdgesRef.current;
+    const newNodes = applyNodeChanges(changes, prevNodes) as AppFlowNode[];
+
+    if (
+      changes.some(c => c.type === 'dimensions') &&
+      shouldTriggerLayoutOnResize(prevNodes, newNodes, layout.isLoading)
+    ) {
+      runLayoutCalculation(newNodes, prevEdges);
+    }
+
+    setLayout(prev => ({ ...prev, nodes: newNodes }));
+  }, [runLayoutCalculation, layout.isLoading]);
 
   return {
     ...query,
