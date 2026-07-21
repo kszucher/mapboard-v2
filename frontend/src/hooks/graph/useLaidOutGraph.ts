@@ -53,10 +53,18 @@ export const useLaidOutGraph = (graphId: string) => {
       void clearSlotSelection();
     }
 
-    setNodes(nodes);
+    // Restore measured bounds from measuredMapRef for restored nodes (e.g. Undo/Redo)
+    const nodesWithMeasured = nodes.map(n => {
+      if (!n.measured && measuredMapRef.current[n.id]) {
+        return { ...n, measured: measuredMapRef.current[n.id] as { width: number; height: number } };
+      }
+      return n;
+    });
+
+    setNodes(nodesWithMeasured);
     setEdges(edges);
 
-    runLayoutCalculation(nodes, edges);
+    runLayoutCalculation(nodesWithMeasured, edges);
   }, [query.data, runLayoutCalculation, setNodes, setEdges, getNodes, getEdges, clearSlotSelection]);
 
   const onNodesLayoutChange = useCallback(
