@@ -1,14 +1,13 @@
 import type { NodeChange } from '@xyflow/react';
 import { applyNodeChanges } from '@xyflow/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { components } from '../../api/generated/schema';
+
 import type { AppFlowEdge, AppFlowNode } from '../../canvas/types';
 import { runLayout } from '../../domain/graph/layout';
 import { fromApiPayload } from '../../domain/graph/mappers';
 import { useGraphStore } from '../../store/graphStore';
 import { useGraphQuery } from './useGraphQuery';
 
-type GraphFlowRead = components['schemas']['GraphFlowRead'];
 
 type LayoutResult = {
   nodes: AppFlowNode[];
@@ -57,6 +56,15 @@ const useLayoutEngine = () => {
     commit({ nodes, edges, isLoading: true });
   }, [commit]);
 
+  /**
+   * Commit updated graph data without scheduling ELK. Use when new unmeasured
+   * nodes are present — the dimension-change handler will schedule ELK once
+   * ReactFlow has measured them, avoiding a wasted run with fallback dimensions.
+   */
+  const update = useCallback((nodes: AppFlowNode[], edges: AppFlowEdge[]) => {
+    commit({ ...resultRef.current, nodes, edges });
+  }, [commit]);
+
   /** Pass to ReactFlow; triggers ELK whenever measured dimensions change. */
   const onNodesLayoutChange = useCallback((changes: NodeChange[]) => {
     const prev = resultRef.current;
@@ -72,7 +80,7 @@ const useLayoutEngine = () => {
     commit({ ...prev, nodes: newNodes });
   }, [schedule, commit]);
 
-  return { result, resultRef, schedule, reset, onNodesLayoutChange };
+  return { result, resultRef, schedule, reset, update, onNodesLayoutChange };
 };
 
 // ---------------------------------------------------------------------------
@@ -81,7 +89,7 @@ const useLayoutEngine = () => {
 
 export const useLaidOutGraph = (graphId: string) => {
   const query = useGraphQuery(graphId);
-  const { result, resultRef, schedule, reset, onNodesLayoutChange } = useLayoutEngine();
+  const { result, resultRef, schedule, reset, update, onNodesLayoutChange } = useLayoutEngine();
 
   useEffect(() => {
     if (!query.data) return;
@@ -94,12 +102,16 @@ export const useLaidOutGraph = (graphId: string) => {
       prev.edges,
     );
 
-    if (isGraphReplacement(prev.nodes, query.data)) {
+    if (isInitialLoad(prev.nodes)) {
       reset(nodes, edges);
+    } else if (nodes.some(n => !prev.nodes.some(pn => pn.id === n.id))) {
+      // New nodes have no measured dimensions yet — commit the data and let the
+      // dimension-change handler trigger ELK once ReactFlow has measured them.
+      update(nodes, edges);
     } else {
       schedule(nodes, edges);
     }
-  }, [query.data, reset, schedule, resultRef]);
+  }, [query.data, reset, schedule, update, resultRef]);
 
   const selectedNodeId = useGraphStore(state => state.selectedNodeId);
   const selectedSlotId = useGraphStore(state => state.selectedSlotId);
@@ -123,9 +135,8 @@ export const useLaidOutGraph = (graphId: string) => {
 // Pure helpers
 // ---------------------------------------------------------------------------
 
-/** True when the incoming query data belongs to a graph we haven't rendered yet. */
-const isGraphReplacement = (prevNodes: AppFlowNode[], queryData: GraphFlowRead): boolean =>
-  prevNodes.length === 0 || !prevNodes.some(n => queryData.nodes.some(qn => qn.id === n.id));
+/** True on the first data load — prevNodes is empty because FlowContent remounts on graphId change. */
+const isInitialLoad = (prevNodes: AppFlowNode[]): boolean => prevNodes.length === 0;
 
 /**
  * Returns true when a resize-triggered re-layout should run.
