@@ -1,7 +1,8 @@
-import ast
+import json
+import subprocess
 from typing import Any
 
-from app.graphs.schemas import NodeRead
+from app.graphs.schemas import DiagnosticRead
 
 TYPE_MAP_GB_TO_PY = {
     "number": "int",
@@ -10,116 +11,34 @@ TYPE_MAP_GB_TO_PY = {
 }
 
 
-def _extract_switch_conditions(node: ast.FunctionDef) -> dict[str, str]:
-    """Statically extracts conditional router mappings (return_label -> condition) from a function AST."""
-    conditions = {}
+def ast_expr_to_py(node: dict[str, Any] | None) -> str:
+    """Recursively converts a slot AST expression dict to Python code string."""
+    if not node:
+        return "True"
 
-    def walk(if_node: ast.AST, conds_map: dict[str, str]) -> None:
-        match if_node:
-            case ast.If(body=body, orelse=orelse, test=test):
-                ret_val = None
-                for sub in body:
-                    match sub:
-                        case ast.Return(value=ast.Constant(value=val)):
-                            ret_val = val
-                if ret_val:
-                    conds_map[ret_val] = ast.unparse(test)
-                for sub in orelse:
-                    walk(sub, conds_map)
+    kind = node.get("kind")
+    if kind == "literal":
+        return repr(node.get("value"))
+    elif kind == "stateRef":
+        var_key = node.get("varKey", "")
+        return f'state.get("{var_key}")' if var_key else "None"
+    elif kind == "binaryOp":
+        left = ast_expr_to_py(node.get("left"))
+        right = ast_expr_to_py(node.get("right"))
+        op = node.get("op", "==")
+        return f"({left} {op} {right})"
+    elif kind == "unaryOp":
+        expr = ast_expr_to_py(node.get("expr"))
+        op = node.get("op", "not")
+        return f"({op} {expr})"
+    return "True"
 
-    for stmt in node.body:
-        walk(stmt, conditions)
-    return conditions
 
-
-def parse_code_to_graph(code: str) -> dict[str, Any]:
+def generate_graph_code(payload: dict[str, Any]) -> str:
     """
-    Statically parses a single Python script to extract State variables and function bodies.
-    Does NOT dynamically execute the script.
+    Generates Python code strictly from graph payload (state_schema, nodes, slots, edges).
+    Code is derived completely deterministically.
     """
-    if not code.strip():
-        raise ValueError("Code is empty")
-
-    try:
-        tree = ast.parse(code)
-    except SyntaxError as e:
-        raise ValueError(f"Syntax Error on line {e.lineno}: {e.msg}") from e
-
-    lines = code.splitlines()
-    variables = []
-    function_sources: dict[str, str] = {}
-
-    for node in tree.body:
-        match node:
-            # 1. Parse TypedDict State class
-            case ast.ClassDef(name="State", body=body):
-                for stmt in body:
-                    match stmt:
-                        case ast.AnnAssign(target=ast.Name(id=var_name), annotation=ann):
-                            type_str = ast.unparse(ann)
-                            gb_type = "string"
-                            if type_str in ("int", "float", "number"):
-                                gb_type = "number"
-                            elif type_str in ("bool", "boolean"):
-                                gb_type = "boolean"
-                            elif type_str == "str":
-                                gb_type = "string"
-
-                            variables.append(
-                                {
-                                    "id": var_name,
-                                    "name": var_name,
-                                    "type": gb_type,
-                                    "value": None,
-                                }
-                            )
-
-            # 2. Extract top-level function source codes
-            case ast.FunctionDef(name=name, lineno=lineno, end_lineno=end_lineno):
-                func_code = "\n".join(lines[lineno - 1 : end_lineno])
-                function_sources[name] = func_code
-
-    return {
-        "variables": variables,
-        "functions": function_sources,
-    }
-
-
-def generate_graph_code(
-    payload: dict[str, Any],
-    existing_code: str = "",
-    old_nodes: list[NodeRead] | None = None,
-) -> str:
-    """
-    Generates a Python script from a visual graph payload.
-    Uses existing_code to preserve helper functions and node function bodies if possible.
-    """
-    # Map slot IDs to their old labels from the DB to handle slot renames gracefully
-    old_slot_labels = {}
-    if old_nodes:
-        for node in old_nodes:
-            for slot in node.slots:
-                old_slot_labels[slot.id] = slot.raw_string
-
-    # Parse existing functions to preserve their code bodies/helpers
-    existing_funcs = {}
-    switch_conditions = {}
-    if existing_code.strip():
-        try:
-            tree = ast.parse(existing_code)
-            lines = existing_code.splitlines()
-            for node in tree.body:
-                if isinstance(node, ast.FunctionDef):
-                    existing_funcs[node.name] = "\n".join(lines[node.lineno - 1 : node.end_lineno])
-
-                    # Statically extract conditional router mapping via AST
-                    conditions = _extract_switch_conditions(node)
-                    if conditions:
-                        switch_conditions[node.name] = conditions
-        except Exception:
-            pass  # Use fallback default code if existing code can't be parsed
-
-    # 1. Generate Imports
     code_lines = [
         "from typing import TypedDict",
         "",
@@ -127,36 +46,22 @@ def generate_graph_code(
         "",
     ]
 
-    # 2. Generate State Definition
+    # 1. State Definition
     code_lines.append("# ----------------------------------------------------")
     code_lines.append("# State Definition")
     code_lines.append("# ----------------------------------------------------")
     code_lines.append("class State(TypedDict):")
-    variables = payload.get("variables", [])
-    if variables:
-        for var in variables:
-            var_name = var["name"]
-            py_type = TYPE_MAP_GB_TO_PY.get(var["type"], "str")
-            code_lines.append(f"    {var_name}: {py_type}")
+    state_schema = payload.get("state_schema", [])
+    if state_schema:
+        for var in state_schema:
+            var_key = var.get("key") or var.get("name") or var.get("id")
+            py_type = TYPE_MAP_GB_TO_PY.get(var.get("type", "string"), "str")
+            code_lines.append(f"    {var_key}: {py_type}")
     else:
         code_lines.append("    pass")
     code_lines.append("")
 
-    # 3. Generate Helper Functions
-    helpers = payload.get("functions", [])
-    if helpers:
-        code_lines.append("# ----------------------------------------------------")
-        code_lines.append("# Helper Functions")
-        code_lines.append("# ----------------------------------------------------")
-        for helper in helpers:
-            helper_name = helper["name"]
-            if helper_name in existing_funcs:
-                code_lines.append(existing_funcs[helper_name])
-            else:
-                code_lines.append(helper.get("raw_string") or f"def {helper_name}(val):\n    return val")
-            code_lines.append("")
-
-    # 4. Generate Nodes
+    # 2. Nodes
     code_lines.append("# ----------------------------------------------------")
     code_lines.append("# Nodes")
     code_lines.append("# ----------------------------------------------------")
@@ -164,89 +69,78 @@ def generate_graph_code(
     nodes = payload.get("nodes", [])
     edges = payload.get("edges", [])
 
-    # Filter nodes to exclude START and END visual elements
-    logic_nodes = [n for n in nodes if n["node_type"] in ("STEP", "SWITCH")]
+    logic_nodes = [n for n in nodes if n.get("node_type") in ("STEP", "SWITCH")]
 
     for node in logic_nodes:
         node_name = node["id"]
-        if node["node_type"] == "SWITCH":
+        if node.get("node_type") == "SWITCH":
             slots = node.get("slots", [])
-            conditions = switch_conditions.get(node_name, {})
             code_lines.append(f"def {node_name}(state: State) -> str:")
             if not slots:
                 code_lines.append("    # Add output slots in the UI first")
                 code_lines.append('    return ""')
             else:
-                # If there were no prior conditions, seed first two with a standard example
-                has_any_custom_cond = any(cond != "True" for cond in conditions.values())
                 for i, slot in enumerate(slots):
-                    label = slot["raw_string"] or f"Slot {i + 1}"
+                    label = slot.get("raw_string") or f"Slot {i + 1}"
+                    expr_dict = slot.get("expression")
+                    cond_str = ast_expr_to_py(expr_dict)
 
-                    # Try to retrieve condition using the slot's old label (resolves renames)
-                    old_label = old_slot_labels.get(slot["id"])
-                    cond = "True"
-                    if old_label and old_label in conditions:
-                        cond = conditions[old_label]
-                    elif label in conditions:
-                        cond = conditions[label]
-
-                    # Prefill switch skeletons with state example if no conditions exist
-                    if cond == "True" and not has_any_custom_cond and len(slots) >= 2:
-                        if i == 0:
-                            cond = 'state.get("x", 0) > 0'
-                    code_lines.append(f"    {'if' if i == 0 else 'elif'} {cond}:")
+                    code_lines.append(f"    {'if' if i == 0 else 'elif'} {cond_str}:")
                     code_lines.append(f'        return "{label}"')
                 code_lines.append('    return ""')
-        elif node_name in existing_funcs:
-            # Reuse existing function body/code
-            code_lines.append(existing_funcs[node_name])
         else:
-            # Generate default skeleton
-            code_lines.append(f"def {node_name}(state: State) -> dict:\n    return {{}}")
+            # STEP node
+            code_lines.append(f"def {node_name}(state: State) -> dict:")
+            slots = node.get("slots", [])
+            mutations = [s for s in slots if s.get("target_var_key")]
+            if mutations:
+                code_lines.append("    return {")
+                for m in mutations:
+                    target_key = m["target_var_key"]
+                    expr_str = ast_expr_to_py(m.get("expression"))
+                    code_lines.append(f'        "{target_key}": {expr_str},')
+                code_lines.append("    }")
+            else:
+                code_lines.append("    return {}")
         code_lines.append("")
 
-    # 5. Generate Graph Topology
+    # 3. Graph Definition
     code_lines.append("# ----------------------------------------------------")
     code_lines.append("# Graph Definition")
     code_lines.append("# ----------------------------------------------------")
     code_lines.append("workflow = StateGraph(State)")
     code_lines.append("")
 
-    # Add nodes
     for node in logic_nodes:
         code_lines.append(f'workflow.add_node("{node["id"]}", {node["id"]})')
     code_lines.append("")
 
-    # Separate edges
-    # Find START edges
-    start_edges = [e for e in edges if e["source_id"] == "start"]
+    start_edges = [e for e in edges if e.get("source_id") == "start"]
     for e in start_edges:
-        code_lines.append(f'workflow.add_edge(START, "{e["target_id"]}")')
+        code_lines.append(f'workflow.add_edge(START, "{e.get("target_id")}")')
 
-    # Find static non-START / non-conditional edges
     static_edges = [
-        e for e in edges if e["source_id"] != "start" and e["source_type"] == "node" and e["target_id"] != "start"
+        e
+        for e in edges
+        if e.get("source_id") != "start" and e.get("source_type") == "node" and e.get("target_id") != "start"
     ]
     for e in static_edges:
-        tgt = "END" if e["target_id"] == "end" else f'"{e["target_id"]}"'
-        code_lines.append(f'workflow.add_edge("{e["source_id"]}", {tgt})')
+        tgt = "END" if e.get("target_id") == "end" else f'"{e.get("target_id")}"'
+        code_lines.append(f'workflow.add_edge("{e.get("source_id")}", {tgt})')
 
-    # Resolve conditional edges (branches) from Switch slot connections
-    switch_nodes = [n for n in logic_nodes if n["node_type"] == "SWITCH"]
+    switch_nodes = [n for n in logic_nodes if n.get("node_type") == "SWITCH"]
     for switch in switch_nodes:
         node_name = switch["id"]
-        # Find all edges originating from this switch node's slots
-        switch_slots = {s["id"]: s["raw_string"] for s in switch.get("slots", [])}
-        routing_edges = [e for e in edges if e["source_id"] in switch_slots]
+        switch_slots = {s["id"]: s.get("raw_string") for s in switch.get("slots", [])}
+        routing_edges = [e for e in edges if e.get("source_id") in switch_slots]
 
         if routing_edges:
             path_map_lines = []
-            # Order path map matching the visual slot order
             for slot in switch.get("slots", []):
-                slot_edge = next((e for e in routing_edges if e["source_id"] == slot["id"]), None)
+                slot_edge = next((e for e in routing_edges if e.get("source_id") == slot["id"]), None)
                 if slot_edge:
-                    tgt = "END" if slot_edge["target_id"] == "end" else f'"{slot_edge["target_id"]}"'
-                    path_map_lines.append(f'        "{slot["raw_string"]}": {tgt},')
+                    tgt = "END" if slot_edge.get("target_id") == "end" else f'"{slot_edge.get("target_id")}"'
+                    path_map_lines.append(f'        "{slot.get("raw_string")}": {tgt},')
 
             code_lines.append("workflow.add_conditional_edges(")
             code_lines.append(f'    "{node_name}",')
@@ -261,19 +155,53 @@ def generate_graph_code(
 
     generated_code = "\n".join(code_lines)
 
-    # 6. Formatting with Ruff and Black (if available)
-    # We can try to use subprocess to format the string
-    import subprocess
-
+    # Format code with ruff if available
     try:
-        # Run ruff format via stdin
         process = subprocess.Popen(
             ["ruff", "format", "-"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
         )
-        stdout, stderr = process.communicate(input=generated_code)
-        if process.returncode == 0:
+        stdout, _ = process.communicate(input=generated_code)
+        if process.returncode == 0 and stdout:
             generated_code = stdout
     except Exception:
-        pass  # Fallback to unformatted if ruff isn't globally available or fails
+        pass
 
     return generated_code
+
+
+def run_ruff_diagnostics(code: str) -> list[DiagnosticRead]:
+    """Runs ruff check via subprocess and parses JSON diagnostics."""
+    if not code.strip():
+        return []
+
+    try:
+        process = subprocess.Popen(
+            ["ruff", "check", "--output-format=json", "-"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        stdout, _ = process.communicate(input=code)
+        if not stdout.strip():
+            return []
+
+        raw_diagnostics = json.loads(stdout)
+        diagnostics: list[DiagnosticRead] = []
+
+        for item in raw_diagnostics:
+            code_str = item.get("code", "")
+            severity = "error" if code_str.startswith(("E", "F")) else "warning"
+            loc = item.get("location", {})
+            diagnostics.append(
+                DiagnosticRead(
+                    line=loc.get("row", 1),
+                    column=loc.get("column", 1),
+                    code=code_str,
+                    message=item.get("message", ""),
+                    severity=severity,
+                )
+            )
+        return diagnostics
+    except Exception:
+        return []

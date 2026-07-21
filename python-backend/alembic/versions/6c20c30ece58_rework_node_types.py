@@ -5,6 +5,7 @@ Revises: 8fd3f410ec88
 Create Date: 2026-07-09 12:01:01.800467
 
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -12,8 +13,8 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = '6c20c30ece58'
-down_revision: str | Sequence[str] | None = '8fd3f410ec88'
+revision: str = "6c20c30ece58"
+down_revision: str | Sequence[str] | None = "8fd3f410ec88"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
@@ -21,6 +22,7 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     """Upgrade schema."""
     import json
+
     connection = op.get_bind()
     graphs = connection.execute(sa.text("SELECT id, flow_json FROM graphs")).fetchall()
 
@@ -41,7 +43,7 @@ def upgrade() -> None:
             node_type = n.get("node_type")
             if node_type == "AGENT":
                 continue
-            
+
             # Rename types
             if node_type == "FUNCTION":
                 n["node_type"] = "STEP"
@@ -49,7 +51,7 @@ def upgrade() -> None:
                 n["node_type"] = "BRANCH"
             elif node_type == "REDUCE":
                 n["node_type"] = "MERGE"
-            
+
             remaining_nodes.append(n)
             for expr in n.get("expressions", []):
                 if expr.get("id"):
@@ -76,6 +78,7 @@ def upgrade() -> None:
 def downgrade() -> None:
     """Downgrade schema."""
     import json
+
     connection = op.get_bind()
     graphs = connection.execute(sa.text("SELECT id, flow_json FROM graphs")).fetchall()
 

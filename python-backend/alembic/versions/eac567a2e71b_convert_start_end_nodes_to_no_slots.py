@@ -5,6 +5,7 @@ Revises: 2f02697e6dde
 Create Date: 2026-07-11 13:33:03.716811
 
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -12,8 +13,8 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = 'eac567a2e71b'
-down_revision: str | Sequence[str] | None = '2f02697e6dde'
+revision: str = "eac567a2e71b"
+down_revision: str | Sequence[str] | None = "2f02697e6dde"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
@@ -21,6 +22,7 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     """Upgrade schema."""
     import json
+
     connection = op.get_bind()
     graphs = connection.execute(sa.text("SELECT id, flow_json FROM graphs")).fetchall()
 

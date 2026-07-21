@@ -5,6 +5,7 @@ Revises: 3bb36eb87dbf
 Create Date: 2026-07-11 13:54:37.004871
 
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -12,8 +13,8 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = '127baf24a53c'
-down_revision: str | Sequence[str] | None = '3bb36eb87dbf'
+revision: str = "127baf24a53c"
+down_revision: str | Sequence[str] | None = "3bb36eb87dbf"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
@@ -21,6 +22,7 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     """Upgrade schema."""
     import json
+
     connection = op.get_bind()
     graphs = connection.execute(sa.text("SELECT id, flow_json FROM graphs")).fetchall()
 
@@ -49,6 +51,7 @@ def upgrade() -> None:
 def downgrade() -> None:
     """Downgrade schema."""
     import json
+
     connection = op.get_bind()
     graphs = connection.execute(sa.text("SELECT id, flow_json FROM graphs")).fetchall()
 

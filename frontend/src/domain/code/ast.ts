@@ -1,7 +1,7 @@
 import { autocompletion } from '@codemirror/autocomplete';
 import { foldEffect, syntaxTree, unfoldEffect } from '@codemirror/language';
 import { EditorState, type StateEffect } from '@codemirror/state';
-import type { Variable } from '../../canvas/types';
+import type { StateVariable } from '../../canvas/types';
 
 // Helper to collect fold/unfold effects for all functions based on selectedNodeId
 export function getFoldEffectsForFunctions(
@@ -72,35 +72,6 @@ export function findFunctionByName(state: EditorState, name: string): { from: nu
   return result;
 }
 
-// Helper to statically scan AST and find allowed editable ranges
-export function getEditableRegions(state: EditorState): { from: number; to: number }[] {
-  const regions: { from: number; to: number }[] = [];
-  const docStr = state.doc.toString();
-
-  syntaxTree(state).iterate({
-    enter(node) {
-      if (node.name === 'ClassDefinition') {
-        const name = node.node.getChild('VariableName');
-        if (name && docStr.slice(name.from, name.to) === 'State') {
-          const body = node.node.getChild('Body');
-          if (body) {
-            regions.push({ from: body.from + 1, to: body.to });
-          }
-        }
-      }
-
-      if (node.name === 'FunctionDefinition') {
-        const body = node.node.getChild('Body');
-        if (body) {
-          regions.push({ from: body.from + 1, to: body.to });
-        }
-      }
-    }
-  });
-
-  return regions;
-}
-
 // Helper to resolve the line highlights range for an editable function range
 export function resolveHighlightLineRange(
   state: EditorState,
@@ -115,22 +86,21 @@ export function resolveHighlightLineRange(
 }
 
 // Context-aware autocomplete helper for state access
-export function buildAutocompletionExtension(variables: Variable[]) {
+export function buildAutocompletionExtension(variables: StateVariable[]) {
   return autocompletion({
     override: [
       (context) => {
-        // 1a. Context-aware autocomplete for state["key"] bracket access
         const stateMatch = context.matchBefore(/state\[\s*["']\w*/);
         if (stateMatch) {
           const quoteChar = stateMatch.text.includes('"') ? '"' : "'";
           const query = stateMatch.text.split(/["']/)[1] || '';
           const options = variables
-            .filter((v) => v.name.toLowerCase().includes(query.toLowerCase()))
+            .filter((v) => v.key.toLowerCase().includes(query.toLowerCase()))
             .map((v) => ({
-              label: v.name,
+              label: v.key,
               type: 'property',
               detail: `(${v.type})`,
-              apply: `state[${quoteChar}${v.name}${quoteChar}]`,
+              apply: `state[${quoteChar}${v.key}${quoteChar}]`,
             }));
           return {
             from: stateMatch.from,
@@ -138,17 +108,16 @@ export function buildAutocompletionExtension(variables: Variable[]) {
           };
         }
 
-        // 1b. Context-aware autocomplete for state.varname dot access
         const stateDotMatch = context.matchBefore(/state\.\w*/);
         if (stateDotMatch) {
           const query = stateDotMatch.text.slice('state.'.length);
           const options = variables
-            .filter((v) => v.name.toLowerCase().includes(query.toLowerCase()))
+            .filter((v) => v.key.toLowerCase().includes(query.toLowerCase()))
             .map((v) => ({
-              label: `state.${v.name}`,
+              label: `state.${v.key}`,
               type: 'property',
               detail: `(${v.type})`,
-              apply: `state.${v.name}`,
+              apply: `state.${v.key}`,
             }));
           return {
             from: stateDotMatch.from,

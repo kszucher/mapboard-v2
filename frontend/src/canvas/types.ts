@@ -7,17 +7,47 @@ export type ApiNode = Omit<components['schemas']['NodeRead'], 'code'> & {
   selected?: boolean;
   traversalIndex?: number;
 };
-export type ApiSlot = components['schemas']['SlotRead'];
+
+export type ApiSlot = components['schemas']['SlotRead'] & {
+  expression?: ASTExpression | null;
+  target_var_key?: string | null;
+};
+
 export type NodeType = components['schemas']['NodeType'];
 export type InsertableNodeType = Exclude<NodeType, 'START' | 'END'>;
 
-export type Variable = components['schemas']['VariableRead'];
-export type FunctionEntity = components['schemas']['FunctionRead'];
+export interface StateVariable {
+  id: string;
+  key: string;
+  type: 'boolean' | 'string' | 'number';
+  default_value?: any;
+  description?: string | null;
+}
+
+export interface Diagnostic {
+  line: number;
+  column: number;
+  code: string;
+  message: string;
+  severity: 'error' | 'warning';
+  node_id?: string | null;
+  slot_id?: string | null;
+}
+
+export type ASTExpression =
+  | { kind: 'literal'; value: string | number | boolean | null }
+  | { kind: 'stateRef'; varKey: string }
+  | {
+      kind: 'binaryOp';
+      op: '==' | '!=' | '>' | '<' | '>=' | '<=' | '+' | '-' | '*' | '/' | 'and' | 'or';
+      left: ASTExpression;
+      right: ASTExpression;
+    }
+  | { kind: 'unaryOp'; op: 'not' | '-'; expr: ASTExpression };
 
 export type AppFlowNode = Node<{
   node: ApiNode;
 }, 'custom'>;
-
 
 export type AppFlowEdge = Edge<{
   sections?: ElkEdgeSection[];

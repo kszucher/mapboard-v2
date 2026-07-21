@@ -1,24 +1,20 @@
-import type { Workspace } from '@astral-sh/ruff-wasm-web';
 import { acceptCompletion } from '@codemirror/autocomplete';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { python } from '@codemirror/lang-python';
 import { foldGutter, indentUnit } from '@codemirror/language';
 import { type Diagnostic, linter, lintGutter } from '@codemirror/lint';
-import { Annotation, EditorState, Range, StateEffect, StateField } from '@codemirror/state';
+import { EditorState, Range, StateEffect, StateField } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
 import type { DecorationSet } from '@codemirror/view';
 import { Decoration, drawSelection, EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { useEffect, useRef, useState } from 'react';
-import type { Variable } from '../../canvas/types';
+import type { Diagnostic as BackendDiagnostic, StateVariable } from '../../canvas/types';
 import {
   buildAutocompletionExtension,
   findFunctionAt,
-  getEditableRegions,
   getFoldEffectsForFunctions,
   resolveHighlightLineRange,
 } from '../../domain/code/ast';
-
-const systemUpdate = Annotation.define<boolean>();
 
 const setSelectedItemEffect = StateEffect.define<string | null>();
 
@@ -34,7 +30,6 @@ const selectionField = StateField.define<string | null>({
   }
 });
 
-// Build line-bracket decorations for editable areas
 function buildDecorations(state: EditorState) {
   const nodeId = state.field(selectionField);
   if (!nodeId) return Decoration.none;
@@ -72,7 +67,6 @@ const readOnlyField = StateField.define<DecorationSet>({
   provide: (f) => EditorView.decorations.from(f),
 });
 
-// Custom CodeMirror theme for the editor
 const editorTheme = EditorView.theme({
   '&': {
     height: '100%',
@@ -97,47 +91,13 @@ const editorTheme = EditorView.theme({
     borderRightColor: 'var(--iris-9)',
     backgroundColor: 'rgba(59, 130, 246, 0.015) !important',
   },
-  '.cm-editable-line-start, .cm-editable-line-single': {
-    borderTopColor: 'rgba(99, 102, 241, 0.35)',
-  },
-  '.cm-editable-line-end, .cm-editable-line-single': {
-    borderBottomColor: 'rgba(99, 102, 241, 0.35)',
-  }
 });
-
-// Transaction filter that locks non-editable regions
-function buildTransactionFilter() {
-  return EditorState.transactionFilter.of(tr => {
-    if (tr.docChanged) {
-      if (tr.annotation(systemUpdate)) {
-        return tr;
-      }
-      const allowed = getEditableRegions(tr.startState);
-
-      let isChangeAllowed = true;
-      tr.changes.iterChanges((fromA, toA) => {
-        const isContained = allowed.some(
-          (range) => fromA >= range.from && toA <= range.to
-        );
-        if (!isContained) {
-          isChangeAllowed = false;
-        }
-      });
-
-      if (!isChangeAllowed) {
-        return [];
-      }
-    }
-    return tr;
-  });
-}
 
 export interface UseCodeMirrorProps {
   code: string;
-  variables: Variable[];
+  variables: StateVariable[];
   selectedNodeId: string | null;
-  workspace: Workspace | null;
-  clearErrorMessage: () => void;
+  diagnostics: BackendDiagnostic[];
   setSelectedIds: (nodeId: string | null, branchIndex: number | null) => void;
 }
 
@@ -145,15 +105,13 @@ export function useCodeMirror({
   code,
   variables,
   selectedNodeId,
-  workspace,
-  clearErrorMessage,
+  diagnostics,
   setSelectedIds,
 }: UseCodeMirrorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const [currentValue, setCurrentValue] = useState(code);
 
-  // Update editor content when store code changes (e.g. initial load or visual sync)
   useEffect(() => {
     setCurrentValue(code);
     if (viewRef.current) {
@@ -161,14 +119,11 @@ export function useCodeMirror({
       if (state.doc.toString() !== code) {
         viewRef.current.dispatch({
           changes: { from: 0, to: state.doc.length, insert: code },
-          annotations: systemUpdate.of(true),
         });
       }
     }
   }, [code]);
 
-  // Sync component selection back to CodeMirror selection effects
-  // Sync component selection back to CodeMirror selection effects and fold/unfold functions
   useEffect(() => {
     if (viewRef.current) {
       const currentSelection = viewRef.current.state.field(selectionField);
@@ -186,18 +141,11 @@ export function useCodeMirror({
     }
   }, [selectedNodeId]);
 
-  // Create CodeMirror instance
   useEffect(() => {
     if (!containerRef.current) return;
 
     const updateListener = EditorView.updateListener.of((update) => {
-      if (update.docChanged) {
-        const val = update.state.doc.toString();
-        setCurrentValue(val);
-        clearErrorMessage();
-      }
-
-      if (update.selectionSet || update.docChanged) {
+      if (update.selectionSet) {
         const pos = update.state.selection.main.head;
         const activeFn = findFunctionAt(update.state, pos);
         const activeFnName = activeFn ? activeFn.name : null;
@@ -206,9 +154,31 @@ export function useCodeMirror({
       }
     });
 
+    const cmLinter = linter((view) => {
+      const cmDiags: Diagnostic[] = [];
+      for (const d of diagnostics) {
+        try {
+          const row = Math.max(1, Math.min(d.line, view.state.doc.lines));
+          const line = view.state.doc.line(row);
+          const col = Math.max(0, Math.min(d.column - 1, line.length));
+          const from = line.from + col;
+          cmDiags.push({
+            from,
+            to: Math.min(from + 1, line.to),
+            severity: d.severity,
+            message: `[${d.code}] ${d.message}`,
+          });
+        } catch {
+          // ignore mapping bounds error
+        }
+      }
+      return cmDiags;
+    });
+
     const state = EditorState.create({
       doc: code,
       extensions: [
+        EditorState.readOnly.of(true),
         lineNumbers(),
         history(),
         keymap.of([
@@ -222,14 +192,13 @@ export function useCodeMirror({
         oneDark,
         foldGutter(),
         buildAutocompletionExtension(variables),
-        workspace ? linter((view) => runRuffLint(view.state, workspace)) : [],
+        cmLinter,
         lintGutter(),
         selectionField,
         readOnlyField,
         updateListener,
         EditorState.tabSize.of(4),
         indentUnit.of('    '),
-        buildTransactionFilter(),
         editorTheme,
       ],
     });
@@ -241,7 +210,6 @@ export function useCodeMirror({
 
     viewRef.current = view;
 
-    // Apply initial fold state on mount
     const initialEffects = getFoldEffectsForFunctions(view.state, selectedNodeId);
     if (initialEffects.length > 0) {
       view.dispatch({ effects: initialEffects });
@@ -251,7 +219,7 @@ export function useCodeMirror({
       view.destroy();
       viewRef.current = null;
     };
-  }, [workspace]);
+  }, [diagnostics]);
 
   return {
     containerRef,
@@ -261,44 +229,3 @@ export function useCodeMirror({
   };
 }
 
-function runRuffLint(state: EditorState, workspace: Workspace): Diagnostic[] {
-  const code = state.doc.toString();
-  if (!code.trim()) {
-    return [];
-  }
-
-  try {
-    const results = workspace.check(code);
-    const diagnostics: Diagnostic[] = [];
-
-    for (const d of results) {
-      try {
-        const startRow = Math.max(1, Math.min(d.start_location.row, state.doc.lines));
-        const startLine = state.doc.line(startRow);
-        const startCol = Math.max(0, Math.min(d.start_location.column - 1, startLine.length));
-        const from = startLine.from + startCol;
-
-        const endRow = Math.max(1, Math.min(d.end_location.row, state.doc.lines));
-        const endLine = state.doc.line(endRow);
-        const endCol = Math.max(0, Math.min(d.end_location.column - 1, endLine.length));
-        const to = endLine.from + endCol;
-
-        const severity: 'error' | 'warning' = d.code && (d.code.startsWith('E') || d.code.startsWith('F')) ? 'error' : 'warning';
-
-        diagnostics.push({
-          from,
-          to: to > from ? to : from + 1,
-          severity,
-          message: d.code ? `[${d.code}] ${d.message}` : d.message,
-        });
-      } catch (err) {
-        console.error('Error processing Ruff diagnostic coordinate', err, d);
-      }
-    }
-
-    return diagnostics;
-  } catch (error) {
-    console.error('Ruff linting failed', error);
-    return [];
-  }
-}

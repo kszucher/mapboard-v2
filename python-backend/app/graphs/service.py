@@ -21,7 +21,7 @@ async def create_graph(
     import uuid as py_uuid
 
     from app.graphs.langgraph_sync import generate_graph_code
-    from app.graphs.schemas import EdgeRead, NodeRead, SlotRead, VariableRead
+    from app.graphs.schemas import EdgeRead, NodeRead, SlotRead, StateVariableSchema
 
     default_nodes = [
         NodeRead(id="start", node_type="START", is_input=False, is_output=True, slots=[]),
@@ -32,8 +32,21 @@ async def create_graph(
             is_input=True,
             is_output=False,
             slots=[
-                SlotRead(id="switch_step_option_a", raw_string="option_a"),
-                SlotRead(id="switch_step_option_b", raw_string="option_b"),
+                SlotRead(
+                    id="switch_step_option_a",
+                    raw_string="option_a",
+                    expression={
+                        "kind": "binaryOp",
+                        "op": ">",
+                        "left": {"kind": "stateRef", "varKey": "x"},
+                        "right": {"kind": "literal", "value": 0},
+                    },
+                ),
+                SlotRead(
+                    id="switch_step_option_b",
+                    raw_string="option_b",
+                    expression={"kind": "literal", "value": True},
+                ),
             ],
         ),
         NodeRead(id="step_a", node_type="STEP", is_input=True, is_output=True, slots=[]),
@@ -84,13 +97,12 @@ async def create_graph(
             target_type="node",
         ),
     ]
-    variables = [VariableRead(id="x", name="x", type="number")]
+    state_schema = [StateVariableSchema(id="x", key="x", type="number", default_value=0)]
 
     payload = {
         "nodes": [n.model_dump(mode="json") for n in default_nodes],
         "edges": [e.model_dump(mode="json") for e in default_edges],
-        "variables": [v.model_dump(mode="json") for v in variables],
-        "functions": [],
+        "state_schema": [s.model_dump(mode="json") for s in state_schema],
     }
     compiled_code = generate_graph_code(payload)
 
@@ -98,8 +110,7 @@ async def create_graph(
         "code": compiled_code,
         "nodes": payload["nodes"],
         "edges": payload["edges"],
-        "variables": payload["variables"],
-        "functions": [],
+        "state_schema": payload["state_schema"],
     }
     graph.flow_json = initial_flow
     await uow.session.flush()
@@ -129,103 +140,8 @@ async def sync_graph_flow(
 
         raise ValidationError(f"Graph {graph_id} not found")
 
-    from app.graphs.langgraph_sync import generate_graph_code, parse_code_to_graph
-    from app.graphs.schemas import NodeRead
-
-    existing_flow = graph.flow_json or {}
-    existing_code = existing_flow.get("code", "")
-    old_nodes_raw = existing_flow.get("nodes", [])
-    old_nodes = [NodeRead.model_validate(n) for n in old_nodes_raw]
-
-    new_code = payload.code
     payload_dict = payload.model_dump(mode="json")
-
-    if new_code != existing_code:
-        # Code edited in the frontend editor
-        try:
-            parsed = parse_code_to_graph(new_code)
-
-            nodes = payload_dict.get("nodes") or existing_flow.get("nodes", [])
-            edges = payload_dict.get("edges") or existing_flow.get("edges", [])
-            functions = []
-
-            # Match function sources to the visual nodes, updating their code field
-            node_names = {n["id"] for n in nodes if n["node_type"] in ("STEP", "SWITCH")}
-            for node in nodes:
-                node_name = node["id"]
-                if node_name in parsed["functions"]:
-                    node["code"] = parsed["functions"][node_name]
-
-            # Any top-level functions that are not visual nodes become helper functions
-            for func_name, func_source in parsed["functions"].items():
-                if func_name not in node_names and func_name != "State":
-                    functions.append({"id": func_name, "name": func_name, "raw_string": func_source})
-
-            # Regenerate the code block to ensure the read-only Graph Definition section matches payload topology
-            temp_payload = {
-                "nodes": nodes,
-                "edges": edges,
-                "variables": parsed["variables"],
-                "functions": functions,
-            }
-            final_code = generate_graph_code(temp_payload, existing_code=new_code, old_nodes=old_nodes)
-
-            flow_data = {
-                "code": final_code,
-                "nodes": nodes,
-                "edges": edges,
-                "variables": parsed["variables"],
-                "functions": functions,
-            }
-        except ValueError as e:
-            from fastapi import HTTPException
-
-            raise HTTPException(status_code=422, detail=str(e))
-    else:
-        # Visual edit on the canvas (e.g. node created, deleted, connected, slot modified)
-        generated = generate_graph_code(payload_dict, existing_code=existing_code, old_nodes=old_nodes)
-
-        parsed = parse_code_to_graph(generated)
-
-        nodes = payload_dict.get("nodes", [])
-        edges = payload_dict.get("edges", [])
-        node_names = {n["id"] for n in nodes if n["node_type"] in ("STEP", "SWITCH")}
-        for node in nodes:
-            node_name = node["id"]
-            if node_name in parsed["functions"]:
-                node["code"] = parsed["functions"][node_name]
-
-        # Helper functions
-        functions = []
-        for func_name, func_source in parsed["functions"].items():
-            if func_name not in node_names and func_name != "State":
-                functions.append({"id": func_name, "name": func_name, "raw_string": func_source})
-
-        flow_data = {
-            "code": generated,
-            "nodes": nodes,
-            "edges": edges,
-            "variables": parsed["variables"],
-            "functions": functions,
-        }
-
-    # Clear future history branches
-    await uow.graph_history.delete_future_snapshots(graph_id, graph.current_history_sequence)
-
-    # Increment sequence and save snapshot
-    next_seq = graph.current_history_sequence + 1
-    await uow.graph_history.save_snapshot(graph.id, flow_data, next_seq)
-
-    graph.flow_json = flow_data
-    graph.current_history_sequence = next_seq
-    await uow.session.flush()
-
-    uow.emit(
-        event=EventName.GRAPH_UPDATED,
-        graph_id=graph_id,
-        payload={},
-    )
-    return await _prepare_response_flow(uow, graph, flow_data)
+    return await _commit_state_snapshot(uow, graph, payload_dict)
 
 
 async def run_graph_flow(uow: UnitOfWork, graph_id: uuid.UUID) -> dict:
@@ -243,9 +159,7 @@ async def run_graph_flow(uow: UnitOfWork, graph_id: uuid.UUID) -> dict:
     from app.graphs.compiler import compile_flow_with_langgraph
     from app.graphs.schemas import GraphFlowRead
 
-    flow_json = (
-        dict(graph.flow_json) if graph.flow_json else {"nodes": [], "edges": [], "variables": [], "functions": []}
-    )
+    flow_json = dict(graph.flow_json) if graph.flow_json else {"nodes": [], "edges": [], "state_schema": []}
     flow = GraphFlowRead.model_validate(flow_json)
 
     try:
@@ -253,25 +167,14 @@ async def run_graph_flow(uow: UnitOfWork, graph_id: uuid.UUID) -> dict:
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"Compilation Error: {str(e)}")
 
-    initial_input = {v.name: v.value for v in flow.variables}
+    initial_input = {v.key: v.default_value for v in flow.state_schema}
 
     try:
         final_state = await app.ainvoke(initial_input)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Execution Error: {str(e)}")
 
-    updated_variables = []
-    for var in flow.variables:
-        val = final_state.get(var.name, var.value)
-        var.value = val
-        updated_variables.append(var)
-
-    flow.variables = updated_variables
-    flow_data = flow.model_dump(mode="json")
-    graph.flow_json = flow_data
-    await uow.session.flush()
-
-    return flow_data
+    return {"state": final_state}
 
 
 async def get_and_reset_graph_flow(uow: UnitOfWork, graph_id: uuid.UUID) -> dict:
@@ -295,45 +198,37 @@ async def get_and_reset_graph_flow(uow: UnitOfWork, graph_id: uuid.UUID) -> dict
 
 
 async def _prepare_response_flow(uow: UnitOfWork, graph: models.Graph, flow_data: dict) -> dict:
+    from app.graphs.langgraph_sync import run_ruff_diagnostics
+
     next_snap = await uow.graph_history.get_by_sequence(graph.id, graph.current_history_sequence + 1)
-    return {**flow_data, "can_undo": graph.current_history_sequence > 0, "can_redo": next_snap is not None}
+    code = flow_data.get("code", "")
+    diagnostics = run_ruff_diagnostics(code)
+    diag_dicts = [d.model_dump(mode="json") for d in diagnostics]
+
+    return {
+        **flow_data,
+        "diagnostics": diag_dicts,
+        "can_undo": graph.current_history_sequence > 0,
+        "can_redo": next_snap is not None,
+    }
 
 
 async def _commit_state_snapshot(uow: UnitOfWork, graph: models.Graph, flow_data: dict) -> dict:
     from app.constants import EventName
-    from app.graphs.langgraph_sync import generate_graph_code, parse_code_to_graph
-    from app.graphs.schemas import NodeRead
+    from app.graphs.langgraph_sync import generate_graph_code
 
     # Clear future history branches
     await uow.graph_history.delete_future_snapshots(graph.id, graph.current_history_sequence)
 
     # Reformat/Compile Python code based on the new visual elements
-    old_nodes_raw = graph.flow_json.get("nodes", [])
-    old_nodes = [NodeRead.model_validate(n) for n in old_nodes_raw]
-
-    generated_code = generate_graph_code(flow_data, existing_code=flow_data.get("code", ""), old_nodes=old_nodes)
-    parsed = parse_code_to_graph(generated_code)
-
-    # Sync parsed function definitions into visual nodes code field
-    node_names = {n["id"] for n in flow_data["nodes"] if n["node_type"] in ("STEP", "SWITCH")}
-    for node in flow_data["nodes"]:
-        node_name = node["id"]
-        if node_name in parsed["functions"]:
-            node["code"] = parsed["functions"][node_name]
-
-    # Generate helper functions
-    functions = []
-    for func_name, func_source in parsed["functions"].items():
-        if func_name not in node_names and func_name != "State":
-            functions.append({"id": func_name, "name": func_name, "raw_string": func_source})
+    generated_code = generate_graph_code(flow_data)
 
     # Prepare final flow structure
     updated_flow = {
         "code": generated_code,
-        "nodes": flow_data["nodes"],
-        "edges": flow_data["edges"],
-        "variables": parsed["variables"],
-        "functions": functions,
+        "nodes": flow_data.get("nodes", []),
+        "edges": flow_data.get("edges", []),
+        "state_schema": flow_data.get("state_schema", []),
     }
 
     # Increment sequence and save snapshot

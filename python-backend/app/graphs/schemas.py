@@ -21,9 +21,19 @@ class GraphRead(OrmModel):
     user_id: uuid.UUID
 
 
+class StateVariableSchema(BaseModel):
+    id: str
+    key: str
+    type: Literal["boolean", "string", "number"]
+    default_value: Any = None
+    description: str | None = None
+
+
 class SlotRead(BaseModel):
     id: str
     raw_string: str
+    expression: dict[str, Any] | None = None
+    target_var_key: str | None = None
     selected: bool = False
 
 
@@ -45,37 +55,30 @@ class EdgeRead(BaseModel):
     target_type: Literal["node", "slot"]
 
 
-class VariableRead(BaseModel):
-    id: str
-    name: str
-    type: Literal["boolean", "string", "number"]
-    value: Any = None
-
-
-class FunctionRead(BaseModel):
-    id: str
-    name: str
-    input_variable: str | None = None
-    output_variable: str | None = None
-    raw_string: str
+class DiagnosticRead(BaseModel):
+    line: int
+    column: int
+    code: str
+    message: str
+    severity: Literal["error", "warning"]
+    node_id: str | None = None
+    slot_id: str | None = None
 
 
 class GraphFlowRead(BaseModel):
     code: str = ""
     nodes: list[NodeRead]
     edges: list[EdgeRead]
-    variables: list[VariableRead] = []
-    functions: list[FunctionRead] = []
+    state_schema: list[StateVariableSchema] = []
+    diagnostics: list[DiagnosticRead] = []
     can_undo: bool = False
     can_redo: bool = False
 
 
 class GraphSyncPayload(BaseModel):
-    code: str = ""
     nodes: list[NodeRead]
     edges: list[EdgeRead]
-    variables: list[VariableRead] = []
-    functions: list[FunctionRead] = []
+    state_schema: list[StateVariableSchema] = []
 
 
 class NodeCreateRequest(BaseModel):
@@ -96,6 +99,8 @@ class SlotCreateRequest(BaseModel):
 
 class SlotUpdateRequest(BaseModel):
     raw_string: str
+    expression: dict[str, Any] | None = None
+    target_var_key: str | None = None
 
 
 class SlotMoveRequest(BaseModel):
