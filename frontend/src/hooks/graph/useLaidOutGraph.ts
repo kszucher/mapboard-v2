@@ -10,6 +10,7 @@ import { useGraphQuery } from './useGraphQuery';
 export const useLaidOutGraph = (graphId: string) => {
   const query = useGraphQuery(graphId);
   const layoutSeqRef = useRef(0);
+  const measuredMapRef = useRef<Record<string, { width?: number; height?: number }>>({});
   const { setNodes, setEdges, getNodes, getEdges } = useReactFlow();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -52,11 +53,8 @@ export const useLaidOutGraph = (graphId: string) => {
       void clearSlotSelection();
     }
 
-    setNodes(nodes);
-    setEdges(edges);
-
     runLayoutCalculation(nodes, edges);
-  }, [query.data, runLayoutCalculation, setNodes, setEdges, getNodes, getEdges, clearSlotSelection]);
+  }, [query.data, runLayoutCalculation, getNodes, getEdges, clearSlotSelection]);
 
   const onNodesLayoutChange = useCallback(
     (changes: NodeChange[]) => {
@@ -64,16 +62,24 @@ export const useLaidOutGraph = (graphId: string) => {
       const currentEdges = getEdges() as AppFlowEdge[];
       const newNodes = applyNodeChanges(changes, currentNodes) as AppFlowNode[];
 
-      if (
-        changes.some(c => c.type === 'dimensions') &&
-        shouldTriggerLayoutOnResize(currentNodes, newNodes, isLoading)
-      ) {
-        runLayoutCalculation(newNodes, currentEdges);
-      }
+      let shouldRecalc = false;
+      changes.forEach(c => {
+        if (c.type === 'dimensions' && c.dimensions) {
+          const prev = measuredMapRef.current[c.id];
+          if (!prev || prev.width !== c.dimensions.width || prev.height !== c.dimensions.height) {
+            measuredMapRef.current[c.id] = c.dimensions;
+            shouldRecalc = true;
+          }
+        }
+      });
 
-      setNodes(newNodes);
+      if (shouldRecalc) {
+        runLayoutCalculation(newNodes, currentEdges);
+      } else {
+        setNodes(newNodes);
+      }
     },
-    [runLayoutCalculation, isLoading, setNodes, getNodes, getEdges]
+    [runLayoutCalculation, setNodes, getNodes, getEdges]
   );
 
   return {
@@ -81,21 +87,4 @@ export const useLaidOutGraph = (graphId: string) => {
     isLoading,
     onNodesLayoutChange,
   };
-};
-
-const shouldTriggerLayoutOnResize = (
-  prevNodes: AppFlowNode[],
-  newNodes: AppFlowNode[],
-  isLoading: boolean
-): boolean => {
-  if (isLoading) return true;
-
-  return newNodes.some(node => {
-    const prevNode = prevNodes.find(n => n.id === node.id);
-    if (!prevNode) return true;
-    return (
-      node.measured?.width !== prevNode.measured?.width ||
-      node.measured?.height !== prevNode.measured?.height
-    );
-  });
 };
