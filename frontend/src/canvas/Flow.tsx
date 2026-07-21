@@ -156,8 +156,6 @@ const FlowContent = ({
   );
 };
 
-export const Flow = ({ selectedGraphId }: { selectedGraphId: string }) => {
-  return (
-    <FlowContent key={selectedGraphId} selectedGraphId={selectedGraphId}/>
-  );
-};
+export const Flow = ({ selectedGraphId }: { selectedGraphId: string }) => (
+  <FlowContent key={selectedGraphId} selectedGraphId={selectedGraphId} />
+);
