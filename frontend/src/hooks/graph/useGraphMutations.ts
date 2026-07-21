@@ -11,8 +11,11 @@ const handleMutationSuccess = (
   graphId: string,
   data: unknown
 ) => {
-  if (data && typeof data === 'object' && 'code' in data && typeof (data as { code?: unknown }).code === 'string') {
-    useGraphStore.setState({ code: (data as { code: string }).code });
+  if (data && typeof data === 'object') {
+    if ('code' in data && typeof (data as { code?: unknown }).code === 'string') {
+      useGraphStore.setState({ code: (data as { code: string }).code });
+    }
+    queryClient.setQueryData(queryKeys.graphs.flow(graphId), data);
   }
   void queryClient.invalidateQueries({ queryKey: queryKeys.graphs.flow(graphId) });
 };

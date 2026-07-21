@@ -57,4 +57,8 @@ export const useGraphStore = create<GraphStoreState>((set, get) => ({
   clearSlotSelection: () => {
     set({ selectedSlotId: null, selectedSlotIndex: null });
   },
+
+  clearNodeSelection: () => {
+    set({ selectedNodeId: null, selectedSlotId: null, selectedSlotIndex: null });
+  },
 }));

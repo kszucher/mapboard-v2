@@ -14,6 +14,7 @@ export const useLaidOutGraph = (graphId: string) => {
 
   const [isLoading, setIsLoading] = useState(true);
   const clearSlotSelection = useGraphStore(state => state.clearSlotSelection);
+  const clearNodeSelection = useGraphStore(state => state.clearNodeSelection);
 
   const runLayoutCalculation = useCallback(
     (nodes: AppFlowNode[], edges: AppFlowEdge[]) => {
@@ -49,7 +50,9 @@ export const useLaidOutGraph = (graphId: string) => {
     const isNodeMissing = selNodeId && !nodes.some(n => n.id === selNodeId);
     const isSlotMissing = selSlotId && !nodes.some(n => n.data.node.slots.some(s => s.id === selSlotId));
 
-    if (isNodeMissing || isSlotMissing) {
+    if (isNodeMissing) {
+      void clearNodeSelection();
+    } else if (isSlotMissing) {
       void clearSlotSelection();
     }
 
@@ -57,7 +60,7 @@ export const useLaidOutGraph = (graphId: string) => {
     setEdges(edges);
 
     runLayoutCalculation(nodes, edges);
-  }, [query.data, runLayoutCalculation, setNodes, setEdges, getNodes, getEdges, clearSlotSelection]);
+  }, [query.data, runLayoutCalculation, setNodes, setEdges, getNodes, getEdges, clearSlotSelection, clearNodeSelection]);
 
   const onNodesLayoutChange = useCallback(
     (changes: NodeChange[]) => {

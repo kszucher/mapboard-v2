@@ -9,6 +9,7 @@ export interface BaseState {
 export interface UiActions {
   setSelectedIds: (nodeId: string | null, branchIndex: number | null) => void;
   clearSlotSelection: () => void;
+  clearNodeSelection: () => void;
   init: (graphId: string) => void;
 }
 
