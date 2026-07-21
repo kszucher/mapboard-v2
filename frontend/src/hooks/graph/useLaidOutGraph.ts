@@ -13,9 +13,6 @@ export const useLaidOutGraph = (graphId: string) => {
   const { setNodes, setEdges, getNodes, getEdges } = useReactFlow();
 
   const [isLoading, setIsLoading] = useState(true);
-
-  const selectedNodeId = useGraphStore(state => state.selectedNodeId);
-  const selectedSlotId = useGraphStore(state => state.selectedSlotId);
   const clearSlotSelection = useGraphStore(state => state.clearSlotSelection);
 
   const runLayoutCalculation = useCallback(
@@ -45,10 +42,13 @@ export const useLaidOutGraph = (graphId: string) => {
       currentEdges
     );
 
-    // Safety check: clear selection if selected node/slot no longer exists in graph
-    if (selectedNodeId && !nodes.some(n => n.id === selectedNodeId)) {
-      void clearSlotSelection();
-    } else if (selectedSlotId && !nodes.some(n => n.data.node.slots.some(s => s.id === selectedSlotId))) {
+    // Safety check: clear selection if selected node or slot no longer exists in graph
+    const selNodeId = useGraphStore.getState().selectedNodeId;
+    const selSlotId = useGraphStore.getState().selectedSlotId;
+    const isNodeMissing = selNodeId && !nodes.some(n => n.id === selNodeId);
+    const isSlotMissing = selSlotId && !nodes.some(n => n.data.node.slots.some(s => s.id === selSlotId));
+
+    if (isNodeMissing || isSlotMissing) {
       void clearSlotSelection();
     }
 
@@ -56,7 +56,7 @@ export const useLaidOutGraph = (graphId: string) => {
     setEdges(edges);
 
     runLayoutCalculation(nodes, edges);
-  }, [query.data, runLayoutCalculation, setNodes, setEdges, getNodes, getEdges, selectedNodeId, selectedSlotId, clearSlotSelection]);
+  }, [query.data, runLayoutCalculation, setNodes, setEdges, getNodes, getEdges, clearSlotSelection]);
 
   const onNodesLayoutChange = useCallback(
     (changes: NodeChange[]) => {
