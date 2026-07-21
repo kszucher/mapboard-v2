@@ -40,29 +40,11 @@ export const Editor = ({
     onSaveRef.current = onSave;
   }, [onSave]);
 
-  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const scheduleSave = (newValue: string) => {
-    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-    debounceTimerRef.current = setTimeout(() => {
-      onSaveRef.current(newValue);
-    }, 1000);
-  };
-
-  useEffect(() => {
-    return () => {
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-    };
-  }, []);
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    setValue(newValue);
-    scheduleSave(newValue);
+    setValue(e.target.value);
   };
 
   const commitAndExit = () => {
-    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     onSaveRef.current(value);
     setIsEditing(false);
   };
