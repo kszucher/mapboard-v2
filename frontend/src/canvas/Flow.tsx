@@ -18,7 +18,7 @@ const FlowContent = ({
 }: {
   selectedGraphId: string;
 }) => {
-  const { nodes, edges, isLoading, onNodesLayoutChange } = useLaidOutGraph(selectedGraphId);
+  const { isLoading, onNodesLayoutChange } = useLaidOutGraph(selectedGraphId);
   const setSelectedIds = useGraphStore(state => state.setSelectedIds);
   const clearSlotSelection = useGraphStore(state => state.clearSlotSelection);
 
@@ -70,9 +70,6 @@ const FlowContent = ({
     onNodesLayoutChange(changes);
   }, [setSelectedIds, onNodesLayoutChange]);
 
-  const onEdgesChange = useCallback(() => {
-  }, []);
-
   const onConnect = useCallback((connection: Connection) => {
     if (connection.source && connection.target && connection.sourceHandle && connection.targetHandle) {
       void createEdge({
@@ -112,12 +109,11 @@ const FlowContent = ({
         pointerEvents: isLoading ? 'none' : 'auto',
       }}>
         <ReactFlow
+          defaultNodes={[]}
+          defaultEdges={[]}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
-          nodes={nodes}
-          edges={edges}
           onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onEdgesDelete={onEdgesDelete}
           onReconnect={onReconnect}
