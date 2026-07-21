@@ -1,4 +1,4 @@
-import type { AppFlowNode } from '../canvas/types';
+import type { AppFlowEdge, AppFlowNode } from '../canvas/types';
 
 export interface BaseState {
   graphId: string | null;
@@ -13,6 +13,19 @@ export interface UiActions {
   clearSlotSelection: () => void;
   clearNodeSelection: () => void;
   reconcileSelection: (newNodes: AppFlowNode[]) => void;
+  selectNextSlot: (nodes: AppFlowNode[]) => void;
+  selectPreviousSlot: (nodes: AppFlowNode[]) => void;
+  selectFirstSlot: (nodes: AppFlowNode[]) => void;
+  selectSiblingNode: (
+    direction: 'above' | 'below',
+    nodes: AppFlowNode[],
+    edges: AppFlowEdge[]
+  ) => void;
+  selectTraversalNode: (
+    direction: 'left' | 'right',
+    nodes: AppFlowNode[],
+    edges: AppFlowEdge[]
+  ) => void;
   init: (graphId: string) => void;
 }
 

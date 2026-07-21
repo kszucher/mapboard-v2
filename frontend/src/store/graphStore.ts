@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { components } from '../api/generated/schema';
 import { queryClient } from '../api/queryClient';
 import { queryKeys } from '../api/queryKeys';
+import { getNextDownstreamNodeId, getNextUpstreamNodeId, getSiblingNodeId } from '../domain/graph/traversal';
 import type { GraphStoreState } from './types';
 
 export const useGraphStore = create<GraphStoreState>((set, get) => ({
@@ -92,6 +93,72 @@ export const useGraphStore = create<GraphStoreState>((set, get) => ({
       } else {
         set({ selectedSlotId: null, lastKnownSlotIndex: null });
       }
+    }
+  },
+
+  selectNextSlot: (nodes) => {
+    const { selectedNodeId, selectedSlotId } = get();
+    if (!selectedNodeId || !selectedSlotId) return;
+
+    const node = nodes.find(n => n.id === selectedNodeId);
+    if (!node) return;
+
+    const slots = node.data?.node?.slots || [];
+    const currentIndex = slots.findIndex(s => s.id === selectedSlotId);
+    if (currentIndex !== -1 && currentIndex < slots.length - 1) {
+      const nextSlot = slots[currentIndex + 1];
+      set({ selectedSlotId: nextSlot.id, lastKnownSlotIndex: currentIndex + 1 });
+    }
+  },
+
+  selectPreviousSlot: (nodes) => {
+    const { selectedNodeId, selectedSlotId } = get();
+    if (!selectedNodeId || !selectedSlotId) return;
+
+    const node = nodes.find(n => n.id === selectedNodeId);
+    if (!node) return;
+
+    const slots = node.data?.node?.slots || [];
+    const currentIndex = slots.findIndex(s => s.id === selectedSlotId);
+    if (currentIndex > 0) {
+      const prevSlot = slots[currentIndex - 1];
+      set({ selectedSlotId: prevSlot.id, lastKnownSlotIndex: currentIndex - 1 });
+    }
+  },
+
+  selectFirstSlot: (nodes) => {
+    const { selectedNodeId } = get();
+    if (!selectedNodeId) return;
+
+    const node = nodes.find(n => n.id === selectedNodeId);
+    if (!node) return;
+
+    const slots = node.data?.node?.slots || [];
+    if (slots.length > 0) {
+      set({ selectedSlotId: slots[0].id, lastKnownSlotIndex: 0 });
+    }
+  },
+
+  selectSiblingNode: (direction, nodes, edges) => {
+    const { selectedNodeId } = get();
+    if (!selectedNodeId) return;
+
+    const siblingId = getSiblingNodeId(selectedNodeId, direction, nodes, edges);
+    if (siblingId) {
+      set({ selectedNodeId: siblingId, selectedSlotId: null, lastKnownSlotIndex: null });
+    }
+  },
+
+  selectTraversalNode: (direction, nodes, edges) => {
+    const { selectedNodeId } = get();
+    if (!selectedNodeId) return;
+
+    const targetId = direction === 'right'
+      ? getNextDownstreamNodeId(selectedNodeId, nodes, edges)
+      : getNextUpstreamNodeId(selectedNodeId, nodes, edges);
+
+    if (targetId) {
+      set({ selectedNodeId: targetId, selectedSlotId: null, lastKnownSlotIndex: null });
     }
   },
 }));

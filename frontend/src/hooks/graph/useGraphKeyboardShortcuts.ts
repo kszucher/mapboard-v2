@@ -1,7 +1,6 @@
 import { useReactFlow } from '@xyflow/react';
 import { useEffect, useRef } from 'react';
 import type { AppFlowEdge, AppFlowNode } from '../../canvas/types';
-import { getNextDownstreamNodeId, getNextUpstreamNodeId, getSiblingNodeId, } from '../../domain/graph/traversal';
 import { useGraphStore } from '../../store/graphStore';
 import { useCreateSlot, useDeleteNode, useDeleteSlot, useMoveSlot, } from './useGraphMutations';
 
@@ -9,8 +8,12 @@ export const useGraphKeyboardShortcuts = (graphId: string) => {
   const { getNodes, getEdges } = useReactFlow();
   const selectedNodeId = useGraphStore(state => state.selectedNodeId);
   const selectedSlotId = useGraphStore(state => state.selectedSlotId);
-  const setSelectedIds = useGraphStore(state => state.setSelectedIds);
   const clearSlotSelection = useGraphStore(state => state.clearSlotSelection);
+  const selectNextSlot = useGraphStore(state => state.selectNextSlot);
+  const selectPreviousSlot = useGraphStore(state => state.selectPreviousSlot);
+  const selectFirstSlot = useGraphStore(state => state.selectFirstSlot);
+  const selectSiblingNode = useGraphStore(state => state.selectSiblingNode);
+  const selectTraversalNode = useGraphStore(state => state.selectTraversalNode);
 
   const { mutateAsync: createSlot } = useCreateSlot(graphId);
   const { mutateAsync: deleteSlot } = useDeleteSlot(graphId);
@@ -66,9 +69,7 @@ export const useGraphKeyboardShortcuts = (graphId: string) => {
         } else if (e.key === 'ArrowUp') {
           e.preventDefault();
           e.stopPropagation();
-          if (currentIndex > 0) {
-            setSelectedIds(selectedNodeId, slots[currentIndex - 1].id);
-          }
+          selectPreviousSlot(nodes);
           return;
         }
 
@@ -86,9 +87,7 @@ export const useGraphKeyboardShortcuts = (graphId: string) => {
         } else if (e.key === 'ArrowDown') {
           e.preventDefault();
           e.stopPropagation();
-          if (currentIndex < slots.length - 1) {
-            setSelectedIds(selectedNodeId, slots[currentIndex + 1].id);
-          }
+          selectNextSlot(nodes);
           return;
         }
 
@@ -131,18 +130,12 @@ export const useGraphKeyboardShortcuts = (graphId: string) => {
       // 2. NODE IS SELECTED (NO SLOT SELECTED)
       // ----------------------------------------------------
       if (selectedNodeId !== null && selectedSlotId === null) {
-        const currentNode = nodes.find(n => n.id === selectedNodeId);
-        if (!currentNode) return;
-
         // Space: Transition from node selection to first slot selection
         if (e.key === ' ' || e.code === 'Space') {
-          const slots = currentNode.data.node.slots || [];
-          if (slots.length > 0) {
-            e.preventDefault();
-            e.stopPropagation();
-            setSelectedIds(selectedNodeId, slots[0].id);
-            return;
-          }
+          e.preventDefault();
+          e.stopPropagation();
+          selectFirstSlot(nodes);
+          return;
         }
 
         if (e.key === 'Delete') {
@@ -163,19 +156,14 @@ export const useGraphKeyboardShortcuts = (graphId: string) => {
           e.preventDefault();
           e.stopPropagation();
 
-          let nextNodeId: string | null = null;
           if (e.key === 'ArrowRight') {
-            nextNodeId = getNextDownstreamNodeId(selectedNodeId, nodes, edges);
+            selectTraversalNode('right', nodes, edges);
           } else if (e.key === 'ArrowLeft') {
-            nextNodeId = getNextUpstreamNodeId(selectedNodeId, nodes, edges);
+            selectTraversalNode('left', nodes, edges);
           } else if (e.key === 'ArrowUp') {
-            nextNodeId = getSiblingNodeId(selectedNodeId, 'above', nodes, edges);
+            selectSiblingNode('above', nodes, edges);
           } else if (e.key === 'ArrowDown') {
-            nextNodeId = getSiblingNodeId(selectedNodeId, 'below', nodes, edges);
-          }
-
-          if (nextNodeId) {
-            setSelectedIds(nextNodeId, null);
+            selectSiblingNode('below', nodes, edges);
           }
           return;
         }
@@ -187,13 +175,16 @@ export const useGraphKeyboardShortcuts = (graphId: string) => {
       window.removeEventListener('keydown', handleKeyDown, true);
     };
   }, [
-    graphId,
     getNodes,
     getEdges,
     selectedNodeId,
     selectedSlotId,
-    setSelectedIds,
     clearSlotSelection,
+    selectNextSlot,
+    selectPreviousSlot,
+    selectFirstSlot,
+    selectSiblingNode,
+    selectTraversalNode,
     createSlot,
     deleteSlot,
     deleteNode,
