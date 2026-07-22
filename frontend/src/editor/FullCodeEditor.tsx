@@ -1,4 +1,6 @@
 import { Box, Card, Flex, Text } from '@radix-ui/themes';
+import { useNodes, useReactFlow } from '@xyflow/react';
+import { useCallback } from 'react';
 import type { Diagnostic, StateVariable } from '../canvas/types';
 import { useCodeMirror } from '../hooks/editor/useCodeMirror';
 import { useGraphQuery } from '../hooks/graph/useGraphQuery';
@@ -16,8 +18,22 @@ export const FullCodeEditor = ({ isGraphSelected: _isGraphSelected }: FullCodeEd
   const diagnostics: Diagnostic[] = rawFlow.diagnostics || [];
 
   const code = useGraphStore(state => state.code);
-  const selectedNodeId = useGraphStore(state => state.selectedNodeId);
-  const setSelectedNodeId = useGraphStore(state => state.setSelectedNodeId);
+  const { setNodes } = useReactFlow();
+  const nodes = useNodes();
+
+  const selectedNodeId = nodes.find(n => n.selected)?.id || null;
+
+  const setSelectedNodeId = useCallback((nodeId: string | null) => {
+    setNodes(nodes =>
+      nodes.map(n => {
+        const isSel = n.id === nodeId;
+        if (n.selected !== isSel) {
+          return { ...n, selected: isSel };
+        }
+        return n;
+      })
+    );
+  }, [setNodes]);
 
   const { containerRef } = useCodeMirror({
     code,
@@ -82,5 +98,3 @@ export const FullCodeEditor = ({ isGraphSelected: _isGraphSelected }: FullCodeEd
     </Flex>
   );
 };
-
-

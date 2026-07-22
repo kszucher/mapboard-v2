@@ -197,35 +197,35 @@ export const Frame = () => {
       </Box>
 
       {/* Main Workspace (Sidebar + Canvas) */}
-      <Flex
-        style={{
-          width: '100vw',
-          height: '100vh',
-          paddingTop: '40px',
-          boxSizing: 'border-box',
-          overflow: 'hidden',
-          backgroundColor: 'var(--gray-1)',
-        }}
-      >
-        {/* Sidebar Component */}
-        <Sidebar isSidebarOpen={isSidebarOpen} isGraphSelected={isGraphSelected}/>
-
-        {/* Flow Canvas Container */}
-        <Box
+      <ReactFlowProvider key={selectedGraphId || 'no-graph'}>
+        <Flex
           style={{
-            flexGrow: 1,
-            height: '100%',
-            position: 'relative',
+            width: '100vw',
+            height: '100vh',
+            paddingTop: '40px',
+            boxSizing: 'border-box',
             overflow: 'hidden',
+            backgroundColor: 'var(--gray-1)',
           }}
         >
-          {isGraphSelected && (
-            <ReactFlowProvider>
+          {/* Sidebar Component */}
+          <Sidebar isSidebarOpen={isSidebarOpen} isGraphSelected={isGraphSelected}/>
+
+          {/* Flow Canvas Container */}
+          <Box
+            style={{
+              flexGrow: 1,
+              height: '100%',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            {isGraphSelected && (
               <Flow selectedGraphId={selectedGraphId}/>
-            </ReactFlowProvider>
-          )}
-        </Box>
-      </Flex>
+            )}
+          </Box>
+        </Flex>
+      </ReactFlowProvider>
     </>
   );
 };

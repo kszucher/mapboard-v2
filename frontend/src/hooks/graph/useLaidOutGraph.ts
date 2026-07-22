@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AppFlowEdge, AppFlowNode } from '../../canvas/types';
 import { runLayout } from '../../domain/graph/layout';
 import { fromApiPayload } from '../../domain/graph/mappers';
-import { useGraphStore } from '../../store/graphStore';
 import { useGraphQuery } from './useGraphQuery';
 
 export const useLaidOutGraph = (graphId: string) => {
@@ -13,38 +12,6 @@ export const useLaidOutGraph = (graphId: string) => {
   const { setNodes, setEdges, getNodes, getEdges } = useReactFlow();
 
   const [isLoading, setIsLoading] = useState(true);
-  const setSelectedNodeId = useGraphStore(state => state.setSelectedNodeId);
-  const selectedNodeId = useGraphStore(state => state.selectedNodeId);
-  const selectedEdgeId = useGraphStore(state => state.selectedEdgeId);
-  const handleEdgesChange = useGraphStore(state => state.handleEdgesChange);
-  const clearSelection = useGraphStore(state => state.clearSelection);
-  const reconcileSelection = useGraphStore(state => state.reconcileSelection);
-
-  // Sync React Flow node selection with Zustand store
-  useEffect(() => {
-    setNodes(nds =>
-      nds.map(n => {
-        const isSel = n.id === selectedNodeId;
-        if (n.selected !== isSel) {
-          return { ...n, selected: isSel };
-        }
-        return n;
-      })
-    );
-  }, [selectedNodeId, setNodes]);
-
-  // Sync React Flow edge selection with Zustand store
-  useEffect(() => {
-    setEdges(eds =>
-      eds.map(e => {
-        const isSel = e.id === selectedEdgeId;
-        if (e.selected !== isSel) {
-          return { ...e, selected: isSel };
-        }
-        return e;
-      })
-    );
-  }, [selectedEdgeId, setEdges]);
 
   const runLayoutCalculation = useCallback(
     (nodes: AppFlowNode[], edges: AppFlowEdge[]) => {
@@ -74,13 +41,11 @@ export const useLaidOutGraph = (graphId: string) => {
       currentEdges
     );
 
-    reconcileSelection(nodes);
-
     setNodes(nodes);
     setEdges(edges);
 
     runLayoutCalculation(nodes, edges);
-  }, [query.data, runLayoutCalculation, setNodes, setEdges, getNodes, getEdges, reconcileSelection]);
+  }, [query.data, runLayoutCalculation, setNodes, setEdges, getNodes, getEdges]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
@@ -88,13 +53,13 @@ export const useLaidOutGraph = (graphId: string) => {
       const currentEdges = getEdges() as AppFlowEdge[];
       const newNodes = applyNodeChanges(changes, currentNodes) as AppFlowNode[];
 
+      // Mutually exclusive: if a node became selected, deselect all edges
       const selectChanges = changes.filter(
         (c): c is Extract<NodeChange, { type: 'select' }> => c.type === 'select'
       );
-      const selectChange = selectChanges.find(c => c.selected);
-
-      if (selectChange) {
-        setSelectedNodeId(selectChange.id);
+      const nodeSelected = selectChanges.some(c => c.selected);
+      if (nodeSelected) {
+        setEdges(eds => eds.map(e => e.selected ? { ...e, selected: false } : e));
       }
 
       if (changes.some(c => c.type === 'dimensions')) {
@@ -103,20 +68,29 @@ export const useLaidOutGraph = (graphId: string) => {
         setNodes(newNodes);
       }
     },
-    [runLayoutCalculation, setNodes, getNodes, getEdges, setSelectedNodeId]
+    [runLayoutCalculation, setNodes, setEdges, getNodes, getEdges]
   );
 
   const onEdgesChange = useCallback(
     (changes: EdgeChange[]) => {
-      handleEdgesChange(changes);
+      // Mutually exclusive: if an edge became selected, deselect all nodes
+      const selectChanges = changes.filter(
+        (c): c is Extract<EdgeChange, { type: 'select' }> => c.type === 'select'
+      );
+      const edgeSelected = selectChanges.some(c => c.selected);
+      if (edgeSelected) {
+        setNodes(nds => nds.map(n => n.selected ? { ...n, selected: false } : n));
+      }
+
       setEdges(eds => applyEdgeChanges(changes, eds) as AppFlowEdge[]);
     },
-    [handleEdgesChange, setEdges]
+    [setNodes, setEdges]
   );
 
   const onPaneClick = useCallback(() => {
-    void clearSelection();
-  }, [clearSelection]);
+    setNodes(nds => nds.map(n => n.selected ? { ...n, selected: false } : n));
+    setEdges(eds => eds.map(e => e.selected ? { ...e, selected: false } : e));
+  }, [setNodes, setEdges]);
 
   return {
     ...query,

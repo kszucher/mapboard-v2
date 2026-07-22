@@ -1,5 +1,5 @@
 import type { Connection, OnError } from '@xyflow/react';
-import { Controls, ReactFlow, ReactFlowProvider, useReactFlow } from '@xyflow/react';
+import { Controls, ReactFlow, useReactFlow } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useCallback } from 'react';
 import { useGraphKeyboardShortcuts } from '../hooks/graph/useGraphKeyboardShortcuts';
@@ -135,7 +135,5 @@ const FlowContent = ({
 };
 
 export const Flow = ({ selectedGraphId }: { selectedGraphId: string }) => (
-  <ReactFlowProvider key={selectedGraphId}>
-    <FlowContent selectedGraphId={selectedGraphId}/>
-  </ReactFlowProvider>
+  <FlowContent selectedGraphId={selectedGraphId}/>
 );

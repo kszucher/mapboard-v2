@@ -1,15 +1,11 @@
 import { useReactFlow } from '@xyflow/react';
 import { useEffect, useRef } from 'react';
 import type { AppFlowEdge, AppFlowNode } from '../../canvas/types';
-import { useGraphStore } from '../../store/graphStore';
+import { getNextDownstreamNodeId, getNextUpstreamNodeId, getSiblingNodeId } from '../../domain/graph/traversal';
 import { useDeleteEdge, useDeleteNode } from './useGraphMutations';
 
 export const useGraphKeyboardShortcuts = (graphId: string) => {
-  const { getNodes, getEdges } = useReactFlow();
-  const selectedNodeId = useGraphStore(state => state.selectedNodeId);
-  const selectedEdgeId = useGraphStore(state => state.selectedEdgeId);
-  const selectSiblingNode = useGraphStore(state => state.selectSiblingNode);
-  const selectTraversalNode = useGraphStore(state => state.selectTraversalNode);
+  const { getNodes, getEdges, setNodes } = useReactFlow();
 
   const { mutateAsync: deleteNode } = useDeleteNode(graphId);
   const { mutateAsync: deleteEdge } = useDeleteEdge(graphId);
@@ -29,6 +25,8 @@ export const useGraphKeyboardShortcuts = (graphId: string) => {
 
       const nodes = getNodes() as AppFlowNode[];
       const edges = getEdges() as AppFlowEdge[];
+      const selectedNodeId = nodes.find(n => n.selected)?.id || null;
+      const selectedEdgeId = edges.find(e => e.selected)?.id || null;
 
       if (selectedEdgeId !== null) {
         if (e.key === 'Delete') {
@@ -64,14 +62,20 @@ export const useGraphKeyboardShortcuts = (graphId: string) => {
           e.preventDefault();
           e.stopPropagation();
 
+          let targetId: string | null = null;
+
           if (e.key === 'ArrowRight') {
-            selectTraversalNode('right', nodes, edges);
+            targetId = getNextDownstreamNodeId(selectedNodeId, nodes, edges);
           } else if (e.key === 'ArrowLeft') {
-            selectTraversalNode('left', nodes, edges);
+            targetId = getNextUpstreamNodeId(selectedNodeId, nodes, edges);
           } else if (e.key === 'ArrowUp') {
-            selectSiblingNode('above', nodes, edges);
+            targetId = getSiblingNodeId(selectedNodeId, 'above', nodes, edges);
           } else if (e.key === 'ArrowDown') {
-            selectSiblingNode('below', nodes, edges);
+            targetId = getSiblingNodeId(selectedNodeId, 'below', nodes, edges);
+          }
+
+          if (targetId) {
+            setNodes(nds => nds.map(n => ({ ...n, selected: n.id === targetId })));
           }
           return;
         }
@@ -85,10 +89,7 @@ export const useGraphKeyboardShortcuts = (graphId: string) => {
   }, [
     getNodes,
     getEdges,
-    selectedNodeId,
-    selectedEdgeId,
-    selectSiblingNode,
-    selectTraversalNode,
+    setNodes,
     deleteNode,
     deleteEdge,
   ]);
