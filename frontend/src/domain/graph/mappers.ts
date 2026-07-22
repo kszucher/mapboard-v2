@@ -35,7 +35,7 @@ export const fromApiPayload = (
       type: 'custom' as const,
       position: prevNode?.position || { x: 0, y: 0 },
       measured: prevNode?.measured,
-      selected: n.selected ?? false,
+      selected: prevNode?.selected ?? n.selected ?? false,
       style: {
         transition: defaultTransition,
       },
