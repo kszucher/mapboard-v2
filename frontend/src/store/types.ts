@@ -5,22 +5,15 @@ export interface BaseState {
   graphId: string | null;
   code: string; // local code buffer for CodeMirror
   selectedNodeId: string | null;
-  selectedSlotId: string | null;
   selectedEdgeId: string | null;
-  lastKnownSlotIndex: number | null;
 }
 
 export interface UiActions {
-  setSelectedIds: (nodeId: string | null, slotId: string | null) => void;
+  setSelectedNodeId: (nodeId: string | null) => void;
   setSelectedEdgeId: (edgeId: string | null) => void;
   handleEdgesChange: (changes: EdgeChange[]) => void;
-  clearSlotSelection: () => void;
-  clearNodeSelection: () => void;
   clearSelection: () => void;
   reconcileSelection: (newNodes: AppFlowNode[]) => void;
-  selectNextSlot: (nodes: AppFlowNode[]) => void;
-  selectPreviousSlot: (nodes: AppFlowNode[]) => void;
-  selectFirstSlot: (nodes: AppFlowNode[]) => void;
   selectSiblingNode: (
     direction: 'above' | 'below',
     nodes: AppFlowNode[],

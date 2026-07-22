@@ -5,7 +5,6 @@ interface PlainEditorProps {
   onSave: (value: string) => void;
   disabled?: boolean;
   readOnly?: boolean;
-  isSelected: boolean;
   onSelect: () => void;
 }
 
@@ -14,7 +13,6 @@ export const Editor = ({
   onSave,
   disabled = false,
   readOnly = false,
-  isSelected,
   onSelect,
 }: PlainEditorProps) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -54,48 +52,12 @@ export const Editor = ({
     }
   }, [isEditing]);
 
-  if (!isSelected && isEditing) {
-    setIsEditing(false);
-  }
-
-  // Handle keyboard shortcuts when selected
-  useEffect(() => {
-    if (!isSelected) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
-      if (
-        isEditing ||
-        target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
-        target.isContentEditable
-      ) {
-        return;
-      }
-
-      if (e.key === 'F2') {
-        if (!isEditing && !readOnly) {
-          e.preventDefault();
-          e.stopPropagation();
-          startEditing();
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown, true);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown, true);
-    };
-  }, [isSelected, isEditing, readOnly, startEditing]);
-
   const handleWrapperClick = (e: React.MouseEvent) => {
     if (disabled) return;
 
-    if (!isSelected) {
-      e.stopPropagation();
-      onSelect();
-    } else if (!isEditing && !readOnly) {
-      e.stopPropagation();
+    e.stopPropagation();
+    onSelect();
+    if (!isEditing && !readOnly) {
       startEditing();
     }
   };
@@ -114,13 +76,13 @@ export const Editor = ({
   return (
     <div
       ref={wrapperRef}
-      className={isSelected ? 'nodrag nopan slot-editor-wrapper' : 'slot-editor-wrapper'}
+      className={isEditing ? 'nodrag nopan slot-editor-wrapper' : 'slot-editor-wrapper'}
       onDoubleClick={(e) => e.stopPropagation()}
       onMouseDown={(e) => {
-        if (isSelected) e.stopPropagation();
+        if (isEditing) e.stopPropagation();
       }}
       onPointerDown={(e) => {
-        if (isSelected) e.stopPropagation();
+        if (isEditing) e.stopPropagation();
       }}
       style={{
         display: 'flex',
@@ -140,8 +102,8 @@ export const Editor = ({
           minHeight: '24px',
           flexGrow: 1,
           minWidth: '120px',
-          outline: isSelected ? '1px solid var(--accent-8)' : 'none',
-          boxShadow: isSelected ? '0 0 0 1px var(--accent-8)' : 'none',
+          outline: isEditing ? '1px solid var(--accent-8)' : 'none',
+          boxShadow: isEditing ? '0 0 0 1px var(--accent-8)' : 'none',
           cursor: disabled ? 'default' : isEditing ? 'text' : 'pointer',
         }}
       >

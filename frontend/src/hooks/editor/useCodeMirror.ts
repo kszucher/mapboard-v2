@@ -98,7 +98,7 @@ export interface UseCodeMirrorProps {
   variables: StateVariable[];
   selectedNodeId: string | null;
   diagnostics: BackendDiagnostic[];
-  setSelectedIds: (nodeId: string | null, slotId: string | null) => void;
+  setSelectedNodeId: (nodeId: string | null) => void;
 }
 
 export function useCodeMirror({
@@ -106,7 +106,7 @@ export function useCodeMirror({
   variables,
   selectedNodeId,
   diagnostics,
-  setSelectedIds,
+  setSelectedNodeId,
 }: UseCodeMirrorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -150,7 +150,7 @@ export function useCodeMirror({
         const activeFn = findFunctionAt(update.state, pos);
         const activeFnName = activeFn ? activeFn.name : null;
 
-        setSelectedIds(activeFnName, null);
+        setSelectedNodeId(activeFnName);
       }
     });
 
@@ -228,4 +228,3 @@ export function useCodeMirror({
     setCurrentValue,
   };
 }
-

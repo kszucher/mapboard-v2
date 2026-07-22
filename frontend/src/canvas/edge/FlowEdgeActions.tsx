@@ -58,7 +58,7 @@ export const FlowEdgeActions = ({
               title="Edge actions"
               onClick={(e) => e.stopPropagation()}
             >
-              <DotsHorizontalIcon width="14" height="14" />
+              <DotsHorizontalIcon width="14" height="14"/>
             </IconButton>
           </DropdownMenu.Trigger>
           <DropdownMenu.Content>

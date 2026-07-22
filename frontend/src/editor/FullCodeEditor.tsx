@@ -17,14 +17,14 @@ export const FullCodeEditor = ({ isGraphSelected: _isGraphSelected }: FullCodeEd
 
   const code = useGraphStore(state => state.code);
   const selectedNodeId = useGraphStore(state => state.selectedNodeId);
-  const setSelectedIds = useGraphStore(state => state.setSelectedIds);
+  const setSelectedNodeId = useGraphStore(state => state.setSelectedNodeId);
 
   const { containerRef } = useCodeMirror({
     code,
     variables: stateVariables,
     selectedNodeId,
     diagnostics,
-    setSelectedIds,
+    setSelectedNodeId,
   });
 
   return (

@@ -27,7 +27,6 @@ export const FlowNodeSlot = memo(({
   parentNodeSelected,
   onSelect,
 }: FlowNodeSlotProps) => {
-  const isSelected = useGraphStore(state => state.selectedSlotId === slotId);
   const graphId = useGraphStore(state => state.graphId) || '';
   const { data } = useGraphQuery(graphId);
   const { nodes } = useMemo(() => {
@@ -102,7 +101,6 @@ export const FlowNodeSlot = memo(({
           initialValue={initialValue}
           onSave={handleUpdateItem}
           disabled={disabled}
-          isSelected={isSelected}
           onSelect={onSelect}
         />
       </Flex>

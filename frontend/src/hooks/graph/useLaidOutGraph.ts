@@ -13,7 +13,7 @@ export const useLaidOutGraph = (graphId: string) => {
   const { setNodes, setEdges, getNodes, getEdges } = useReactFlow();
 
   const [isLoading, setIsLoading] = useState(true);
-  const setSelectedIds = useGraphStore(state => state.setSelectedIds);
+  const setSelectedNodeId = useGraphStore(state => state.setSelectedNodeId);
   const selectedNodeId = useGraphStore(state => state.selectedNodeId);
   const selectedEdgeId = useGraphStore(state => state.selectedEdgeId);
   const handleEdgesChange = useGraphStore(state => state.handleEdgesChange);
@@ -94,7 +94,7 @@ export const useLaidOutGraph = (graphId: string) => {
       const selectChange = selectChanges.find(c => c.selected);
 
       if (selectChange) {
-        setSelectedIds(selectChange.id, null);
+        setSelectedNodeId(selectChange.id);
       }
 
       if (changes.some(c => c.type === 'dimensions')) {
@@ -103,7 +103,7 @@ export const useLaidOutGraph = (graphId: string) => {
         setNodes(newNodes);
       }
     },
-    [runLayoutCalculation, setNodes, getNodes, getEdges, setSelectedIds]
+    [runLayoutCalculation, setNodes, getNodes, getEdges, setSelectedNodeId]
   );
 
   const onEdgesChange = useCallback(
