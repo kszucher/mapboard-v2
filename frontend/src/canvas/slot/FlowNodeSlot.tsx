@@ -16,7 +16,6 @@ interface FlowNodeSlotProps {
   isStart: boolean;
   isEnd: boolean;
   parentNodeSelected: boolean;
-  onSelect: () => void;
 }
 
 export const FlowNodeSlot = memo(({
@@ -25,7 +24,6 @@ export const FlowNodeSlot = memo(({
   isStart,
   isEnd,
   parentNodeSelected,
-  onSelect,
 }: FlowNodeSlotProps) => {
   const graphId = useGraphStore(state => state.graphId) || '';
   const { data } = useGraphQuery(graphId);
@@ -101,7 +99,7 @@ export const FlowNodeSlot = memo(({
           initialValue={initialValue}
           onSave={handleUpdateItem}
           disabled={disabled}
-          onSelect={onSelect}
+          parentNodeSelected={parentNodeSelected}
         />
       </Flex>
       {actions}

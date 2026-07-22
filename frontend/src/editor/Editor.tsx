@@ -5,7 +5,7 @@ interface PlainEditorProps {
   onSave: (value: string) => void;
   disabled?: boolean;
   readOnly?: boolean;
-  onSelect: () => void;
+  parentNodeSelected?: boolean;
 }
 
 export const Editor = ({
@@ -13,7 +13,7 @@ export const Editor = ({
   onSave,
   disabled = false,
   readOnly = false,
-  onSelect,
+  parentNodeSelected = true,
 }: PlainEditorProps) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -55,10 +55,11 @@ export const Editor = ({
   const handleWrapperClick = (e: React.MouseEvent) => {
     if (disabled) return;
 
-    e.stopPropagation();
-    onSelect();
-    if (!isEditing && !readOnly) {
-      startEditing();
+    if (parentNodeSelected) {
+      e.stopPropagation();
+      if (!isEditing && !readOnly) {
+        startEditing();
+      }
     }
   };
 

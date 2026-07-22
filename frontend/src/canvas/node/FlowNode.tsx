@@ -3,7 +3,6 @@ import { Badge, Flex } from '@radix-ui/themes';
 import { Handle, type NodeProps, Position, useUpdateNodeInternals } from '@xyflow/react';
 import { memo, useEffect } from 'react';
 import { NODE_PADDING } from '../../domain/graph/layout';
-import { useGraphStore } from '../../store/graphStore';
 import { FlowNodeSlot } from '../slot/FlowNodeSlot.tsx';
 import { type AppFlowNode, type NodeType } from '../types.ts';
 import { FlowNodeActions } from './FlowNodeActions.tsx';
@@ -17,7 +16,6 @@ const NODE_COLORS: Record<NodeType, BadgeProps['color']> = {
 
 const CustomNodeComponent = ({ data, id, selected }: NodeProps<AppFlowNode>) => {
   const updateNodeInternals = useUpdateNodeInternals();
-  const setSelectedNodeId = useGraphStore(state => state.setSelectedNodeId);
 
   useEffect(() => {
     updateNodeInternals(id);
@@ -88,7 +86,6 @@ const CustomNodeComponent = ({ data, id, selected }: NodeProps<AppFlowNode>) => 
             isStart={isStart}
             isEnd={isEnd}
             parentNodeSelected={selected}
-            onSelect={() => setSelectedNodeId(id)}
           />
         );
       })}
