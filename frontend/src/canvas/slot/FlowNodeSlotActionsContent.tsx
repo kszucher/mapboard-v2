@@ -36,8 +36,8 @@ export const FlowNodeSlotActionsContent = ({
   const { mutateAsync: createSlot } = useCreateSlot(graphId);
   const { mutateAsync: deleteSlot } = useDeleteSlot(graphId);
   const { mutateAsync: moveSlot } = useMoveSlot(graphId);
-  const { mutateAsync: insertNode } = useInsertNode(graphId);
   const { mutateAsync: deleteEdge } = useDeleteEdge(graphId);
+  const { mutateAsync: insertNode } = useInsertNode(graphId);
 
   const node = useMemo(() => {
     return nodes.find(n => n.data.node.slots.some((s: ApiSlot) => s.id === slotId));
@@ -46,9 +46,6 @@ export const FlowNodeSlotActionsContent = ({
   const slot = useMemo(() => {
     return node?.data.node.slots.find((s: ApiSlot) => s.id === slotId);
   }, [node, slotId]);
-
-  const isInput = false;
-  const isOutput = true;
 
   const mySlots = useMemo(() => {
     return node ? node.data.node.slots : [];
@@ -74,7 +71,6 @@ export const FlowNodeSlotActionsContent = ({
   }, [mySlots]);
 
   const outgoingEdgeOptions = useMemo(() => {
-    // Custom traversal selector using react hooks or traversal utilities
     return getOutgoingEdgeOptions(slotId, edges, nodes);
   }, [slotId, edges, nodes]);
 
@@ -90,9 +86,11 @@ export const FlowNodeSlotActionsContent = ({
     return edges.some(e => e.targetHandle === slotId);
   }, [edges, slotId]);
 
+  const showAddConnected = !hasOutgoingEdges;
+
   const handleInsert = useCallback(
-    (nodeType: InsertableNodeType, direction: 'before' | 'after') => {
-      void insertNode({ connectorId: slotId, nodeType, direction });
+    (nodeType: InsertableNodeType) => {
+      void insertNode({ connectorId: slotId, nodeType, direction: 'after' });
     },
     [insertNode, slotId]
   );
@@ -127,18 +125,15 @@ export const FlowNodeSlotActionsContent = ({
     void createSlot({ nodeId: node.id, index: indexInNode + 1 });
   }, [createSlot, node, slot, indexInNode]);
 
-  const renderInsertSubmenu = (direction: 'before' | 'after') => {
-    const isAfter = direction === 'after';
-    const label = isAfter ? 'Insert Node After' : 'Insert Node Before';
-    const isAllowed = isAfter ? isOutput : isInput;
+  const renderAddConnectedSubmenu = () => {
     return (
       <DropdownMenu.Sub>
-        <DropdownMenu.SubTrigger disabled={!isAllowed}>
-          <PlusIcon style={{ marginRight: 8 }}/> {label}
+        <DropdownMenu.SubTrigger>
+          <PlusIcon style={{ marginRight: 8 }}/> Add Connected Node
         </DropdownMenu.SubTrigger>
         <DropdownMenu.SubContent>
           {INSERTABLE_NODE_TYPES.map(item => (
-            <DropdownMenu.Item key={item.type} onClick={() => handleInsert(item.type, direction)}>
+            <DropdownMenu.Item key={item.type} onClick={() => handleInsert(item.type)}>
               {item.label}
             </DropdownMenu.Item>
           ))}
@@ -184,29 +179,21 @@ export const FlowNodeSlotActionsContent = ({
       </DropdownMenu.Item>
       <DropdownMenu.Separator/>
 
-      <DropdownMenu.Sub>
-        <DropdownMenu.SubTrigger>
-          {'Move'}
-        </DropdownMenu.SubTrigger>
-        <DropdownMenu.SubContent>
-          <DropdownMenu.Item onClick={handleMoveTop} disabled={!canMoveUp}>
-            <ArrowUpIcon style={{ marginRight: 8 }}/> Move to Top
-          </DropdownMenu.Item>
-          <DropdownMenu.Item onClick={handleMoveUp} disabled={!canMoveUp}>
-            <ArrowUpIcon style={{ marginRight: 8 }}/> Move Up
-          </DropdownMenu.Item>
-          <DropdownMenu.Item onClick={handleMoveDown} disabled={!canMoveDown}>
-            <ArrowDownIcon style={{ marginRight: 8 }}/> Move Down
-          </DropdownMenu.Item>
-          <DropdownMenu.Item onClick={handleMoveBottom} disabled={!canMoveDown}>
-            <ArrowDownIcon style={{ marginRight: 8 }}/> Move to Bottom
-          </DropdownMenu.Item>
-        </DropdownMenu.SubContent>
-      </DropdownMenu.Sub>
+      {showAddConnected && renderAddConnectedSubmenu()}
+      {showAddConnected && <DropdownMenu.Separator/>}
 
-      <DropdownMenu.Separator/>
-      {renderInsertSubmenu('after')}
-      {renderInsertSubmenu('before')}
+      <DropdownMenu.Item onClick={handleMoveTop} disabled={!canMoveUp}>
+        <ArrowUpIcon style={{ marginRight: 8 }}/> Move to Top
+      </DropdownMenu.Item>
+      <DropdownMenu.Item onClick={handleMoveUp} disabled={!canMoveUp}>
+        <ArrowUpIcon style={{ marginRight: 8 }}/> Move Up
+      </DropdownMenu.Item>
+      <DropdownMenu.Item onClick={handleMoveDown} disabled={!canMoveDown}>
+        <ArrowDownIcon style={{ marginRight: 8 }}/> Move Down
+      </DropdownMenu.Item>
+      <DropdownMenu.Item onClick={handleMoveBottom} disabled={!canMoveDown}>
+        <ArrowDownIcon style={{ marginRight: 8 }}/> Move to Bottom
+      </DropdownMenu.Item>
 
       <DropdownMenu.Separator/>
       {renderDeleteSubmenu('outgoing')}

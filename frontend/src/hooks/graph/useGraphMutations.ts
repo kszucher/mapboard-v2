@@ -64,6 +64,30 @@ export const useInsertNode = (graphId: string) => {
   });
 };
 
+export const useInsertNodeOnEdge = (graphId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      sourceHandle,
+      nodeType,
+    }: {
+      sourceHandle: string;
+      nodeType: NodeType;
+    }) => {
+      const res = await apiClient.POST('/graphs/{graph_id}/nodes', {
+        params: { path: { graph_id: graphId } },
+        headers: { 'X-Client-Id': getClientId() },
+        body: { node_type: nodeType, connector_id: sourceHandle, direction: 'after' }
+      });
+      if ('error' in res) throw res.error;
+      return res.data;
+    },
+    onSuccess: (data) => {
+      handleMutationSuccess(queryClient, graphId, data);
+    }
+  });
+};
+
 export const useDeleteNode = (graphId: string) => {
   const queryClient = useQueryClient();
   return useMutation({

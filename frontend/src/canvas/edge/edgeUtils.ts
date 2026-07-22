@@ -38,3 +38,33 @@ export function getRoundedOrthogonalPath(points: { x: number; y: number }[], rad
   path += ` L ${last.x} ${last.y}`;
   return path;
 }
+
+export function getPolylineCenter(points: { x: number; y: number }[]): { x: number; y: number } {
+  if (points.length === 0) return { x: 0, y: 0 };
+  if (points.length === 1) return points[0];
+
+  let totalLength = 0;
+  const segmentLengths: number[] = [];
+  for (let i = 0; i < points.length - 1; i++) {
+    const len = Math.hypot(points[i + 1].x - points[i].x, points[i + 1].y - points[i].y);
+    segmentLengths.push(len);
+    totalLength += len;
+  }
+
+  const half = totalLength / 2;
+  let accumulated = 0;
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const len = segmentLengths[i];
+    if (accumulated + len >= half) {
+      const ratio = len > 0 ? (half - accumulated) / len : 0;
+      return {
+        x: points[i].x + (points[i + 1].x - points[i].x) * ratio,
+        y: points[i].y + (points[i + 1].y - points[i].y) * ratio,
+      };
+    }
+    accumulated += len;
+  }
+
+  return points[Math.floor(points.length / 2)];
+}

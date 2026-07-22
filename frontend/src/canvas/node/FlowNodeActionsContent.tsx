@@ -29,8 +29,8 @@ export const FlowNodeActionsContent = ({ nodeId, onRenameClick }: FlowNodeAction
 
   const { mutateAsync: deleteNode } = useDeleteNode(graphId);
   const { mutateAsync: shortcircuitNode } = useShortcircuitNode(graphId);
-  const { mutateAsync: insertNode } = useInsertNode(graphId);
   const { mutateAsync: deleteEdge } = useDeleteEdge(graphId);
+  const { mutateAsync: insertNode } = useInsertNode(graphId);
 
   const nodeData = useMemo(() => {
     return nodes.find(n => n.id === nodeId)?.data?.node;
@@ -55,6 +55,9 @@ export const FlowNodeActionsContent = ({ nodeId, onRenameClick }: FlowNodeAction
     return edges.some(e => e.targetHandle === nodeId);
   }, [edges, nodeId]);
 
+  const showAddBefore = isInput && !hasIncomingEdges;
+  const showAddAfter = isOutput && !hasOutgoingEdges;
+
   const handleDelete = useCallback(() => {
     if (nodeData) void deleteNode(nodeData.id);
   }, [nodeData, deleteNode]);
@@ -62,7 +65,6 @@ export const FlowNodeActionsContent = ({ nodeId, onRenameClick }: FlowNodeAction
   const handleShortcircuit = useCallback(() => {
     if (nodeData) void shortcircuitNode(nodeData.id);
   }, [nodeData, shortcircuitNode]);
-
 
   const handleInsert = useCallback(
     (nodeType: InsertableNodeType, direction: 'before' | 'after') => {
@@ -78,13 +80,12 @@ export const FlowNodeActionsContent = ({ nodeId, onRenameClick }: FlowNodeAction
 
   const canShortcircuit = nodeData ? canShortcircuitNode(nodeData.node_type) : false;
 
-  const renderInsertSubmenu = (direction: 'before' | 'after') => {
+  const renderAddConnectedSubmenu = (direction: 'before' | 'after') => {
     const isAfter = direction === 'after';
-    const label = isAfter ? 'Insert Node After' : 'Insert Node Before';
-    const isAllowed = isAfter ? isOutput : isInput;
+    const label = isAfter ? 'Add Connected Node After' : 'Add Connected Node Before';
     return (
       <DropdownMenu.Sub>
-        <DropdownMenu.SubTrigger disabled={!isAllowed}>
+        <DropdownMenu.SubTrigger>
           <PlusIcon style={{ marginRight: 8 }}/> {label}
         </DropdownMenu.SubTrigger>
         <DropdownMenu.SubContent>
@@ -129,11 +130,9 @@ export const FlowNodeActionsContent = ({ nodeId, onRenameClick }: FlowNodeAction
     <>
       {!isStart && !isEnd && (
         <>
-
-          {renderInsertSubmenu('before')}
-          {renderInsertSubmenu('after')}
-
-          <DropdownMenu.Separator/>
+          {showAddBefore && renderAddConnectedSubmenu('before')}
+          {showAddAfter && renderAddConnectedSubmenu('after')}
+          {(showAddBefore || showAddAfter) && <DropdownMenu.Separator/>}
 
           {renderDeleteSubmenu('incoming')}
           {renderDeleteSubmenu('outgoing')}
@@ -141,7 +140,6 @@ export const FlowNodeActionsContent = ({ nodeId, onRenameClick }: FlowNodeAction
           <DropdownMenu.Separator/>
         </>
       )}
-
 
       {!isStart && !isEnd && canShortcircuit && (
         <DropdownMenu.Item onClick={handleShortcircuit}>

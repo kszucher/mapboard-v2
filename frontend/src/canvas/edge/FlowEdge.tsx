@@ -1,9 +1,14 @@
 import { BaseEdge, type EdgeProps } from '@xyflow/react';
 import { memo } from 'react';
 import type { AppFlowEdge } from '../types.ts';
-import { getRoundedOrthogonalPath } from './edgeUtils.ts';
+import { getPolylineCenter, getRoundedOrthogonalPath } from './edgeUtils.ts';
+import { FlowEdgeActions } from './FlowEdgeActions.tsx';
 
 function FlowEdge({
+  id,
+  selected,
+  source,
+  sourceHandleId,
   sourceX,
   sourceY,
   targetX,
@@ -13,9 +18,12 @@ function FlowEdge({
   data,
 }: EdgeProps<AppFlowEdge>) {
   const sections = data?.sections;
-  let path;
+  let path: string;
+  let labelX = (sourceX + targetX) / 2;
+  let labelY = (sourceY + targetY) / 2;
 
   if (sections && sections.length > 0) {
+    const allPoints: { x: number; y: number }[] = [];
     path = sections
       .map((section) => {
         const start = section.startPoint;
@@ -28,30 +36,48 @@ function FlowEdge({
           { x: end.x, y: end.y },
         ];
 
+        allPoints.push(...points);
         return getRoundedOrthogonalPath(points, 30);
       })
       .join(' ');
+
+    const center = getPolylineCenter(allPoints);
+    labelX = center.x;
+    labelY = center.y;
   } else {
-    // Fallback to React Flow anchors if ELK produced no sections
     path = `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`;
   }
 
-  // Calculate presentation styles dynamically based on edge flow geometry
   const isBack = targetX <= sourceX;
   const edgeStyle = {
     ...style,
-    stroke: isBack ? '#ff9800' : '#888888',
-    strokeWidth: 2,
+    stroke: selected ? '#3b82f6' : (isBack ? '#ff9800' : '#888888'),
+    strokeWidth: selected ? 3 : 2,
     opacity: 1,
-    transition: 'opacity 0.2s ease-in-out',
+    transition: 'stroke 0.15s ease-in-out, stroke-width 0.15s ease-in-out',
   };
 
-  return <BaseEdge path={path} markerEnd={markerEnd} style={edgeStyle}/>;
+  return (
+    <>
+      <BaseEdge path={path} markerEnd={markerEnd} style={edgeStyle}/>
+
+      {selected && (
+        <FlowEdgeActions
+          edgeId={id}
+          labelX={labelX}
+          labelY={labelY}
+          source={source}
+          sourceHandleId={sourceHandleId}
+        />
+      )}
+    </>
+  );
 }
 
 export default memo(FlowEdge, (prevProps, nextProps) => {
   return (
     prevProps.id === nextProps.id &&
+    prevProps.selected === nextProps.selected &&
     prevProps.sourceX === nextProps.sourceX &&
     prevProps.sourceY === nextProps.sourceY &&
     prevProps.targetX === nextProps.targetX &&

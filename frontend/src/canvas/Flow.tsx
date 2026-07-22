@@ -1,9 +1,9 @@
-import type { Connection, NodeChange, OnError } from '@xyflow/react';
-import { Controls, ReactFlow, ReactFlowProvider, useReactFlow } from '@xyflow/react';
+import type { Connection, EdgeChange, NodeChange, OnError } from '@xyflow/react';
+import { applyEdgeChanges, Controls, ReactFlow, ReactFlowProvider, useReactFlow } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useCallback } from 'react';
-import { useCreateEdge, useDeleteEdge, useReconnectEdge } from '../hooks/graph/useGraphMutations';
 import { useGraphKeyboardShortcuts } from '../hooks/graph/useGraphKeyboardShortcuts';
+import { useCreateEdge, useDeleteEdge, useReconnectEdge } from '../hooks/graph/useGraphMutations';
 import { useGraphWebSocket } from '../hooks/graph/useGraphWebSocket';
 import { useLaidOutGraph } from '../hooks/graph/useLaidOutGraph';
 import { useGraphStore } from '../store/graphStore';
@@ -27,7 +27,7 @@ const FlowContent = ({
   const { mutateAsync: deleteEdge } = useDeleteEdge(selectedGraphId);
   const { mutateAsync: reconnectEdge } = useReconnectEdge(selectedGraphId);
 
-  const { fitView } = useReactFlow();
+  const { fitView, setEdges } = useReactFlow();
 
   useGraphWebSocket(selectedGraphId);
   useGraphKeyboardShortcuts(selectedGraphId);
@@ -68,6 +68,10 @@ const FlowContent = ({
 
     onNodesLayoutChange(changes);
   }, [setSelectedIds, onNodesLayoutChange]);
+
+  const onEdgesChange = useCallback((changes: EdgeChange[]) => {
+    setEdges(eds => applyEdgeChanges(changes, eds) as AppFlowEdge[]);
+  }, [setEdges]);
 
   const onConnect = useCallback((connection: Connection) => {
     if (connection.source && connection.target && connection.sourceHandle && connection.targetHandle) {
@@ -113,6 +117,7 @@ const FlowContent = ({
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onEdgesDelete={onEdgesDelete}
           onReconnect={onReconnect}

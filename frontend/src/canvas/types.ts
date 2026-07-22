@@ -38,11 +38,11 @@ export type ASTExpression =
   | { kind: 'literal'; value: string | number | boolean | null }
   | { kind: 'stateRef'; varKey: string }
   | {
-      kind: 'binaryOp';
-      op: '==' | '!=' | '>' | '<' | '>=' | '<=' | '+' | '-' | '*' | '/' | 'and' | 'or';
-      left: ASTExpression;
-      right: ASTExpression;
-    }
+  kind: 'binaryOp';
+  op: '==' | '!=' | '>' | '<' | '>=' | '<=' | '+' | '-' | '*' | '/' | 'and' | 'or';
+  left: ASTExpression;
+  right: ASTExpression;
+}
   | { kind: 'unaryOp'; op: 'not' | '-'; expr: ASTExpression };
 
 export type AppFlowNode = Node<{
