@@ -18,7 +18,7 @@ const FlowContent = ({
 }: {
   selectedGraphId: string;
 }) => {
-  const { isLoading, onNodesChange, onEdgesChange, onPaneClick } = useLaidOutGraph(selectedGraphId);
+  const { isLoading, onNodesChange, onEdgesChange } = useLaidOutGraph(selectedGraphId);
 
   const { mutateAsync: createEdge } = useCreateEdge(selectedGraphId);
   const { mutateAsync: deleteEdge } = useDeleteEdge(selectedGraphId);
@@ -106,7 +106,6 @@ const FlowContent = ({
           zoomOnDoubleClick={false}
           panOnScroll={false}
           onDoubleClick={handleDoubleClick}
-          onPaneClick={onPaneClick}
           onError={handleError}
         >
           <Controls/>
