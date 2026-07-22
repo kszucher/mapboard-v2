@@ -2,7 +2,6 @@ import { PlusIcon } from '@radix-ui/react-icons';
 import { DropdownMenu } from '@radix-ui/themes';
 import { useCallback, useMemo } from 'react';
 import { fromApiPayload } from '../../domain/graph/mappers';
-import { canShortcircuitNode } from '../../domain/graph/rules';
 import { getIncomingEdgeOptions, getOutgoingEdgeOptions } from '../../domain/graph/traversal';
 import { useDeleteEdge, useDeleteNode, useInsertNode, useShortcircuitNode } from '../../hooks/graph/useGraphMutations';
 import { useGraphQuery } from '../../hooks/graph/useGraphQuery';
@@ -78,7 +77,7 @@ export const FlowNodeActionsContent = ({ nodeId, onRenameClick }: FlowNodeAction
   const isStart = nodeData.node_type === 'START';
   const isEnd = nodeData.node_type === 'END';
 
-  const canShortcircuit = nodeData ? canShortcircuitNode(nodeData.node_type) : false;
+  const canShortcircuit = nodeData ? nodeData.node_type === 'STEP' : false;
 
   const renderAddConnectedSubmenu = (direction: 'before' | 'after') => {
     const isAfter = direction === 'after';

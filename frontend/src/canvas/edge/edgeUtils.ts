@@ -1,4 +1,3 @@
-/** Constructs an SVG path string from orthogonal waypoints with rounded corners. */
 export function getRoundedOrthogonalPath(points: { x: number; y: number }[], radius = 20): string {
   if (points.length < 2) return '';
   if (points.length === 2) {

@@ -7,10 +7,9 @@ import { useGraphQuery } from '../hooks/graph/useGraphQuery';
 
 interface FullCodeEditorProps {
   graphId: string;
-  isGraphSelected: boolean;
 }
 
-export const FullCodeEditor = ({ graphId, isGraphSelected: _isGraphSelected }: FullCodeEditorProps) => {
+export const FullCodeEditor = ({ graphId }: FullCodeEditorProps) => {
   const { data: graphFlow } = useGraphQuery(graphId);
   const rawFlow = (graphFlow || {}) as Record<string, any>;
   const stateVariables: StateVariable[] = rawFlow.state_schema || [];

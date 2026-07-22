@@ -41,8 +41,7 @@ export const Sidebar = ({ isSidebarOpen, isGraphSelected, graphId }: SidebarProp
           </Button>
         </Flex>
 
-        {/* Full-file code editor */}
-        <FullCodeEditor graphId={graphId} isGraphSelected={isGraphSelected}/>
+        <FullCodeEditor graphId={graphId}/>
       </Flex>
     </Box>
   );

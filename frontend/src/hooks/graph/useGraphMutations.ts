@@ -1,9 +1,7 @@
 import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient, getClientId } from '../../api/client';
-import type { components } from '../../api/generated/schema';
 import { queryKeys } from '../../api/queryKeys';
 import type { NodeType } from '../../canvas/types';
-import { fromApiPayload, toApiPayload } from '../../domain/graph/mappers';
 
 const handleMutationSuccess = (
   queryClient: QueryClient,
@@ -339,40 +337,6 @@ export const useRunGraph = (graphId: string) => {
     },
     onSuccess: (data) => {
       handleMutationSuccess(queryClient, graphId, data);
-    }
-  });
-};
-
-export const useSyncGraph = (graphId: string) => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (newCode: string) => {
-      const cached = queryClient.getQueryData<components['schemas']['GraphFlowRead']>(queryKeys.graphs.flow(graphId));
-      if (!cached) throw new Error('No cached graph data found');
-
-      const mapped = fromApiPayload(cached.nodes, cached.edges);
-      const state = {
-        graphId,
-        code: newCode,
-        nodes: mapped.nodes,
-        edges: mapped.edges,
-        variables: cached.variables || [],
-        functions: cached.functions || [],
-      };
-      const payload = toApiPayload(state);
-
-      const res = await apiClient.PUT('/graphs/{graph_id}/sync', {
-        params: { path: { graph_id: graphId } },
-        headers: { 'X-Client-Id': getClientId() },
-        body: payload,
-      });
-      if ('error' in res) throw res.error;
-      return res.data;
-    },
-    onSuccess: (data) => {
-      if (data) {
-        queryClient.setQueryData(queryKeys.graphs.flow(graphId), data);
-      }
     }
   });
 };
