@@ -15,6 +15,7 @@ interface FlowNodeSlotProps {
   disabled: boolean;
   isStart: boolean;
   isEnd: boolean;
+  parentNodeSelected: boolean;
   onSelect: () => void;
 }
 
@@ -23,6 +24,7 @@ export const FlowNodeSlot = memo(({
   disabled,
   isStart,
   isEnd,
+  parentNodeSelected,
   onSelect,
 }: FlowNodeSlotProps) => {
   const isSelected = useGraphStore(state => state.selectedSlotId === slotId);
@@ -65,7 +67,7 @@ export const FlowNodeSlot = memo(({
         alignItems: 'center',
         flexShrink: 0,
         paddingRight: '2px',
-        visibility: isSelected ? 'visible' : 'hidden',
+        visibility: parentNodeSelected ? 'visible' : 'hidden',
       }}
     >
       <FlowNodeSlotActions

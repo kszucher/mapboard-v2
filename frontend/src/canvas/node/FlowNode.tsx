@@ -62,7 +62,13 @@ const CustomNodeComponent = ({ data, id, selected }: NodeProps<AppFlowNode>) => 
           </Badge>
         </Flex>
 
-        <div style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0, paddingRight: '2px' }}>
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          flexShrink: 0,
+          paddingRight: '2px',
+          visibility: selected ? 'visible' : 'hidden',
+        }}>
           <FlowNodeActions nodeId={id}/>
         </div>
         {data.node.is_output && (
@@ -85,6 +91,7 @@ const CustomNodeComponent = ({ data, id, selected }: NodeProps<AppFlowNode>) => 
             disabled={disabled}
             isStart={isStart}
             isEnd={isEnd}
+            parentNodeSelected={selected}
             onSelect={() => setSelectedIds(id, slot.id)}
           />
         );
