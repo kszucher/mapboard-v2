@@ -15,10 +15,9 @@ const NODE_COLORS: Record<NodeType, BadgeProps['color']> = {
   SWITCH: 'amber',
 };
 
-const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
+const CustomNodeComponent = ({ data, id, selected }: NodeProps<AppFlowNode>) => {
   const updateNodeInternals = useUpdateNodeInternals();
   const setSelectedIds = useGraphStore(state => state.setSelectedIds);
-  const isNodeSelected = useGraphStore(state => state.selectedNodeId === id);
   const selectedSlotId = useGraphStore(state => state.selectedSlotId);
 
   useEffect(() => {
@@ -33,7 +32,7 @@ const CustomNodeComponent = ({ data, id }: NodeProps<AppFlowNode>) => {
   const isEnd = node.node_type === 'END';
 
   // Strictly mutually exclusive: node outline ONLY shows when node is selected AND no slot is selected
-  const isSelected = isNodeSelected && selectedSlotId === null;
+  const isSelected = selected && selectedSlotId === null;
 
   return (
     <Flex

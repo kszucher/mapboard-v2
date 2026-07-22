@@ -14,10 +14,24 @@ export const useLaidOutGraph = (graphId: string) => {
 
   const [isLoading, setIsLoading] = useState(true);
   const setSelectedIds = useGraphStore(state => state.setSelectedIds);
+  const selectedNodeId = useGraphStore(state => state.selectedNodeId);
   const selectedEdgeId = useGraphStore(state => state.selectedEdgeId);
   const handleEdgesChange = useGraphStore(state => state.handleEdgesChange);
   const clearSelection = useGraphStore(state => state.clearSelection);
   const reconcileSelection = useGraphStore(state => state.reconcileSelection);
+
+  // Sync React Flow node selection with Zustand store
+  useEffect(() => {
+    setNodes(nds =>
+      nds.map(n => {
+        const isSel = n.id === selectedNodeId;
+        if (n.selected !== isSel) {
+          return { ...n, selected: isSel };
+        }
+        return n;
+      })
+    );
+  }, [selectedNodeId, setNodes]);
 
   // Sync React Flow edge selection with Zustand store
   useEffect(() => {
