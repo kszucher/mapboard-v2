@@ -3,7 +3,7 @@ import { DropdownMenu, IconButton } from '@radix-ui/themes';
 import { EdgeLabelRenderer } from '@xyflow/react';
 import { useCallback } from 'react';
 import { useDeleteEdge, useInsertNodeOnEdge } from '../../hooks/graph/useGraphMutations';
-import { useGraphStore } from '../../store/graphStore';
+import { useCurrentGraphId } from '../../hooks/graph/useCurrentGraphId';
 
 export interface FlowEdgeActionsProps {
   edgeId: string;
@@ -20,7 +20,7 @@ export const FlowEdgeActions = ({
   source,
   sourceHandleId,
 }: FlowEdgeActionsProps) => {
-  const graphId = useGraphStore(state => state.graphId) || '';
+  const graphId = useCurrentGraphId();
   const { mutateAsync: insertNodeOnEdge } = useInsertNodeOnEdge(graphId);
   const { mutateAsync: deleteEdge } = useDeleteEdge(graphId);
 

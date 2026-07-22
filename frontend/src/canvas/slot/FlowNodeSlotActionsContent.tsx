@@ -11,7 +11,7 @@ import {
   useMoveSlot,
 } from '../../hooks/graph/useGraphMutations';
 import { useGraphQuery } from '../../hooks/graph/useGraphQuery';
-import { useGraphStore } from '../../store/graphStore';
+import { useCurrentGraphId } from '../../hooks/graph/useCurrentGraphId';
 import type { ApiSlot, InsertableNodeType } from '../types';
 
 const INSERTABLE_NODE_TYPES: { type: InsertableNodeType; label: string }[] = [
@@ -26,7 +26,7 @@ export interface SlotActionsContentProps {
 export const FlowNodeSlotActionsContent = ({
   slotId,
 }: SlotActionsContentProps) => {
-  const graphId = useGraphStore(state => state.graphId) || '';
+  const graphId = useCurrentGraphId();
   const { data } = useGraphQuery(graphId);
   const { nodes, edges } = useMemo(() => {
     if (!data) return { nodes: [], edges: [] };

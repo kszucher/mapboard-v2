@@ -50,7 +50,7 @@ For AI agents and developers reviewing the codebase history, Graphboard was buil
 
 ### Phase 2: State & Synchronization Layer
 * **FastAPI Backend Port**: Rewrote the server from Node.js/Nest.js to Python/FastAPI.
-* **Optimistic Store Sync**: Integrated a Zustand store on the frontend that updates memory instantly, synchronizing with the database asynchronously via TanStack Query.
+* **TanStack Query State Sync**: Synchronized server state and layout updates asynchronously with the database via TanStack Query.
 * **UoW Event Buffering**: Configured a FastAPI Unit of Work (UoW) transaction manager that buffers WebSocket broadcasts until database transactions commit successfully.
 
 ### Phase 3: Single-File Code Editor & Bidirectional AST Lock
@@ -80,7 +80,7 @@ graph TD
 ```
 
 ### Key Technical Choices
-* **TanStack Query & Zustand Separation**: TanStack Query manages API mutations, caching, and server state. Zustand acts strictly as a lightweight UI selection store.
+* **Pure Server State Architecture**: TanStack Query manages API mutations, caching, and server state, while React Flow manages canvas selection state natively.
 * **Auto-Layout ONLY (No Drag-and-Drop)**: Coordinates `(x, y)` are computed on the fly by ELK in two phases: unmeasured initial load and deferred measuring on node dimension resizes.
 * **String-Based Identifiers**: Node and slot IDs use human-readable strings (e.g. `"step_1"`, `"option_a"`), matching the execution keys in compiled LangGraph workflows.
 
@@ -88,7 +88,7 @@ graph TD
 
 ## 🛠️ Tech Stack
 
-* **Frontend**: React 19, TypeScript, React Flow (@xyflow/react), ELKjs, CodeMirror 6, TanStack Query v5, Zustand, Radix UI.
+* **Frontend**: React 19, TypeScript, React Flow (@xyflow/react), ELKjs, CodeMirror 6, TanStack Query v5, Radix UI.
 * **Backend**: Python 3.12+, FastAPI, LangGraph, SQLAlchemy 2.0, Pydantic v2, Ruff.
 
 ---
@@ -98,7 +98,3 @@ graph TD
 * **Handle Lifecycle (`updateNodeInternals`)**: When slots are added or removed dynamically on SWITCH nodes, React Flow's cached handle locations become stale. We listen to `node.slots` changes in `FlowNode.tsx` to trigger `updateNodeInternals(id)` whenever slot structure updates.
 * **CodeMirror Read-Only Guard**: Setting `EditorState.readOnly.of(true)` across CodeMirror locks typing while allowing `@codemirror/language` AST syntax tree iteration to continue driving bidirectional node highlighting and code folding.
 * **Native Ruff CLI Subprocess**: Running `ruff check` natively on the backend executes in sub-milliseconds, completely eliminating WASM bundle overhead on the frontend.
-
-
-
-

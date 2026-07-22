@@ -4,20 +4,19 @@ import { useCallback } from 'react';
 import type { Diagnostic, StateVariable } from '../canvas/types';
 import { useCodeMirror } from '../hooks/editor/useCodeMirror';
 import { useGraphQuery } from '../hooks/graph/useGraphQuery';
-import { useGraphStore } from '../store/graphStore';
 
 interface FullCodeEditorProps {
+  graphId: string;
   isGraphSelected: boolean;
 }
 
-export const FullCodeEditor = ({ isGraphSelected: _isGraphSelected }: FullCodeEditorProps) => {
-  const graphId = useGraphStore(state => state.graphId) || '';
+export const FullCodeEditor = ({ graphId, isGraphSelected: _isGraphSelected }: FullCodeEditorProps) => {
   const { data: graphFlow } = useGraphQuery(graphId);
   const rawFlow = (graphFlow || {}) as Record<string, any>;
   const stateVariables: StateVariable[] = rawFlow.state_schema || [];
   const diagnostics: Diagnostic[] = rawFlow.diagnostics || [];
 
-  const code = useGraphStore(state => state.code);
+  const code = rawFlow.code || '';
   const { setNodes } = useReactFlow();
   const nodes = useNodes();
 

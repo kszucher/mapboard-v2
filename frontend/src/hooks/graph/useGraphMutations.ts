@@ -4,7 +4,6 @@ import type { components } from '../../api/generated/schema';
 import { queryKeys } from '../../api/queryKeys';
 import type { NodeType } from '../../canvas/types';
 import { fromApiPayload, toApiPayload } from '../../domain/graph/mappers';
-import { useGraphStore } from '../../store/graphStore';
 
 const handleMutationSuccess = (
   queryClient: QueryClient,
@@ -12,9 +11,6 @@ const handleMutationSuccess = (
   data: unknown
 ) => {
   if (data && typeof data === 'object') {
-    if ('code' in data && typeof (data as { code?: unknown }).code === 'string') {
-      useGraphStore.setState({ code: (data as { code: string }).code });
-    }
     queryClient.setQueryData(queryKeys.graphs.flow(graphId), data);
   }
   void queryClient.invalidateQueries({ queryKey: queryKeys.graphs.flow(graphId) });

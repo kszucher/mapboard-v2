@@ -1,15 +1,14 @@
 import { Box, Button, Flex, Text } from '@radix-ui/themes';
 import { useRunGraph } from '../hooks/graph/useGraphMutations';
-import { useGraphStore } from '../store/graphStore';
 import { FullCodeEditor } from './FullCodeEditor';
 
 interface SidebarProps {
   isSidebarOpen: boolean;
   isGraphSelected: boolean;
+  graphId: string;
 }
 
-export const Sidebar = ({ isSidebarOpen, isGraphSelected }: SidebarProps) => {
-  const graphId = useGraphStore(state => state.graphId) || '';
+export const Sidebar = ({ isSidebarOpen, isGraphSelected, graphId }: SidebarProps) => {
   const { mutate: runGraph } = useRunGraph(graphId);
 
   return (
@@ -43,7 +42,7 @@ export const Sidebar = ({ isSidebarOpen, isGraphSelected }: SidebarProps) => {
         </Flex>
 
         {/* Full-file code editor */}
-        <FullCodeEditor isGraphSelected={isGraphSelected}/>
+        <FullCodeEditor graphId={graphId} isGraphSelected={isGraphSelected}/>
       </Flex>
     </Box>
   );

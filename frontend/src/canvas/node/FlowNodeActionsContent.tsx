@@ -6,7 +6,7 @@ import { canShortcircuitNode } from '../../domain/graph/rules';
 import { getIncomingEdgeOptions, getOutgoingEdgeOptions } from '../../domain/graph/traversal';
 import { useDeleteEdge, useDeleteNode, useInsertNode, useShortcircuitNode } from '../../hooks/graph/useGraphMutations';
 import { useGraphQuery } from '../../hooks/graph/useGraphQuery';
-import { useGraphStore } from '../../store/graphStore';
+import { useCurrentGraphId } from '../../hooks/graph/useCurrentGraphId';
 import type { InsertableNodeType } from '../types';
 
 const INSERTABLE_NODE_TYPES: { type: InsertableNodeType; label: string }[] = [
@@ -20,7 +20,7 @@ export interface FlowNodeActionsContentProps {
 }
 
 export const FlowNodeActionsContent = ({ nodeId, onRenameClick }: FlowNodeActionsContentProps) => {
-  const graphId = useGraphStore(state => state.graphId) || '';
+  const graphId = useCurrentGraphId();
   const { data } = useGraphQuery(graphId);
   const { nodes, edges } = useMemo(() => {
     if (!data) return { nodes: [], edges: [] };

@@ -4,7 +4,7 @@ import { memo, useEffect, useMemo, useState } from 'react';
 import { fromApiPayload } from '../../domain/graph/mappers';
 import { useUpdateNode } from '../../hooks/graph/useGraphMutations';
 import { useGraphQuery } from '../../hooks/graph/useGraphQuery';
-import { useGraphStore } from '../../store/graphStore';
+import { useCurrentGraphId } from '../../hooks/graph/useCurrentGraphId';
 import { FlowNodeActionsContent } from './FlowNodeActionsContent.tsx';
 
 interface FlowNodeActionsProps {
@@ -18,7 +18,7 @@ export const FlowNodeActions = memo(({ nodeId, triggerStyle }: FlowNodeActionsPr
   const [newName, setNewName] = useState(nodeId);
   const [error, setError] = useState<string | null>(null);
 
-  const graphId = useGraphStore(state => state.graphId) || '';
+  const graphId = useCurrentGraphId();
   const { data } = useGraphQuery(graphId);
   const { nodes } = useMemo(() => {
     if (!data) return { nodes: [] };

@@ -6,7 +6,7 @@ import { fromApiPayload } from '../../domain/graph/mappers';
 import { Editor } from '../../editor/Editor.tsx';
 import { useUpdateSlot } from '../../hooks/graph/useGraphMutations';
 import { useGraphQuery } from '../../hooks/graph/useGraphQuery';
-import { useGraphStore } from '../../store/graphStore';
+import { useCurrentGraphId } from '../../hooks/graph/useCurrentGraphId';
 import type { ApiSlot } from '../types';
 import { FlowNodeSlotActions } from './FlowNodeSlotActions.tsx';
 
@@ -25,7 +25,7 @@ export const FlowNodeSlot = memo(({
   isEnd,
   parentNodeSelected,
 }: FlowNodeSlotProps) => {
-  const graphId = useGraphStore(state => state.graphId) || '';
+  const graphId = useCurrentGraphId();
   const { data } = useGraphQuery(graphId);
   const { nodes } = useMemo(() => {
     if (!data) return { nodes: [] };

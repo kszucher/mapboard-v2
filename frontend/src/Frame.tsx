@@ -1,7 +1,7 @@
 import { CaretDownIcon, CheckIcon, MixIcon, PlayIcon, ReaderIcon, ResetIcon } from '@radix-ui/react-icons';
 import { Box, Button, DropdownMenu, Flex, IconButton, Text } from '@radix-ui/themes';
 import { ReactFlowProvider } from '@xyflow/react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useCreateGraph, useSetActiveGraph } from './api/mutations';
 import { useActiveGraphId, useUserGraphs, useUserId } from './api/queries';
 import { Flow } from './canvas/Flow.tsx';
@@ -9,7 +9,6 @@ import type { NodeType } from './canvas/types';
 import { Sidebar } from './editor/Sidebar.tsx';
 import { useAddNode, useRedo, useRunGraph, useUndo } from './hooks/graph/useGraphMutations';
 import { useGraphQuery } from './hooks/graph/useGraphQuery';
-import { useGraphStore } from './store/graphStore';
 
 const NODE_TYPES: NodeType[] = [
   'STEP',
@@ -46,36 +45,13 @@ export const Frame = () => {
     createGraphMutation.mutate({ userId, graphName: 'New Graph' });
   }, [userId, createGraphMutation]);
 
-  const init = useGraphStore(state => state.init);
-
   const handleSelectGraph = useCallback(
     (graphId: string) => {
       if (!userId) return;
       setActiveGraphMutation.mutate({ userId, graphId });
-      init(graphId);
     },
-    [userId, setActiveGraphMutation, init]
+    [userId, setActiveGraphMutation]
   );
-
-  // Sync state initialization if selectedGraphId is loaded on initial mount
-  useEffect(() => {
-    if (selectedGraphId) {
-      init(selectedGraphId);
-    }
-  }, [selectedGraphId, init]);
-
-  // Sync local editor buffer with loaded server state
-  useEffect(() => {
-    if (graphFlow) {
-      const store = useGraphStore.getState();
-      if (store.graphId !== selectedGraphId || !store.code) {
-        useGraphStore.setState({
-          graphId: selectedGraphId || null,
-          code: graphFlow.code || '',
-        });
-      }
-    }
-  }, [graphFlow, selectedGraphId]);
 
   const activeGraphName = useMemo(
     () => graphs?.find(graph => graph.id === selectedGraphId)?.name ?? 'Select graph',
@@ -209,7 +185,7 @@ export const Frame = () => {
           }}
         >
           {/* Sidebar Component */}
-          <Sidebar isSidebarOpen={isSidebarOpen} isGraphSelected={isGraphSelected}/>
+          <Sidebar isSidebarOpen={isSidebarOpen} isGraphSelected={isGraphSelected} graphId={selectedGraphId || ''}/>
 
           {/* Flow Canvas Container */}
           <Box
