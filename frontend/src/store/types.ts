@@ -1,3 +1,4 @@
+import type { EdgeChange } from '@xyflow/react';
 import type { AppFlowEdge, AppFlowNode } from '../canvas/types';
 
 export interface BaseState {
@@ -5,13 +6,17 @@ export interface BaseState {
   code: string; // local code buffer for CodeMirror
   selectedNodeId: string | null;
   selectedSlotId: string | null;
+  selectedEdgeId: string | null;
   lastKnownSlotIndex: number | null;
 }
 
 export interface UiActions {
   setSelectedIds: (nodeId: string | null, slotId: string | null) => void;
+  setSelectedEdgeId: (edgeId: string | null) => void;
+  handleEdgesChange: (changes: EdgeChange[]) => void;
   clearSlotSelection: () => void;
   clearNodeSelection: () => void;
+  clearSelection: () => void;
   reconcileSelection: (newNodes: AppFlowNode[]) => void;
   selectNextSlot: (nodes: AppFlowNode[]) => void;
   selectPreviousSlot: (nodes: AppFlowNode[]) => void;

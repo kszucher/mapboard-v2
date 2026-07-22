@@ -2,12 +2,13 @@ import { useReactFlow } from '@xyflow/react';
 import { useEffect, useRef } from 'react';
 import type { AppFlowEdge, AppFlowNode } from '../../canvas/types';
 import { useGraphStore } from '../../store/graphStore';
-import { useCreateSlot, useDeleteNode, useDeleteSlot, useMoveSlot, } from './useGraphMutations';
+import { useCreateSlot, useDeleteEdge, useDeleteNode, useDeleteSlot, useMoveSlot, } from './useGraphMutations';
 
 export const useGraphKeyboardShortcuts = (graphId: string) => {
   const { getNodes, getEdges } = useReactFlow();
   const selectedNodeId = useGraphStore(state => state.selectedNodeId);
   const selectedSlotId = useGraphStore(state => state.selectedSlotId);
+  const selectedEdgeId = useGraphStore(state => state.selectedEdgeId);
   const clearSlotSelection = useGraphStore(state => state.clearSlotSelection);
   const selectNextSlot = useGraphStore(state => state.selectNextSlot);
   const selectPreviousSlot = useGraphStore(state => state.selectPreviousSlot);
@@ -18,6 +19,7 @@ export const useGraphKeyboardShortcuts = (graphId: string) => {
   const { mutateAsync: createSlot } = useCreateSlot(graphId);
   const { mutateAsync: deleteSlot } = useDeleteSlot(graphId);
   const { mutateAsync: deleteNode } = useDeleteNode(graphId);
+  const { mutateAsync: deleteEdge } = useDeleteEdge(graphId);
   const { mutateAsync: moveSlot } = useMoveSlot(graphId);
 
   const isMutatingRef = useRef(false);
@@ -25,7 +27,6 @@ export const useGraphKeyboardShortcuts = (graphId: string) => {
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
-      // Do not trigger global canvas navigation if user is actively typing in text input/textarea
       if (
         target.tagName === 'INPUT' ||
         target.tagName === 'TEXTAREA' ||
@@ -36,6 +37,21 @@ export const useGraphKeyboardShortcuts = (graphId: string) => {
 
       const nodes = getNodes() as AppFlowNode[];
       const edges = getEdges() as AppFlowEdge[];
+
+      if (selectedEdgeId !== null) {
+        if (e.key === 'Delete') {
+          e.preventDefault();
+          e.stopPropagation();
+          if (isMutatingRef.current) return;
+          isMutatingRef.current = true;
+          try {
+            await deleteEdge(selectedEdgeId);
+          } finally {
+            isMutatingRef.current = false;
+          }
+          return;
+        }
+      }
 
       // ----------------------------------------------------
       // 1. SLOT IS SELECTED
@@ -179,6 +195,7 @@ export const useGraphKeyboardShortcuts = (graphId: string) => {
     getEdges,
     selectedNodeId,
     selectedSlotId,
+    selectedEdgeId,
     clearSlotSelection,
     selectNextSlot,
     selectPreviousSlot,
@@ -188,6 +205,7 @@ export const useGraphKeyboardShortcuts = (graphId: string) => {
     createSlot,
     deleteSlot,
     deleteNode,
+    deleteEdge,
     moveSlot,
   ]);
 };

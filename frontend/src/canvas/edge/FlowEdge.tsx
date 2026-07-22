@@ -51,7 +51,7 @@ function FlowEdge({
   const isBack = targetX <= sourceX;
   const edgeStyle = {
     ...style,
-    stroke: selected ? '#3b82f6' : (isBack ? '#ff9800' : '#888888'),
+    stroke: selected ? 'var(--accent-8)' : (isBack ? '#ff9800' : '#888888'),
     strokeWidth: selected ? 3 : 2,
     opacity: 1,
     transition: 'stroke 0.15s ease-in-out, stroke-width 0.15s ease-in-out',

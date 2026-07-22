@@ -10,6 +10,7 @@ export const useGraphStore = create<GraphStoreState>((set, get) => ({
   code: '',
   selectedNodeId: null,
   selectedSlotId: null,
+  selectedEdgeId: null,
   lastKnownSlotIndex: null,
 
   init: (graphId) => {
@@ -18,6 +19,7 @@ export const useGraphStore = create<GraphStoreState>((set, get) => ({
       code: '',
       selectedNodeId: null,
       selectedSlotId: null,
+      selectedEdgeId: null,
       lastKnownSlotIndex: null,
     });
   },
@@ -27,7 +29,7 @@ export const useGraphStore = create<GraphStoreState>((set, get) => ({
     if (!graphId) return;
 
     if (nodeId === null) {
-      set({ selectedNodeId: null, selectedSlotId: null, lastKnownSlotIndex: null });
+      set({ selectedNodeId: null, selectedSlotId: null, selectedEdgeId: null, lastKnownSlotIndex: null });
       return;
     }
 
@@ -41,11 +43,39 @@ export const useGraphStore = create<GraphStoreState>((set, get) => ({
       }
     }
 
+    // Selecting a node or slot ALWAYS deselects edges
     set({
       selectedNodeId: nodeId,
       selectedSlotId: slotId,
+      selectedEdgeId: null,
       lastKnownSlotIndex: slotIndex,
     });
+  },
+
+  setSelectedEdgeId: (edgeId) => {
+    // Selecting an edge ALWAYS deselects nodes and slots
+    set({
+      selectedEdgeId: edgeId,
+      selectedNodeId: null,
+      selectedSlotId: null,
+      lastKnownSlotIndex: null,
+    });
+  },
+
+  handleEdgesChange: (changes) => {
+    const selectChanges = changes.filter(
+      (c): c is Extract<typeof changes[number], { type: 'select' }> => c.type === 'select'
+    );
+    const selectChange = selectChanges.find(c => c.selected);
+
+    if (selectChange) {
+      get().setSelectedEdgeId(selectChange.id);
+    } else if (selectChanges.some(c => !c.selected)) {
+      const currentEdgeId = get().selectedEdgeId;
+      if (selectChanges.some(c => c.id === currentEdgeId && !c.selected)) {
+        get().setSelectedEdgeId(null);
+      }
+    }
   },
 
   clearSlotSelection: () => {
@@ -53,7 +83,11 @@ export const useGraphStore = create<GraphStoreState>((set, get) => ({
   },
 
   clearNodeSelection: () => {
-    set({ selectedNodeId: null, selectedSlotId: null, lastKnownSlotIndex: null });
+    set({ selectedNodeId: null, selectedSlotId: null, selectedEdgeId: null, lastKnownSlotIndex: null });
+  },
+
+  clearSelection: () => {
+    set({ selectedNodeId: null, selectedSlotId: null, selectedEdgeId: null, lastKnownSlotIndex: null });
   },
 
   reconcileSelection: (newNodes) => {
@@ -63,7 +97,7 @@ export const useGraphStore = create<GraphStoreState>((set, get) => ({
     const node = newNodes.find(n => n.id === selectedNodeId);
     if (!node) {
       // Node was deleted: clear selection
-      set({ selectedNodeId: null, selectedSlotId: null, lastKnownSlotIndex: null });
+      set({ selectedNodeId: null, selectedSlotId: null, selectedEdgeId: null, lastKnownSlotIndex: null });
       return;
     }
 

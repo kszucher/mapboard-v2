@@ -54,11 +54,11 @@ export const FlowEdgeActions = ({
               size="1"
               radius="full"
               variant="solid"
-              color="gray"
+              style={{ backgroundColor: 'var(--accent-9)', color: 'var(--accent-contrast)' }}
               title="Edge actions"
               onClick={(e) => e.stopPropagation()}
             >
-              <DotsHorizontalIcon width="14" height="14"/>
+              <DotsHorizontalIcon width="14" height="14" />
             </IconButton>
           </DropdownMenu.Trigger>
           <DropdownMenu.Content>

@@ -1,5 +1,5 @@
-import type { NodeChange } from '@xyflow/react';
-import { applyNodeChanges, useReactFlow } from '@xyflow/react';
+import type { EdgeChange, NodeChange } from '@xyflow/react';
+import { applyEdgeChanges, applyNodeChanges, useReactFlow } from '@xyflow/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AppFlowEdge, AppFlowNode } from '../../canvas/types';
 import { runLayout } from '../../domain/graph/layout';
@@ -13,7 +13,24 @@ export const useLaidOutGraph = (graphId: string) => {
   const { setNodes, setEdges, getNodes, getEdges } = useReactFlow();
 
   const [isLoading, setIsLoading] = useState(true);
+  const setSelectedIds = useGraphStore(state => state.setSelectedIds);
+  const selectedEdgeId = useGraphStore(state => state.selectedEdgeId);
+  const handleEdgesChange = useGraphStore(state => state.handleEdgesChange);
+  const clearSelection = useGraphStore(state => state.clearSelection);
   const reconcileSelection = useGraphStore(state => state.reconcileSelection);
+
+  // Sync React Flow edge selection with Zustand store
+  useEffect(() => {
+    setEdges(eds =>
+      eds.map(e => {
+        const isSel = e.id === selectedEdgeId;
+        if (e.selected !== isSel) {
+          return { ...e, selected: isSel };
+        }
+        return e;
+      })
+    );
+  }, [selectedEdgeId, setEdges]);
 
   const runLayoutCalculation = useCallback(
     (nodes: AppFlowNode[], edges: AppFlowEdge[]) => {
@@ -51,11 +68,20 @@ export const useLaidOutGraph = (graphId: string) => {
     runLayoutCalculation(nodes, edges);
   }, [query.data, runLayoutCalculation, setNodes, setEdges, getNodes, getEdges, reconcileSelection]);
 
-  const onNodesLayoutChange = useCallback(
+  const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
       const currentNodes = getNodes() as AppFlowNode[];
       const currentEdges = getEdges() as AppFlowEdge[];
       const newNodes = applyNodeChanges(changes, currentNodes) as AppFlowNode[];
+
+      const selectChanges = changes.filter(
+        (c): c is Extract<NodeChange, { type: 'select' }> => c.type === 'select'
+      );
+      const selectChange = selectChanges.find(c => c.selected);
+
+      if (selectChange) {
+        setSelectedIds(selectChange.id, null);
+      }
 
       if (changes.some(c => c.type === 'dimensions')) {
         runLayoutCalculation(newNodes, currentEdges);
@@ -63,12 +89,26 @@ export const useLaidOutGraph = (graphId: string) => {
         setNodes(newNodes);
       }
     },
-    [runLayoutCalculation, setNodes, getNodes, getEdges]
+    [runLayoutCalculation, setNodes, getNodes, getEdges, setSelectedIds]
   );
+
+  const onEdgesChange = useCallback(
+    (changes: EdgeChange[]) => {
+      handleEdgesChange(changes);
+      setEdges(eds => applyEdgeChanges(changes, eds) as AppFlowEdge[]);
+    },
+    [handleEdgesChange, setEdges]
+  );
+
+  const onPaneClick = useCallback(() => {
+    void clearSelection();
+  }, [clearSelection]);
 
   return {
     ...query,
     isLoading,
-    onNodesLayoutChange,
+    onNodesChange,
+    onEdgesChange,
+    onPaneClick,
   };
 };
